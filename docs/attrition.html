@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Requirements: War of Attrition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Warm Neutrals with Green Accent -->
+    <!-- Application Structure Plan: A single-page, vertically scrolling application with a sticky top navigation bar. The structure is thematic, breaking down the requirements into logical, digestible sections (Concept, Game Logic, UI/UX, EARS). This design was chosen over a dashboard because the source material is a specification document, not a dataset. The goal is to provide a clear, guided exploration of the rules and features. Interactive elements are embedded within relevant sections to demonstrate concepts (like the health bar) directly in context, enhancing comprehension for the target audience (developers and PMs). -->
+    <!-- Visualization & Content Choices: Report Info: Game rules & UI specs -> Goal: Explain & Demonstrate -> Viz/Presentation Method: Interactive HTML/CSS components & structured text -> Interaction: Sliders to control mock UI, tabs to organize dense info -> Justification: Transforms abstract text requirements into tangible, interactive examples. A CSS-based flowchart is used to visualize game logic without violating the NO SVG/Mermaid rule. The health bar demo makes the color-coding rule immediately obvious. Card mockups with CSS glows instantly communicate the visual feedback requirements. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        .glow-blue { box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.6); }
+        .glow-green { box-shadow: 0 0 15px 5px rgba(34, 197, 94, 0.6); }
+        .glow-red { box-shadow: 0 0 15px 5px rgba(239, 68, 68, 0.6); }
+        .tab-active { border-color: #10B981; color: #10B981; background-color: #D1FAE5; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-stone-700">War of Attrition | Requirements</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#concept" class="text-stone-600 hover:text-emerald-600 transition">Core Concept</a>
+                <a href="#logic" class="text-stone-600 hover:text-emerald-600 transition">Game Logic</a>
+                <a href="#ui-ux" class="text-stone-600 hover:text-emerald-600 transition">UI/UX Demo</a>
+                <a href="#ai-helper" class="text-stone-600 hover:text-emerald-600 transition">✨ AI Helper</a>
+                <a href="#ears" class="text-stone-600 hover:text-emerald-600 transition">EARS</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-6 md:p-8">
+
+        <!-- Section 1: Core Concept -->
+        <section id="concept" class="my-16" data-rule-context="Core Concept: The application is a two-player, head-to-head card game of attrition. The objective is to win all of the opponent's cards. A standard 52-card deck is split by color (Red for Player, Black for Opponent). Players draw cards each turn, and the higher card wins. The game features special mechanics for ties ('Battles') and for challenging a loss. The game ends when one player runs out of cards.">
+            <h2 class="text-4xl font-bold text-emerald-700 mb-4">Core Concept 🃏</h2>
+            <p class="text-lg text-stone-600 max-w-3xl">
+                This document outlines the requirements for a two-player, head-to-head card game of attrition. The objective is to win all of the opponent's cards. A standard 52-card deck is split by color. Players draw cards each turn, and the higher card wins. The game features special mechanics for ties ("Battles") and for challenging a loss. The game ends when one player runs out of cards. This interactive page demonstrates the key requirements from that document.
+            </p>
+        </section>
+
+        <!-- Section 2: Game Logic -->
+        <section id="logic" class="my-16" data-rule-context="Game Logic: A turn starts when the Player clicks their deck. Both players draw one card. Cards are compared. Standard ranking is A, K, Q, J, 10-2, but a 2 beats an Ace. If one card is higher, the winner keeps their card and the loser's is discarded. If cards are equal, a Battle occurs. In a Battle, both players place 3 cards face-down, then select one of the opponent's face-down cards to compare. The winner of this comparison takes all cards in the battle. If a player loses a normal turn, they have the option to Challenge by drawing a new card to compare against the opponent's original winning card. The game ends when a player has zero cards or cannot field enough cards for a Battle.">
+            <h2 class="text-4xl font-bold text-emerald-700 mb-8">Game Logic Flow</h2>
+            <div class="bg-white p-8 rounded-xl shadow-md">
+                <p class="mb-8 text-stone-600">The game follows a clear turn-based structure. The diagram below illustrates the main flow, from starting a turn to resolving the outcome. This visual guide helps clarify the decision points and potential paths a single turn can take, such as a normal comparison, a Challenge, or a Battle.</p>
+                
+                <div class="flex flex-col items-center space-y-4">
+                    <div class="p-4 bg-emerald-100 text-emerald-800 rounded-lg shadow font-semibold">Start Turn (Player Clicks Deck)</div>
+                    <div class="text-2xl text-stone-400">↓</div>
+                    <div class="p-4 bg-stone-100 text-stone-800 rounded-lg shadow">Draw 1 Card Each</div>
+                    <div class="text-2xl text-stone-400">↓</div>
+                    <div class="p-4 bg-amber-100 text-amber-800 rounded-lg shadow font-semibold">Compare Card Values</div>
+                    <div class="text-2xl text-stone-400">↓</div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full text-center">
+                        <div class="flex flex-col items-center"><h3 class="font-bold text-lg mb-2">Player > Opponent</h3><div class="p-3 bg-blue-100 text-blue-800 rounded-lg shadow w-full">Opponent can Challenge</div></div>
+                        <div class="flex flex-col items-center"><h3 class="font-bold text-lg mb-2">Cards are Equal</h3><div class="p-3 bg-red-100 text-red-800 rounded-lg shadow w-full">Trigger BATTLE</div></div>
+                        <div class="flex flex-col items-center"><h3 class="font-bold text-lg mb-2">Opponent > Player</h3><div class="p-3 bg-blue-100 text-blue-800 rounded-lg shadow w-full">Player can Challenge</div></div>
+                    </div>
+                     <div class="text-2xl text-stone-400">↓</div>
+                     <div class="p-4 bg-emerald-100 text-emerald-800 rounded-lg shadow font-semibold">Resolve Turn & Loop to Start</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: UI/UX Demo -->
+        <section id="ui-ux" class="my-16">
+            <h2 class="text-4xl font-bold text-emerald-700 mb-8">UI/UX Demonstrations</h2>
+            <p class="mb-8 text-lg text-stone-600 max-w-3xl">To make the UI requirements clear, this section provides interactive examples of key visual components. You can manipulate these demos to see how they should behave in the final application.</p>
+
+            <div class="bg-white p-8 rounded-xl shadow-md mb-8">
+                <h3 class="text-2xl font-bold mb-4">Health Bar System</h3>
+                <p class="mb-6 text-stone-600">The health bar visually represents the number of cards a player has left (1-26). Its color changes at different thresholds to provide a quick status update. Use the slider below to see the color change dynamically.</p>
+                <div class="mb-4"><label for="hp-slider" class="block mb-2 font-medium">Player HP: <span id="hp-value">26</span>/26</label><input id="hp-slider" type="range" min="0" max="26" value="26" class="w-full"></div>
+                <div class="w-full bg-stone-200 rounded-full h-8"><div id="health-bar" class="h-8 rounded-full transition-all duration-300 ease-in-out text-white font-bold flex items-center justify-center bg-green-500" style="width: 100%;"><span id="hp-text">26</span></div></div>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-md mb-8">
+                <h3 class="text-2xl font-bold mb-4">Card Visual Cues</h3>
+                <p class="mb-6 text-stone-600">The game uses glow effects to communicate card states and required actions. Below are examples of the cards in different states as described in the requirements.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="text-center"><p class="font-semibold mb-2">Action Required</p><div class="relative w-40 h-56 mx-auto bg-white border-2 border-blue-400 rounded-lg flex items-center justify-center glow-blue"><div class="w-32 h-48 bg-blue-100 rounded flex items-center justify-center text-blue-600 font-bold">DECK</div></div><p class="text-sm mt-2 text-stone-500">Player needs to click the deck.</p></div>
+                    <div class="text-center"><p class="font-semibold mb-2">Winning Card</p><div class="relative w-40 h-56 mx-auto bg-white border-2 border-green-400 rounded-lg flex items-center justify-center glow-green"><span class="text-5xl">K ♥️</span></div><p class="text-sm mt-2 text-stone-500">The winning card glows green.</p></div>
+                    <div class="text-center"><p class="font-semibold mb-2">Losing Card</p><div class="relative w-40 h-56 mx-auto bg-white border-2 border-red-400 rounded-lg flex items-center justify-center glow-red"><span class="text-5xl">8 ♣️</span></div><p class="text-sm mt-2 text-stone-500">The losing card glows red.</p></div>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-md">
+                <h3 class="text-2xl font-bold mb-2">✨ Card Backing Idea Generator</h3>
+                <p class="mb-6 text-stone-600">Leverage the Gemini API for creative brainstorming. Enter a theme below to generate unique design concepts for the customizable card backs.</p>
+                <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                    <input type="text" id="theme-input" placeholder="Enter a theme (e.g., cyberpunk, art deco)" class="flex-grow p-2 border border-stone-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <button id="generate-ideas-btn" class="bg-emerald-600 text-white font-bold py-2 px-4 rounded-md hover:bg-emerald-700 transition flex items-center justify-center">Generate Ideas</button>
+                </div>
+                <div id="ideas-loader" class="hidden my-4 flex justify-center"><div class="loader"></div></div>
+                <div id="ideas-output" class="mt-4 p-4 bg-stone-100 rounded-md min-h-[100px] text-stone-700 whitespace-pre-wrap"></div>
+            </div>
+        </section>
+
+        <!-- Section 5: AI-Powered Rule Helper -->
+        <section id="ai-helper" class="my-16">
+            <h2 class="text-4xl font-bold text-emerald-700 mb-8">✨ AI-Powered Rule Helper</h2>
+            <div class="bg-white p-8 rounded-xl shadow-md">
+                <p class="mb-6 text-stone-600">Have a question about the game's rules? Ask in plain English and get an instant clarification from the Gemini API, which uses the content of this document as its source of truth.</p>
+                <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                    <input type="text" id="rule-query-input" placeholder="e.g., What happens in a battle?" class="flex-grow p-2 border border-stone-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <button id="ask-rule-btn" class="bg-emerald-600 text-white font-bold py-2 px-4 rounded-md hover:bg-emerald-700 transition flex items-center justify-center">Ask</button>
+                </div>
+                <div id="rule-loader" class="hidden my-4 flex justify-center"><div class="loader"></div></div>
+                <div id="rule-output" class="mt-4 p-4 bg-stone-100 rounded-md min-h-[100px] text-stone-700"></div>
+            </div>
+        </section>
+
+        <!-- Section 6: EARS Requirements -->
+        <section id="ears" class="my-16">
+            <h2 class="text-4xl font-bold text-emerald-700 mb-8">EARS Requirements</h2>
+            <p class="mb-8 text-lg text-stone-600 max-w-3xl">The Easy Approach to Requirements Syntax (EARS) provides a structured way to write unambiguous requirements. Click through the tabs below to explore the key system behaviors defined for the game.</p>
+            
+            <div id="ears-tabs-container" class="bg-white rounded-xl shadow-md">
+                <div class="border-b border-stone-200"><nav class="flex space-x-1 p-2" aria-label="Tabs"><button class="ears-tab tab-active px-4 py-2 text-sm font-medium text-stone-600 rounded-md" data-target="ubiquitous">Ubiquitous</button><button class="ears-tab px-4 py-2 text-sm font-medium text-stone-600 rounded-md" data-target="event-driven">Event-Driven</button><button class="ears-tab px-4 py-2 text-sm font-medium text-stone-600 rounded-md" data-target="state-driven">State-Driven</button><button class="ears-tab px-4 py-2 text-sm font-medium text-stone-600 rounded-md" data-target="unwanted">Unwanted Behaviour</button></nav></div>
+                <div class="p-8">
+                    <div id="ubiquitous" class="ears-content"><h3 class="text-xl font-bold mb-4">Ubiquitous Requirements (Always True)</h3><ul class="list-disc list-inside space-y-2 text-stone-600"><li>The system shall provide one player with all 26 red cards and the opponent with all 26 black cards.</li><li>The system shall rank cards from high to low as A, K, Q, J, 10, 9, 8, 7, 6, 5, 4, 3, 2, except where a 2 is higher than an Ace.</li><li>The system shall display a health bar for each player representing their remaining card count.</li></ul></div>
+                    <div id="event-driven" class="ears-content hidden"><h3 class="text-xl font-bold mb-4">Event-Driven Requirements (Trigger → Response)</h3><ul class="list-disc list-inside space-y-2 text-stone-600"><li><strong>When</strong> a new game is started, <strong>the system shall</strong> shuffle each player's deck independently.</li><li><strong>When</strong> the player clicks their deck to start a turn, <strong>the system shall</strong> draw one card for the player and one for the opponent.</li><li><strong>When</strong> cards are drawn for a turn, <strong>the system shall</strong> compare their values to determine the winner.</li><li><strong>When</strong> a player's and opponent's cards are of equal value, <strong>the system shall</strong> initiate a "Battle".</li></ul></div>
+                    <div id="state-driven" class="ears-content hidden"><h3 class="text-xl font-bold mb-4">State-Driven Requirements (While in a State)</h3><ul class="list-disc list-inside space-y-2 text-stone-600"><li><strong>While</strong> a player has just lost a turn, <strong>the system shall</strong> provide an option to "Challenge".</li><li><strong>While</strong> cards are in play for a turn, <strong>the system shall</strong> highlight the at-risk portion of the corresponding player's health bar.</li></ul></div>
+                    <div id="unwanted" class="ears-content hidden"><h3 class="text-xl font-bold mb-4">Unwanted Behaviour Requirements (If → Then)</h3><ul class="list-disc list-inside space-y-2 text-stone-600"><li><strong>If</strong> a player's card count reaches zero, <strong>then the system shall</strong> end the game and declare that player the loser.</li><li><strong>If</strong> a player cannot draw the required number of cards for a Battle, <strong>then the system shall</strong> end the game and declare that player the loser.</li></ul></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-100 mt-16">
+        <div class="container mx-auto px-6 py-4 text-center text-stone-500"><p>Interactive Requirements Document | Generated for "War of Attrition"</p></div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const hpSlider = document.getElementById('hp-slider');
+            const hpValue = document.getElementById('hp-value');
+            const healthBar = document.getElementById('health-bar');
+            const hpText = document.getElementById('hp-text');
+
+            hpSlider.addEventListener('input', function() {
+                const value = parseInt(this.value, 10);
+                const percentage = (value / 26) * 100;
+                hpValue.textContent = `${value}/26`;
+                hpText.textContent = value;
+                healthBar.style.width = `${percentage}%`;
+                healthBar.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-orange-500', 'bg-red-500');
+                if (percentage >= 75) healthBar.classList.add('bg-green-500');
+                else if (percentage >= 50) healthBar.classList.add('bg-yellow-500');
+                else if (percentage >= 25) healthBar.classList.add('bg-orange-500');
+                else healthBar.classList.add('bg-red-500');
+            });
+
+            const tabs = document.querySelectorAll('.ears-tab');
+            const contents = document.querySelectorAll('.ears-content');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetId = this.dataset.target;
+                    tabs.forEach(t => t.classList.remove('tab-active'));
+                    this.classList.add('tab-active');
+                    contents.forEach(content => {
+                        content.id === targetId ? content.classList.remove('hidden') : content.classList.add('hidden');
+                    });
+                });
+            });
+
+            // Gemini API Integration
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const askRuleBtn = document.getElementById('ask-rule-btn');
+            const ruleQueryInput = document.getElementById('rule-query-input');
+            const ruleOutput = document.getElementById('rule-output');
+            const ruleLoader = document.getElementById('rule-loader');
+
+            const generateIdeasBtn = document.getElementById('generate-ideas-btn');
+            const themeInput = document.getElementById('theme-input');
+            const ideasOutput = document.getElementById('ideas-output');
+            const ideasLoader = document.getElementById('ideas-loader');
+
+            async function callGemini(prompt, button, loader, outputElement) {
+                button.disabled = true;
+                loader.classList.remove('hidden');
+                outputElement.textContent = '';
+
+                try {
+                    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates[0].content.parts[0].text;
+                    outputElement.textContent = text;
+                } catch (error) {
+                    outputElement.textContent = `Error: ${error.message}. Please try again.`;
+                    console.error('Gemini API call failed:', error);
+                } finally {
+                    button.disabled = false;
+                    loader.classList.add('hidden');
+                }
+            }
+
+            askRuleBtn.addEventListener('click', () => {
+                const userQuery = ruleQueryInput.value;
+                if (!userQuery) {
+                    ruleOutput.textContent = 'Please enter a question.';
+                    return;
+                }
+
+                let ruleContext = "You are an expert assistant for a software development project. Your task is to answer questions based ONLY on the provided game rules. Do not invent new rules or make assumptions. Here are the rules:\n\n";
+                document.querySelectorAll('[data-rule-context]').forEach(el => {
+                    ruleContext += el.dataset.ruleContext + "\n\n";
+                });
+
+                const prompt = `${ruleContext}Based on these rules, please answer the following question: "${userQuery}"`;
+                callGemini(prompt, askRuleBtn, ruleLoader, ruleOutput);
+            });
+
+            generateIdeasBtn.addEventListener('click', () => {
+                const theme = themeInput.value;
+                if (!theme) {
+                    ideasOutput.textContent = 'Please enter a theme.';
+                    return;
+                }
+                const prompt = `Generate 3 distinct and creative ideas for a playing card backing design based on the theme: "${theme}". For each idea, provide a short description of the visual elements, a suggested color palette, and the overall mood. Format the response clearly with headings for each idea.`;
+                callGemini(prompt, generateIdeasBtn, ideasLoader, ideasOutput);
+            });
+        });
+    </script>
+</body>
+</html>
