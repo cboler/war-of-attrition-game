@@ -1,0 +1,27 @@
+.game-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 20px;
+}
+
+.welcome-card {
+  max-width: 600px;
+  width: 100%;
+}
+
+.welcome-card mat-card-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+.welcome-card ul {
+  margin: 16px 0;
+  padding-left: 24px;
+}
+
+.welcome-card li {
+  margin-bottom: 8px;
+}
