@@ -83,7 +83,16 @@ export class GameControllerService {
     this.challengeAvailable.set(false);
 
     if (!acceptChallenge) {
-      // Player declines challenge, accept the loss
+      // Player declines challenge, accept the loss - discard player's card
+      const activeTurn = this.gameStateService.currentState.activeTurn;
+      if (activeTurn && activeTurn.playerCard) {
+        this.gameStateService.addToDiscardPile([activeTurn.playerCard]);
+        // Opponent keeps their card
+        if (activeTurn.opponentCard) {
+          this.gameStateService.returnCardsToOpponentDeck([activeTurn.opponentCard]);
+        }
+      }
+      
       this.gameMessage.set('You declined the challenge. Your card is discarded.');
       this.canPlayerAct.set(true);
       return;
