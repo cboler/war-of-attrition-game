@@ -14,7 +14,7 @@ import { ProgressService } from '../services/progress.service';
 export class Game implements OnInit {
   protected demoLog = signal<string[]>([]);
   protected progressData: ProgressData;
-  protected currentMilestone: any;
+  protected currentMilestone: ProgressData['currentMilestone'];
   protected completedMilestone: any;
 
   constructor(
