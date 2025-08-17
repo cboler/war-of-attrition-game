@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { GameStateService } from '../services/game-state.service';
+import { GameStateService } from './game-state.service';
 import { GamePhase, PlayerType } from '../models/game-state.model';
 import { CardImpl, Suit, Rank } from '../models/card.model';
 
