@@ -4,9 +4,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { GameDemoService } from '../services/game-demo.service';
 import { GameBoardComponent } from '../shared/components/game-board/game-board.component';
-import { ActionIndicatorComponent } from '../shared/components/action-indicator/action-indicator.component';
 import { CardImpl, Suit, Rank } from '../core/models/card.model';
-import { ProgressService } from '../services/progress.service';
+import { ProgressService, ProgressData } from '../services/progress.service';
 
 @Component({
   selector: 'app-game',
@@ -14,8 +13,7 @@ import { ProgressService } from '../services/progress.service';
     MatCardModule, 
     MatButtonModule, 
     RouterLink, 
-    GameBoardComponent,
-    ActionIndicatorComponent
+    GameBoardComponent
   ],
   templateUrl: './game.html',
   styleUrl: './game.scss'
@@ -38,8 +36,7 @@ export class Game implements OnInit {
   protected showActionIndicator = signal<boolean>(false);
   protected progressData: ProgressData;
   protected currentMilestone: ProgressData['currentMilestone'];
-  protected currentMilestone: ProgressData['milestone'];
-  protected completedMilestone: ProgressData['milestone'];
+  protected completedMilestone: ProgressData['milestones'][0] | undefined;
 
   constructor(
     private gameDemoService: GameDemoService,
