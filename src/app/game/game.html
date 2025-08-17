@@ -1,6 +1,6 @@
 <div class="game-container">
   @if (showGameBoard()) {
-    <!-- New Milestone 3 Game Board UI -->
+    <!-- Milestone 4 Game Board UI with Real Gameplay -->
     <app-game-board
       [playerCardCount]="playerCardCount()"
       [opponentCardCount]="opponentCardCount()"
@@ -14,16 +14,34 @@
       (playerDeckClicked)="onPlayerDeckClick()">
     </app-game-board>
 
-    <!-- Demo Controls -->
-    <div class="demo-controls">
-      <button mat-raised-button color="primary" (click)="onPlayerDeckClick()">
-        Draw Cards
-      </button>
-      <button mat-raised-button color="accent" (click)="simulateChallenge()">
-        Test Challenge
-      </button>
-      <button mat-raised-button color="warn" (click)="simulateBattle()">
-        Test Battle
+    <!-- Challenge Prompt Modal -->
+    @if (showChallengePrompt()) {
+      <div class="challenge-overlay">
+        <mat-card class="challenge-card">
+          <mat-card-header>
+            <mat-card-title>Challenge Available!</mat-card-title>
+            <mat-card-subtitle>Do you want to challenge the result?</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>You lost this round, but you can draw an additional card to challenge the result.</p>
+            <p><strong>Risk:</strong> If you lose the challenge, you lose both cards!</p>
+          </mat-card-content>
+          <mat-card-actions>
+            <button mat-raised-button color="primary" (click)="acceptChallenge()">
+              Accept Challenge
+            </button>
+            <button mat-button (click)="declineChallenge()">
+              Decline
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+    }
+
+    <!-- Game Controls -->
+    <div class="game-controls">
+      <button mat-raised-button color="primary" (click)="startNewGame()">
+        New Game
       </button>
       <button mat-button (click)="toggleDemo()">
         Show Old Demo

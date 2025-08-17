@@ -3,9 +3,11 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { GameDemoService } from '../services/game-demo.service';
+import { GameControllerService } from '../services/game-controller.service';
 import { GameBoardComponent } from '../shared/components/game-board/game-board.component';
 import { CardImpl, Suit, Rank } from '../core/models/card.model';
 import { ProgressService, ProgressData } from '../services/progress.service';
+import { GamePhase } from '../core/models/game-state.model';
 
 @Component({
   selector: 'app-game',
@@ -23,28 +25,61 @@ export class Game implements OnInit {
   // Demo UI state
   protected showOldDemo = signal<boolean>(false);
   protected showGameBoard = signal<boolean>(true);
-  // Game board demo state
-  protected playerCardCount = signal<number>(26);
-  protected opponentCardCount = signal<number>(26);
-  protected playerActiveCard = signal(new CardImpl(Suit.HEARTS, Rank.KING));
-  protected opponentActiveCard = signal(new CardImpl(Suit.SPADES, Rank.QUEEN));
-  protected playerCardGlow = signal<'green' | 'red' | 'blue' | null>('green');
-  protected opponentCardGlow = signal<'green' | 'red' | 'blue' | null>('red');
-  protected gameMessage = signal<string>('You win this round! King beats Queen.');
+  
+  // Real game state (will be initialized in constructor)
+  protected gameStats = signal<any>(this.getInitialGameStats());
+  protected gameState = signal<any>(this.getInitialGameState());
+  protected gameMessage = signal<string>('Click your deck to begin!');
   protected challengeAvailable = signal<boolean>(false);
   protected canPlayerAct = signal<boolean>(true);
-  protected showActionIndicator = signal<boolean>(false);
+  protected showChallengePrompt = signal<boolean>(false);
+  
+  // Computed values for UI
+  protected playerCardCount = signal(26);
+  protected opponentCardCount = signal(26);
+  protected playerActiveCard = signal<CardImpl | null>(null);
+  protected opponentActiveCard = signal<CardImpl | null>(null);
+  protected playerCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
+  protected opponentCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
+  
+  // Progress data
   protected progressData: ProgressData;
   protected currentMilestone: ProgressData['currentMilestone'];
   protected completedMilestone: ProgressData['milestones'][0] | undefined;
 
   constructor(
     private gameDemoService: GameDemoService,
+    private gameController: GameControllerService,
     private progressService: ProgressService
   ) {
     this.progressData = this.progressService.getProgressData();
     this.currentMilestone = this.progressService.getCurrentMilestone();
-    this.completedMilestone = this.progressService.getCompletedMilestone(2);
+    this.completedMilestone = this.progressService.getCompletedMilestone(3);
+    
+    // Initialize real game
+    this.gameController.startNewGame();
+    this.updateGameState();
+  }
+
+  private getInitialGameStats() {
+    return {
+      turnNumber: 0,
+      playerCardCount: 26,
+      opponentCardCount: 26,
+      discardedCardCount: 0
+    };
+  }
+
+  private getInitialGameState() {
+    return {
+      phase: GamePhase.SETUP,
+      stats: this.getInitialGameStats(),
+      activeTurn: null,
+      winner: null,
+      isPlayerTurn: true,
+      canChallenge: false,
+      lastResult: null
+    };
   }
 
   ngOnInit(): void {
@@ -63,12 +98,42 @@ export class Game implements OnInit {
     this.showGameBoard.update(v => !v);
   }
 
+  /**
+   * Real game mechanics - Player clicks deck to draw cards
+   */
   onPlayerDeckClick(): void {
-    console.log('Player deck clicked!');
-    // Demo: simulate a new turn
-    this.simulateNewTurn();
+    if (!this.gameController.playerCanAct) {
+      return;
+    }
+
+    const success = this.gameController.playerDrawCard();
+    if (success) {
+      this.updateGameState();
+    }
   }
 
+  /**
+   * Handle challenge decision
+   */
+  acceptChallenge(): void {
+    this.gameController.handleChallenge(true);
+    this.updateGameState();
+  }
+
+  declineChallenge(): void {
+    this.gameController.handleChallenge(false);
+    this.updateGameState();
+  }
+
+  /**
+   * Start a new game
+   */
+  startNewGame(): void {
+    this.gameController.startNewGame();
+    this.updateGameState();
+  }
+
+  // Keep demo methods for old demo mode
   simulateChallenge(): void {
     this.challengeAvailable.set(true);
     this.gameMessage.set('You lost this round. Challenge available!');
@@ -83,44 +148,51 @@ export class Game implements OnInit {
     this.challengeAvailable.set(false);
   }
 
-  private simulateNewTurn(): void {
-    // Create random cards for demo
-    const suits = [Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS, Suit.SPADES];
-    const ranks = [Rank.ACE, Rank.KING, Rank.QUEEN, Rank.JACK, Rank.TEN, Rank.NINE, Rank.EIGHT];
+  /**
+   * Update UI state based on game controller state
+   */
+  private updateGameState(): void {
+    const stats = this.gameController.getGameStats();
+    const state = this.gameController.getGameState();
     
-    const playerCard = new CardImpl(
-      suits[Math.floor(Math.random() * suits.length)],
-      ranks[Math.floor(Math.random() * ranks.length)]
-    );
+    this.gameStats.set(stats);
+    this.gameState.set(state);
+    this.gameMessage.set(this.gameController.message);
+    this.challengeAvailable.set(this.gameController.canChallenge);
+    this.canPlayerAct.set(this.gameController.playerCanAct);
+    this.showChallengePrompt.set(this.gameController.showChallengePrompt);
     
-    const opponentCard = new CardImpl(
-      suits[Math.floor(Math.random() * suits.length)],
-      ranks[Math.floor(Math.random() * ranks.length)]
-    );
-
-    this.playerActiveCard.set(playerCard);
-    this.opponentActiveCard.set(opponentCard);
-
-    // Simulate comparison
-    if (playerCard.value > opponentCard.value) {
-      this.playerCardGlow.set('green');
-      this.opponentCardGlow.set('red');
-      this.gameMessage.set(`You win! ${playerCard.rank} beats ${opponentCard.rank}.`);
-      this.challengeAvailable.set(false);
-    } else if (playerCard.value < opponentCard.value) {
-      this.playerCardGlow.set('red');
-      this.opponentCardGlow.set('green');
-      this.gameMessage.set(`You lose! ${opponentCard.rank} beats ${playerCard.rank}.`);
-      this.challengeAvailable.set(true);
-    } else {
-      this.playerCardGlow.set('blue');
-      this.opponentCardGlow.set('blue');
-      this.gameMessage.set('Cards tie! Battle time!');
-      this.challengeAvailable.set(false);
-    }
-
     // Update card counts
-    this.playerCardCount.update(count => Math.max(1, count - 1));
-    this.opponentCardCount.update(count => Math.max(1, count - 1));
+    this.playerCardCount.set(stats.playerCardCount);
+    this.opponentCardCount.set(stats.opponentCardCount);
+    
+    // Update active cards if available
+    if (state.activeTurn) {
+      this.playerActiveCard.set(state.activeTurn.playerCard as CardImpl);
+      this.opponentActiveCard.set(state.activeTurn.opponentCard as CardImpl);
+      
+      // Set card glow based on last result
+      if (state.lastResult?.includes('win')) {
+        this.playerCardGlow.set('green');
+        this.opponentCardGlow.set('red');
+      } else if (state.lastResult?.includes('lose')) {
+        this.playerCardGlow.set('red');
+        this.opponentCardGlow.set('green');
+      } else if (state.lastResult?.includes('tie') || state.lastResult?.includes('battle')) {
+        this.playerCardGlow.set('blue');
+        this.opponentCardGlow.set('blue');
+      } else {
+        this.playerCardGlow.set(null);
+        this.opponentCardGlow.set(null);
+      }
+    } else {
+      // No active turn, reset cards for demo
+      if (!this.showOldDemo()) {
+        this.playerActiveCard.set(null);
+        this.opponentActiveCard.set(null);
+        this.playerCardGlow.set(null);
+        this.opponentCardGlow.set(null);
+      }
+    }
   }
 }

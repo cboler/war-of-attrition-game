@@ -49,10 +49,10 @@ export class ProgressService {
       type: 'Progressive Web Application'
     },
     currentMilestone: {
-      number: 2,
-      name: 'Core Game Engine',
-      status: 'COMPLETED',
-      emoji: '🎉'
+      number: 4,
+      name: 'Game Mechanics Implementation',
+      status: 'IN_PROGRESS',
+      emoji: '🎮'
     },
     milestones: [
       {
@@ -83,13 +83,25 @@ export class ProgressService {
       {
         number: 3,
         name: 'Basic UI Components',
-        status: 'NOT_STARTED',
+        status: 'COMPLETED',
+        progress: 100,
+        items: [
+          { name: 'Game Board Layout', status: 'COMPLETED' },
+          { name: 'Card Component', status: 'COMPLETED' },
+          { name: 'Health Bar Component', status: 'COMPLETED' },
+          { name: 'Player Action Indicators', status: 'COMPLETED' }
+        ]
+      },
+      {
+        number: 4,
+        name: 'Game Mechanics Implementation',
+        status: 'IN_PROGRESS',
         progress: 0,
         items: [
-          { name: 'Game Board Layout', status: 'NOT_STARTED' },
-          { name: 'Card Component', status: 'NOT_STARTED' },
-          { name: 'Health Bar Component', status: 'NOT_STARTED' },
-          { name: 'Player Action Indicators', status: 'NOT_STARTED' }
+          { name: 'Basic Turn Flow', status: 'NOT_STARTED' },
+          { name: 'Challenge System', status: 'NOT_STARTED' },
+          { name: 'Battle System', status: 'NOT_STARTED' },
+          { name: 'Game End Conditions', status: 'NOT_STARTED' }
         ]
       }
     ],
@@ -99,8 +111,8 @@ export class ProgressService {
       coverage: 'comprehensive'
     },
     nextSteps: {
-      immediate: 'Begin Milestone 3: Basic UI Components',
-      priority: 'Game Board Layout implementation'
+      immediate: 'Begin Milestone 4: Game Mechanics Implementation',
+      priority: 'Basic Turn Flow implementation'
     },
     features: {
       implemented: [
@@ -113,10 +125,10 @@ export class ProgressService {
         'Comprehensive test coverage'
       ],
       nextMilestone: [
-        'Game Board Layout',
-        'Card Component with styling',
-        'Health Bar Component with color coding',
-        'Player Action Indicators'
+        'Basic Turn Flow',
+        'Challenge System',
+        'Battle System',
+        'Game End Conditions'
       ]
     }
   };
