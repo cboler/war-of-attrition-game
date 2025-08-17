@@ -108,13 +108,13 @@ export class ProgressService {
         number: 5,
         name: 'Visual Polish & Animations',
         status: 'IN_PROGRESS',
-        progress: 50,
+        progress: 85,
         items: [
           { name: 'Material Icons Implementation', status: 'COMPLETED', description: 'Navigation and theme toggle icons implemented' },
           { name: 'Theme Toggle Enhancement', status: 'COMPLETED', description: 'Lightbulb metaphor with lit/unlit states' },
-          { name: 'Card Animations', status: 'NOT_STARTED' },
-          { name: 'Visual Effects', status: 'NOT_STARTED' },
-          { name: 'Enhanced UI Polish', status: 'NOT_STARTED' }
+          { name: 'Card Animations', status: 'COMPLETED', description: 'Slide-in, flip, and clash animations implemented' },
+          { name: 'Health Bar Damage Animations', status: 'COMPLETED', description: 'Enhanced flash effects and danger pulse animations' },
+          { name: 'Enhanced UI Polish', status: 'PARTIALLY_COMPLETED', description: 'Core animations complete, additional effects in progress' }
         ]
       }
     ],
@@ -124,8 +124,8 @@ export class ProgressService {
       coverage: 'comprehensive'
     },
     nextSteps: {
-      immediate: 'Continue Milestone 5: Visual Polish & Animations - Card Animations & Visual Effects',
-      priority: 'Card slide animations, flip effects, and battle clash animations'
+      immediate: 'Complete Milestone 5: Visual Polish & Animations - Add fall-away animations and final polish',
+      priority: 'Card fall-away animations for discarded cards, enhanced visual feedback system, and responsive improvements'
     },
     features: {
       implemented: [
@@ -145,13 +145,17 @@ export class ProgressService {
         'Game end condition handling',
         'Material Icons for navigation (casino/dice, settings gear)',
         'Enhanced theme toggle with lightbulb metaphor',
-        'Local Material Icons font integration'
+        'Local Material Icons font integration',
+        'Card slide and flip animations',
+        'Battle clash visual effects with shake animations',
+        'Health bar damage animations with enhanced flash effects',
+        'Dynamic animation system for card states'
       ],
       nextMilestone: [
-        'Card slide and flip animations',
-        'Battle clash visual effects',
-        'Health bar damage animations',
-        'Enhanced visual feedback system'
+        'Card fall-away animations for discarded cards',
+        'Enhanced visual feedback system polish',
+        'Settings menu implementation',
+        'Card backing customization options'
       ]
     }
   };

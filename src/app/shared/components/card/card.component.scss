@@ -225,3 +225,113 @@
     }
   }
 }
+
+// Card Animation States
+.card.animate-slide-in {
+  animation: slide-in-from-deck 0.8s ease-out;
+  
+  &.from-deck {
+    animation: slide-in-from-deck 0.8s ease-out;
+  }
+}
+
+.card.animate-flip {
+  animation: card-flip 0.6s ease-in-out;
+}
+
+.card.animate-clash-win {
+  animation: clash-victory 1.0s ease-out;
+}
+
+.card.animate-clash-lose {
+  animation: clash-defeat 1.0s ease-out;
+}
+
+.card.animate-fall-away {
+  animation: fall-away 1.2s ease-in forwards;
+}
+
+// Card Animation Keyframes
+@keyframes slide-in-from-deck {
+  0% {
+    transform: translateY(-100px) scale(0.8);
+    opacity: 0.7;
+  }
+  60% {
+    transform: translateY(10px) scale(1.05);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes card-flip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(90deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+@keyframes clash-victory {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  25% {
+    transform: translateX(-15px) scale(1.1);
+  }
+  50% {
+    transform: translateX(15px) scale(1.15);
+  }
+  75% {
+    transform: translateX(-5px) scale(1.1);
+  }
+  100% {
+    transform: translateX(0) scale(1.05);
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+  }
+}
+
+@keyframes clash-defeat {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  25% {
+    transform: translateX(15px) scale(1.05) rotateZ(5deg);
+  }
+  50% {
+    transform: translateX(-15px) scale(0.95) rotateZ(-5deg);
+  }
+  75% {
+    transform: translateX(5px) scale(0.9) rotateZ(2deg);
+  }
+  100% {
+    transform: translateX(0) scale(0.85) rotateZ(0deg);
+    opacity: 0.7;
+  }
+}
+
+@keyframes fall-away {
+  0% {
+    transform: translateY(0) rotateZ(0deg) scale(1);
+    opacity: 1;
+  }
+  30% {
+    transform: translateY(20px) rotateZ(-15deg) scale(0.9);
+    opacity: 0.8;
+  }
+  70% {
+    transform: translateY(100px) rotateZ(-45deg) scale(0.6);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(200px) rotateZ(-90deg) scale(0.2);
+    opacity: 0;
+  }
+}

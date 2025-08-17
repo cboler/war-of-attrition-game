@@ -44,6 +44,12 @@ export class Game implements OnInit {
   protected playerCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
   protected opponentCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
   
+  // Animation states
+  protected playerCardAnimation = signal<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);
+  protected opponentCardAnimation = signal<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);
+  protected playerHealthDamageAnimation = signal<boolean>(false);
+  protected opponentHealthDamageAnimation = signal<boolean>(false);
+  
   // Battle state
   protected battleCards = signal<Card[]>([]);
   protected opponentBattleCards = signal<Card[]>([]);
@@ -170,6 +176,8 @@ export class Game implements OnInit {
   private updateGameState(): void {
     const stats = this.gameController.getGameStats();
     const state = this.gameController.getGameState();
+    const previousPlayerCount = this.playerCardCount();
+    const previousOpponentCount = this.opponentCardCount();
     
     this.gameStats.set(stats);
     this.gameState.set(state);
@@ -184,22 +192,38 @@ export class Game implements OnInit {
     this.battlePhase.set(this.gameController.currentBattlePhase);
     this.showBattleUI.set(this.battlePhase() === 'selection');
     
-    // Update card counts
+    // Update card counts and trigger health damage animations if counts decreased
+    if (stats.playerCardCount < previousPlayerCount) {
+      this.triggerPlayerHealthDamageAnimation();
+    }
+    if (stats.opponentCardCount < previousOpponentCount) {
+      this.triggerOpponentHealthDamageAnimation();
+    }
+    
     this.playerCardCount.set(stats.playerCardCount);
     this.opponentCardCount.set(stats.opponentCardCount);
     
     // Update active cards if available
     if (state.activeTurn) {
-      this.playerActiveCard.set(state.activeTurn.playerCard);
-      this.opponentActiveCard.set(state.activeTurn.opponentCard);
+      // Only set active cards if they've changed to trigger slide-in animation
+      if (this.playerActiveCard() !== state.activeTurn.playerCard) {
+        this.playerActiveCard.set(state.activeTurn.playerCard);
+        this.triggerCardSlideAnimation('player');
+      }
+      if (this.opponentActiveCard() !== state.activeTurn.opponentCard) {
+        this.opponentActiveCard.set(state.activeTurn.opponentCard);
+        this.triggerCardSlideAnimation('opponent');
+      }
       
-      // Set card glow based on last result
+      // Set card glow and clash animations based on last result
       if (state.lastResult?.includes('win')) {
         this.playerCardGlow.set('green');
         this.opponentCardGlow.set('red');
+        this.triggerClashAnimations('player-win');
       } else if (state.lastResult?.includes('lose')) {
         this.playerCardGlow.set('red');
         this.opponentCardGlow.set('green');
+        this.triggerClashAnimations('opponent-win');
       } else if (state.lastResult?.includes('tie') || state.lastResult?.includes('battle')) {
         this.playerCardGlow.set('blue');
         this.opponentCardGlow.set('blue');
@@ -214,7 +238,66 @@ export class Game implements OnInit {
         this.opponentActiveCard.set(null);
         this.playerCardGlow.set(null);
         this.opponentCardGlow.set(null);
+        this.resetAnimations();
       }
     }
+  }
+
+  /**
+   * Trigger card slide animation for new cards
+   */
+  private triggerCardSlideAnimation(player: 'player' | 'opponent'): void {
+    if (player === 'player') {
+      this.playerCardAnimation.set('slide-in');
+      setTimeout(() => this.playerCardAnimation.set(null), 800);
+    } else {
+      this.opponentCardAnimation.set('slide-in');
+      setTimeout(() => this.opponentCardAnimation.set(null), 800);
+    }
+  }
+
+  /**
+   * Trigger clash animations for battle results
+   */
+  private triggerClashAnimations(result: 'player-win' | 'opponent-win'): void {
+    if (result === 'player-win') {
+      this.playerCardAnimation.set('clash-win');
+      this.opponentCardAnimation.set('clash-lose');
+    } else {
+      this.playerCardAnimation.set('clash-lose');
+      this.opponentCardAnimation.set('clash-win');
+    }
+    
+    // Clear animations after they complete
+    setTimeout(() => {
+      this.playerCardAnimation.set(null);
+      this.opponentCardAnimation.set(null);
+    }, 1000);
+  }
+
+  /**
+   * Trigger health damage animation for player
+   */
+  private triggerPlayerHealthDamageAnimation(): void {
+    this.playerHealthDamageAnimation.set(true);
+    setTimeout(() => this.playerHealthDamageAnimation.set(false), 800);
+  }
+
+  /**
+   * Trigger health damage animation for opponent
+   */
+  private triggerOpponentHealthDamageAnimation(): void {
+    this.opponentHealthDamageAnimation.set(true);
+    setTimeout(() => this.opponentHealthDamageAnimation.set(false), 800);
+  }
+
+  /**
+   * Reset all animations
+   */
+  private resetAnimations(): void {
+    this.playerCardAnimation.set(null);
+    this.opponentCardAnimation.set(null);
+    this.playerHealthDamageAnimation.set(false);
+    this.opponentHealthDamageAnimation.set(false);
   }
 }

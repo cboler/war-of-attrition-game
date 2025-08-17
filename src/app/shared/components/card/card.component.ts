@@ -16,6 +16,12 @@ import { Card, Suit, Rank } from '../../../core/models/card.model';
          [class.glow-red]="glow() === 'red'"
          [class.glow-blue]="glow() === 'blue'"
          [class.clickable]="clickable()"
+         [class.animate-slide-in]="animationState() === 'slide-in'"
+         [class.animate-flip]="animationState() === 'flip'"
+         [class.animate-clash-win]="animationState() === 'clash-win'"
+         [class.animate-clash-lose]="animationState() === 'clash-lose'"
+         [class.animate-fall-away]="animationState() === 'fall-away'"
+         [class.from-deck]="fromPosition() === 'deck'"
          (click)="onCardClick()">
       
       @if (faceDown()) {
@@ -48,6 +54,10 @@ export class CardComponent {
   faceDown = input<boolean>(false);
   glow = input<'green' | 'red' | 'blue' | null>(null);
   clickable = input<boolean>(false);
+  
+  // Animation states
+  animationState = input<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);
+  fromPosition = input<'deck' | 'table' | null>(null);
 
   // Event outputs
   cardClicked = output<void>();
