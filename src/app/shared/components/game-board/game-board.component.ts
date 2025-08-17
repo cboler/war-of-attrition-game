@@ -17,7 +17,8 @@ import { HealthBarComponent } from '../health-bar/health-bar.component';
             label="Opponent"
             [current]="opponentCardCount()"
             [maximum]="26"
-            [inDanger]="opponentCardsInDanger()">
+            [inDanger]="opponentCardsInDanger()"
+            [showDamageAnimation]="opponentHealthDamageAnimation()">
           </app-health-bar>
         </div>
         
@@ -42,7 +43,9 @@ import { HealthBarComponent } from '../health-bar/health-bar.component';
             <app-card
               [card]="opponentActiveCard()"
               [faceDown]="false"
-              [glow]="opponentCardGlow()">
+              [glow]="opponentCardGlow()"
+              [animationState]="opponentCardAnimation()"
+              [fromPosition]="'deck'">
             </app-card>
           }
           
@@ -50,7 +53,9 @@ import { HealthBarComponent } from '../health-bar/health-bar.component';
             <app-card
               [card]="playerActiveCard()"
               [faceDown]="false"
-              [glow]="playerCardGlow()">
+              [glow]="playerCardGlow()"
+              [animationState]="playerCardAnimation()"
+              [fromPosition]="'deck'">
             </app-card>
           }
         </div>
@@ -91,7 +96,8 @@ import { HealthBarComponent } from '../health-bar/health-bar.component';
             label="You"
             [current]="playerCardCount()"
             [maximum]="26"
-            [inDanger]="playerCardsInDanger()">
+            [inDanger]="playerCardsInDanger()"
+            [showDamageAnimation]="playerHealthDamageAnimation()">
           </app-health-bar>
         </div>
       </div>
@@ -112,6 +118,14 @@ export class GameBoardComponent {
   gameMessage = input<string | null>(null);
   challengeAvailable = input<boolean>(false);
   canPlayerAct = input<boolean>(false);
+  
+  // Animation states for cards
+  playerCardAnimation = input<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);
+  opponentCardAnimation = input<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);
+  
+  // Animation states for health bars
+  playerHealthDamageAnimation = input<boolean>(false);
+  opponentHealthDamageAnimation = input<boolean>(false);
 
   // Output events
   playerDeckClicked = output<void>();

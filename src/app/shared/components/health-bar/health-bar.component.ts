@@ -18,6 +18,7 @@ import { CommonModule } from '@angular/common';
              [class.yellow]="healthColor() === 'yellow'"
              [class.orange]="healthColor() === 'orange'"
              [class.red]="healthColor() === 'red'"
+             [class.damage-animation]="showDamageAnimation()"
              [style.width.%]="healthPercentage()">
         </div>
         
@@ -37,6 +38,7 @@ export class HealthBarComponent {
   current = input<number>(26);
   maximum = input<number>(26);
   inDanger = input<number>(0); // Cards currently at risk
+  showDamageAnimation = input<boolean>(false); // Trigger for damage animation
 
   protected healthPercentage = computed(() => {
     const max = this.maximum();
