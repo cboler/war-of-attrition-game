@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { CardComparisonService, ComparisonResult } from '../services/card-comparison.service';
+import { CardComparisonService, ComparisonResult } from './card-comparison.service';
 import { Card, CardImpl, Suit, Rank } from '../models/card.model';
 
 describe('CardComparisonService', () => {
