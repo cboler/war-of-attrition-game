@@ -15,7 +15,7 @@ export class GameControllerService {
   private battleCards = signal<Card[]>([]);
   private opponentBattleCards = signal<Card[]>([]);
   private battlePhase = signal<'setup' | 'selection' | 'resolution'>('setup');
-  private canPlayerAct = signal<boolean>(true);
+  private canPlayerAct = signal<boolean>(false);
 
   // Readonly getters
   get message() { return this.gameMessage(); }
