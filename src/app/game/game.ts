@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { GameDemoService } from '../services/game-demo.service';
 import { GameControllerService } from '../services/game-controller.service';
 import { GameBoardComponent } from '../shared/components/game-board/game-board.component';
-import { CardImpl, Suit, Rank } from '../core/models/card.model';
+import { Card, CardImpl, Suit, Rank } from '../core/models/card.model';
 import { ProgressService, ProgressData } from '../services/progress.service';
 import { GamePhase } from '../core/models/game-state.model';
 
@@ -37,8 +37,8 @@ export class Game implements OnInit {
   // Computed values for UI
   protected playerCardCount = signal(26);
   protected opponentCardCount = signal(26);
-  protected playerActiveCard = signal<CardImpl | null>(null);
-  protected opponentActiveCard = signal<CardImpl | null>(null);
+  protected playerActiveCard = signal<Card | null>(null);
+  protected opponentActiveCard = signal<Card | null>(null);
   protected playerCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
   protected opponentCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
   
@@ -102,7 +102,7 @@ export class Game implements OnInit {
    * Real game mechanics - Player clicks deck to draw cards
    */
   onPlayerDeckClick(): void {
-    if (!this.gameController.playerCanAct()) {
+    if (!this.gameController.playerCanAct) {
       return;
     }
 
@@ -168,9 +168,8 @@ export class Game implements OnInit {
     
     // Update active cards if available
     if (state.activeTurn) {
-      this.playerActiveCard.set(state.activeTurn.playerCard as CardImpl);
-      this.playerActiveCard.set(isCardImpl(state.activeTurn.playerCard) ? state.activeTurn.playerCard : null);
-      this.opponentActiveCard.set(isCardImpl(state.activeTurn.opponentCard) ? state.activeTurn.opponentCard : null);
+      this.playerActiveCard.set(state.activeTurn.playerCard);
+      this.opponentActiveCard.set(state.activeTurn.opponentCard);
       
       // Set card glow based on last result
       if (state.lastResult?.includes('win')) {
