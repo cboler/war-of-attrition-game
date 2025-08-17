@@ -1,31 +1,66 @@
 <div class="game-container">
-  <mat-card class="welcome-card">
-    <mat-card-header>
-      <mat-card-title>War of Attrition - Milestone 2 Complete! 🎉</mat-card-title>
-      <mat-card-subtitle>Core Game Engine Implementation</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <p><strong>Milestone 2 has been successfully completed!</strong> The core game engine is fully implemented with comprehensive testing.</p>
-      
-      <h3>Core Features Implemented:</h3>
-      <ul>
-        <li><strong>Card & Deck Models:</strong> Complete TypeScript interfaces and classes</li>
-        <li><strong>Game State Management:</strong> Angular signals-based reactive state</li>
-        <li><strong>Card Comparison Logic:</strong> All rules including special Ace vs 2 rule</li>
-        <li><strong>Turn Resolution Engine:</strong> Normal turns, challenges, and battles</li>
-        <li><strong>Comprehensive Tests:</strong> 60 passing tests covering all game logic</li>
-      </ul>
+  @if (showGameBoard()) {
+    <!-- New Milestone 3 Game Board UI -->
+    <app-game-board
+      [playerCardCount]="playerCardCount()"
+      [opponentCardCount]="opponentCardCount()"
+      [playerActiveCard]="playerActiveCard()"
+      [opponentActiveCard]="opponentActiveCard()"
+      [playerCardGlow]="playerCardGlow()"
+      [opponentCardGlow]="opponentCardGlow()"
+      [gameMessage]="gameMessage()"
+      [challengeAvailable]="challengeAvailable()"
+      [canPlayerAct]="canPlayerAct()"
+      (playerDeckClicked)="onPlayerDeckClick()">
+    </app-game-board>
 
-      <h3>Game Engine Demo:</h3>
-      <div class="demo-output">
-        @for (line of demoLog(); track $index) {
-          <div class="demo-line">{{ line }}</div>
-        }
-      </div>
-    </mat-card-content>
-    <mat-card-actions>
-      <button mat-raised-button color="primary" (click)="runDemo()">Run Demo Again</button>
-      <button mat-button routerLink="/settings">Settings</button>
-    </mat-card-actions>
-  </mat-card>
+    <!-- Demo Controls -->
+    <div class="demo-controls">
+      <button mat-raised-button color="primary" (click)="onPlayerDeckClick()">
+        Draw Cards
+      </button>
+      <button mat-raised-button color="accent" (click)="simulateChallenge()">
+        Test Challenge
+      </button>
+      <button mat-raised-button color="warn" (click)="simulateBattle()">
+        Test Battle
+      </button>
+      <button mat-button (click)="toggleDemo()">
+        Show Old Demo
+      </button>
+    </div>
+  } @else {
+    <!-- Original Milestone 2 Demo -->
+    <mat-card class="welcome-card">
+      <mat-card-header>
+        <mat-card-title>War of Attrition - Milestone 3 Complete! 🎉</mat-card-title>
+        <mat-card-subtitle>Basic UI Components Implementation</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p><strong>Milestone 3 has been successfully completed!</strong> Core UI components are implemented and functional.</p>
+        
+        <h3>New UI Components:</h3>
+        <ul>
+          <li><strong>Game Board Layout:</strong> Head-to-head player layout with solitaire green background</li>
+          <li><strong>Card Component:</strong> Visual card representation with red/black suits and glow effects</li>
+          <li><strong>Health Bar Component:</strong> Color-coded health bars (Green→Yellow→Orange→Red)</li>
+          <li><strong>Action Indicators:</strong> Blue glow effects for player actions</li>
+        </ul>
+
+        <h3>Previous - Game Engine Demo:</h3>
+        <div class="demo-output">
+          @for (line of demoLog(); track $index) {
+            <div class="demo-line">{{ line }}</div>
+          }
+        </div>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button color="primary" (click)="toggleDemo()">
+          Show New Game Board
+        </button>
+        <button mat-raised-button color="primary" (click)="runDemo()">Run Demo Again</button>
+        <button mat-button routerLink="/settings">Settings</button>
+      </mat-card-actions>
+    </mat-card>
+  }
 </div>

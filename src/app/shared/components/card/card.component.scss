@@ -1,0 +1,205 @@
+.card {
+  width: 70px;
+  height: 100px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  position: relative;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  user-select: none;
+
+  @media (max-width: 599px) {
+    width: 60px;
+    height: 85px;
+  }
+
+  @media (max-width: 359px) {
+    width: 50px;
+    height: 70px;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  // Glow effects for game states
+  &.glowing {
+    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+  }
+
+  &.glow-green {
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.6), 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: #4CAF50;
+  }
+
+  &.glow-red {
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.6), 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: #F44336;
+  }
+
+  &.glow-blue {
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.6), 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: #2196F3;
+    animation: pulse-blue 1.5s infinite;
+  }
+}
+
+@keyframes pulse-blue {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.6), 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.8), 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.card-back {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a237e 0%, #3f51b5 100%);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-pattern {
+  width: 80%;
+  height: 80%;
+  background-image: 
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.1) 0px,
+      rgba(255, 255, 255, 0.1) 4px,
+      transparent 4px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.1) 0px,
+      rgba(255, 255, 255, 0.1) 4px,
+      transparent 4px,
+      transparent 8px
+    );
+  border-radius: 4px;
+}
+
+.card-face {
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  @media (max-width: 599px) {
+    padding: 3px;
+  }
+
+  @media (max-width: 359px) {
+    padding: 2px;
+  }
+}
+
+.card-corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-weight: bold;
+  font-size: 10px;
+  line-height: 1;
+
+  @media (max-width: 599px) {
+    font-size: 9px;
+  }
+
+  @media (max-width: 359px) {
+    font-size: 8px;
+  }
+
+  .rank {
+    margin-bottom: 1px;
+  }
+
+  .suit {
+    font-size: 8px;
+
+    @media (max-width: 599px) {
+      font-size: 7px;
+    }
+
+    @media (max-width: 359px) {
+      font-size: 6px;
+    }
+  }
+}
+
+.top-left {
+  align-self: flex-start;
+}
+
+.bottom-right {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.card-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suit-symbol {
+  font-size: 24px;
+  font-weight: bold;
+
+  @media (max-width: 599px) {
+    font-size: 20px;
+  }
+
+  @media (max-width: 359px) {
+    font-size: 16px;
+  }
+}
+
+// Color styling for red and black cards
+.red-card {
+  .rank, .suit-symbol {
+    color: #d32f2f;
+  }
+}
+
+.black-card {
+  .rank, .suit-symbol {
+    color: #212121;
+  }
+}
+
+// Dark theme support
+:host ::ng-deep .dark-theme .card {
+  background: #424242;
+  border-color: #666;
+  color: #e0e0e0;
+
+  &.red-card {
+    .rank, .suit-symbol {
+      color: #f44336;
+    }
+  }
+
+  &.black-card {
+    .rank, .suit-symbol {
+      color: #e0e0e0;
+    }
+  }
+}
