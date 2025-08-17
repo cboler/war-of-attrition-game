@@ -38,7 +38,6 @@ export class Game implements OnInit {
   protected showActionIndicator = signal<boolean>(false);
   protected progressData: ProgressData;
   protected currentMilestone: ProgressData['currentMilestone'];
-  protected progressData: ProgressData;
   protected currentMilestone: ProgressData['milestone'];
   protected completedMilestone: ProgressData['milestone'];
 
