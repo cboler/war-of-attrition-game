@@ -4,29 +4,92 @@
   align-items: center;
   min-height: 60vh;
   padding: 20px;
+  
+  @media (max-width: 959px) {
+    padding: 16px;
+    min-height: 50vh;
+  }
+  
+  @media (max-width: 599px) {
+    padding: 8px;
+    min-height: auto;
+    align-items: flex-start;
+  }
 }
 
 .welcome-card {
   max-width: 600px;
   width: 100%;
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  
+  @media (max-width: 659px) {
+    max-width: none;
+    margin: 0;
+  }
+  
+  @media (max-width: 359px) {
+    // For very small screens, reduce padding
+    .mat-mdc-card-content {
+      padding: 12px !important;
+    }
+  }
 }
 
 .welcome-card mat-card-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-start;
+  flex-wrap: wrap;
+  
+  @media (max-width: 599px) {
+    gap: 8px;
+  }
+  
+  @media (max-width: 359px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
   
   button {
     transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+    min-height: 44px; /* Touch target minimum */
+    
+    @media (max-width: 599px) {
+      font-size: 14px;
+    }
+    
+    @media (max-width: 359px) {
+      width: 100%;
+    }
   }
 }
 
 .welcome-card ul {
   margin: 16px 0;
   padding-left: 24px;
+  
+  @media (max-width: 599px) {
+    padding-left: 20px;
+    margin: 12px 0;
+  }
+  
+  @media (max-width: 359px) {
+    padding-left: 16px;
+    margin: 8px 0;
+  }
 }
 
 .welcome-card li {
   margin-bottom: 8px;
+  
+  @media (max-width: 599px) {
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  
+  @media (max-width: 359px) {
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
 }
