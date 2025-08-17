@@ -50,14 +50,64 @@ body {
   // Reset the user agent margin.
   margin: 0;
   
+  // Smooth transitions for theme changes
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  
   &.dark-theme {
     color-scheme: dark;
   }
 }
 /* You can add global styles to this file, and also import other style files */
 
-html, body { height: 100%; }
+html, body { 
+  height: 100%; 
+  overflow-x: hidden; /* Prevent horizontal scrolling globally */
+}
+
 body { 
   margin: 0; 
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+}
+
+/* Responsive utilities */
+.responsive-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure all images are responsive by default */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive text utilities */
+@media (max-width: 599px) {
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.1rem; }
+}
+
+@media (max-width: 359px) {
+  h1 { font-size: 1.25rem; }
+  h2 { font-size: 1.1rem; }
+  h3 { font-size: 1rem; }
+}
+
+/* Touch-friendly button sizing */
+button, .mat-mdc-button, .mat-mdc-raised-button, .mat-mdc-icon-button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Responsive Angular Material card adjustments */
+.mat-mdc-card {
+  @media (max-width: 599px) {
+    margin: 8px 4px;
+  }
+  
+  @media (max-width: 359px) {
+    margin: 4px 2px;
+  }
 }

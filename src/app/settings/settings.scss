@@ -2,8 +2,77 @@
   padding: 20px;
   max-width: 800px;
   margin: 0 auto;
+  
+  @media (max-width: 959px) {
+    padding: 16px;
+    max-width: none;
+    margin: 0;
+  }
+  
+  @media (max-width: 599px) {
+    padding: 8px;
+  }
+  
+  @media (max-width: 359px) {
+    padding: 4px;
+  }
 }
 
 .settings-card {
   margin-bottom: 20px;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  
+  @media (max-width: 599px) {
+    margin-bottom: 16px;
+  }
+  
+  @media (max-width: 359px) {
+    margin-bottom: 12px;
+    
+    // For very small screens, reduce card padding
+    .mat-mdc-card-content {
+      padding: 12px !important;
+    }
+  }
+
+// For very small screens, reduce card padding
+@media (max-width: 359px) {
+  .settings-card .mat-mdc-card-content {
+    padding: 12px;
+  }
+}
+  
+  button {
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+    min-height: 44px; /* Touch target minimum */
+    
+    @media (max-width: 599px) {
+      font-size: 14px;
+      width: 100%;
+    }
+  }
+  
+  ul {
+    @media (max-width: 599px) {
+      padding-left: 20px;
+      margin: 12px 0;
+    }
+    
+    @media (max-width: 359px) {
+      padding-left: 16px;
+      margin: 8px 0;
+    }
+  }
+  
+  li {
+    @media (max-width: 599px) {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    
+    @media (max-width: 359px) {
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+  }
 }
