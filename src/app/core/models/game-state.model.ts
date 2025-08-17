@@ -1,3 +1,5 @@
+import { Card } from './card.model';
+
 export enum GamePhase {
   SETUP = 'setup',
   NORMAL = 'normal',
@@ -19,14 +21,6 @@ export interface GameStats {
 }
 
 export interface ActiveTurn {
-  playerCard: any; // Card | null
-  opponentCard: any; // Card | null
-  phase: GamePhase;
-  challengeCard?: any; // Card | null
-  battleCards?: {
-    playerCards: any[]; // Card[]
-    opponentCards: any[]; // Card[]
-    selectedPlayerCard?: any; // Card | null
   playerCard: Card | null;
   opponentCard: Card | null;
   phase: GamePhase;

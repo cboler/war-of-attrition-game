@@ -1,4 +1,3 @@
-import { Deck } from '../models/deck.model';
 import { Deck } from './deck.model';
 import { CardImpl, Suit, Rank } from './card.model';
 
