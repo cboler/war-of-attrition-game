@@ -1,0 +1,123 @@
+.health-bar-container {
+  width: 100%;
+  max-width: 300px;
+
+  @media (max-width: 599px) {
+    max-width: 250px;
+  }
+
+  @media (max-width: 359px) {
+    max-width: 200px;
+  }
+}
+
+.health-bar-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 500;
+
+  @media (max-width: 599px) {
+    font-size: 13px;
+  }
+
+  @media (max-width: 359px) {
+    font-size: 12px;
+  }
+
+  .card-count {
+    font-weight: 400;
+    opacity: 0.8;
+  }
+}
+
+.health-bar-track {
+  height: 12px;
+  background-color: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #ccc;
+
+  @media (max-width: 599px) {
+    height: 10px;
+    border-radius: 5px;
+  }
+
+  @media (max-width: 359px) {
+    height: 8px;
+    border-radius: 4px;
+  }
+}
+
+.health-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.5s ease-in-out, background-color 0.3s ease-in-out;
+  position: relative;
+
+  &.green {
+    background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
+  }
+
+  &.yellow {
+    background: linear-gradient(90deg, #FFC107 0%, #FFD54F 100%);
+  }
+
+  &.orange {
+    background: linear-gradient(90deg, #FF9800 0%, #FFB74D 100%);
+  }
+
+  &.red {
+    background: linear-gradient(90deg, #F44336 0%, #EF5350 100%);
+  }
+}
+
+.health-bar-danger {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.3) 0px,
+    rgba(255, 255, 255, 0.3) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  border-radius: inherit;
+  animation: danger-pulse 1s infinite alternate;
+}
+
+@keyframes danger-pulse {
+  0% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.8;
+  }
+}
+
+// Add damage animation class for when health decreases
+.health-bar-fill.damage-animation {
+  animation: damage-flash 0.5s ease-in-out;
+}
+
+@keyframes damage-flash {
+  0% { filter: brightness(1); }
+  25% { filter: brightness(1.5); }
+  50% { filter: brightness(0.8); }
+  75% { filter: brightness(1.2); }
+  100% { filter: brightness(1); }
+}
+
+// Dark theme support
+:host ::ng-deep .dark-theme .health-bar-track {
+  background-color: #424242;
+  border-color: #666;
+}
+
+:host ::ng-deep .dark-theme .health-bar-label {
+  color: #e0e0e0;
+}
