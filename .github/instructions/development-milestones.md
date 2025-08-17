@@ -2,6 +2,10 @@
 
 This document outlines the development milestones and associated issues for the War of Attrition card game project. Each milestone represents a cohesive development phase with specific deliverables.
 
+**📋 Progress Tracking**: Current milestone status and detailed progress information is centrally managed in `progress-data.json` and accessed via the `ProgressService`. This document provides the detailed breakdown and planning information.
+
+> **For Current Status**: Refer to the central progress data in `.github/instructions/progress-data.json` or view the live progress in the running application.
+
 ## Milestone 1: Foundation & Setup 
 **Goal**: Establish solid project foundation with basic navigation and PWA capabilities
 

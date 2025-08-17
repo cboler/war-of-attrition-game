@@ -1,19 +1,19 @@
 <div class="game-container">
   <mat-card class="welcome-card">
     <mat-card-header>
-      <mat-card-title>War of Attrition - Milestone 2 Complete! 🎉</mat-card-title>
-      <mat-card-subtitle>Core Game Engine Implementation</mat-card-subtitle>
+      <mat-card-title>{{ progressData.project.name }} - {{ currentMilestone.name }} {{ currentMilestone.status === 'COMPLETED' ? 'Complete!' : '' }} {{ currentMilestone.emoji }}</mat-card-title>
+      <mat-card-subtitle>{{ currentMilestone.name }} Implementation</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
-      <p><strong>Milestone 2 has been successfully completed!</strong> The core game engine is fully implemented with comprehensive testing.</p>
+      <p><strong>{{ currentMilestone.name }} has been successfully completed!</strong> The core game engine is fully implemented with comprehensive testing.</p>
       
       <h3>Core Features Implemented:</h3>
       <ul>
-        <li><strong>Card & Deck Models:</strong> Complete TypeScript interfaces and classes</li>
-        <li><strong>Game State Management:</strong> Angular signals-based reactive state</li>
-        <li><strong>Card Comparison Logic:</strong> All rules including special Ace vs 2 rule</li>
-        <li><strong>Turn Resolution Engine:</strong> Normal turns, challenges, and battles</li>
-        <li><strong>Comprehensive Tests:</strong> 60 passing tests covering all game logic</li>
+        @if (completedMilestone) {
+          @for (item of completedMilestone.items; track item.name) {
+            <li><strong>{{ item.name }}:</strong> {{ item.description || item.name }}</li>
+          }
+        }
       </ul>
 
       <h3>Game Engine Demo:</h3>

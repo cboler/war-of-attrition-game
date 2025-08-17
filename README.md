@@ -158,3 +158,13 @@ flowchart TD
     style resolveBattleWin fill:#2E7D32,color:#FFFFFF
     style resolveBattleLoss fill:#C62828,color:#FFFFFF
 ```
+
+## Development Progress
+
+**📋 Centralized Progress Tracking**: Development progress is now managed centrally to ensure consistency across all reporting locations:
+
+- **Progress Data**: `.github/instructions/progress-data.json` - Single source of truth for current status
+- **Progress Service**: `src/app/services/progress.service.ts` - Angular service for accessing progress data
+- **Live Display**: Progress information is displayed in the running application
+
+For detailed development status and next steps, see `.github/instructions/current-development-status.md`
