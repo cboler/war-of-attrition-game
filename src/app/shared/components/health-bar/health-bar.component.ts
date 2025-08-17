@@ -41,7 +41,7 @@ export class HealthBarComponent {
   protected healthPercentage = computed(() => {
     const max = this.maximum();
     const curr = this.current();
-    return max > 0 ? Math.max(0, (curr / max) * 100) : 0;
+    return max > 0 ? (curr / max) * 100 : 0;
   });
 
   protected dangerPercentage = computed(() => {
