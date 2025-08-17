@@ -2,7 +2,9 @@
   <span>{{ title() }}</span>
   <span class="toolbar-spacer"></span>
   <nav class="nav-links">
-    <button mat-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Game</button>
+    <button mat-icon-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" [attr.aria-label]="'Game'">
+      <mat-icon>sports_esports</mat-icon>
+    </button>
     <button mat-icon-button routerLink="/settings" routerLinkActive="active" [attr.aria-label]="'Settings'">
       <mat-icon>settings</mat-icon>
     </button>
