@@ -8,11 +8,27 @@ This is the **War of Attrition** card game - a Progressive Web Application built
 
 ## Current Development Status
 
-The project is currently in **Milestone 1: Foundation & Setup** with partial completion:
+The project has completed **Milestone 2: Core Game Engine** and is ready to proceed to **Milestone 3: Basic UI Components**.
+
+### ✅ Milestone 1: Foundation & Setup (COMPLETED)
 - ✅ Basic Angular/PWA setup complete 
-- 🔄 Basic theme toggle implemented (needs persistence)
-- 🔄 Basic routing structure (needs settings route)
-- ❌ Responsive layout not yet implemented
+- ✅ Theme toggle implemented with persistence
+- ✅ Routing structure (Game and Settings routes)
+- ⚠️  Responsive layout foundation (basic but can be enhanced in Milestone 3)
+
+### ✅ Milestone 2: Core Game Engine (COMPLETED)
+- ✅ **Card and Deck Models**: Complete card interface and deck class with red/black separation
+- ✅ **Game State Management**: Angular signals-based state management service
+- ✅ **Card Comparison Logic**: Full implementation including special Ace vs 2 rule
+- ✅ **Turn Resolution Engine**: Complete turn, challenge, and battle resolution logic
+- ✅ **Comprehensive Test Suite**: 60 passing tests covering all game logic
+
+### 🎯 Next: Milestone 3: Basic UI Components
+Ready to implement:
+- Game Board Layout
+- Card Component 
+- Health Bar Component
+- Player Action Indicators
 
 See `development-milestones.md` for complete milestone and issue breakdown.
 
@@ -57,9 +73,11 @@ src/app/
 ├── app.ts                    # Main app component with theme toggle
 ├── app.routes.ts            # Routing configuration
 ├── game/                    # Game components
-├── shared/                  # Shared components/services
-├── models/                  # Data models (Card, Deck, GameState)
-└── services/               # Game logic services
+├── settings/                # Settings components  
+├── core/                    # Core game logic
+│   ├── models/              # Data models (Card, Deck, GameState)
+│   └── services/            # Game logic services
+└── shared/                  # Shared components/services (future)
 ```
 
 ## Code Standards
@@ -86,10 +104,19 @@ The application is deployed to GitHub Pages from the `/docs` directory.
 
 ## Next Steps
 
-Focus on completing Milestone 1 items:
-1. Add settings route and navigation
-2. Implement theme persistence
-3. Create responsive layout foundation
-4. Then proceed to Milestone 2: Core Game Engine
+**Milestone 2 is COMPLETE!** 🎉
+
+The core game engine is fully implemented with:
+- Complete card and deck models with TypeScript typing
+- Robust game state management using Angular signals  
+- Card comparison logic implementing all game rules (including special Ace vs 2 rule)
+- Full turn resolution engine handling normal turns, challenges, and battles
+- Comprehensive test suite with 60 passing tests
+
+**Ready to proceed to Milestone 3: Basic UI Components:**
+1. Implement Game Board Layout component
+2. Create Card Component with proper styling
+3. Build Health Bar Component with color coding
+4. Add Player Action Indicators
 
 All development should follow the milestones outlined in `development-milestones.md` and requirements in `war-of-attrition-requirements.md`.
