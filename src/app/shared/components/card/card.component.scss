@@ -45,6 +45,28 @@
     border-color: #2196F3;
     animation: pulse-blue 1.5s infinite;
   }
+
+  &.clickable {
+    cursor: pointer;
+    
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    &:active {
+      transform: translateY(-2px);
+    }
+  }
+
+  &:not(.clickable) {
+    cursor: default;
+    
+    &:hover {
+      transform: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
 }
 
 @keyframes pulse-blue {

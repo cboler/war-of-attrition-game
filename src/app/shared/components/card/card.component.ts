@@ -1,4 +1,4 @@
-import { Component, input, computed } from '@angular/core';
+import { Component, input, computed, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Card, Suit, Rank } from '../../../core/models/card.model';
 
@@ -14,7 +14,9 @@ import { Card, Suit, Rank } from '../../../core/models/card.model';
          [class.glowing]="glow()"
          [class.glow-green]="glow() === 'green'"
          [class.glow-red]="glow() === 'red'"
-         [class.glow-blue]="glow() === 'blue'">
+         [class.glow-blue]="glow() === 'blue'"
+         [class.clickable]="clickable()"
+         (click)="onCardClick()">
       
       @if (faceDown()) {
         <div class="card-back">
@@ -45,6 +47,10 @@ export class CardComponent {
   card = input<Card | null>(null);
   faceDown = input<boolean>(false);
   glow = input<'green' | 'red' | 'blue' | null>(null);
+  clickable = input<boolean>(false);
+
+  // Event outputs
+  cardClicked = output<void>();
 
   protected isRed = computed(() => this.card()?.isRed ?? false);
   
@@ -66,4 +72,10 @@ export class CardComponent {
       default: return '';
     }
   });
+
+  protected onCardClick(): void {
+    if (this.clickable()) {
+      this.cardClicked.emit();
+    }
+  }
 }

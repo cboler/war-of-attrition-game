@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { GameDemoService } from '../services/game-demo.service';
 import { GameControllerService } from '../services/game-controller.service';
 import { GameBoardComponent } from '../shared/components/game-board/game-board.component';
+import { CardComponent } from '../shared/components/card/card.component';
 import { Card, CardImpl, Suit, Rank } from '../core/models/card.model';
 import { ProgressService, ProgressData } from '../services/progress.service';
 import { GamePhase } from '../core/models/game-state.model';
@@ -15,7 +16,8 @@ import { GamePhase } from '../core/models/game-state.model';
     MatCardModule, 
     MatButtonModule, 
     RouterLink, 
-    GameBoardComponent
+    GameBoardComponent,
+    CardComponent
   ],
   templateUrl: './game.html',
   styleUrl: './game.scss'
@@ -41,6 +43,12 @@ export class Game implements OnInit {
   protected opponentActiveCard = signal<Card | null>(null);
   protected playerCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
   protected opponentCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
+  
+  // Battle state
+  protected battleCards = signal<Card[]>([]);
+  protected opponentBattleCards = signal<Card[]>([]);
+  protected battlePhase = signal<'setup' | 'selection' | 'resolution'>('setup');
+  protected showBattleUI = signal<boolean>(false);
   
   // Progress data
   protected progressData: ProgressData;
@@ -133,6 +141,14 @@ export class Game implements OnInit {
     this.updateGameState();
   }
 
+  /**
+   * Handle battle card selection
+   */
+  onBattleCardSelect(selectedCard: Card): void {
+    this.gameController.selectBattleCard(selectedCard);
+    this.updateGameState();
+  }
+
   // Keep demo methods for old demo mode
   simulateChallenge(): void {
     this.challengeAvailable.set(true);
@@ -161,6 +177,12 @@ export class Game implements OnInit {
     this.challengeAvailable.set(this.gameController.canChallenge);
     this.canPlayerAct.set(this.gameController.playerCanAct);
     this.showChallengePrompt.set(this.gameController.showChallengePrompt);
+    
+    // Update battle state
+    this.battleCards.set(this.gameController.currentBattleCards);
+    this.opponentBattleCards.set(this.gameController.currentOpponentBattleCards);
+    this.battlePhase.set(this.gameController.currentBattlePhase);
+    this.showBattleUI.set(this.battlePhase() === 'selection');
     
     // Update card counts
     this.playerCardCount.set(stats.playerCardCount);

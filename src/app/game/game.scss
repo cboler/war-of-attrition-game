@@ -88,6 +88,20 @@
   backdrop-filter: blur(4px);
 }
 
+.battle-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
 .challenge-card {
   max-width: 500px;
   width: 90%;
@@ -117,6 +131,56 @@
     gap: 12px;
     justify-content: flex-end;
     margin-top: 16px;
+  }
+}
+
+.battle-card {
+  max-width: 600px;
+  width: 95%;
+  animation: battlePopIn 0.4s ease-out;
+  
+  @keyframes battlePopIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.9) translateY(-30px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  
+  mat-card-header {
+    background: linear-gradient(45deg, #d32f2f, #f44336);
+    color: white;
+    margin: -16px -16px 16px -16px;
+    padding: 16px;
+    border-radius: 4px 4px 0 0;
+  }
+  
+  .battle-cards {
+    h4 {
+      margin: 16px 0 8px 0;
+      font-weight: 500;
+    }
+    
+    .opponent-battle-cards,
+    .player-battle-cards {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .opponent-battle-cards app-card {
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      
+      &:hover {
+        transform: translateY(-4px);
+      }
+    }
   }
 }
 
