@@ -1,4 +1,4 @@
-import { CardImpl, Suit, Rank } from '../models/card.model';
+import { CardImpl, Suit, Rank } from './card.model';
 
 describe('Card Model', () => {
   describe('CardImpl', () => {
