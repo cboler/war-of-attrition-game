@@ -34,6 +34,13 @@
       padding: 12px !important;
     }
   }
+
+// For very small screens, reduce card padding
+@media (max-width: 359px) {
+  .settings-card .mat-mdc-card-content {
+    padding: 12px;
+  }
+}
   
   button {
     transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
