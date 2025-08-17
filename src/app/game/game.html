@@ -38,6 +38,45 @@
       </div>
     }
 
+    <!-- Battle Selection Modal -->
+    @if (showBattleUI()) {
+      <div class="battle-overlay">
+        <mat-card class="battle-card">
+          <mat-card-header>
+            <mat-card-title>Battle Time!</mat-card-title>
+            <mat-card-subtitle>Select one of the opponent's face-down cards</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>Cards are tied! Both players have placed 3 cards face-down for battle.</p>
+            <div class="battle-cards">
+              <h4>Opponent's Cards (Select One):</h4>
+              <div class="opponent-battle-cards">
+                @for (card of opponentBattleCards(); track $index) {
+                  <app-card
+                    [card]="null"
+                    [faceDown]="true"
+                    [glow]="'blue'"
+                    [clickable]="true"
+                    (cardClicked)="onBattleCardSelect(card)">
+                  </app-card>
+                }
+              </div>
+              
+              <h4>Your Cards in Battle:</h4>
+              <div class="player-battle-cards">
+                @for (card of battleCards(); track $index) {
+                  <app-card
+                    [card]="null"
+                    [faceDown]="true">
+                  </app-card>
+                }
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    }
+
     <!-- Game Controls -->
     <div class="game-controls">
       <button mat-raised-button color="primary" (click)="startNewGame()">
