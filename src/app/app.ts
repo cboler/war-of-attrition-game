@@ -11,7 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './app.scss'
 })
 export class App implements OnInit {
-  protected readonly title = signal('War of Attrition');
+  protected readonly title = signal('⚔️ Attrition');
   protected readonly isDarkMode = signal(false);
   
   private readonly THEME_STORAGE_KEY = 'war-of-attrition-theme';

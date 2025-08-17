@@ -6,6 +6,9 @@
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
+// Import Material Icons
+@import 'material-icons/iconfont/material-icons.css';
+
 html {
   @include mat.theme((
     color: (

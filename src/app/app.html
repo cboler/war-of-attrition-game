@@ -2,11 +2,15 @@
   <span>{{ title() }}</span>
   <span class="toolbar-spacer"></span>
   <nav class="nav-links">
-    <button mat-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Game</button>
-    <button mat-button routerLink="/settings" routerLinkActive="active">Settings</button>
+    <button mat-icon-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" [attr.aria-label]="'Game'">
+      <mat-icon>casino</mat-icon>
+    </button>
+    <button mat-icon-button routerLink="/settings" routerLinkActive="active" [attr.aria-label]="'Settings'">
+      <mat-icon>settings</mat-icon>
+    </button>
   </nav>
-  <button mat-icon-button (click)="toggleTheme()" [attr.aria-label]="'Toggle ' + (isDarkMode() ? 'light' : 'dark') + ' mode'">
-    <mat-icon>{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+  <button mat-icon-button (click)="toggleTheme()" [attr.aria-label]="'Toggle ' + (isDarkMode() ? 'light' : 'dark') + ' theme'">
+    <mat-icon>{{ isDarkMode() ? 'lightbulb' : 'lightbulb_outline' }}</mat-icon>
   </button>
 </mat-toolbar>
 

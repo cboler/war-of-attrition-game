@@ -20,6 +20,6 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('mat-toolbar span')?.textContent).toContain('War of Attrition');
+    expect(compiled.querySelector('mat-toolbar span')?.textContent).toContain('⚔️ Attrition');
   });
 });
