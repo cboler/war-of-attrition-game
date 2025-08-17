@@ -27,7 +27,15 @@ export interface ActiveTurn {
     playerCards: any[]; // Card[]
     opponentCards: any[]; // Card[]
     selectedPlayerCard?: any; // Card | null
-    selectedOpponentCard?: any; // Card | null
+  playerCard: Card | null;
+  opponentCard: Card | null;
+  phase: GamePhase;
+  challengeCard?: Card | null;
+  battleCards?: {
+    playerCards: Card[];
+    opponentCards: Card[];
+    selectedPlayerCard?: Card | null;
+    selectedOpponentCard?: Card | null;
   };
 }
 
