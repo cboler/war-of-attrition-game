@@ -131,7 +131,8 @@ export class GameControllerService {
       }
 
       // Simulate opponent selection (randomly pick from player's battle cards)
-      const opponentSelection = this.battleCards()[Math.floor(Math.random() * this.battleCards().length)];
+      // Simulate opponent selection (randomly pick from opponent's battle cards)
+      const opponentSelection = this.opponentBattleCards()[Math.floor(Math.random() * this.opponentBattleCards().length)];
 
       const result = this.turnResolutionService.resolveBattle(
         activeTurn.playerCard,
