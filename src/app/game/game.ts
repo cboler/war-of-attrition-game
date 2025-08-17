@@ -102,7 +102,7 @@ export class Game implements OnInit {
    * Real game mechanics - Player clicks deck to draw cards
    */
   onPlayerDeckClick(): void {
-    if (!this.gameController.playerCanAct) {
+    if (!this.gameController.playerCanAct()) {
       return;
     }
 
