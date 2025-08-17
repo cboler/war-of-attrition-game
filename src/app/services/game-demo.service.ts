@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { GameStateService } from '../core/services/game-state.service';
 import { TurnResolutionService } from '../core/services/turn-resolution.service';
 import { GamePhase, PlayerType } from '../core/models/game-state.model';
+import { ProgressService } from './progress.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,8 @@ export class GameDemoService {
 
   constructor(
     private gameStateService: GameStateService,
-    private turnResolutionService: TurnResolutionService
+    private turnResolutionService: TurnResolutionService,
+    private progressService: ProgressService
   ) {}
 
   /**
@@ -76,16 +78,18 @@ export class GameDemoService {
       }
     }
     
+    // Use centralized progress data instead of hardcoded values
+    const progressData = this.progressService.getProgressData();
+    const milestone2 = this.progressService.getCompletedMilestone(2);
+    
     log.push('🔧 Core Game Engine Features Verified:');
-    log.push('   ✅ Card and Deck models with proper typing');
-    log.push('   ✅ Game state management with Angular signals');
-    log.push('   ✅ Card comparison logic (including Ace vs 2 rule)');
-    log.push('   ✅ Turn resolution engine');
-    log.push('   ✅ Challenge and battle mechanics');
-    log.push('   ✅ Win condition checking');
-    log.push('   ✅ Comprehensive test coverage (60 tests passing)');
+    if (milestone2) {
+      milestone2.items.forEach(item => {
+        log.push(`   ✅ ${item.description || item.name}`);
+      });
+    }
     log.push('');
-    log.push('🚀 Ready for Milestone 3: UI Components!');
+    log.push(`🚀 ${progressData.nextSteps.immediate}!`);
     
     return log;
   }

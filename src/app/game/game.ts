@@ -6,6 +6,7 @@ import { GameDemoService } from '../services/game-demo.service';
 import { GameBoardComponent } from '../shared/components/game-board/game-board.component';
 import { ActionIndicatorComponent } from '../shared/components/action-indicator/action-indicator.component';
 import { CardImpl, Suit, Rank } from '../core/models/card.model';
+import { ProgressService } from '../services/progress.service';
 
 @Component({
   selector: 'app-game',
@@ -21,11 +22,9 @@ import { CardImpl, Suit, Rank } from '../core/models/card.model';
 })
 export class Game implements OnInit {
   protected demoLog = signal<string[]>([]);
-  
   // Demo UI state
   protected showOldDemo = signal<boolean>(false);
   protected showGameBoard = signal<boolean>(true);
-  
   // Game board demo state
   protected playerCardCount = signal<number>(26);
   protected opponentCardCount = signal<number>(26);
@@ -37,8 +36,20 @@ export class Game implements OnInit {
   protected challengeAvailable = signal<boolean>(false);
   protected canPlayerAct = signal<boolean>(true);
   protected showActionIndicator = signal<boolean>(false);
+  protected progressData: ProgressData;
+  protected currentMilestone: ProgressData['currentMilestone'];
+  protected progressData: ProgressData;
+  protected currentMilestone: ProgressData['milestone'];
+  protected completedMilestone: ProgressData['milestone'];
 
-  constructor(private gameDemoService: GameDemoService) {}
+  constructor(
+    private gameDemoService: GameDemoService,
+    private progressService: ProgressService
+  ) {
+    this.progressData = this.progressService.getProgressData();
+    this.currentMilestone = this.progressService.getCurrentMilestone();
+    this.completedMilestone = this.progressService.getCompletedMilestone(2);
+  }
 
   ngOnInit(): void {
     if (this.showOldDemo()) {
