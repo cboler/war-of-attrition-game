@@ -8,7 +8,14 @@ This is the **War of Attrition** card game - a Progressive Web Application built
 
 ## Current Development Status
 
+**📋 Progress Tracking**: All development progress is now centrally managed in `progress-data.json` and accessed via the `ProgressService`. This ensures consistency across all progress reporting.
+
 The project has completed **Milestone 2: Core Game Engine** and is ready to proceed to **Milestone 3: Basic UI Components**.
+
+> **Note**: For detailed progress information, milestone breakdowns, and current status, refer to:
+> - **Central Progress Data**: `.github/instructions/progress-data.json`
+> - **Progress Service**: `src/app/services/progress.service.ts`
+> - **Live Progress Display**: Available in the running application
 
 ### ✅ Milestone 1: Foundation & Setup (COMPLETED)
 - ✅ Basic Angular/PWA setup complete 
@@ -17,6 +24,7 @@ The project has completed **Milestone 2: Core Game Engine** and is ready to proc
 - ⚠️  Responsive layout foundation (basic but can be enhanced in Milestone 3)
 
 ### ✅ Milestone 2: Core Game Engine (COMPLETED)
+All items completed as tracked in the central progress data:
 - ✅ **Card and Deck Models**: Complete card interface and deck class with red/black separation
 - ✅ **Game State Management**: Angular signals-based state management service
 - ✅ **Card Comparison Logic**: Full implementation including special Ace vs 2 rule
@@ -24,7 +32,7 @@ The project has completed **Milestone 2: Core Game Engine** and is ready to proc
 - ✅ **Comprehensive Test Suite**: 60 passing tests covering all game logic
 
 ### 🎯 Next: Milestone 3: Basic UI Components
-Ready to implement:
+Ready to implement (as defined in central progress data):
 - Game Board Layout
 - Card Component 
 - Health Bar Component

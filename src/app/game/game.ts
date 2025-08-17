@@ -3,6 +3,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { GameDemoService } from '../services/game-demo.service';
+import { ProgressService } from '../services/progress.service';
 
 @Component({
   selector: 'app-game',
@@ -12,8 +13,18 @@ import { GameDemoService } from '../services/game-demo.service';
 })
 export class Game implements OnInit {
   protected demoLog = signal<string[]>([]);
+  protected progressData: any;
+  protected currentMilestone: any;
+  protected completedMilestone: any;
 
-  constructor(private gameDemoService: GameDemoService) {}
+  constructor(
+    private gameDemoService: GameDemoService,
+    private progressService: ProgressService
+  ) {
+    this.progressData = this.progressService.getProgressData();
+    this.currentMilestone = this.progressService.getCurrentMilestone();
+    this.completedMilestone = this.progressService.getCompletedMilestone(2);
+  }
 
   ngOnInit(): void {
     this.runDemo();
