@@ -15,7 +15,9 @@ export class Game implements OnInit {
   protected demoLog = signal<string[]>([]);
   protected progressData: ProgressData;
   protected currentMilestone: ProgressData['currentMilestone'];
-  protected completedMilestone: any;
+  protected progressData: ProgressData;
+  protected currentMilestone: ProgressData['milestone'];
+  protected completedMilestone: ProgressData['milestone'];
 
   constructor(
     private gameDemoService: GameDemoService,
