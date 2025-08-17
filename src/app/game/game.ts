@@ -110,7 +110,7 @@ export class Game implements OnInit {
    * Real game mechanics - Player clicks deck to draw cards
    */
   onPlayerDeckClick(): void {
-    if (!this.gameController.playerCanAct()) {
+    if (!this.gameController.playerCanAct) {
       return;
     }
 
@@ -191,8 +191,7 @@ export class Game implements OnInit {
     // Update active cards if available
     if (state.activeTurn) {
       this.playerActiveCard.set(state.activeTurn.playerCard);
-      this.playerActiveCard.set(isCardImpl(state.activeTurn.playerCard) ? state.activeTurn.playerCard : null);
-      this.opponentActiveCard.set(isCardImpl(state.activeTurn.opponentCard) ? state.activeTurn.opponentCard : null);
+      this.opponentActiveCard.set(state.activeTurn.opponentCard);
       
       // Set card glow based on last result
       if (state.lastResult?.includes('win')) {
