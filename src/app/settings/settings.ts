@@ -4,11 +4,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-game',
+  selector: 'app-settings',
   imports: [MatCardModule, MatButtonModule, RouterLink],
-  templateUrl: './game.html',
-  styleUrl: './game.scss'
+  templateUrl: './settings.html',
+  styleUrl: './settings.scss'
 })
-export class Game {
+export class Settings {
 
 }
