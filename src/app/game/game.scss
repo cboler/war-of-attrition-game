@@ -29,7 +29,7 @@
   }
 }
 
-.demo-controls {
+.game-controls {
   position: fixed;
   bottom: 20px;
   left: 50%;
@@ -71,6 +71,52 @@
       min-height: 28px;
       padding: 0 8px;
     }
+  }
+}
+
+.challenge-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.challenge-card {
+  max-width: 500px;
+  width: 90%;
+  animation: challengePopIn 0.3s ease-out;
+  
+  @keyframes challengePopIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.8) translateY(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  
+  mat-card-header {
+    background: linear-gradient(45deg, #ff6b35, #f7931e);
+    color: white;
+    margin: -16px -16px 16px -16px;
+    padding: 16px;
+    border-radius: 4px 4px 0 0;
+  }
+  
+  mat-card-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 16px;
   }
 }
 
