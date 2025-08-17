@@ -1,5 +1,6 @@
 import { Deck } from '../models/deck.model';
-import { CardImpl, Suit, Rank } from '../models/card.model';
+import { Deck } from './deck.model';
+import { CardImpl, Suit, Rank } from './card.model';
 
 describe('Deck Model', () => {
   describe('Standard deck creation', () => {
