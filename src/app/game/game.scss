@@ -9,12 +9,17 @@
 .welcome-card {
   max-width: 600px;
   width: 100%;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
 .welcome-card mat-card-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-start;
+  
+  button {
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  }
 }
 
 .welcome-card ul {

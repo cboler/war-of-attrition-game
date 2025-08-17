@@ -6,4 +6,9 @@
 
 .settings-card {
   margin-bottom: 20px;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  
+  button {
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  }
 }

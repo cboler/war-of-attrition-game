@@ -8,6 +8,7 @@
   position: sticky;
   top: 0;
   z-index: 1000;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 
 .toolbar-spacer {
@@ -20,6 +21,8 @@
   margin-right: 16px;
   
   button {
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+    
     &.active {
       background-color: rgba(255, 255, 255, 0.1);
     }
@@ -30,6 +33,7 @@
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 
 // Dark theme styles
