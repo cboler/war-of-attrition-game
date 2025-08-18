@@ -165,7 +165,10 @@ export class SettingsService {
         return true;
       }
     } catch (error) {
-      console.warn('Failed to import settings:', error);
+      // Only log warnings during development, not in production or testing
+      if (typeof window !== 'undefined' && (window as any).console) {
+        console.warn('Failed to import settings:', error);
+      }
     }
     return false;
   }
