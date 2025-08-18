@@ -100,7 +100,7 @@ export class GameControllerService {
 
     // Player accepts challenge - draw additional card
     try {
-      const playerChallengeCard = this.gameStateService.currentPlayerDeck.draw();
+      const playerChallengeCard = this.gameStateService.drawPlayerCard();
       if (!playerChallengeCard) {
         this.gameMessage.set('Cannot draw card for challenge!');
         return;
@@ -205,8 +205,8 @@ export class GameControllerService {
     const opponentCards: Card[] = [];
 
     for (let i = 0; i < 3; i++) {
-      const playerCard = this.gameStateService.currentPlayerDeck.draw();
-      const opponentCard = this.gameStateService.currentOpponentDeck.draw();
+      const playerCard = this.gameStateService.drawPlayerCard();
+      const opponentCard = this.gameStateService.drawOpponentCard();
       
       if (playerCard) playerCards.push(playerCard);
       if (opponentCard) opponentCards.push(opponentCard);
