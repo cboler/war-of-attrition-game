@@ -43,6 +43,39 @@
       </div>
     }
 
+    <!-- Challenge Card Display Modal -->
+    @if (showChallengeCardDisplay()) {
+      <div class="challenge-overlay">
+        <mat-card class="challenge-card">
+          <mat-card-header>
+            <mat-card-title>Your Challenge Card</mat-card-title>
+            <mat-card-subtitle>This is the card you drew for your challenge</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="challenge-card-display">
+              @if (challengeCard()) {
+                <app-card 
+                  [card]="challengeCard()" 
+                  [glow]="'blue'"
+                  [animationState]="'flip'">
+                </app-card>
+              }
+            </div>
+            <p>Do you want to proceed with this challenge card?</p>
+            <p><strong>Your challenge card will be compared against the opponent's original winning card.</strong></p>
+          </mat-card-content>
+          <mat-card-actions>
+            <button mat-raised-button color="primary" (click)="confirmChallenge()">
+              Proceed with Challenge
+            </button>
+            <button mat-button color="warn" (click)="cancelChallenge()">
+              Cancel Challenge
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+    }
+
     <!-- Battle Selection Modal -->
     @if (showBattleUI()) {
       <div class="battle-overlay">

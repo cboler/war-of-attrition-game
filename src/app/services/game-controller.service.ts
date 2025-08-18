@@ -12,6 +12,8 @@ export class GameControllerService {
   private gameMessage = signal<string>('Click your deck to begin!');
   private challengeAvailable = signal<boolean>(false);
   private showChallenge = signal<boolean>(false);
+  private challengeCard = signal<Card | null>(null);
+  private showChallengeCard = signal<boolean>(false);
   private battleCards = signal<Card[]>([]);
   private opponentBattleCards = signal<Card[]>([]);
   private battlePhase = signal<'setup' | 'selection' | 'resolution'>('setup');
@@ -21,6 +23,8 @@ export class GameControllerService {
   get message() { return this.gameMessage(); }
   get canChallenge() { return this.challengeAvailable(); }
   get showChallengePrompt() { return this.showChallenge(); }
+  get currentChallengeCard() { return this.challengeCard(); }
+  get showChallengeCardDisplay() { return this.showChallengeCard(); }
   get playerCanAct() { return this.canPlayerAct(); }
   get currentBattleCards() { return this.battleCards(); }
   get currentOpponentBattleCards() { return this.opponentBattleCards(); }
@@ -39,6 +43,8 @@ export class GameControllerService {
     this.gameMessage.set('Click your deck to begin!');
     this.challengeAvailable.set(false);
     this.showChallenge.set(false);
+    this.challengeCard.set(null);
+    this.showChallengeCard.set(false);
     this.battleCards.set([]);
     this.opponentBattleCards.set([]);
     this.battlePhase.set('setup');
@@ -79,9 +85,6 @@ export class GameControllerService {
       return;
     }
 
-    this.showChallenge.set(false);
-    this.challengeAvailable.set(false);
-
     if (!acceptChallenge) {
       // Player declines challenge, accept the loss - discard player's card
       const activeTurn = this.gameStateService.currentState.activeTurn;
@@ -94,18 +97,49 @@ export class GameControllerService {
       }
       
       this.gameMessage.set('You declined the challenge. Your card is discarded.');
+      this.showChallenge.set(false);
+      this.challengeAvailable.set(false);
       this.canPlayerAct.set(true);
       return;
     }
 
-    // Player accepts challenge - draw additional card
+    // Player accepts challenge - draw the challenge card and show it to them
     try {
-      const playerChallengeCard = this.gameStateService.currentPlayerDeck.draw();
+      const playerChallengeCard = this.gameStateService.drawPlayerCard();
       if (!playerChallengeCard) {
         this.gameMessage.set('Cannot draw card for challenge!');
         return;
       }
 
+      // Store the challenge card and show it to the user
+      this.challengeCard.set(playerChallengeCard);
+      this.showChallenge.set(false); // Hide the challenge prompt
+      this.showChallengeCard.set(true); // Show the challenge card
+      this.gameMessage.set('Your challenge card is revealed! Proceed with the challenge?');
+      this.canPlayerAct.set(false); // Disable player actions during challenge card display
+      
+      // Store the challenge card in the active turn
+      const activeTurn = this.gameStateService.currentState.activeTurn;
+      if (activeTurn) {
+        activeTurn.challengeCard = playerChallengeCard;
+        this.gameStateService.setActiveTurn(activeTurn);
+      }
+      
+    } catch (error) {
+      console.error('Error during challenge:', error);
+      this.gameMessage.set('Error during challenge!');
+    }
+  }
+
+  /**
+   * Confirm the challenge with the revealed card
+   */
+  confirmChallenge(): void {
+    if (!this.challengeCard()) {
+      return;
+    }
+
+    try {
       const activeTurn = this.gameStateService.currentState.activeTurn;
       if (!activeTurn || !activeTurn.playerCard || !activeTurn.opponentCard) {
         this.gameMessage.set('No active turn for challenge!');
@@ -115,14 +149,46 @@ export class GameControllerService {
       const result = this.turnResolutionService.resolveChallenge(
         activeTurn.playerCard,
         activeTurn.opponentCard,
-        playerChallengeCard
+        this.challengeCard()!
       );
+
+      // Reset challenge card state
+      this.challengeCard.set(null);
+      this.showChallengeCard.set(false);
+      this.challengeAvailable.set(false);
 
       this.handleTurnResult(result);
     } catch (error) {
-      console.error('Error during challenge:', error);
-      this.gameMessage.set('Error during challenge!');
+      console.error('Error during challenge resolution:', error);
+      this.gameMessage.set('Error during challenge resolution!');
     }
+  }
+
+  /**
+   * Cancel the challenge after seeing the card
+   */
+  cancelChallenge(): void {
+    // Return the challenge card to the deck
+    if (this.challengeCard()) {
+      this.gameStateService.returnCardsToPlayerDeck([this.challengeCard()!]);
+    }
+
+    // Discard the original losing card
+    const activeTurn = this.gameStateService.currentState.activeTurn;
+    if (activeTurn && activeTurn.playerCard) {
+      this.gameStateService.addToDiscardPile([activeTurn.playerCard]);
+      // Opponent keeps their card
+      if (activeTurn.opponentCard) {
+        this.gameStateService.returnCardsToOpponentDeck([activeTurn.opponentCard]);
+      }
+    }
+
+    // Reset challenge state
+    this.challengeCard.set(null);
+    this.showChallengeCard.set(false);
+    this.challengeAvailable.set(false);
+    this.gameMessage.set('Challenge cancelled. Your original card is discarded.');
+    this.canPlayerAct.set(true);
   }
 
   /**
@@ -205,8 +271,8 @@ export class GameControllerService {
     const opponentCards: Card[] = [];
 
     for (let i = 0; i < 3; i++) {
-      const playerCard = this.gameStateService.currentPlayerDeck.draw();
-      const opponentCard = this.gameStateService.currentOpponentDeck.draw();
+      const playerCard = this.gameStateService.drawPlayerCard();
+      const opponentCard = this.gameStateService.drawOpponentCard();
       
       if (playerCard) playerCards.push(playerCard);
       if (opponentCard) opponentCards.push(opponentCard);

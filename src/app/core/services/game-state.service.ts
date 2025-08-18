@@ -82,9 +82,9 @@ export class GameStateService {
       return { playerCard: null, opponentCard: null };
     }
 
-    // Draw cards
-    const playerCard = this.playerDeck().draw();
-    const opponentCard = this.opponentDeck().draw();
+    // Draw cards - need to update signals to trigger reactivity
+    const playerCard = this.drawPlayerCard();
+    const opponentCard = this.drawOpponentCard();
 
     if (!playerCard || !opponentCard) {
       this.endGame();
@@ -121,11 +121,39 @@ export class GameStateService {
   }
 
   returnCardsToPlayerDeck(cards: Card[]): void {
-    this.playerDeck().addCards(cards);
+    // Create a new deck instance to trigger signal updates
+    const newDeck = this.playerDeck().copy();
+    newDeck.addCards(cards);
+    this.playerDeck.set(newDeck);
   }
 
   returnCardsToOpponentDeck(cards: Card[]): void {
-    this.opponentDeck().addCards(cards);
+    // Create a new deck instance to trigger signal updates
+    const newDeck = this.opponentDeck().copy();
+    newDeck.addCards(cards);
+    this.opponentDeck.set(newDeck);
+  }
+
+  /**
+   * Draw a card from player deck and update signals
+   */
+  drawPlayerCard(): Card | null {
+    // Create a new deck instance to trigger signal updates
+    const newDeck = this.playerDeck().copy();
+    const card = newDeck.draw();
+    this.playerDeck.set(newDeck);
+    return card;
+  }
+
+  /**
+   * Draw a card from opponent deck and update signals
+   */
+  drawOpponentCard(): Card | null {
+    // Create a new deck instance to trigger signal updates
+    const newDeck = this.opponentDeck().copy();
+    const card = newDeck.draw();
+    this.opponentDeck.set(newDeck);
+    return card;
   }
 
   setLastResult(result: string): void {

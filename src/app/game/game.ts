@@ -42,6 +42,8 @@ export class Game implements OnInit {
   protected challengeAvailable = signal<boolean>(false);
   protected canPlayerAct = signal<boolean>(true);
   protected showChallengePrompt = signal<boolean>(false);
+  protected challengeCard = signal<Card | null>(null);
+  protected showChallengeCardDisplay = signal<boolean>(false);
   
   // Computed values for UI
   protected playerCardCount = signal(26);
@@ -150,6 +152,22 @@ export class Game implements OnInit {
   }
 
   /**
+   * Confirm challenge with the revealed card
+   */
+  confirmChallenge(): void {
+    this.gameController.confirmChallenge();
+    this.updateGameState();
+  }
+
+  /**
+   * Cancel challenge after seeing the card
+   */
+  cancelChallenge(): void {
+    this.gameController.cancelChallenge();
+    this.updateGameState();
+  }
+
+  /**
    * Start a new game
    */
   startNewGame(): void {
@@ -197,6 +215,10 @@ export class Game implements OnInit {
     this.challengeAvailable.set(this.gameController.canChallenge);
     this.canPlayerAct.set(this.gameController.playerCanAct);
     this.showChallengePrompt.set(this.gameController.showChallengePrompt);
+    
+    // Update challenge card state
+    this.challengeCard.set(this.gameController.currentChallengeCard);
+    this.showChallengeCardDisplay.set(this.gameController.showChallengeCardDisplay);
     
     // Update battle state
     this.battleCards.set(this.gameController.currentBattleCards);
