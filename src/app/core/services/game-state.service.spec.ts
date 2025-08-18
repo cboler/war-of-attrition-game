@@ -120,22 +120,32 @@ describe('GameStateService', () => {
       expect(service.currentState.stats.discardedCardCount).toBe(2);
     });
 
-    it('should return cards to player deck', () => {
+    it('should return cards to player deck after drawing', () => {
       const initialCount = service.currentPlayerDeck.count;
-      const cards = [new CardImpl(Suit.HEARTS, Rank.ACE)];
       
-      service.returnCardsToPlayerDeck(cards);
+      // First draw a card (simulating normal game flow)
+      const drawnCard = service.drawPlayerCard();
+      expect(service.currentPlayerDeck.count).toBe(initialCount - 1);
       
-      expect(service.currentPlayerDeck.count).toBe(initialCount + 1);
+      // Then return it (winner keeps their card)
+      if (drawnCard) {
+        service.returnCardsToPlayerDeck([drawnCard]);
+        expect(service.currentPlayerDeck.count).toBe(initialCount);
+      }
     });
 
-    it('should return cards to opponent deck', () => {
+    it('should return cards to opponent deck after drawing', () => {
       const initialCount = service.currentOpponentDeck.count;
-      const cards = [new CardImpl(Suit.CLUBS, Rank.KING)];
       
-      service.returnCardsToOpponentDeck(cards);
+      // First draw a card (simulating normal game flow)
+      const drawnCard = service.drawOpponentCard();
+      expect(service.currentOpponentDeck.count).toBe(initialCount - 1);
       
-      expect(service.currentOpponentDeck.count).toBe(initialCount + 1);
+      // Then return it (winner keeps their card)
+      if (drawnCard) {
+        service.returnCardsToOpponentDeck([drawnCard]);
+        expect(service.currentOpponentDeck.count).toBe(initialCount);
+      }
     });
   });
 

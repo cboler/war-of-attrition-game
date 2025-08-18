@@ -24,9 +24,21 @@ describe('TurnResolutionService', () => {
   });
 
   describe('Normal turn resolution', () => {
+    beforeEach(() => {
+      gameStateService.initializeGame(); // Reset game state for each test
+    });
+    
     it('should resolve player win correctly', () => {
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.KING);
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.QUEEN);
+      // Use the real game flow: start turn first to draw cards from decks
+      const { playerCard, opponentCard } = gameStateService.startTurn();
+      
+      if (!playerCard || !opponentCard) {
+        fail('Failed to draw cards for test');
+        return;
+      }
+      
+      // Mock the comparison to ensure player wins
+      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
       
       const result = service.resolveTurn(playerCard, opponentCard);
       
@@ -40,8 +52,16 @@ describe('TurnResolutionService', () => {
     });
 
     it('should resolve opponent win correctly and offer challenge', () => {
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.SEVEN);
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.JACK);
+      // Use the real game flow: start turn first to draw cards from decks
+      const { playerCard, opponentCard } = gameStateService.startTurn();
+      
+      if (!playerCard || !opponentCard) {
+        fail('Failed to draw cards for test');
+        return;
+      }
+      
+      // Mock the comparison to ensure opponent wins
+      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
       
       const result = service.resolveTurn(playerCard, opponentCard);
       

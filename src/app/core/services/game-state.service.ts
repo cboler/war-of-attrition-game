@@ -118,6 +118,7 @@ export class GameStateService {
 
   addToDiscardPile(cards: Card[]): void {
     this.discardPile.update(pile => [...pile, ...cards]);
+    this.validateDeckCounts();
   }
 
   returnCardsToPlayerDeck(cards: Card[]): void {
@@ -125,6 +126,7 @@ export class GameStateService {
     const newDeck = this.playerDeck().copy();
     newDeck.addCards(cards);
     this.playerDeck.set(newDeck);
+    this.validateDeckCounts();
   }
 
   returnCardsToOpponentDeck(cards: Card[]): void {
@@ -132,6 +134,17 @@ export class GameStateService {
     const newDeck = this.opponentDeck().copy();
     newDeck.addCards(cards);
     this.opponentDeck.set(newDeck);
+    this.validateDeckCounts();
+  }
+
+  private validateDeckCounts(): void {
+    const playerCount = this.playerDeck().count;
+    const opponentCount = this.opponentDeck().count;
+    
+    if (playerCount > 26 || opponentCount > 26) {
+      console.error(`Invalid deck count detected: Player(${playerCount}) Opponent(${opponentCount})`);
+      throw new Error(`Invalid deck count: Player(${playerCount}) Opponent(${opponentCount}) - No deck should exceed 26 cards`);
+    }
   }
 
   /**
