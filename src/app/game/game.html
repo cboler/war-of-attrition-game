@@ -86,6 +86,12 @@
       <button mat-raised-button color="primary" (click)="startNewGame()">
         New Game
       </button>
+      <button mat-raised-button (click)="openDiscardPileViewer()">
+        Discard Pile
+        @if (gameStateService.discardedCardCount() > 0) {
+          <span class="discard-count">({{ gameStateService.discardedCardCount() }})</span>
+        }
+      </button>
       <button mat-button (click)="toggleDemo()">
         Show Old Demo
       </button>

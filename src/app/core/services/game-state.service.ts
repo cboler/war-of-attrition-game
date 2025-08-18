@@ -23,6 +23,7 @@ export class GameStateService {
   readonly playerCardCount = computed(() => this.playerDeck().count);
   readonly opponentCardCount = computed(() => this.opponentDeck().count);
   readonly discardedCardCount = computed(() => this.discardPile().length);
+  readonly discardedCards = computed(() => [...this.discardPile()]); // Public accessor for discard pile
   
   readonly gameStats = computed<GameStats>(() => ({
     turnNumber: this.turnNumber(),
