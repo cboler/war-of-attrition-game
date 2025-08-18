@@ -1,8 +1,9 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Card } from '../../../core/models/card.model';
 import { CardComponent } from '../card/card.component';
 import { HealthBarComponent } from '../health-bar/health-bar.component';
+import { SettingsService } from '../../../core/services/settings.service';
 
 @Component({
   selector: 'app-game-board',
@@ -60,6 +61,12 @@ import { HealthBarComponent } from '../health-bar/health-bar.component';
           }
         </div>
         
+        @if (settingsService.showTurnCounter() && turnNumber() > 0) {
+          <div class="turn-counter">
+            Turn {{ turnNumber() }}
+          </div>
+        }
+        
         @if (gameMessage()) {
           <div class="game-message">
             {{ gameMessage() }}
@@ -106,6 +113,8 @@ import { HealthBarComponent } from '../health-bar/health-bar.component';
   styleUrl: './game-board.component.scss'
 })
 export class GameBoardComponent {
+  public settingsService = inject(SettingsService);
+
   // Input properties
   playerCardCount = input<number>(26);
   opponentCardCount = input<number>(26);
@@ -118,6 +127,7 @@ export class GameBoardComponent {
   gameMessage = input<string | null>(null);
   challengeAvailable = input<boolean>(false);
   canPlayerAct = input<boolean>(false);
+  turnNumber = input<number>(0);
   
   // Animation states for cards
   playerCardAnimation = input<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);

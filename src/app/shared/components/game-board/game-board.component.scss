@@ -168,6 +168,32 @@
   }
 }
 
+.turn-counter {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 12px;
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 80px;
+  
+  @media (max-width: 599px) {
+    font-size: 12px;
+    padding: 4px 12px;
+    margin-bottom: 8px;
+  }
+  
+  @media (max-width: 359px) {
+    font-size: 11px;
+    padding: 3px 10px;
+    margin-bottom: 6px;
+  }
+}
+
 .game-message {
   background: rgba(0, 0, 0, 0.7);
   color: white;

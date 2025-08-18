@@ -22,6 +22,7 @@ export enum Rank {
 }
 
 export interface Card {
+  readonly id: string;
   readonly suit: Suit;
   readonly rank: Rank;
   readonly value: number;
@@ -29,12 +30,14 @@ export interface Card {
 }
 
 export class CardImpl implements Card {
+  readonly id: string;
   readonly suit: Suit;
   readonly rank: Rank;
   readonly value: number;
   readonly isRed: boolean;
 
   constructor(suit: Suit, rank: Rank) {
+    this.id = `${suit}-${rank}`;
     this.suit = suit;
     this.rank = rank;
     this.value = this.calculateValue(rank);

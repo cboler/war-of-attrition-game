@@ -58,6 +58,18 @@
 
   button {
     font-size: 12px;
+    
+    .discard-count {
+      margin-left: 4px;
+      font-size: 0.9em;
+      opacity: 0.8;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 6px;
+      border-radius: 12px;
+      min-width: 20px;
+      display: inline-block;
+      text-align: center;
+    }
     min-height: 36px;
     
     @media (max-width: 599px) {
@@ -283,4 +295,12 @@
   background: #2d2d2d;
   border-color: #555;
   color: #e0e0e0;
+}
+
+// Discard pile dialog styles
+:host ::ng-deep .discard-pile-dialog {
+  .mat-mdc-dialog-container {
+    padding: 0;
+    overflow: hidden;
+  }
 }

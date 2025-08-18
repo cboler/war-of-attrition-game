@@ -1,14 +1,18 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { RouterLink } from '@angular/router';
 import { GameDemoService } from '../services/game-demo.service';
 import { GameControllerService } from '../services/game-controller.service';
 import { GameBoardComponent } from '../shared/components/game-board/game-board.component';
 import { CardComponent } from '../shared/components/card/card.component';
+import { DiscardPileViewerComponent } from '../shared/components/discard-pile-viewer/discard-pile-viewer.component';
 import { Card, CardImpl, Suit, Rank } from '../core/models/card.model';
 import { ProgressService, ProgressData } from '../services/progress.service';
-import { GamePhase } from '../core/models/game-state.model';
+import { GameStateService } from '../core/services/game-state.service';
+import { SettingsService } from '../core/services/settings.service';
+import { GamePhase, PlayerType } from '../core/models/game-state.model';
 
 @Component({
   selector: 'app-game',
@@ -27,6 +31,9 @@ export class Game implements OnInit {
   // Demo UI state
   protected showOldDemo = signal<boolean>(false);
   protected showGameBoard = signal<boolean>(true);
+  
+  // Game timing for statistics
+  private gameStartTime: number | null = null;
   
   // Real game state (will be initialized in constructor)
   protected gameStats = signal<any>(this.getInitialGameStats());
@@ -64,7 +71,10 @@ export class Game implements OnInit {
   constructor(
     private gameDemoService: GameDemoService,
     private gameController: GameControllerService,
-    private progressService: ProgressService
+    private progressService: ProgressService,
+    public gameStateService: GameStateService, // Made public for template access
+    private settingsService: SettingsService,
+    private dialog: MatDialog
   ) {
     this.progressData = this.progressService.getProgressData();
     this.currentMilestone = this.progressService.getCurrentMilestone();
@@ -144,6 +154,8 @@ export class Game implements OnInit {
    */
   startNewGame(): void {
     this.gameController.startNewGame();
+    this.gameStartTime = Date.now();
+    this.settingsService.recordGameStart();
     this.updateGameState();
   }
 
@@ -241,6 +253,14 @@ export class Game implements OnInit {
         this.resetAnimations();
       }
     }
+    
+    // Check for game end and record statistics
+    if (state.winner && this.gameStartTime) {
+      const gameDuration = Date.now() - this.gameStartTime;
+      const playerWon = state.winner === PlayerType.PLAYER;
+      this.settingsService.recordGameEnd(playerWon, stats.turnNumber, gameDuration);
+      this.gameStartTime = null; // Reset for next game
+    }
   }
 
   /**
@@ -289,6 +309,21 @@ export class Game implements OnInit {
   private triggerOpponentHealthDamageAnimation(): void {
     this.opponentHealthDamageAnimation.set(true);
     setTimeout(() => this.opponentHealthDamageAnimation.set(false), 800);
+  }
+
+  /**
+   * Open discard pile viewer
+   */
+  openDiscardPileViewer(): void {
+    const discardedCards = this.gameStateService.discardedCards();
+    
+    this.dialog.open(DiscardPileViewerComponent, {
+      data: { discardedCards },
+      width: '90%',
+      maxWidth: '800px',
+      maxHeight: '90vh',
+      panelClass: 'discard-pile-dialog'
+    });
   }
 
   /**

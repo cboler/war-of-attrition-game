@@ -1,21 +1,225 @@
 <div class="settings-container">
   <mat-card class="settings-card">
     <mat-card-header>
-      <mat-card-title>Settings</mat-card-title>
-      <mat-card-subtitle>Configure your game experience</mat-card-subtitle>
+      <mat-card-title>
+        <mat-icon>settings</mat-icon>
+        Settings
+      </mat-card-title>
+      <mat-card-subtitle>Customize your War of Attrition experience</mat-card-subtitle>
     </mat-card-header>
+
     <mat-card-content>
-      <p>Game settings and preferences will be available here.</p>
-      <p>Coming soon:</p>
-      <ul>
-        <li>Theme preferences</li>
-        <li>Sound settings</li>
-        <li>Game difficulty</li>
-        <li>Player preferences</li>
-      </ul>
+      <mat-tab-group>
+        <!-- General Settings Tab -->
+        <mat-tab label="General">
+          <div class="tab-content">
+            <!-- Theme Settings -->
+            <div class="setting-section">
+              <h3>Appearance</h3>
+              <mat-form-field appearance="outline">
+                <mat-label>Theme</mat-label>
+                <mat-select [value]="settingsService.theme()" 
+                           (selectionChange)="settingsService.setTheme($event.value)">
+                  <mat-option value="light">Light</mat-option>
+                  <mat-option value="dark">Dark</mat-option>
+                  <mat-option value="auto">Auto (System)</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Game Preferences -->
+            <div class="setting-section">
+              <h3>Game Preferences</h3>
+              
+              <mat-form-field appearance="outline">
+                <mat-label>Animation Speed</mat-label>
+                <mat-select [value]="settingsService.animationSpeed()" 
+                           (selectionChange)="settingsService.setAnimationSpeed($event.value)">
+                  <mat-option value="slow">Slow</mat-option>
+                  <mat-option value="normal">Normal</mat-option>
+                  <mat-option value="fast">Fast</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <div class="toggle-setting">
+                <mat-slide-toggle [checked]="settingsService.soundEnabled()"
+                                 (change)="settingsService.setSoundEnabled($event.checked)">
+                  Sound Effects
+                </mat-slide-toggle>
+              </div>
+
+              <div class="toggle-setting">
+                <mat-slide-toggle [checked]="settingsService.showTurnCounter()"
+                                 (change)="settingsService.setShowTurnCounter($event.checked)">
+                  Show Turn Counter
+                </mat-slide-toggle>
+              </div>
+
+              <div class="toggle-setting">
+                <mat-slide-toggle [checked]="settingsService.confirmChallenges()"
+                                 (change)="settingsService.setConfirmChallenges($event.checked)">
+                  Confirm Challenges
+                </mat-slide-toggle>
+              </div>
+
+              <div class="toggle-setting">
+                <mat-slide-toggle [checked]="settingsService.autoPlayAnimations()"
+                                 (change)="settingsService.setAutoPlayAnimations($event.checked)">
+                  Auto-play Animations
+                </mat-slide-toggle>
+              </div>
+
+              <div class="toggle-setting">
+                <mat-slide-toggle [checked]="settingsService.showCardDetails()"
+                                 (change)="settingsService.setShowCardDetails($event.checked)">
+                  Show Card Details
+                </mat-slide-toggle>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Card Backing Tab -->
+        <mat-tab label="Card Backing">
+          <div class="tab-content">
+            <div class="setting-section">
+              <h3>Choose Your Card Backing</h3>
+              <p>Select the design for the back of your cards. This only affects your cards, not your opponent's.</p>
+              
+              <div class="card-backing-grid">
+                @for (option of settingsService.cardBackingOptions(); track option.id) {
+                  <div class="card-backing-option"
+                       [class.selected]="settingsService.selectedCardBacking() === option.id"
+                       (click)="settingsService.setCardBacking(option.id)">
+                    <div class="card-preview" [style]="option.preview"></div>
+                    <div class="option-info">
+                      <h4>{{ option.name }}</h4>
+                      <p>{{ option.description }}</p>
+                    </div>
+                    @if (settingsService.selectedCardBacking() === option.id) {
+                      <mat-icon class="selected-icon">check_circle</mat-icon>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Statistics Tab -->
+        <mat-tab label="Statistics">
+          <div class="tab-content">
+            <div class="setting-section">
+              <h3>Game Statistics</h3>
+              
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <div class="stat-value">{{ settingsService.statistics().gamesPlayed }}</div>
+                  <div class="stat-label">Games Played</div>
+                </div>
+                
+                <div class="stat-item">
+                  <div class="stat-value">{{ settingsService.statistics().gamesWon }}</div>
+                  <div class="stat-label">Games Won</div>
+                </div>
+                
+                <div class="stat-item">
+                  <div class="stat-value">{{ settingsService.statistics().gamesLost }}</div>
+                  <div class="stat-label">Games Lost</div>
+                </div>
+                
+                <div class="stat-item">
+                  <div class="stat-value">
+                    {{ settingsService.statistics().gamesPlayed > 0 ? 
+                       ((settingsService.statistics().gamesWon / settingsService.statistics().gamesPlayed) * 100).toFixed(1) + '%' : 
+                       '0%' }}
+                  </div>
+                  <div class="stat-label">Win Rate</div>
+                </div>
+                
+                <div class="stat-item">
+                  <div class="stat-value">{{ settingsService.statistics().averageTurnsPerGame }}</div>
+                  <div class="stat-label">Avg. Turns per Game</div>
+                </div>
+                
+                <div class="stat-item">
+                  <div class="stat-value">{{ formatDuration(settingsService.statistics().averageGameDuration) }}</div>
+                  <div class="stat-label">Avg. Game Duration</div>
+                </div>
+                
+                <div class="stat-item">
+                  <div class="stat-value">{{ settingsService.statistics().totalTurns }}</div>
+                  <div class="stat-label">Total Turns</div>
+                </div>
+                
+                <div class="stat-item">
+                  <div class="stat-value">{{ formatDuration(settingsService.statistics().totalPlayTime) }}</div>
+                  <div class="stat-label">Total Play Time</div>
+                </div>
+                
+                <div class="stat-item">
+                  <div class="stat-value">{{ formatLastPlayed(settingsService.statistics().lastPlayed) }}</div>
+                  <div class="stat-label">Last Played</div>
+                </div>
+              </div>
+
+              <div class="stats-actions">
+                <button mat-raised-button color="warn" (click)="onResetStatistics()">
+                  <mat-icon>delete</mat-icon>
+                  Reset Statistics
+                </button>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Advanced Tab -->
+        <mat-tab label="Advanced">
+          <div class="tab-content">
+            <div class="setting-section">
+              <h3>Import/Export Settings</h3>
+              <p>Save your settings to a file or load settings from a previously saved file.</p>
+              
+              <div class="import-export-actions">
+                <button mat-raised-button (click)="onExportSettings()">
+                  <mat-icon>download</mat-icon>
+                  Export Settings
+                </button>
+                
+                <button mat-raised-button>
+                  <mat-icon>upload</mat-icon>
+                  Import Settings
+                  <input type="file" 
+                         accept=".json" 
+                         (change)="onImportSettings($event)" 
+                         style="position: absolute; left: -9999px;">
+                </button>
+              </div>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <div class="setting-section">
+              <h3>Reset Settings</h3>
+              <p>Reset all settings to their default values. This action cannot be undone.</p>
+              
+              <button mat-raised-button color="warn" (click)="onResetSettings()">
+                <mat-icon>restore</mat-icon>
+                Reset All Settings
+              </button>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
     </mat-card-content>
+
     <mat-card-actions>
-      <button mat-raised-button color="primary" routerLink="/">Back to Game</button>
+      <button mat-raised-button color="primary" routerLink="/">
+        <mat-icon>arrow_back</mat-icon>
+        Back to Game
+      </button>
     </mat-card-actions>
   </mat-card>
 </div>
