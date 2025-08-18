@@ -1,6 +1,10 @@
 .health-bar-container {
   width: 100%;
-  max-width: 300px;
+  max-width: 400px;
+
+  @media (max-width: 959px) {
+    max-width: 320px;
+  }
 
   @media (max-width: 599px) {
     max-width: 250px;
