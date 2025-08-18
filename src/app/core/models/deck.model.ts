@@ -101,6 +101,13 @@ export class Deck {
     return [...this.cards];
   }
 
+  /**
+   * Create a copy of this deck
+   */
+  copy(): Deck {
+    return new Deck([...this.cards]);
+  }
+
   reset(): void {
     this.cards = [];
   }
