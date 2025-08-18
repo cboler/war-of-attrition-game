@@ -267,7 +267,10 @@ export class DiscardPileViewerComponent {
   discardedCards = computed(() => this.data.discardedCards || []);
   
   // For now, we'll create mock info since we don't have the detailed tracking yet
-  // This will be enhanced when we integrate with the game state service
+  // TEMPORARY DEMO DATA: The following implementation creates artificial patterns for discarded card info.
+  // It alternates player types and assigns reasons based on index, which does NOT reflect actual gameplay.
+  // WARNING: This is for UI prototyping only. Do NOT rely on this logic for production or gameplay.
+  // Replace with real tracking from the game state service before release.
   discardedCardInfos = computed((): DiscardedCardInfo[] => 
     this.discardedCards().map((card, index) => ({
       card,
