@@ -160,14 +160,6 @@ export class Game implements OnInit {
   }
 
   /**
-   * Cancel challenge after seeing the card
-   */
-  cancelChallenge(): void {
-    this.gameController.cancelChallenge();
-    this.updateGameState();
-  }
-
-  /**
    * Start a new game
    */
   startNewGame(): void {
