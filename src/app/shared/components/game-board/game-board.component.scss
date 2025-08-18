@@ -1,7 +1,11 @@
 .game-board {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 1200px;
   height: 100vh;
+  max-height: 800px;
+  margin: 0 auto;
   background: #2e7d32; // Solitaire green background
   color: white;
   overflow: hidden;
@@ -9,6 +13,7 @@
 
   @media (max-width: 599px) {
     height: 100dvh; // Use dynamic viewport height on mobile
+    max-height: none; // Remove height restriction on mobile
   }
 }
 
@@ -16,7 +21,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 8%;
+  padding: 16px 4%; // Reduced from 8% to match table area
   flex: 0 0 auto;
   min-height: 120px;
 
@@ -131,7 +136,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: 20px 8%;
+  padding: 20px 4%; // Reduced from 8% to better utilize width
   min-height: 300px;
 
   @media (max-width: 959px) {

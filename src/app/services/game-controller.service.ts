@@ -165,33 +165,6 @@ export class GameControllerService {
   }
 
   /**
-   * Cancel the challenge after seeing the card
-   */
-  cancelChallenge(): void {
-    // Return the challenge card to the deck
-    if (this.challengeCard()) {
-      this.gameStateService.returnCardsToPlayerDeck([this.challengeCard()!]);
-    }
-
-    // Discard the original losing card
-    const activeTurn = this.gameStateService.currentState.activeTurn;
-    if (activeTurn && activeTurn.playerCard) {
-      this.gameStateService.addToDiscardPile([activeTurn.playerCard]);
-      // Opponent keeps their card
-      if (activeTurn.opponentCard) {
-        this.gameStateService.returnCardsToOpponentDeck([activeTurn.opponentCard]);
-      }
-    }
-
-    // Reset challenge state
-    this.challengeCard.set(null);
-    this.showChallengeCard.set(false);
-    this.challengeAvailable.set(false);
-    this.gameMessage.set('Challenge cancelled. Your original card is discarded.');
-    this.canPlayerAct.set(true);
-  }
-
-  /**
    * Handle battle card selection
    */
   selectBattleCard(selectedCard: Card): void {

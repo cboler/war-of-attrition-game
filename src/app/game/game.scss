@@ -284,6 +284,7 @@
   max-height: 400px;
   overflow-y: auto;
   line-height: 1.4;
+  color: #333;
 }
 
 .demo-line {
@@ -291,9 +292,19 @@
   white-space: pre-wrap;
 }
 
-:host ::ng-deep .dark-theme .demo-output {
-  background: #2d2d2d;
+// Improved dark theme styles with better contrast and multiple selectors for reliability
+:host ::ng-deep .dark-theme .demo-output,
+:host ::ng-deep body.dark-theme .demo-output,
+.dark-theme .demo-output {
+  background: #1e1e1e;
   border-color: #555;
+  color: #e0e0e0;
+}
+
+// Additional dark theme support for demo lines
+:host ::ng-deep .dark-theme .demo-line,
+:host ::ng-deep body.dark-theme .demo-line,
+.dark-theme .demo-line {
   color: #e0e0e0;
 }
 

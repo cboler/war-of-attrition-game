@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -46,8 +46,8 @@ export class Game implements OnInit {
   protected showChallengeCardDisplay = signal<boolean>(false);
   
   // Computed values for UI
-  protected playerCardCount = signal(26);
-  protected opponentCardCount = signal(26);
+  protected playerCardCount = computed(() => this.gameStateService.playerCardCount());
+  protected opponentCardCount = computed(() => this.gameStateService.opponentCardCount());
   protected playerActiveCard = signal<Card | null>(null);
   protected opponentActiveCard = signal<Card | null>(null);
   protected playerCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
@@ -160,14 +160,6 @@ export class Game implements OnInit {
   }
 
   /**
-   * Cancel challenge after seeing the card
-   */
-  cancelChallenge(): void {
-    this.gameController.cancelChallenge();
-    this.updateGameState();
-  }
-
-  /**
    * Start a new game
    */
   startNewGame(): void {
@@ -234,8 +226,8 @@ export class Game implements OnInit {
       this.triggerOpponentHealthDamageAnimation();
     }
     
-    this.playerCardCount.set(stats.playerCardCount);
-    this.opponentCardCount.set(stats.opponentCardCount);
+    // playerCardCount and opponentCardCount are now computed values that automatically 
+    // update based on gameStateService.playerCardCount() and gameStateService.opponentCardCount()
     
     // Update active cards if available
     if (state.activeTurn) {
