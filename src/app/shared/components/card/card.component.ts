@@ -22,7 +22,12 @@ import { Card, Suit, Rank } from '../../../core/models/card.model';
          [class.animate-clash-lose]="animationState() === 'clash-lose'"
          [class.animate-fall-away]="animationState() === 'fall-away'"
          [class.from-deck]="fromPosition() === 'deck'"
-         (click)="onCardClick()">
+         [attr.role]="clickable() ? 'button' : null"
+         [attr.aria-label]="ariaLabel()"
+         [attr.tabindex]="clickable() ? 0 : null"
+         (click)="onCardClick()"
+         (keydown.enter)="onCardClick()"
+         (keydown.space)="onCardClick()">
       
       @if (faceDown()) {
         <div class="card-back">
@@ -83,8 +88,39 @@ export class CardComponent {
     }
   });
 
+  protected ariaLabel = computed(() => {
+    if (this.faceDown()) {
+      return 'Face down card';
+    }
+    
+    const cardValue = this.card();
+    if (!cardValue) return 'Empty card slot';
+    
+    const suitName = cardValue.suit.charAt(0).toUpperCase() + cardValue.suit.slice(1);
+    const rankName = this.getRankName(cardValue.rank);
+    
+    return `${rankName} of ${suitName}`;
+  });
+
+  private getRankName(rank: Rank): string {
+    switch (rank) {
+      case Rank.ACE: return 'Ace';
+      case Rank.KING: return 'King';
+      case Rank.QUEEN: return 'Queen';
+      case Rank.JACK: return 'Jack';
+      default: return rank;
+    }
+  }
+
   protected onCardClick(): void {
     if (this.clickable()) {
+      this.cardClicked.emit();
+    }
+  }
+
+  protected onKeyDown(event: KeyboardEvent): void {
+    if (this.clickable() && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
       this.cardClicked.emit();
     }
   }
