@@ -11,7 +11,8 @@ import { DiscardPileViewerComponent } from '../shared/components/discard-pile-vi
 import { Card, CardImpl, Suit, Rank } from '../core/models/card.model';
 import { ProgressService, ProgressData } from '../services/progress.service';
 import { GameStateService } from '../core/services/game-state.service';
-import { GamePhase } from '../core/models/game-state.model';
+import { SettingsService } from '../core/services/settings.service';
+import { GamePhase, PlayerType } from '../core/models/game-state.model';
 
 @Component({
   selector: 'app-game',
@@ -30,6 +31,9 @@ export class Game implements OnInit {
   // Demo UI state
   protected showOldDemo = signal<boolean>(false);
   protected showGameBoard = signal<boolean>(true);
+  
+  // Game timing for statistics
+  private gameStartTime: number | null = null;
   
   // Real game state (will be initialized in constructor)
   protected gameStats = signal<any>(this.getInitialGameStats());
@@ -69,6 +73,7 @@ export class Game implements OnInit {
     private gameController: GameControllerService,
     private progressService: ProgressService,
     public gameStateService: GameStateService, // Made public for template access
+    private settingsService: SettingsService,
     private dialog: MatDialog
   ) {
     this.progressData = this.progressService.getProgressData();
@@ -149,6 +154,8 @@ export class Game implements OnInit {
    */
   startNewGame(): void {
     this.gameController.startNewGame();
+    this.gameStartTime = Date.now();
+    this.settingsService.recordGameStart();
     this.updateGameState();
   }
 
@@ -245,6 +252,14 @@ export class Game implements OnInit {
         this.opponentCardGlow.set(null);
         this.resetAnimations();
       }
+    }
+    
+    // Check for game end and record statistics
+    if (state.winner && this.gameStartTime) {
+      const gameDuration = Date.now() - this.gameStartTime;
+      const playerWon = state.winner === PlayerType.PLAYER;
+      this.settingsService.recordGameEnd(playerWon, stats.turnNumber, gameDuration);
+      this.gameStartTime = null; // Reset for next game
     }
   }
 

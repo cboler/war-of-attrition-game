@@ -15,6 +15,7 @@
       [gameMessage]="gameMessage()"
       [challengeAvailable]="challengeAvailable()"
       [canPlayerAct]="canPlayerAct()"
+      [turnNumber]="gameStateService.gameStats().turnNumber"
       (playerDeckClicked)="onPlayerDeckClick()">
     </app-game-board>
 
