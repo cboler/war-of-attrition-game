@@ -7,7 +7,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
+import { Observable } from 'rxjs';
+import { Inject } from '@angular/core';
 import { SettingsService } from '../core/services/settings.service';
 
 @Component({
@@ -21,24 +25,40 @@ import { SettingsService } from '../core/services/settings.service';
     MatTabsModule,
     MatIconModule,
     MatDividerModule,
+    MatDialogModule,
+    MatSnackBarModule,
     RouterLink
   ],
   templateUrl: './settings.html',
   styleUrl: './settings.scss'
 })
 export class Settings {
-  constructor(public settingsService: SettingsService) {}
+  constructor(
+    public settingsService: SettingsService,
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
+  ) {}
 
   onResetSettings(): void {
-    if (confirm('Are you sure you want to reset all settings to default values? This action cannot be undone.')) {
-      this.settingsService.resetSettings();
-    }
+    this.showConfirmDialog(
+      'Reset Settings',
+      'Are you sure you want to reset all settings to default values? This action cannot be undone.'
+    ).subscribe(result => {
+      if (result) {
+        this.settingsService.resetSettings();
+      }
+    });
   }
 
   onResetStatistics(): void {
-    if (confirm('Are you sure you want to reset all game statistics? This action cannot be undone.')) {
-      this.settingsService.resetStatistics();
-    }
+    this.showConfirmDialog(
+      'Reset Statistics', 
+      'Are you sure you want to reset all game statistics? This action cannot be undone.'
+    ).subscribe(result => {
+      if (result) {
+        this.settingsService.resetStatistics();
+      }
+    });
   }
 
   onExportSettings(): void {
@@ -60,9 +80,9 @@ export class Settings {
         const content = e.target?.result as string;
         const success = this.settingsService.importSettings(content);
         if (success) {
-          alert('Settings imported successfully!');
+          this.snackBar.open('Settings imported successfully!', 'OK', { duration: 3000 });
         } else {
-          alert('Failed to import settings. Please check the file format.');
+          this.snackBar.open('Failed to import settings. Please check the file format.', 'OK', { duration: 5000 });
         }
       };
       reader.readAsText(file);
@@ -78,5 +98,42 @@ export class Settings {
   formatLastPlayed(date?: Date): string {
     if (!date) return 'Never';
     return new Date(date).toLocaleDateString();
+  }
+
+  private showConfirmDialog(title: string, message: string): Observable<boolean> {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: { title, message },
+      width: '400px'
+    });
+    return dialogRef.afterClosed();
+  }
+}
+
+@Component({
+  selector: 'app-confirm-dialog',
+  imports: [MatDialogModule, MatButtonModule],
+  template: `
+    <h2 mat-dialog-title>{{ data.title }}</h2>
+    <mat-dialog-content>
+      <p>{{ data.message }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button (click)="onCancel()">Cancel</button>
+      <button mat-raised-button color="warn" (click)="onConfirm()">Confirm</button>
+    </mat-dialog-actions>
+  `
+})
+export class ConfirmDialogComponent {
+  constructor(
+    public dialogRef: MatDialogRef<ConfirmDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { title: string; message: string }
+  ) {}
+
+  onCancel(): void {
+    this.dialogRef.close(false);
+  }
+
+  onConfirm(): void {
+    this.dialogRef.close(true);
   }
 }
