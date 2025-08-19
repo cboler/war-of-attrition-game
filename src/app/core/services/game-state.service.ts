@@ -137,6 +137,34 @@ export class GameStateService {
     this.validateDeckCounts();
   }
 
+  removeCardsFromPlayerDeck(cards: Card[]): void {
+    const currentDeck = this.playerDeck();
+    let cardArray = [...currentDeck.toArray()];
+    
+    for (const card of cards) {
+      const index = cardArray.findIndex(c => c.suit === card.suit && c.rank === card.rank);
+      if (index !== -1) {
+        cardArray.splice(index, 1);
+      }
+    }
+    
+    this.playerDeck.set(new Deck(cardArray));
+  }
+
+  removeCardsFromOpponentDeck(cards: Card[]): void {
+    const currentDeck = this.opponentDeck();
+    let cardArray = [...currentDeck.toArray()];
+    
+    for (const card of cards) {
+      const index = cardArray.findIndex(c => c.suit === card.suit && c.rank === card.rank);
+      if (index !== -1) {
+        cardArray.splice(index, 1);
+      }
+    }
+    
+    this.opponentDeck.set(new Deck(cardArray));
+  }
+
   private validateDeckCounts(): void {
     const playerCount = this.playerDeck().count;
     const opponentCount = this.opponentDeck().count;

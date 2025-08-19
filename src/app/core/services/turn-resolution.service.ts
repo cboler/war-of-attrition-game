@@ -102,8 +102,11 @@ export class TurnResolutionService {
     const result = this.cardComparisonService.compareCards(challengeCard, originalOpponentCard);
     
     if (result === ComparisonResult.PLAYER_WINS) {
-      // Challenge successful - player keeps both cards, opponent's card discarded
+      // Challenge successful - player keeps both cards, opponent's card needs to be removed from their deck and discarded
       this.gameStateService.returnCardsToPlayerDeck([originalPlayerCard, challengeCard]);
+      
+      // Remove opponent's card from their deck (it was added during initial turn resolution) and discard it
+      this.gameStateService.removeCardsFromOpponentDeck([originalOpponentCard]);
       this.gameStateService.addToDiscardPile([originalOpponentCard]);
       
       return {
@@ -116,9 +119,9 @@ export class TurnResolutionService {
         canChallenge: false
       };
     } else {
-      // Challenge failed - player loses both cards, opponent keeps theirs
+      // Challenge failed - player loses both cards, opponent already has their card from initial turn
       this.gameStateService.addToDiscardPile([originalPlayerCard, challengeCard]);
-      this.gameStateService.returnCardsToOpponentDeck([originalOpponentCard]);
+      // Note: originalOpponentCard was already returned to opponent deck during initial turn resolution
       
       return {
         winner: PlayerType.OPPONENT,
