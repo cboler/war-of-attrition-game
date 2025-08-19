@@ -118,6 +118,28 @@ describe('GameStateService', () => {
       service.addToDiscardPile(cards);
       
       expect(service.currentState.stats.discardedCardCount).toBe(2);
+      expect(service.currentDiscardPile.length).toBe(2);
+    });
+
+    it('should update card count signals when deck changes', () => {
+      const initialPlayerCount = service.playerCardCount();
+      const initialOpponentCount = service.opponentCardCount();
+      
+      expect(initialPlayerCount).toBe(26);
+      expect(initialOpponentCount).toBe(26);
+      
+      // Draw a card from player deck
+      const drawnCard = service.drawPlayerCard();
+      expect(drawnCard).toBeTruthy();
+      
+      // Check if the count signal updated
+      const newPlayerCount = service.playerCardCount();
+      expect(newPlayerCount).toBe(25);
+      
+      // Add card back to verify the other direction
+      service.returnCardsToPlayerDeck([drawnCard!]);
+      const restoredPlayerCount = service.playerCardCount();
+      expect(restoredPlayerCount).toBe(26);
     });
 
     it('should return cards to player deck after drawing', () => {
