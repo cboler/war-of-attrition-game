@@ -28,8 +28,28 @@
             <mat-card-subtitle>Do you want to challenge the result?</mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
+            <!-- Show the current turn cards for context -->
+            <div class="turn-context">
+              <h4>This Turn's Cards:</h4>
+              <div class="cards-display">
+                <div class="player-card-info">
+                  <span>Your Card (Lost):</span>
+                  @if (playerActiveCard()) {
+                    <app-card [card]="playerActiveCard()" [glow]="'red'" [faceDown]="false"></app-card>
+                  }
+                </div>
+                <div class="opponent-card-info">
+                  <span>Opponent's Card (Won):</span>
+                  @if (opponentActiveCard()) {
+                    <app-card [card]="opponentActiveCard()" [glow]="'green'" [faceDown]="false"></app-card>
+                  }
+                </div>
+              </div>
+            </div>
+            
             <p>You lost this round, but you can draw an additional card to challenge the result.</p>
             <p><strong>Risk:</strong> If you lose the challenge, you lose both cards!</p>
+            <p><strong>Challenge Rule:</strong> Your new card will be compared against the opponent's winning card above.</p>
           </mat-card-content>
           <mat-card-actions>
             <button mat-raised-button color="primary" (click)="acceptChallenge()">
@@ -52,7 +72,28 @@
             <mat-card-subtitle>This is the card you drew for your challenge</mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
+            <!-- Show the original turn context -->
+            <div class="turn-context">
+              <h4>Original Turn:</h4>
+              <div class="cards-display">
+                <div class="player-card-info">
+                  <span>Your Original Card:</span>
+                  @if (playerActiveCard()) {
+                    <app-card [card]="playerActiveCard()" [glow]="'red'" [faceDown]="false"></app-card>
+                  }
+                </div>
+                <div class="opponent-card-info">
+                  <span>Opponent's Card:</span>
+                  @if (opponentActiveCard()) {
+                    <app-card [card]="opponentActiveCard()" [glow]="'green'" [faceDown]="false"></app-card>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Show the challenge card -->
             <div class="challenge-card-display">
+              <h4>Your Challenge Card:</h4>
               @if (challengeCard()) {
                 <app-card 
                   [card]="challengeCard()" 
@@ -61,8 +102,10 @@
                 </app-card>
               }
             </div>
-            <p><strong>This is your challenge card! You are now committed to the challenge.</strong></p>
-            <p><strong>Your challenge card will be compared against the opponent's original winning card.</strong></p>
+            
+            <p><strong>Challenge Comparison:</strong> Your challenge card vs. opponent's winning card</p>
+            <p>If your challenge card wins, you keep both of your cards and the opponent's card is discarded.</p>
+            <p>If your challenge card loses or ties, you lose both cards and the opponent keeps their card.</p>
           </mat-card-content>
           <mat-card-actions>
             <button mat-raised-button color="primary" (click)="confirmChallenge()">

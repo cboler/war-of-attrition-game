@@ -115,7 +115,7 @@
 }
 
 .challenge-card {
-  max-width: 500px;
+  max-width: 600px; // Increased to accommodate more content
   width: 90%;
   animation: challengePopIn 0.3s ease-out;
   
@@ -143,6 +143,66 @@
     gap: 12px;
     justify-content: flex-end;
     margin-top: 16px;
+  }
+  
+  .turn-context {
+    margin-bottom: 20px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    
+    h4 {
+      margin: 0 0 12px 0;
+      color: #333;
+      font-size: 1.1em;
+      font-weight: 600;
+    }
+  }
+  
+  .cards-display {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    
+    .player-card-info,
+    .opponent-card-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      
+      span {
+        font-size: 0.9em;
+        font-weight: 500;
+        color: #666;
+        text-align: center;
+      }
+      
+      app-card {
+        transform: scale(0.8);
+      }
+    }
+  }
+  
+  .challenge-card-display {
+    margin: 20px 0;
+    padding: 12px;
+    background: rgba(0, 123, 255, 0.1);
+    border-radius: 8px;
+    text-align: center;
+    
+    h4 {
+      margin: 0 0 12px 0;
+      color: #007bff;
+      font-size: 1.1em;
+      font-weight: 600;
+    }
+    
+    app-card {
+      transform: scale(0.9);
+    }
   }
 }
 
