@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { CommonModule } from '@angular/common';
-import { Card } from '../../../core/models/card.model';
+import { Card, Suit } from '../../../core/models/card.model';
 import { CardComponent } from '../card/card.component';
 
 export interface DiscardPileData {
@@ -50,6 +50,9 @@ export interface DiscardedCardInfo {
         </div>
       } @else {
         <div class="cards-container">
+          <div class="sort-info">
+            <small>Most recent discards shown first</small>
+          </div>
           <div class="cards-scroll">
             @for (cardInfo of discardedCardInfos(); track $index) {
               <div class="card-item" [class]="'lost-by-' + cardInfo.playerType">
@@ -64,6 +67,7 @@ export interface DiscardedCardInfo {
                       Opponent's Card
                     }
                   </div>
+                  <!-- Only show turn and reason info if available -->
                   @if (cardInfo.turnNumber) {
                     <div class="turn-info">Turn {{ cardInfo.turnNumber }}</div>
                   }
@@ -83,7 +87,7 @@ export interface DiscardedCardInfo {
       @if (discardedCards().length > 0) {
         <button mat-raised-button color="primary" (click)="scrollToTop()">
           <mat-icon>keyboard_arrow_up</mat-icon>
-          Back to Top
+          Back to Recent
         </button>
       }
     </div>
@@ -144,6 +148,18 @@ export interface DiscardedCardInfo {
       height: 100%;
       display: flex;
       flex-direction: column;
+    }
+
+    .sort-info {
+      padding: 8px 16px;
+      background: rgba(0, 0, 0, 0.03);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      text-align: center;
+      
+      small {
+        color: rgba(0, 0, 0, 0.6);
+        font-size: 0.75em;
+      }
     }
 
     .cards-scroll {
@@ -260,26 +276,31 @@ export interface DiscardedCardInfo {
       .dialog-actions {
         border-top-color: rgba(255, 255, 255, 0.12);
       }
+      
+      .sort-info {
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+        
+        small {
+          color: rgba(255, 255, 255, 0.6);
+        }
+      }
     }
   `]
 })
 export class DiscardPileViewerComponent {
   discardedCards = computed(() => this.data.discardedCards || []);
   
-  // For now, we'll create mock info since we don't have the detailed tracking yet
-  // TEMPORARY DEMO DATA: The following implementation creates artificial patterns for discarded card info.
-  // It alternates player types and assigns reasons based on index, which does NOT reflect actual gameplay.
-  // WARNING: This is for UI prototyping only. Do NOT rely on this logic for production or gameplay.
-  // Replace with real tracking from the game state service before release.
+  // Show discarded cards in reverse chronological order (newest first) for better UX
   discardedCardInfos = computed((): DiscardedCardInfo[] => 
-    this.discardedCards().map((card, index) => ({
-      card,
-      playerType: index % 2 === 0 ? 'player' : 'opponent', // Alternate for better demo
-      turnNumber: index + 1,
-      reason: index % 3 === 0 ? 'Lost in normal turn' : 
-              index % 3 === 1 ? 'Lost in challenge' : 
-              'Lost in battle'
-    }))
+    this.discardedCards()
+      .map((card, index) => ({
+        card,
+        playerType: (card.suit === Suit.HEARTS || card.suit === Suit.DIAMONDS ? 'player' : 'opponent') as 'player' | 'opponent', // Determine by card color
+        turnNumber: undefined, // Don't show turn numbers since we don't have reliable tracking
+        reason: undefined // Don't show reasons since we don't have reliable tracking
+      }))
+      .reverse() // Show newest discards first
   );
 
   constructor(
