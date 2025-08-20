@@ -65,6 +65,15 @@
   @media (max-width: 359px) {
     padding: 8px 4px;
   }
+
+  // For game route, minimize padding to maximize game board space
+  &:has(.game-container) {
+    padding: 8px;
+    
+    @media (max-width: 599px) {
+      padding: 4px;
+    }
+  }
 }
 
 // Dark theme styles

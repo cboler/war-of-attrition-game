@@ -230,4 +230,30 @@ describe('CardComponent', () => {
       expect(pattern).toBeTruthy();
     });
   });
+
+  describe('card backing integration', () => {
+    it('should apply selected card backing pattern to face-down cards', () => {
+      fixture.componentRef.setInput('faceDown', true);
+      fixture.detectChanges();
+
+      const cardBack = fixture.nativeElement.querySelector('.card-back');
+      expect(cardBack).toBeTruthy();
+      
+      // Check that cardBackingPattern computed property returns a pattern
+      const pattern = component['cardBackingPattern']();
+      expect(pattern).toBeTruthy();
+      expect(typeof pattern).toBe('string');
+    });
+
+    it('should not apply card backing to face-up cards', () => {
+      fixture.componentRef.setInput('faceDown', false);
+      fixture.detectChanges();
+
+      const cardBack = fixture.nativeElement.querySelector('.card-back');
+      const cardFace = fixture.nativeElement.querySelector('.card-face');
+      
+      expect(cardBack).toBeNull();
+      expect(cardFace).toBeTruthy();
+    });
+  });
 });

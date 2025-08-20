@@ -17,37 +17,49 @@
     align-items: flex-start;
   }
 
-  // Full screen mode for game board
+  // Full screen mode for game board - improved layout
   &:has(app-game-board) {
-    min-height: 100vh;
+    min-height: calc(100vh - 64px); // Subtract toolbar height
     padding: 0;
     align-items: stretch;
     
     @media (max-width: 599px) {
-      min-height: 100dvh;
+      min-height: calc(100dvh - 56px); // Subtract mobile toolbar height
     }
   }
 }
 
 .game-controls {
   position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 80px; // Position below the toolbar instead of at bottom
+  right: 20px; // Move to right side to avoid covering game area
   display: flex;
-  gap: 12px;
+  flex-direction: column; // Stack vertically to take less horizontal space
+  gap: 8px;
   background: rgba(0, 0, 0, 0.8);
-  padding: 12px 16px;
+  padding: 8px;
   border-radius: 8px;
   backdrop-filter: blur(4px);
   z-index: 1000;
+  max-width: 180px; // Limit width
+
+  @media (max-width: 959px) {
+    top: 72px;
+    right: 16px;
+    max-width: 160px;
+  }
 
   @media (max-width: 599px) {
-    bottom: 16px;
-    gap: 8px;
-    padding: 10px 12px;
+    // On mobile, move to top-left to avoid interfering with game
+    top: 64px;
+    right: auto;
+    left: 8px;
+    flex-direction: row;
+    gap: 6px;
+    padding: 6px;
+    max-width: calc(100vw - 16px);
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   @media (max-width: 359px) {

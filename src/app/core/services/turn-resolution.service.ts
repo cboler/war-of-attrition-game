@@ -3,6 +3,7 @@ import { Card } from '../models/card.model';
 import { GamePhase, PlayerType, ActiveTurn } from '../models/game-state.model';
 import { GameStateService } from './game-state.service';
 import { CardComparisonService, ComparisonResult } from './card-comparison.service';
+import { OpponentAIService } from './opponent-ai.service';
 
 export interface TurnResult {
   winner: PlayerType | null;
@@ -12,6 +13,7 @@ export interface TurnResult {
   cardsKept: Card[];
   nextPhase: GamePhase;
   canChallenge: boolean;
+  opponentChallenge?: boolean; // New field to indicate if opponent wants to challenge
 }
 
 @Injectable({
@@ -21,7 +23,8 @@ export class TurnResolutionService {
 
   constructor(
     private gameStateService: GameStateService,
-    private cardComparisonService: CardComparisonService
+    private cardComparisonService: CardComparisonService,
+    private opponentAIService: OpponentAIService
   ) {}
 
   resolveTurn(playerCard: Card, opponentCard: Card): TurnResult {
@@ -43,6 +46,36 @@ export class TurnResolutionService {
     const winnerCards = winner === PlayerType.PLAYER ? [playerCard] : [opponentCard];
     const loserCards = winner === PlayerType.PLAYER ? [opponentCard] : [playerCard];
     
+    // Check if the loser should challenge
+    let canChallenge = false;
+    let opponentChallenge = false;
+    let message = '';
+    
+    if (winner === PlayerType.OPPONENT) {
+      // Player lost - they can challenge
+      canChallenge = true;
+      message = 'Opponent wins this turn!';
+    } else {
+      // Opponent lost - check if AI wants to challenge
+      opponentChallenge = this.opponentAIService.shouldChallenge(opponentCard);
+      if (opponentChallenge) {
+        // Don't process cards yet - let game controller handle opponent challenge
+        message = 'You win this turn, but opponent challenges!';
+        return {
+          winner: null, // No winner yet due to challenge
+          result: ComparisonResult.PLAYER_WINS,
+          message,
+          cardsLost: [],
+          cardsKept: [playerCard, opponentCard], // Hold cards for challenge resolution
+          nextPhase: GamePhase.CHALLENGE,
+          canChallenge: false, // Player can't challenge, but opponent is challenging
+          opponentChallenge: true
+        };
+      } else {
+        message = 'You win this turn!';
+      }
+    }
+    
     // Winner keeps their card, loser's card goes to discard
     if (winner === PlayerType.PLAYER) {
       this.gameStateService.returnCardsToPlayerDeck([playerCard]);
@@ -52,16 +85,15 @@ export class TurnResolutionService {
     
     this.gameStateService.addToDiscardPile(loserCards);
     
-    const canChallenge = winner === PlayerType.OPPONENT; // Player can challenge when they lose
-    
     return {
       winner,
       result: winner === PlayerType.PLAYER ? ComparisonResult.PLAYER_WINS : ComparisonResult.OPPONENT_WINS,
-      message: winner === PlayerType.PLAYER ? 'You win this turn!' : 'Opponent wins this turn!',
+      message,
       cardsLost: loserCards,
       cardsKept: winnerCards,
       nextPhase: canChallenge ? GamePhase.CHALLENGE : GamePhase.NORMAL,
-      canChallenge
+      canChallenge,
+      opponentChallenge: false
     };
   }
 
@@ -133,6 +165,50 @@ export class TurnResolutionService {
         cardsKept: [originalOpponentCard],
         nextPhase: result === ComparisonResult.TIE ? GamePhase.BATTLE : GamePhase.NORMAL,
         canChallenge: false
+      };
+    }
+  }
+
+  /**
+   * Resolve opponent challenge
+   * @param originalPlayerCard Player's original card from the turn
+   * @param originalOpponentCard Opponent's original card from the turn  
+   * @param opponentChallengeCard Opponent's challenge card (drawn automatically)
+   */
+  resolveOpponentChallenge(originalPlayerCard: Card, originalOpponentCard: Card, opponentChallengeCard: Card): TurnResult {
+    const result = this.cardComparisonService.compareCards(opponentChallengeCard, originalPlayerCard);
+    
+    if (result === ComparisonResult.OPPONENT_WINS) {
+      // Opponent challenge successful - opponent keeps both cards, player's card goes to discard
+      this.gameStateService.returnCardsToOpponentDeck([originalOpponentCard, opponentChallengeCard]);
+      this.gameStateService.addToDiscardPile([originalPlayerCard]);
+      
+      return {
+        winner: PlayerType.OPPONENT,
+        result: ComparisonResult.OPPONENT_WINS,
+        message: 'Opponent challenge successful! Opponent keeps their cards.',
+        cardsLost: [originalPlayerCard],
+        cardsKept: [originalOpponentCard, opponentChallengeCard],
+        nextPhase: GamePhase.NORMAL,
+        canChallenge: false,
+        opponentChallenge: false
+      };
+    } else {
+      // Opponent challenge failed - opponent loses both cards, player keeps their card
+      this.gameStateService.returnCardsToPlayerDeck([originalPlayerCard]);
+      this.gameStateService.addToDiscardPile([originalOpponentCard, opponentChallengeCard]);
+      
+      return {
+        winner: PlayerType.PLAYER,
+        result: result === ComparisonResult.TIE ? ComparisonResult.TIE : ComparisonResult.PLAYER_WINS,
+        message: result === ComparisonResult.TIE ? 
+          'Opponent challenge ties! Opponent loses their cards.' : 
+          'Opponent challenge failed! Opponent loses their cards.',
+        cardsLost: [originalOpponentCard, opponentChallengeCard],
+        cardsKept: [originalPlayerCard],
+        nextPhase: result === ComparisonResult.TIE ? GamePhase.BATTLE : GamePhase.NORMAL,
+        canChallenge: false,
+        opponentChallenge: false
       };
     }
   }
