@@ -204,6 +204,12 @@ export class GameControllerService {
   private handleTurnResult(result: TurnResult): void {
     this.gameMessage.set(result.message);
 
+    // Handle opponent challenge
+    if (result.opponentChallenge) {
+      this.handleOpponentChallenge();
+      return;
+    }
+
     switch (result.nextPhase) {
       case GamePhase.NORMAL:
         this.canPlayerAct.set(true);
@@ -269,5 +275,49 @@ export class GameControllerService {
    */
   getGameState() {
     return this.gameStateService.currentState;
+  }
+
+  /**
+   * Handle opponent challenge automatically
+   */
+  private handleOpponentChallenge(): void {
+    try {
+      const activeTurn = this.gameStateService.currentState.activeTurn;
+      if (!activeTurn || !activeTurn.playerCard || !activeTurn.opponentCard) {
+        this.gameMessage.set('Error: No active turn for opponent challenge!');
+        return;
+      }
+
+      // Draw challenge card for opponent
+      const opponentChallengeCard = this.gameStateService.drawOpponentCard();
+      if (!opponentChallengeCard) {
+        this.gameMessage.set('Opponent cannot draw card for challenge!');
+        // Process as if opponent declined challenge
+        this.gameStateService.returnCardsToPlayerDeck([activeTurn.playerCard]);
+        this.gameStateService.addToDiscardPile([activeTurn.opponentCard]);
+        this.gameMessage.set('Opponent cannot challenge. You win the turn!');
+        this.canPlayerAct.set(true);
+        return;
+      }
+
+      // Slight delay to show challenge message, then resolve automatically
+      setTimeout(() => {
+        const result = this.turnResolutionService.resolveOpponentChallenge(
+          activeTurn.playerCard!,
+          activeTurn.opponentCard!,
+          opponentChallengeCard
+        );
+        
+        this.handleTurnResult(result);
+      }, 1500); // 1.5 second delay to let player see the challenge message
+
+      this.canPlayerAct.set(false);
+      this.gameMessage.set('Opponent is challenging your win...');
+      
+    } catch (error) {
+      console.error('Error during opponent challenge:', error);
+      this.gameMessage.set('Error during opponent challenge!');
+      this.canPlayerAct.set(true);
+    }
   }
 }

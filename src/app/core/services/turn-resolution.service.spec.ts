@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { TurnResolutionService } from '../services/turn-resolution.service';
 import { GameStateService } from '../services/game-state.service';
 import { CardComparisonService, ComparisonResult } from '../services/card-comparison.service';
+import { OpponentAIService } from '../services/opponent-ai.service';
 import { CardImpl, Suit, Rank } from '../models/card.model';
 import { GamePhase, PlayerType } from '../models/game-state.model';
 
@@ -9,12 +10,14 @@ describe('TurnResolutionService', () => {
   let service: TurnResolutionService;
   let gameStateService: GameStateService;
   let cardComparisonService: CardComparisonService;
+  let opponentAIService: OpponentAIService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
     service = TestBed.inject(TurnResolutionService);
     gameStateService = TestBed.inject(GameStateService);
     cardComparisonService = TestBed.inject(CardComparisonService);
+    opponentAIService = TestBed.inject(OpponentAIService);
     
     gameStateService.initializeGame();
   });
@@ -326,6 +329,107 @@ describe('TurnResolutionService', () => {
       expect(result.cardsKept.length).toBe(8); // All cards stay in play
       expect(result.cardsLost.length).toBe(0);
       expect(result.nextPhase).toBe(GamePhase.BATTLE);
+      expect(result.canChallenge).toBe(false);
+    });
+  });
+
+  describe('Opponent Challenge resolution', () => {
+    beforeEach(() => {
+      gameStateService.initializeGame(); // Reset game state for each test
+    });
+    
+    it('should trigger opponent challenge when opponent loses with low value card', () => {
+      // Use specific cards that will trigger opponent challenge
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.ACE); // High value
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO); // Low value - should trigger challenge
+      
+      // Mock AI to always challenge 2s
+      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(true);
+      
+      // Mock comparison to ensure player wins initially
+      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+      
+      // Mock the game state service methods to avoid deck count issues
+      spyOn(gameStateService, 'returnCardsToPlayerDeck').and.stub();
+      spyOn(gameStateService, 'addToDiscardPile').and.stub();
+      
+      const result = service.resolveTurn(playerCard, opponentCard);
+      
+      expect(result.winner).toBeNull(); // No winner yet due to challenge
+      expect(result.message).toBe('You win this turn, but opponent challenges!');
+      expect(result.nextPhase).toBe(GamePhase.CHALLENGE);
+      expect(result.opponentChallenge).toBe(true);
+      expect(result.canChallenge).toBe(false);
+    });
+
+    it('should not trigger opponent challenge when opponent loses with high value card', () => {
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.TWO); // Low value
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.ACE); // High value - should not challenge
+      
+      // Mock AI to not challenge Aces
+      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(false);
+      
+      // Mock comparison to ensure player wins
+      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+      
+      // Mock the game state service methods to avoid deck count issues
+      spyOn(gameStateService, 'returnCardsToPlayerDeck').and.stub();
+      spyOn(gameStateService, 'addToDiscardPile').and.stub();
+      
+      const result = service.resolveTurn(playerCard, opponentCard);
+      
+      expect(result.winner).toBe(PlayerType.PLAYER);
+      expect(result.message).toBe('You win this turn!');
+      expect(result.nextPhase).toBe(GamePhase.NORMAL);
+      expect(result.opponentChallenge).toBe(false);
+      expect(result.canChallenge).toBe(false);
+    });
+
+    it('should resolve successful opponent challenge', () => {
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.FIVE);
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO);
+      const opponentChallengeCard = new CardImpl(Suit.CLUBS, Rank.SEVEN);
+      
+      // Mock comparison to ensure opponent challenge wins
+      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
+      
+      // Mock the game state service methods to avoid deck count issues
+      spyOn(gameStateService, 'returnCardsToOpponentDeck').and.stub();
+      spyOn(gameStateService, 'addToDiscardPile').and.stub();
+      
+      const result = service.resolveOpponentChallenge(playerCard, opponentCard, opponentChallengeCard);
+      
+      expect(result.winner).toBe(PlayerType.OPPONENT);
+      expect(result.result).toBe(ComparisonResult.OPPONENT_WINS);
+      expect(result.message).toBe('Opponent challenge successful! Opponent keeps their cards.');
+      expect(result.cardsKept).toContain(opponentCard);
+      expect(result.cardsKept).toContain(opponentChallengeCard);
+      expect(result.cardsLost).toContain(playerCard);
+      expect(result.nextPhase).toBe(GamePhase.NORMAL);
+      expect(result.canChallenge).toBe(false);
+    });
+
+    it('should resolve failed opponent challenge', () => {
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.KING);
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO);
+      const opponentChallengeCard = new CardImpl(Suit.CLUBS, Rank.THREE);
+      
+      // Mock comparison to ensure opponent challenge fails
+      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+      
+      // Mock the game state service methods to avoid deck count issues
+      spyOn(gameStateService, 'returnCardsToPlayerDeck').and.stub();
+      spyOn(gameStateService, 'addToDiscardPile').and.stub();
+      
+      const result = service.resolveOpponentChallenge(playerCard, opponentCard, opponentChallengeCard);
+      
+      expect(result.winner).toBe(PlayerType.PLAYER);
+      expect(result.result).toBe(ComparisonResult.PLAYER_WINS);
+      expect(result.message).toBe('Opponent challenge failed! Opponent loses their cards.');
+      expect(result.cardsKept).toContain(playerCard);
+      expect(result.cardsLost).toContain(opponentCard);
+      expect(result.cardsLost).toContain(opponentChallengeCard);
+      expect(result.nextPhase).toBe(GamePhase.NORMAL);
       expect(result.canChallenge).toBe(false);
     });
   });
