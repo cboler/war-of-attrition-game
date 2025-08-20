@@ -1,6 +1,7 @@
-import { Component, input, computed, output } from '@angular/core';
+import { Component, input, computed, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Card, Suit, Rank } from '../../../core/models/card.model';
+import { SettingsService } from '../../../core/services/settings.service';
 
 @Component({
   selector: 'app-card',
@@ -30,7 +31,7 @@ import { Card, Suit, Rank } from '../../../core/models/card.model';
          (keydown.space)="onCardClick()">
       
       @if (faceDown()) {
-        <div class="card-back">
+        <div class="card-back" [style.background]="cardBackingPattern()">
           <div class="card-pattern"></div>
         </div>
       } @else {
@@ -67,7 +68,16 @@ export class CardComponent {
   // Event outputs
   cardClicked = output<void>();
 
+  // Inject settings service
+  private settingsService = inject(SettingsService);
+
   protected isRed = computed(() => this.card()?.isRed ?? false);
+  
+  // Computed property for card backing pattern
+  protected cardBackingPattern = computed(() => {
+    const selectedOption = this.settingsService.selectedCardBackingOption();
+    return selectedOption ? selectedOption.pattern : '';
+  });
   
   protected displayRank = computed(() => {
     const cardValue = this.card();
