@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1755654965378,
+  "timestamp": 1755655635354,
   "index": "/war-of-attrition-game/index.html",
   "assetGroups": [
     {
@@ -15,7 +15,7 @@
         "/war-of-attrition-game/chunk-S5VRGVDF.js",
         "/war-of-attrition-game/favicon.ico",
         "/war-of-attrition-game/index.html",
-        "/war-of-attrition-game/main-ABQTWNFK.js",
+        "/war-of-attrition-game/main-DREKC3C5.js",
         "/war-of-attrition-game/manifest.webmanifest",
         "/war-of-attrition-game/polyfills-B6TNHZQ6.js",
         "/war-of-attrition-game/styles-4QHNILDC.css"
@@ -65,8 +65,8 @@
     "/war-of-attrition-game/icons/icon-512x512.png": "1de182f76f7329dfa8f9fcdd1fdcdd695bea6a99",
     "/war-of-attrition-game/icons/icon-72x72.png": "aa88a6096bd973be7f6d7a5489bfa6bc2463f8c4",
     "/war-of-attrition-game/icons/icon-96x96.png": "7fb8f59c30ce2ff12c700321a0b39e14b3dc8f95",
-    "/war-of-attrition-game/index.html": "386008497e92565ddf84374d3afd6783220ad248",
-    "/war-of-attrition-game/main-ABQTWNFK.js": "41b883d6f98c149e5d90920e95bdf45a3787da42",
+    "/war-of-attrition-game/index.html": "41b5538da60551e8356e46115cb890cefdb59882",
+    "/war-of-attrition-game/main-DREKC3C5.js": "7abb1ac3b45e6c846612b0a0c55ebae7ae8c8304",
     "/war-of-attrition-game/manifest.webmanifest": "e74bf0a9d7e821cd0c7caa08c9c914a96361391e",
     "/war-of-attrition-game/media/material-icons-JLIDJUWE.woff": "e4bb7c1e40d3febee58df963db276b2bf68c117b",
     "/war-of-attrition-game/media/material-icons-LEZCGFVT.woff2": "0bc0c675480d94ec7e8609dda6227f88c5d08d2c",
