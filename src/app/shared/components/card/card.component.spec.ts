@@ -1,10 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CardComponent } from './card.component';
 import { Card, CardImpl, Suit, Rank } from '../../../core/models/card.model';
+import { SettingsService } from '../../../core/services/settings.service';
 
 describe('CardComponent', () => {
   let component: CardComponent;
   let fixture: ComponentFixture<CardComponent>;
+  let settingsService: SettingsService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -13,6 +15,7 @@ describe('CardComponent', () => {
 
     fixture = TestBed.createComponent(CardComponent);
     component = fixture.componentInstance;
+    settingsService = TestBed.inject(SettingsService);
   });
 
   it('should create', () => {
@@ -254,6 +257,50 @@ describe('CardComponent', () => {
       
       expect(cardBack).toBeNull();
       expect(cardFace).toBeTruthy();
+    });
+
+    it('should update card backing pattern when settings change', () => {
+      // Set the card to be face down
+      fixture.componentRef.setInput('faceDown', true);
+      fixture.detectChanges();
+
+      // Get initial pattern (should be gray by default)
+      const initialPattern = component['cardBackingPattern']();
+      expect(initialPattern).toContain('linear-gradient');
+      expect(initialPattern).toContain('#616161'); // Gray pattern (this is the actual default)
+
+      // Change to red backing
+      settingsService.setCardBacking('classic-red');
+      fixture.detectChanges();
+
+      // Pattern should update to red
+      const updatedPattern = component['cardBackingPattern']();
+      expect(updatedPattern).toContain('linear-gradient');
+      expect(updatedPattern).toContain('#c62828'); // Red pattern
+      expect(updatedPattern).not.toContain('#616161'); // Should not contain gray anymore
+
+      // Verify the DOM element also gets updated
+      const cardBack = fixture.nativeElement.querySelector('.card-back');
+      // Check for RGB equivalent of #c62828 or the hex value in the style attribute
+      expect(cardBack.style.background.includes('rgb(198, 40, 40)') || cardBack.getAttribute('style').includes('#c62828')).toBe(true);
+    });
+
+    it('should apply different card backing options correctly', () => {
+      fixture.componentRef.setInput('faceDown', true);
+      
+      // Test each available card backing option
+      const backingOptions = settingsService.cardBackingOptions();
+      
+      for (const option of backingOptions) {
+        settingsService.setCardBacking(option.id);
+        fixture.detectChanges();
+        
+        const pattern = component['cardBackingPattern']();
+        expect(pattern).toBe(option.pattern);
+        
+        const cardBack = fixture.nativeElement.querySelector('.card-back');
+        expect(cardBack.getAttribute('style')).toContain(option.pattern);
+      }
     });
   });
 });
