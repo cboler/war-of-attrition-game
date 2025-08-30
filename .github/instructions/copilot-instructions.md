@@ -1,146 +1,181 @@
-Your task is to "onboard" this repository to Copilot coding agent by adding a .github/copilot-instructions.md file in the repository that contains information describing how a coding agent seeing it for the first time can work most efficiently.
-
-
-
-You will do this task only one time per repository and doing a good job can SIGNIFICANTLY improve the quality of the agent's work, so take your time, think carefully, and search thoroughly before writing the instructions.
-
-
-
-<Goals>
-
-\- Reduce the likelihood of a coding agent pull request getting rejected by the user due to
-
-generating code that fails the continuous integration build, fails a validation pipeline, or
-
-having misbehavior.
-
-\- Minimize bash command and build failures.
-
-\- Allow the agent to complete its task more quickly by minimizing the need for exploration using grep, find, str\_replace\_editor, and code search tools.
-
-</Goals>
-
-
-
-<Limitations>
-
-\- Instructions must be no longer than 2 pages.
-
-\- Instructions must not be task specific.
-
-</Limitations>
-
-
-
-<WhatToAdd>
-
-
-
-Add the following high level details about the codebase to reduce the amount of searching the agent has to do to understand the codebase each time:
-
-<HighLevelDetails>
-
-
-
-\- A summary of what the repository does.
-
-\- High level repository information, such as the size of the repo, the type of the project, the languages, frameworks, or target runtimes in use.
-
-</HighLevelDetails>
-
-
-
-Add information about how to build and validate changes so the agent does not need to search and find it each time.
-
-<BuildInstructions>
-
-
-
-\- For each of bootstrap, build, test, run, lint, and any other scripted step, document the sequence of steps to take to run it successfully as well as the versions of any runtime or build tools used.
-
-\- Each command should be validated by running it to ensure that it works correctly as well as any preconditions and postconditions.
-
-\- Try cleaning the repo and environment and running commands in different orders and document errors and and misbehavior observed as well as any steps used to mitigate the problem.
-
-\- Run the tests and document the order of steps required to run the tests.
-
-\- Make a change to the codebase. Document any unexpected build issues as well as the workarounds.
-
-\- Document environment setup steps that seem optional but that you have validated are actually required.
-
-\- Document the time required for commands that failed due to timing out.
-
-\- When you find a sequence of commands that work for a particular purpose, document them in detail.
-
-\- Use language to indicate when something should always be done. For example: "always run npm install before building".
-
-\- Record any validation steps from documentation.
-
-</BuildInstructions>
-
-
-
-List key facts about the layout and architecture of the codebase to help the agent find where to make changes with minimal searching.
-
-<ProjectLayout>
-
-
-
-\- A description of the major architectural elements of the project, including the relative paths to the main project files, the location
-
-of configuration files for linting, compilation, testing, and preferences.
-
-\- A description of the checks run prior to check in, including any GitHub workflows, continuous integration builds, or other validation pipelines.
-
-\- Document the steps so that the agent can replicate these itself.
-
-\- Any explicit validation steps that the agent can consider to have further confidence in its changes.
-
-\- Dependencies that aren't obvious from the layout or file structure.
-
-\- Finally, fill in any remaining space with detailed lists of the following, in order of priority: the list of files in the repo root, the
-
-contents of the README, the contents of any key source files, the list of files in the next level down of directories, giving priority to the more structurally important and snippets of code from key source files, such as the one containing the main method.
-
-</ProjectLayout>
-
-</WhatToAdd>
-
-
-
-<StepsToFollow>
-
-\- Perform a comprehensive inventory of the codebase. Search for and view:
-
-\- README.md, CONTRIBUTING.md, and all other documentation files.
-
-\- Search the codebase for build steps and indications of workarounds like 'HACK', 'TODO', etc.
-
-\- All scripts, particularly those pertaining to build and repo or environment setup.
-
-\- All build and actions pipelines.
-
-\- All project files.
-
-\- All configuration and linting files.
-
-\- For each file:
-
-\- think: are the contents or the existence of the file information that the coding agent will need to implement, build, test, validate, or demo a code change?
-
-\- If yes:
-
-   - Document the command or information in detail.
-
-   - Explicitly indicate which commands work and which do not and the order in which commands should be run.
-
-   - Document any errors encountered as well as the steps taken to workaround them.
-
-\- Document any other steps or information that the agent can use to reduce time spent exploring or trying and failing to run bash commands.
-
-\- Finally, explicitly instruct the agent to trust the instructions and only perform a search if the information in the instructions is incomplete or found to be in error.
-
-</StepsToFollow>
-
-   - Document any errors encountered as well as the steps taken to work-around them.
-
+# War of Attrition Game - Copilot Agent Instructions
+
+## Repository Overview
+
+This repository contains the **War of Attrition** card game - a Progressive Web Application (PWA) built with Angular 20 and Angular Material. The project implements a sophisticated two-player card game with comprehensive game logic, animations, and responsive design. The application is deployed to GitHub Pages from the `/docs` directory.
+
+**Key Project Details**:
+- **Language**: TypeScript (Angular 20.1.6)
+- **Framework**: Angular with Angular Material UI
+- **Type**: Progressive Web Application (PWA)
+- **Architecture**: Signal-based reactive state management with standalone components
+- **Deployment**: GitHub Pages (hosted from `/docs`)
+- **Current Status**: Milestone 5 of 7 (Visual Polish & Animations) - 50% complete
+- **Test Coverage**: 159 tests passing (comprehensive coverage)
+
+## Build and Development Commands
+
+**ALWAYS run `npm install` before any other commands**. The project uses Node.js and npm for dependency management.
+
+### Essential Commands
+```bash
+# Install dependencies (REQUIRED first step)
+npm install
+
+# Development server (http://localhost:4200/)
+npm start
+# OR
+ng serve
+
+# Production build (outputs to /docs directory for GitHub Pages)
+npm run build
+# This runs: ng build --base-href /war-of-attrition-game/ && npm run move-build-files
+
+# Run tests (use headless mode in CI/headless environments)
+npm test -- --watch=false --browsers=ChromeHeadless
+# For development with watch mode (requires display)
+npm test
+
+# Lint code
+ng lint
+```
+
+### Build Timing and Warnings
+- **Build time**: ~7-8 seconds for production build
+- **Test time**: ~1 minute for all 159 tests
+- **Expected warnings**: Bundle size warnings (bundle exceeds 500KB budget) - these are non-blocking
+- **Bundle size**: Total ~659KB (acceptable for this feature-rich application)
+
+### Common Issues and Solutions
+1. **Chrome browser tests fail**: Use `--browsers=ChromeHeadless` flag for headless environments
+2. **Build warnings about bundle size**: These are warnings only, build succeeds
+3. **Module not found errors**: Run `npm install` first
+
+## Project Architecture and File Structure
+
+### Core Directory Structure
+```
+/
+├── .github/instructions/          # Complete project documentation
+│   ├── README.md                  # Central documentation hub
+│   ├── war-of-attrition-requirements.md  # IMMUTABLE requirements (NEVER modify)
+│   ├── progress-data.json         # Current development status
+│   └── copilot-instructions.md    # This file
+├── docs/                          # Production build output (GitHub Pages)
+├── src/app/                       # Main application source
+│   ├── core/                      # Core game engine
+│   │   ├── models/               # TypeScript models (Card, Deck, GameState)
+│   │   └── services/             # Game logic services
+│   ├── shared/components/         # Reusable UI components
+│   ├── game/                      # Main game component
+│   ├── settings/                  # Settings component
+│   └── services/                  # Application-level services
+├── angular.json                   # Angular CLI configuration
+├── package.json                   # Dependencies and scripts
+└── tsconfig.json                  # TypeScript configuration
+```
+
+### Key Configuration Files
+- **angular.json**: Build configuration, asset paths, budget warnings
+- **karma.conf.js**: Test runner configuration
+- **tsconfig.json**: TypeScript compiler options (strict mode enabled)
+- **ngsw-config.json**: Service worker configuration for PWA
+- **.github/workflows/**: GitHub Actions (if present)
+
+### Service Architecture (Critical for Understanding Code Changes)
+```
+Application Layer (src/app/services/)
+├── GameControllerService     # UI orchestration
+├── ProgressService          # Development tracking
+└── GameDemoService          # Demo functionality
+
+Core Engine Layer (src/app/core/services/)
+├── GameStateService         # Central state management (Angular signals)
+├── TurnResolutionService    # Game flow orchestration
+├── CardComparisonService    # Game rules implementation
+├── OpponentAIService        # AI decision making
+└── SettingsService          # User preferences
+```
+
+## Development Guidelines
+
+### Angular-Specific Patterns
+- **Standalone Components**: All new components should be standalone (no NgModule)
+- **Signal-Based State**: Use Angular signals for all reactive state (`signal()`, `computed()`)
+- **OnPush Change Detection**: All components use OnPush for performance
+- **Modern Control Flow**: Use `@if`, `@for`, `@switch` instead of structural directives
+
+### Code Style and Standards
+- **TypeScript Strict Mode**: All code must pass strict type checking
+- **Immutable Data**: Game models are immutable by design
+- **Service Injection**: Use Angular's dependency injection, avoid direct imports
+- **Testing**: Maintain comprehensive test coverage (currently 159 tests)
+
+### Critical Files for Agent Understanding
+1. **src/app/core/models/**: Understand Card, Deck, and GameState interfaces
+2. **src/app/core/services/game-state.service.ts**: Central state management
+3. **src/app/services/progress.service.ts**: Current development status
+4. **.github/instructions/war-of-attrition-requirements.md**: Game rules (NEVER modify)
+
+## Documentation Structure
+
+### Agent.md Files
+Each subdirectory in `src/app/` contains an `Agent.md` file with detailed information:
+- **Purpose**: What the directory contains
+- **Design Patterns**: How components/services are structured
+- **Integration Points**: How they connect to other parts of the system
+- **Usage Guidelines**: Best practices for modifications
+
+### Central Documentation
+- **.github/instructions/README.md**: Project overview and current status
+- **progress-data.json**: Single source of truth for development progress
+- **war-of-attrition-requirements.md**: Immutable game requirements
+
+## Validation and Testing
+
+### Pre-Change Validation
+1. **Always** run `npm install` first
+2. **Always** run `npm run build` to verify build succeeds
+3. **Always** run `npm test -- --watch=false --browsers=ChromeHeadless` to verify tests pass
+4. Check that no new TypeScript errors are introduced
+
+### Post-Change Validation
+1. Verify the application starts: `npm start`
+2. Test core functionality manually if game logic changes
+3. Ensure build warnings haven't increased significantly
+4. Verify responsive design on mobile viewport
+
+### Critical Success Patterns
+- **Tests must pass**: 159 tests should remain passing
+- **Build must succeed**: May have warnings but must complete
+- **Type safety**: No TypeScript errors allowed
+- **Signal patterns**: Use Angular signals for all state management
+
+## Common Development Scenarios
+
+### Adding New Features
+1. Update progress in `progress-data.json` if completing milestones
+2. Add tests alongside implementation
+3. Use existing service patterns for consistency
+4. Follow Angular standalone component patterns
+
+### Modifying Game Logic
+1. **NEVER** modify `war-of-attrition-requirements.md`
+2. Changes typically go in `src/app/core/services/`
+3. Update corresponding tests
+4. Ensure game state remains immutable
+
+### UI/Component Changes
+1. Components are in `src/app/shared/components/`
+2. Use Angular Material components when possible
+3. Maintain responsive design patterns
+4. Test accessibility features
+
+## Trust These Instructions
+
+These instructions are based on comprehensive repository analysis and testing. Only search for additional information if:
+- These instructions are incomplete for your specific task
+- You encounter errors not described here
+- You need to understand specific game logic details
+
+The repository is well-documented with Agent.md files in each directory providing detailed implementation guidance.
