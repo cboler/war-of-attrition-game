@@ -10,7 +10,7 @@ This is the **War of Attrition** card game - a Progressive Web Application built
 
 **📋 Progress Tracking**: All development progress is now centrally managed in `progress-data.json` and accessed via the `ProgressService`. This ensures consistency across all progress reporting.
 
-The project has completed **Milestone 2: Core Game Engine** and is ready to proceed to **Milestone 3: Basic UI Components**.
+The project has completed **Milestones 1-4** and is currently in **Milestone 5: Visual Polish & Animations** (50% complete).
 
 > **Note**: For detailed progress information, milestone breakdowns, and current status, refer to:
 > - **Central Progress Data**: `.github/instructions/progress-data.json`
@@ -21,22 +21,43 @@ The project has completed **Milestone 2: Core Game Engine** and is ready to proc
 - ✅ Basic Angular/PWA setup complete 
 - ✅ Theme toggle implemented with persistence
 - ✅ Routing structure (Game and Settings routes)
-- ⚠️  Responsive layout foundation (basic but can be enhanced in Milestone 3)
+- ✅ Responsive layout foundation
 
 ### ✅ Milestone 2: Core Game Engine (COMPLETED)
-All items completed as tracked in the central progress data:
 - ✅ **Card and Deck Models**: Complete card interface and deck class with red/black separation
 - ✅ **Game State Management**: Angular signals-based state management service
 - ✅ **Card Comparison Logic**: Full implementation including special Ace vs 2 rule
 - ✅ **Turn Resolution Engine**: Complete turn, challenge, and battle resolution logic
-- ✅ **Comprehensive Test Suite**: 60 passing tests covering all game logic
+- ✅ **Comprehensive Test Suite**: 159 passing tests covering all game logic
 
-### 🎯 Next: Milestone 3: Basic UI Components
-Ready to implement (as defined in central progress data):
-- Game Board Layout
-- Card Component 
-- Health Bar Component
-- Player Action Indicators
+### ✅ Milestone 3: Basic UI Components (COMPLETED)
+- ✅ **Game Board Layout**: Complete responsive game board implementation
+- ✅ **Card Component**: Full card display with animations and interactions
+- ✅ **Health Bar Component**: Color-coded health bars with damage animations
+- ✅ **Player Action Indicators**: Blue glow and visual cues for required actions
+
+### ✅ Milestone 4: Game Mechanics Implementation (COMPLETED)
+- ✅ **Basic Turn Flow**: Complete turn-by-turn gameplay
+- ✅ **Challenge System**: Accept/decline challenge functionality
+- ✅ **Battle System**: Battle card selection and resolution
+- ✅ **Game End Conditions**: Win/lose detection and game completion
+
+### 🔄 Milestone 5: Visual Polish & Animations (50% COMPLETE)
+**Completed**:
+- ✅ **Material Icons Implementation**: Navigation and theme toggle icons
+- ✅ **Enhanced Theme Toggle**: Lightbulb metaphor with lit/unlit states
+
+**In Progress**:
+- 🔄 **Card Animations**: Slide-in, flip, clash animations
+- 🔄 **Visual Effects**: Battle clash effects and health damage animations
+- 🔄 **Enhanced UI Polish**: Refined visual feedback system
+
+### 🎯 Next: Milestone 6: Settings & Customization
+Ready to implement:
+- Advanced settings menu enhancements
+- Multiple card backing options
+- Game statistics and analytics
+- Settings import/export functionality
 
 See `development-milestones.md` for complete milestone and issue breakdown.
 
@@ -112,19 +133,22 @@ The application is deployed to GitHub Pages from the `/docs` directory.
 
 ## Next Steps
 
-**Milestone 2 is COMPLETE!** 🎉
+**Milestone 5 is 50% COMPLETE!** 🎉
 
-The core game engine is fully implemented with:
-- Complete card and deck models with TypeScript typing
-- Robust game state management using Angular signals  
-- Card comparison logic implementing all game rules (including special Ace vs 2 rule)
-- Full turn resolution engine handling normal turns, challenges, and battles
-- Comprehensive test suite with 60 passing tests
+Significant progress has been made on Visual Polish & Animations:
+- ✅ Material Icons integration with navigation and theme controls
+- ✅ Enhanced theme toggle with lightbulb metaphor (lit/unlit states)
+- ✅ Local Material Icons font integration for offline functionality
 
-**Ready to proceed to Milestone 3: Basic UI Components:**
-1. Implement Game Board Layout component
-2. Create Card Component with proper styling
-3. Build Health Bar Component with color coding
-4. Add Player Action Indicators
+**Current focus for completing Milestone 5:**
+1. **Card Animations**: Implement slide-in, flip, and clash animations
+2. **Visual Effects**: Add battle clash effects and damage animations
+3. **Enhanced UI Polish**: Refine visual feedback system
 
-All development should follow the milestones outlined in `development-milestones.md` and requirements in `war-of-attrition-requirements.md`.
+**Ready to proceed to Milestone 6: Settings & Customization:**
+1. Expand settings menu with advanced options
+2. Implement multiple card backing patterns
+3. Add game statistics and analytics
+4. Create settings import/export functionality
+
+All development should continue to follow the milestones outlined in `development-milestones.md` and requirements in `war-of-attrition-requirements.md`.
