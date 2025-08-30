@@ -31,7 +31,7 @@ import { SettingsService } from '../../../core/services/settings.service';
          (keydown.space)="onCardClick()">
       
       @if (faceDown()) {
-        <div class="card-back" [style.background]="cardBackingPattern()">
+        <div class="card-back" [attr.style]="'background: ' + cardBackingPattern()">
           <div class="card-pattern"></div>
         </div>
       } @else {
