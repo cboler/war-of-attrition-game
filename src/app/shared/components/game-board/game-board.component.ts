@@ -1,4 +1,4 @@
-import { Component, input, output, inject } from '@angular/core';
+import { Component, input, output, inject, effect, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Card } from '../../../core/models/card.model';
 import { CardComponent } from '../card/card.component';
@@ -114,6 +114,7 @@ import { SettingsService } from '../../../core/services/settings.service';
 })
 export class GameBoardComponent {
   public settingsService = inject(SettingsService);
+  private cdr = inject(ChangeDetectorRef);
 
   // Input properties
   playerCardCount = input<number>(26);
@@ -129,6 +130,16 @@ export class GameBoardComponent {
   canPlayerAct = input<boolean>(false);
   turnNumber = input<number>(0);
   
+  constructor() {
+    // Debug effect to track canPlayerAct changes
+    effect(() => {
+      console.log('GameBoardComponent - canPlayerAct changed to:', this.canPlayerAct());
+      console.log('This should trigger template update with classes can-select and glowing');
+      // Force change detection
+      this.cdr.detectChanges();
+    });
+  }
+  
   // Animation states for cards
   playerCardAnimation = input<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);
   opponentCardAnimation = input<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);
@@ -141,8 +152,12 @@ export class GameBoardComponent {
   playerDeckClicked = output<void>();
 
   protected onPlayerDeckClick(): void {
+    console.log('GameBoardComponent.onPlayerDeckClick called, canPlayerAct:', this.canPlayerAct());
     if (this.canPlayerAct()) {
+      console.log('Emitting playerDeckClicked event');
       this.playerDeckClicked.emit();
+    } else {
+      console.log('Cannot act - not emitting event');
     }
   }
 }

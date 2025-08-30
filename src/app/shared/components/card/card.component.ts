@@ -17,12 +17,13 @@ import { SettingsService } from '../../../core/services/settings.service';
          [class.glow-red]="glow() === 'red'"
          [class.glow-blue]="glow() === 'blue'"
          [class.clickable]="clickable()"
-         [class.animate-slide-in]="animationState() === 'slide-in'"
-         [class.animate-flip]="animationState() === 'flip'"
-         [class.animate-clash-win]="animationState() === 'clash-win'"
-         [class.animate-clash-lose]="animationState() === 'clash-lose'"
-         [class.animate-fall-away]="animationState() === 'fall-away'"
+         [class.animate-slide-in]="effectiveAnimationState() === 'slide-in'"
+         [class.animate-flip]="effectiveAnimationState() === 'flip'"
+         [class.animate-clash-win]="effectiveAnimationState() === 'clash-win'"
+         [class.animate-clash-lose]="effectiveAnimationState() === 'clash-lose'"
+         [class.animate-fall-away]="effectiveAnimationState() === 'fall-away'"
          [class.from-deck]="fromPosition() === 'deck'"
+         [class]="animationSpeedClass()"
          [attr.role]="clickable() ? 'button' : null"
          [attr.aria-label]="ariaLabel()"
          [attr.tabindex]="clickable() ? 0 : null"
@@ -73,10 +74,29 @@ export class CardComponent {
 
   protected isRed = computed(() => this.card()?.isRed ?? false);
   
-  // Computed property for card backing pattern
+  // Computed properties for settings integration
   protected cardBackingPattern = computed(() => {
     const selectedOption = this.settingsService.selectedCardBackingOption();
     return selectedOption ? selectedOption.pattern : '';
+  });
+
+  // Check if animations are enabled
+  protected animationsEnabled = computed(() => {
+    return this.settingsService.currentSettings().autoPlayAnimations;
+  });
+
+  // Get animation speed class
+  protected animationSpeedClass = computed(() => {
+    const speed = this.settingsService.currentSettings().animationSpeed;
+    return `animation-speed-${speed}`;
+  });
+
+  // Computed animation state that respects settings
+  protected effectiveAnimationState = computed(() => {
+    if (!this.animationsEnabled()) {
+      return null; // Disable animations if turned off in settings
+    }
+    return this.animationState();
   });
   
   protected displayRank = computed(() => {
