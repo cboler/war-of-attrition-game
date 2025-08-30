@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -26,7 +26,7 @@ import { GamePhase, PlayerType } from '../core/models/game-state.model';
   templateUrl: './game.html',
   styleUrl: './game.scss'
 })
-export class Game implements OnInit {
+export class Game implements OnInit, OnDestroy {
   protected demoLog = signal<string[]>([]);
   // Demo UI state
   protected showOldDemo = signal<boolean>(false);
@@ -53,11 +53,22 @@ export class Game implements OnInit {
   protected playerCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
   protected opponentCardGlow = signal<'green' | 'red' | 'blue' | null>(null);
   
+  // Enhanced canPlayerAct that considers animations
+  protected effectiveCanPlayerAct = computed(() => {
+    const gameCanAct = this.canPlayerAct();
+    const animationsBlocking = this.animationsPlaying() && this.settingsService.currentSettings().autoPlayAnimations;
+    return gameCanAct && !animationsBlocking;
+  });
+  
   // Animation states
   protected playerCardAnimation = signal<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);
   protected opponentCardAnimation = signal<'slide-in' | 'flip' | 'clash-win' | 'clash-lose' | 'fall-away' | null>(null);
   protected playerHealthDamageAnimation = signal<boolean>(false);
   protected opponentHealthDamageAnimation = signal<boolean>(false);
+  
+  // Animation control
+  protected animationsPlaying = signal<boolean>(false);
+  protected animationTimers: number[] = [];
   
   // Battle state
   protected battleCards = signal<Card[]>([]);
@@ -106,6 +117,10 @@ export class Game implements OnInit {
       canChallenge: false,
       lastResult: null
     };
+  }
+
+  ngOnDestroy(): void {
+    this.clearAnimationTimers();
   }
 
   ngOnInit(): void {
@@ -281,12 +296,29 @@ export class Game implements OnInit {
    * Trigger card slide animation for new cards
    */
   private triggerCardSlideAnimation(player: 'player' | 'opponent'): void {
+    if (!this.settingsService.currentSettings().autoPlayAnimations) {
+      return; // Skip animations if disabled
+    }
+
+    const animationSpeed = this.settingsService.currentSettings().animationSpeed;
+    const duration = this.getAnimationDuration('slide-in', animationSpeed);
+    
+    this.animationsPlaying.set(true);
+    
     if (player === 'player') {
       this.playerCardAnimation.set('slide-in');
-      setTimeout(() => this.playerCardAnimation.set(null), 800);
+      const timer = window.setTimeout(() => {
+        this.playerCardAnimation.set(null);
+        this.checkAnimationsComplete();
+      }, duration);
+      this.animationTimers.push(timer);
     } else {
       this.opponentCardAnimation.set('slide-in');
-      setTimeout(() => this.opponentCardAnimation.set(null), 800);
+      const timer = window.setTimeout(() => {
+        this.opponentCardAnimation.set(null);
+        this.checkAnimationsComplete();
+      }, duration);
+      this.animationTimers.push(timer);
     }
   }
 
@@ -294,6 +326,15 @@ export class Game implements OnInit {
    * Trigger clash animations for battle results
    */
   private triggerClashAnimations(result: 'player-win' | 'opponent-win'): void {
+    if (!this.settingsService.currentSettings().autoPlayAnimations) {
+      return; // Skip animations if disabled
+    }
+
+    const animationSpeed = this.settingsService.currentSettings().animationSpeed;
+    const duration = this.getAnimationDuration('clash-win', animationSpeed);
+    
+    this.animationsPlaying.set(true);
+    
     if (result === 'player-win') {
       this.playerCardAnimation.set('clash-win');
       this.opponentCardAnimation.set('clash-lose');
@@ -303,31 +344,100 @@ export class Game implements OnInit {
     }
     
     // Clear animations after they complete
-    setTimeout(() => {
+    const timer = window.setTimeout(() => {
       this.playerCardAnimation.set(null);
       this.opponentCardAnimation.set(null);
-    }, 1000);
+      this.checkAnimationsComplete();
+    }, duration);
+    this.animationTimers.push(timer);
   }
 
   /**
    * Trigger health damage animation for player
    */
   private triggerPlayerHealthDamageAnimation(): void {
+    if (!this.settingsService.currentSettings().autoPlayAnimations) {
+      return; // Skip animations if disabled
+    }
+
+    const animationSpeed = this.settingsService.currentSettings().animationSpeed;
+    const duration = this.getAnimationDuration('health-damage', animationSpeed);
+    
+    this.animationsPlaying.set(true);
     this.playerHealthDamageAnimation.set(true);
-    setTimeout(() => this.playerHealthDamageAnimation.set(false), 800);
+    
+    const timer = window.setTimeout(() => {
+      this.playerHealthDamageAnimation.set(false);
+      this.checkAnimationsComplete();
+    }, duration);
+    this.animationTimers.push(timer);
   }
 
   /**
    * Trigger health damage animation for opponent
    */
   private triggerOpponentHealthDamageAnimation(): void {
+    if (!this.settingsService.currentSettings().autoPlayAnimations) {
+      return; // Skip animations if disabled
+    }
+
+    const animationSpeed = this.settingsService.currentSettings().animationSpeed;
+    const duration = this.getAnimationDuration('health-damage', animationSpeed);
+    
+    this.animationsPlaying.set(true);
     this.opponentHealthDamageAnimation.set(true);
-    setTimeout(() => this.opponentHealthDamageAnimation.set(false), 800);
+    
+    const timer = window.setTimeout(() => {
+      this.opponentHealthDamageAnimation.set(false);
+      this.checkAnimationsComplete();
+    }, duration);
+    this.animationTimers.push(timer);
   }
 
   /**
-   * Open discard pile viewer
+   * Get animation duration based on speed setting
    */
+  private getAnimationDuration(animationType: string, speed: 'slow' | 'normal' | 'fast'): number {
+    const baseDurations: Record<string, number> = {
+      'slide-in': 800,
+      'flip': 600,
+      'clash-win': 1000,
+      'clash-lose': 1000,
+      'fall-away': 1200,
+      'health-damage': 800
+    };
+    
+    const speedMultipliers = {
+      'slow': 1.5,
+      'normal': 1.0,
+      'fast': 0.5
+    };
+    
+    const baseDuration = baseDurations[animationType] || 800;
+    return baseDuration * speedMultipliers[speed];
+  }
+
+  /**
+   * Check if all animations are complete
+   */
+  private checkAnimationsComplete(): void {
+    const hasActiveAnimations = this.playerCardAnimation() !== null || 
+                               this.opponentCardAnimation() !== null ||
+                               this.playerHealthDamageAnimation() ||
+                               this.opponentHealthDamageAnimation();
+    
+    if (!hasActiveAnimations) {
+      this.animationsPlaying.set(false);
+    }
+  }
+
+  /**
+   * Clear all animation timers
+   */
+  private clearAnimationTimers(): void {
+    this.animationTimers.forEach(timer => window.clearTimeout(timer));
+    this.animationTimers = [];
+  }
   openDiscardPileViewer(): void {
     const discardedCards = this.gameStateService.discardedCards();
     
@@ -344,9 +454,11 @@ export class Game implements OnInit {
    * Reset all animations
    */
   private resetAnimations(): void {
+    this.clearAnimationTimers();
     this.playerCardAnimation.set(null);
     this.opponentCardAnimation.set(null);
     this.playerHealthDamageAnimation.set(false);
     this.opponentHealthDamageAnimation.set(false);
+    this.animationsPlaying.set(false);
   }
 }

@@ -14,7 +14,7 @@
       [opponentHealthDamageAnimation]="opponentHealthDamageAnimation()"
       [gameMessage]="gameMessage()"
       [challengeAvailable]="challengeAvailable()"
-      [canPlayerAct]="canPlayerAct()"
+      [canPlayerAct]="effectiveCanPlayerAct()"
       [turnNumber]="gameStateService.gameStats().turnNumber"
       (playerDeckClicked)="onPlayerDeckClick()">
     </app-game-board>

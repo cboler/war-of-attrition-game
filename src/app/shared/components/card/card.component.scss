@@ -248,6 +248,45 @@
   animation: fall-away 1.2s ease-in forwards;
 }
 
+// Animation Speed Classes
+.card.animation-speed-slow {
+  &.animate-slide-in {
+    animation-duration: 1.2s;
+  }
+  &.animate-flip {
+    animation-duration: 0.9s;
+  }
+  &.animate-clash-win {
+    animation-duration: 1.5s;
+  }
+  &.animate-clash-lose {
+    animation-duration: 1.5s;
+  }
+  &.animate-fall-away {
+    animation-duration: 1.8s;
+  }
+}
+
+.card.animation-speed-fast {
+  &.animate-slide-in {
+    animation-duration: 0.4s;
+  }
+  &.animate-flip {
+    animation-duration: 0.3s;
+  }
+  &.animate-clash-win {
+    animation-duration: 0.5s;
+  }
+  &.animate-clash-lose {
+    animation-duration: 0.5s;
+  }
+  &.animate-fall-away {
+    animation-duration: 0.6s;
+  }
+}
+
+// Normal speed uses the default durations defined in keyframes
+
 // Card Animation Keyframes
 @keyframes slide-in-from-deck {
   0% {
