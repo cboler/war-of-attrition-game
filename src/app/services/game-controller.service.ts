@@ -204,6 +204,9 @@ export class GameControllerService {
   private handleTurnResult(result: TurnResult): void {
     this.gameMessage.set(result.message);
 
+    // Set the last result for clash animations
+    this.gameStateService.setLastResult(result.result);
+
     // Handle opponent challenge
     if (result.opponentChallenge) {
       this.handleOpponentChallenge();
