@@ -31,7 +31,7 @@ describe('TurnResolutionService', () => {
       gameStateService.initializeGame(); // Reset game state for each test
     });
     
-    it('should resolve player win correctly', () => {
+    it('should resolve player win correctly when opponent does not challenge', () => {
       // Use the real game flow: start turn first to draw cards from decks
       const { playerCard, opponentCard } = gameStateService.startTurn();
       
@@ -43,6 +43,9 @@ describe('TurnResolutionService', () => {
       // Mock the comparison to ensure player wins
       spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
       
+      // Mock the opponent AI to not challenge
+      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(false);
+      
       const result = service.resolveTurn(playerCard, opponentCard);
       
       expect(result.winner).toBe(PlayerType.PLAYER);
@@ -52,6 +55,34 @@ describe('TurnResolutionService', () => {
       expect(result.cardsLost).toContain(opponentCard);
       expect(result.nextPhase).toBe(GamePhase.NORMAL);
       expect(result.canChallenge).toBe(false);
+    });
+
+    it('should trigger opponent challenge when player wins and opponent decides to challenge', () => {
+      // Use the real game flow: start turn first to draw cards from decks
+      const { playerCard, opponentCard } = gameStateService.startTurn();
+      
+      if (!playerCard || !opponentCard) {
+        fail('Failed to draw cards for test');
+        return;
+      }
+      
+      // Mock the comparison to ensure player wins
+      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+      
+      // Mock the opponent AI to challenge
+      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(true);
+      
+      const result = service.resolveTurn(playerCard, opponentCard);
+      
+      expect(result.winner).toBeNull(); // No winner yet due to challenge
+      expect(result.result).toBe(ComparisonResult.PLAYER_WINS);
+      expect(result.message).toBe('You win this turn, but opponent challenges!');
+      expect(result.cardsKept).toContain(playerCard);
+      expect(result.cardsKept).toContain(opponentCard);
+      expect(result.cardsLost.length).toBe(0); // No cards lost yet
+      expect(result.nextPhase).toBe(GamePhase.CHALLENGE);
+      expect(result.canChallenge).toBe(false);
+      expect(result.opponentChallenge).toBe(true);
     });
 
     it('should resolve opponent win correctly and offer challenge', () => {
