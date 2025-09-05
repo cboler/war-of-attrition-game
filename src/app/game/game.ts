@@ -147,9 +147,13 @@ export class Game implements OnInit, OnDestroy {
       return;
     }
 
+    // Store card counts before action to detect health changes
+    const previousPlayerCount = this.gameStateService.playerCardCount();
+    const previousOpponentCount = this.gameStateService.opponentCardCount();
+    
     const success = this.gameController.playerDrawCard();
     if (success) {
-      this.updateGameState();
+      this.updateGameStateWithPreviousCounts(previousPlayerCount, previousOpponentCount);
     }
   }
 
@@ -157,21 +161,33 @@ export class Game implements OnInit, OnDestroy {
    * Handle challenge decision
    */
   acceptChallenge(): void {
+    // Store card counts before action to detect health changes
+    const previousPlayerCount = this.gameStateService.playerCardCount();
+    const previousOpponentCount = this.gameStateService.opponentCardCount();
+    
     this.gameController.handleChallenge(true);
-    this.updateGameState();
+    this.updateGameStateWithPreviousCounts(previousPlayerCount, previousOpponentCount);
   }
 
   declineChallenge(): void {
+    // Store card counts before action to detect health changes
+    const previousPlayerCount = this.gameStateService.playerCardCount();
+    const previousOpponentCount = this.gameStateService.opponentCardCount();
+    
     this.gameController.handleChallenge(false);
-    this.updateGameState();
+    this.updateGameStateWithPreviousCounts(previousPlayerCount, previousOpponentCount);
   }
 
   /**
    * Confirm challenge with the revealed card
    */
   confirmChallenge(): void {
+    // Store card counts before action to detect health changes
+    const previousPlayerCount = this.gameStateService.playerCardCount();
+    const previousOpponentCount = this.gameStateService.opponentCardCount();
+    
     this.gameController.confirmChallenge();
-    this.updateGameState();
+    this.updateGameStateWithPreviousCounts(previousPlayerCount, previousOpponentCount);
   }
 
   /**
@@ -188,8 +204,12 @@ export class Game implements OnInit, OnDestroy {
    * Handle battle card selection
    */
   onBattleCardSelect(selectedCard: Card): void {
+    // Store card counts before action to detect health changes
+    const previousPlayerCount = this.gameStateService.playerCardCount();
+    const previousOpponentCount = this.gameStateService.opponentCardCount();
+    
     this.gameController.selectBattleCard(selectedCard);
-    this.updateGameState();
+    this.updateGameStateWithPreviousCounts(previousPlayerCount, previousOpponentCount);
   }
 
   // Keep demo methods for old demo mode
@@ -211,10 +231,18 @@ export class Game implements OnInit, OnDestroy {
    * Update UI state based on game controller state
    */
   private updateGameState(): void {
+    // Use current counts as "previous" when no previous values provided
+    const currentPlayerCount = this.gameStateService.playerCardCount();
+    const currentOpponentCount = this.gameStateService.opponentCardCount();
+    this.updateGameStateWithPreviousCounts(currentPlayerCount, currentOpponentCount);
+  }
+
+  /**
+   * Update UI state and trigger health animations based on card count changes
+   */
+  private updateGameStateWithPreviousCounts(previousPlayerCount: number, previousOpponentCount: number): void {
     const stats = this.gameController.getGameStats();
     const state = this.gameController.getGameState();
-    const previousPlayerCount = this.playerCardCount();
-    const previousOpponentCount = this.opponentCardCount();
     
     this.gameStats.set(stats);
     this.gameState.set(state);
@@ -233,11 +261,15 @@ export class Game implements OnInit, OnDestroy {
     this.battlePhase.set(this.gameController.currentBattlePhase);
     this.showBattleUI.set(this.battlePhase() === 'selection');
     
-    // Update card counts and trigger health damage animations if counts decreased
-    if (stats.playerCardCount < previousPlayerCount) {
+    // Get current card counts from game state service
+    const currentPlayerCount = this.gameStateService.playerCardCount();
+    const currentOpponentCount = this.gameStateService.opponentCardCount();
+    
+    // Trigger health damage animations if counts decreased
+    if (currentPlayerCount < previousPlayerCount) {
       this.triggerPlayerHealthDamageAnimation();
     }
-    if (stats.opponentCardCount < previousOpponentCount) {
+    if (currentOpponentCount < previousOpponentCount) {
       this.triggerOpponentHealthDamageAnimation();
     }
     
@@ -286,8 +318,7 @@ export class Game implements OnInit, OnDestroy {
     // Check for game end and record statistics
     if (state.winner && this.gameStartTime) {
       const gameDuration = Date.now() - this.gameStartTime;
-      const playerWon = state.winner === PlayerType.PLAYER;
-      this.settingsService.recordGameEnd(playerWon, stats.turnNumber, gameDuration);
+      this.settingsService.recordGameEnd(state.winner === 'player', stats.turnNumber, gameDuration);
       this.gameStartTime = null; // Reset for next game
     }
   }
