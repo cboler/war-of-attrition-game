@@ -257,15 +257,15 @@ export class Game implements OnInit, OnDestroy {
       }
       
       // Set card glow and clash animations based on last result
-      if (state.lastResult?.includes('win')) {
+      if (state.lastResult === 'player_wins') {
         this.playerCardGlow.set('green');
         this.opponentCardGlow.set('red');
         this.triggerClashAnimations('player-win');
-      } else if (state.lastResult?.includes('lose')) {
+      } else if (state.lastResult === 'opponent_wins') {
         this.playerCardGlow.set('red');
         this.opponentCardGlow.set('green');
         this.triggerClashAnimations('opponent-win');
-      } else if (state.lastResult?.includes('tie') || state.lastResult?.includes('battle')) {
+      } else if (state.lastResult === 'tie') {
         this.playerCardGlow.set('blue');
         this.opponentCardGlow.set('blue');
       } else {
