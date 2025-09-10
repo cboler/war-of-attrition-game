@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, NgZone } from '@angular/core';
 import { GameStateService } from '../core/services/game-state.service';
 import { TurnResolutionService, TurnResult } from '../core/services/turn-resolution.service';
 import { GamePhase, PlayerType } from '../core/models/game-state.model';
@@ -32,7 +32,8 @@ export class GameControllerService {
 
   constructor(
     private gameStateService: GameStateService,
-    private turnResolutionService: TurnResolutionService
+    private turnResolutionService: TurnResolutionService,
+    private ngZone: NgZone
   ) {}
 
   /**
@@ -305,13 +306,21 @@ export class GameControllerService {
 
       // Slight delay to show challenge message, then resolve automatically
       setTimeout(() => {
-        const result = this.turnResolutionService.resolveOpponentChallenge(
-          activeTurn.playerCard!,
-          activeTurn.opponentCard!,
-          opponentChallengeCard
-        );
-        
-        this.handleTurnResult(result);
+        this.ngZone.run(() => {
+          try {
+            const result = this.turnResolutionService.resolveOpponentChallenge(
+              activeTurn.playerCard!,
+              activeTurn.opponentCard!,
+              opponentChallengeCard
+            );
+            
+            this.handleTurnResult(result);
+          } catch (error) {
+            console.error('Error in opponent challenge setTimeout:', error);
+            this.gameMessage.set('Error during opponent challenge resolution!');
+            this.canPlayerAct.set(true);
+          }
+        });
       }, 1500); // 1.5 second delay to let player see the challenge message
 
       this.canPlayerAct.set(false);
