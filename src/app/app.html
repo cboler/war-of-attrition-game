@@ -2,14 +2,23 @@
   <span>{{ title() }}</span>
   <span class="toolbar-spacer"></span>
   <nav class="nav-links">
-    <button mat-icon-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" [attr.aria-label]="'Game'">
+    <button mat-icon-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" [attr.aria-label]="'Game'" matTooltip="Game Board">
       <mat-icon>casino</mat-icon>
     </button>
-    <button mat-icon-button routerLink="/settings" routerLinkActive="active" [attr.aria-label]="'Settings'">
+    <button mat-icon-button routerLink="/settings" routerLinkActive="active" [attr.aria-label]="'Settings'" matTooltip="Settings & Statistics">
       <mat-icon>settings</mat-icon>
     </button>
   </nav>
-  <button mat-icon-button (click)="toggleTheme()" [attr.aria-label]="'Toggle ' + (isDarkMode() ? 'light' : 'dark') + ' theme'">
+  
+  <button mat-button class="profile-toolbar-btn" (click)="openProfileDialog()" matTooltip="User Profile & Lifetime Stats">
+    <div class="avatar-badge">
+      <img [src]="activeProfile().avatarUrl" [alt]="activeProfile().name" />
+      <span class="provider-indicator" [class.google]="activeProfile().isGoogleAuth"></span>
+    </div>
+    <span class="profile-name-text">{{ activeProfile().name }}</span>
+  </button>
+
+  <button mat-icon-button (click)="toggleTheme()" [attr.aria-label]="'Toggle ' + (isDarkMode() ? 'light' : 'dark') + ' theme'" matTooltip="Toggle Dark/Light Mode">
     <mat-icon>{{ isDarkMode() ? 'lightbulb' : 'lightbulb_outline' }}</mat-icon>
   </button>
 </mat-toolbar>

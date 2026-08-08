@@ -14,7 +14,12 @@ export interface GameStatistics {
   averageTurnsPerGame: number;
   totalPlayTime: number; // in milliseconds
   averageGameDuration: number; // in milliseconds
-  lastPlayed?: Date;
+  totalChallenges?: number;
+  totalBattles?: number;
+  recursiveBattles?: number;
+  cardsDiscarded?: number;
+  winRatePercentage?: number;
+  lastPlayed?: Date | string;
 }
 
 export interface AppSettings {
@@ -51,7 +56,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
     totalTurns: 0,
     averageTurnsPerGame: 0,
     totalPlayTime: 0,
-    averageGameDuration: 0
+    averageGameDuration: 0,
+    totalChallenges: 0,
+    totalBattles: 0,
+    recursiveBattles: 0,
+    cardsDiscarded: 0,
+    winRatePercentage: 0
   },
   confirmChallenges: false,
   autoPlayAnimations: true,

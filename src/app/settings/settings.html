@@ -112,63 +112,69 @@
         <mat-tab label="Statistics">
           <div class="tab-content">
             <div class="setting-section">
-              <h3>Game Statistics</h3>
+              <div class="profile-summary-header">
+                <img [src]="activeProfile().avatarUrl" [alt]="activeProfile().name" class="profile-avatar" />
+                <div class="profile-meta">
+                  <h3>{{ activeProfile().name }}</h3>
+                  <p>{{ activeProfile().email }} • <span class="badge">{{ activeProfile().isGoogleAuth ? 'Google Account' : 'Guest Account' }}</span></p>
+                </div>
+              </div>
+
+              <mat-divider style="margin: 16px 0;"></mat-divider>
+
+              <h3>Lifetime Career Performance</h3>
               
               <div class="stats-grid">
+                <div class="stat-item highlight">
+                  <div class="stat-value">{{ userStats().winRatePercentage || 0 }}%</div>
+                  <div class="stat-label">Win Rate</div>
+                </div>
+
                 <div class="stat-item">
-                  <div class="stat-value">{{ settingsService.statistics().gamesPlayed }}</div>
+                  <div class="stat-value">{{ userStats().gamesPlayed }}</div>
                   <div class="stat-label">Games Played</div>
                 </div>
                 
                 <div class="stat-item">
-                  <div class="stat-value">{{ settingsService.statistics().gamesWon }}</div>
-                  <div class="stat-label">Games Won</div>
+                  <div class="stat-value">{{ userStats().gamesWon }}</div>
+                  <div class="stat-label">Victories</div>
                 </div>
                 
                 <div class="stat-item">
-                  <div class="stat-value">{{ settingsService.statistics().gamesLost }}</div>
-                  <div class="stat-label">Games Lost</div>
+                  <div class="stat-value">{{ userStats().gamesLost }}</div>
+                  <div class="stat-label">Defeats</div>
                 </div>
                 
                 <div class="stat-item">
-                  <div class="stat-value">
-                    {{ settingsService.statistics().gamesPlayed > 0 ? 
-                       ((settingsService.statistics().gamesWon / settingsService.statistics().gamesPlayed) * 100).toFixed(1) + '%' : 
-                       '0%' }}
-                  </div>
-                  <div class="stat-label">Win Rate</div>
-                </div>
-                
-                <div class="stat-item">
-                  <div class="stat-value">{{ settingsService.statistics().averageTurnsPerGame }}</div>
-                  <div class="stat-label">Avg. Turns per Game</div>
-                </div>
-                
-                <div class="stat-item">
-                  <div class="stat-value">{{ formatDuration(settingsService.statistics().averageGameDuration) }}</div>
-                  <div class="stat-label">Avg. Game Duration</div>
-                </div>
-                
-                <div class="stat-item">
-                  <div class="stat-value">{{ settingsService.statistics().totalTurns }}</div>
+                  <div class="stat-value">{{ userStats().totalTurns }}</div>
                   <div class="stat-label">Total Turns</div>
                 </div>
-                
+
                 <div class="stat-item">
-                  <div class="stat-value">{{ formatDuration(settingsService.statistics().totalPlayTime) }}</div>
-                  <div class="stat-label">Total Play Time</div>
+                  <div class="stat-value">{{ userStats().averageTurnsPerGame || 0 }}</div>
+                  <div class="stat-label">Avg Turns / Game</div>
                 </div>
-                
+
                 <div class="stat-item">
-                  <div class="stat-value">{{ formatLastPlayed(settingsService.statistics().lastPlayed) }}</div>
-                  <div class="stat-label">Last Played</div>
+                  <div class="stat-value">{{ userStats().totalChallenges || 0 }}</div>
+                  <div class="stat-label">Challenges</div>
+                </div>
+
+                <div class="stat-item">
+                  <div class="stat-value">{{ userStats().totalBattles || 0 }}</div>
+                  <div class="stat-label">Battles</div>
+                </div>
+
+                <div class="stat-item">
+                  <div class="stat-value">{{ userStats().cardsDiscarded || 0 }}</div>
+                  <div class="stat-label">Cards Discarded</div>
                 </div>
               </div>
 
               <div class="stats-actions">
                 <button mat-raised-button color="warn" (click)="onResetStatistics()">
                   <mat-icon>delete</mat-icon>
-                  Reset Statistics
+                  Reset Active Profile Stats
                 </button>
               </div>
             </div>

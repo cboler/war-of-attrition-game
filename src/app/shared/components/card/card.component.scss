@@ -1,128 +1,149 @@
 .card {
-  width: 70px;
-  height: 100px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  width: 72px;
+  height: 104px;
+  border-radius: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
   position: relative;
-  background: white;
+  background: #ffffff;
   cursor: pointer;
-  transition: all 0.3s ease-in-out;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   user-select: none;
+  perspective: 1000px;
+  transform-style: preserve-3d;
 
   @media (max-width: 599px) {
-    width: 60px;
-    height: 85px;
+    width: 62px;
+    height: 90px;
+    border-radius: 8px;
   }
 
   @media (max-width: 359px) {
-    width: 50px;
-    height: 70px;
+    width: 52px;
+    height: 74px;
+    border-radius: 6px;
   }
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px) rotateX(4deg);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   // Glow effects for game states
   &.glowing {
-    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out, border-color 0.3s ease;
   }
 
   &.glow-green {
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.6), 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-color: #4CAF50;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.85), 0 0 35px rgba(34, 197, 94, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: #22c55e;
   }
 
   &.glow-red {
-    box-shadow: 0 0 10px rgba(244, 67, 54, 0.6), 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-color: #F44336;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.85), 0 0 35px rgba(239, 68, 68, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: #ef4444;
   }
 
   &.glow-blue {
-    box-shadow: 0 0 10px rgba(33, 150, 243, 0.6), 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-color: #2196F3;
-    animation: pulse-blue 1.5s infinite;
+    border-color: #3b82f6;
+    animation: pulse-blue-glow 1.6s infinite ease-in-out;
   }
 
   &.clickable {
     cursor: pointer;
     
     &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: 0 12px 24px rgba(59, 130, 246, 0.4);
     }
 
     &:active {
-      transform: translateY(-2px);
+      transform: translateY(-2px) scale(0.98);
     }
   }
 
   &:not(.clickable) {
     cursor: default;
-    
-    &:hover {
-      transform: none;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
   }
 }
 
-@keyframes pulse-blue {
+@keyframes pulse-blue-glow {
   0%, 100% {
-    box-shadow: 0 0 10px rgba(33, 150, 243, 0.6), 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.7), 0 0 24px rgba(59, 130, 246, 0.3);
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 20px rgba(33, 150, 243, 0.8), 0 4px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.95), 0 0 40px rgba(99, 102, 241, 0.6);
+    transform: scale(1.04);
   }
 }
 
 .card-back {
   width: 100%;
   height: 100%;
-  // Background will be set dynamically via [style.background] binding
-  // Default fallback for when settings are not loaded
-  background: linear-gradient(45deg, #1565c0 25%, #1976d2 25%, #1976d2 50%, #1565c0 50%, #1565c0 75%, #1976d2 75%);
-  background-size: 8px 8px;
-  border-radius: 7px;
+  background: linear-gradient(45deg, #1e3a8a 25%, #1d4ed8 25%, #1d4ed8 50%, #1e3a8a 50%, #1e3a8a 75%, #1d4ed8 75%);
+  background-size: 10px 10px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+
+  @media (max-width: 599px) {
+    border-radius: 7px;
+  }
 }
 
 .card-pattern {
-  width: 80%;
-  height: 80%;
-  // Remove hard-coded pattern - let the main background handle the design
-  // Add subtle overlay for texture
+  width: 84%;
+  height: 84%;
+  border: 1px dashed rgba(255, 215, 0, 0.5);
   background-image: 
     radial-gradient(
       circle at 50% 50%,
-      rgba(255, 255, 255, 0.1) 0%,
-      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.08) 50%,
       transparent 100%
     );
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
 .card-face {
   width: 100%;
   height: 100%;
-  padding: 4px;
+  padding: 5px 6px;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-sizing: border-box;
+  background: radial-gradient(circle at center, #ffffff 60%, #f8fafc 100%);
+  border-radius: 9px;
+  overflow: hidden;
+
+  // Glossy highlight reflection overlay
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 45%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, transparent 80%);
+    pointer-events: none;
+    border-radius: 9px 9px 0 0;
+  }
 
   @media (max-width: 599px) {
-    padding: 3px;
+    padding: 3px 4px;
+    border-radius: 7px;
   }
 
   @media (max-width: 359px) {
-    padding: 2px;
+    padding: 2px 3px;
+    border-radius: 5px;
   }
 }
 
@@ -130,8 +151,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-weight: bold;
-  font-size: 10px;
+  font-weight: 800;
+  font-size: 11px;
   line-height: 1;
 
   @media (max-width: 599px) {
@@ -144,10 +165,11 @@
 
   .rank {
     margin-bottom: 1px;
+    letter-spacing: -0.5px;
   }
 
   .suit {
-    font-size: 8px;
+    font-size: 9px;
 
     @media (max-width: 599px) {
       font-size: 7px;
@@ -179,177 +201,158 @@
 }
 
 .suit-symbol {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: bold;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
 
   @media (max-width: 599px) {
-    font-size: 20px;
+    font-size: 21px;
   }
 
   @media (max-width: 359px) {
-    font-size: 16px;
+    font-size: 17px;
   }
 }
 
 // Color styling for red and black cards
 .red-card {
   .rank, .suit-symbol {
-    color: #d32f2f;
+    color: #dc2626;
   }
 }
 
 .black-card {
   .rank, .suit-symbol {
-    color: #212121;
+    color: #0f172a;
   }
 }
 
 // Dark theme support
 :host ::ng-deep .dark-theme .card {
-  background: #424242;
-  border-color: #666;
-  color: #e0e0e0;
+  background: #1e293b;
+  border-color: #475569;
+
+  .card-face {
+    background: radial-gradient(circle at center, #1e293b 60%, #0f172a 100%);
+  }
 
   &.red-card {
     .rank, .suit-symbol {
-      color: #f44336;
+      color: #f87171;
     }
   }
 
   &.black-card {
     .rank, .suit-symbol {
-      color: #e0e0e0;
+      color: #f8fafc;
     }
   }
 }
 
 // Card Animation States
 .card.animate-slide-in {
-  animation: slide-in-from-deck 0.8s ease-out;
+  animation: slide-in-from-deck 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   
   &.from-deck {
-    animation: slide-in-from-deck 0.8s ease-out;
+    animation: slide-in-from-deck 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
 
 .card.animate-flip {
-  animation: card-flip 0.6s ease-in-out;
+  animation: card-flip 0.5s ease-in-out;
 }
 
 .card.animate-clash-win {
-  animation: clash-victory 1.0s ease-out;
+  animation: clash-victory 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .card.animate-clash-lose {
-  animation: clash-defeat 1.0s ease-out;
+  animation: clash-defeat 0.8s ease-out;
 }
 
 .card.animate-fall-away {
-  animation: fall-away 1.2s ease-in forwards;
+  animation: fall-away 1.0s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
 }
 
 // Animation Speed Classes
 .card.animation-speed-slow {
-  &.animate-slide-in {
-    animation-duration: 1.2s;
-  }
-  &.animate-flip {
-    animation-duration: 0.9s;
-  }
-  &.animate-clash-win {
-    animation-duration: 1.5s;
-  }
-  &.animate-clash-lose {
-    animation-duration: 1.5s;
-  }
-  &.animate-fall-away {
-    animation-duration: 1.8s;
-  }
+  &.animate-slide-in { animation-duration: 1.0s; }
+  &.animate-flip { animation-duration: 0.8s; }
+  &.animate-clash-win { animation-duration: 1.2s; }
+  &.animate-clash-lose { animation-duration: 1.2s; }
+  &.animate-fall-away { animation-duration: 1.5s; }
 }
 
 .card.animation-speed-fast {
-  &.animate-slide-in {
-    animation-duration: 0.4s;
-  }
-  &.animate-flip {
-    animation-duration: 0.3s;
-  }
-  &.animate-clash-win {
-    animation-duration: 0.5s;
-  }
-  &.animate-clash-lose {
-    animation-duration: 0.5s;
-  }
-  &.animate-fall-away {
-    animation-duration: 0.6s;
-  }
+  &.animate-slide-in { animation-duration: 0.35s; }
+  &.animate-flip { animation-duration: 0.25s; }
+  &.animate-clash-win { animation-duration: 0.4s; }
+  &.animate-clash-lose { animation-duration: 0.4s; }
+  &.animate-fall-away { animation-duration: 0.5s; }
 }
-
-// Normal speed uses the default durations defined in keyframes
 
 // Card Animation Keyframes
 @keyframes slide-in-from-deck {
   0% {
-    transform: translateY(-100px) scale(0.8);
-    opacity: 0.7;
+    transform: translateY(-120px) rotateY(-40deg) scale(0.7);
+    opacity: 0;
   }
-  60% {
-    transform: translateY(10px) scale(1.05);
-    opacity: 0.9;
+  65% {
+    transform: translateY(8px) rotateY(10deg) scale(1.06);
+    opacity: 0.95;
   }
   100% {
-    transform: translateY(0) scale(1);
+    transform: translateY(0) rotateY(0deg) scale(1);
     opacity: 1;
   }
 }
 
 @keyframes card-flip {
   0% {
-    transform: rotateY(0deg);
+    transform: rotateY(0deg) scale(1);
   }
   50% {
-    transform: rotateY(90deg);
+    transform: rotateY(90deg) scale(1.1);
   }
   100% {
-    transform: rotateY(0deg);
+    transform: rotateY(0deg) scale(1);
   }
 }
 
 @keyframes clash-victory {
   0% {
-    transform: translateX(0) scale(1);
+    transform: scale(1);
   }
-  25% {
-    transform: translateX(-15px) scale(1.1);
+  30% {
+    transform: scale(1.25) translateY(-8px);
+    box-shadow: 0 0 35px rgba(34, 197, 94, 0.9), 0 0 60px rgba(34, 197, 94, 0.5);
   }
-  50% {
-    transform: translateX(15px) scale(1.15);
-  }
-  75% {
-    transform: translateX(-5px) scale(1.1);
+  60% {
+    transform: scale(1.15) translateY(2px);
   }
   100% {
-    transform: translateX(0) scale(1.05);
-    box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(34, 197, 94, 0.8);
   }
 }
 
 @keyframes clash-defeat {
   0% {
-    transform: translateX(0) scale(1);
+    transform: scale(1);
   }
-  25% {
-    transform: translateX(15px) scale(1.05) rotateZ(5deg);
+  20% {
+    transform: scale(1.1) rotateZ(6deg);
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.9);
   }
-  50% {
-    transform: translateX(-15px) scale(0.95) rotateZ(-5deg);
+  40% {
+    transform: scale(0.92) rotateZ(-8deg);
   }
-  75% {
-    transform: translateX(5px) scale(0.9) rotateZ(2deg);
+  60% {
+    transform: scale(0.85) rotateZ(4deg);
   }
   100% {
-    transform: translateX(0) scale(0.85) rotateZ(0deg);
-    opacity: 0.7;
+    transform: scale(0.8) rotateZ(0deg);
+    opacity: 0.6;
   }
 }
 
@@ -358,16 +361,16 @@
     transform: translateY(0) rotateZ(0deg) scale(1);
     opacity: 1;
   }
-  30% {
-    transform: translateY(20px) rotateZ(-15deg) scale(0.9);
-    opacity: 0.8;
+  25% {
+    transform: translateY(15px) rotateZ(-12deg) scale(0.95);
+    opacity: 0.9;
   }
-  70% {
-    transform: translateY(100px) rotateZ(-45deg) scale(0.6);
-    opacity: 0.3;
+  60% {
+    transform: translateY(120px) rotateZ(-40deg) scale(0.5);
+    opacity: 0.4;
   }
   100% {
-    transform: translateY(200px) rotateZ(-90deg) scale(0.2);
+    transform: translateY(240px) rotateZ(-90deg) scale(0.1);
     opacity: 0;
   }
 }

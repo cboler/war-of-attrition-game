@@ -260,14 +260,15 @@ describe('CardComponent', () => {
     });
 
     it('should update card backing pattern when settings change', () => {
-      // Set the card to be face down
+      // Explicitly set initial baseline to classic-blue
+      settingsService.setCardBacking('classic-blue');
       fixture.componentRef.setInput('faceDown', true);
       fixture.detectChanges();
 
-      // Get initial pattern (should be blue by default)
+      // Get initial pattern (blue)
       const initialPattern = component['cardBackingPattern']();
       expect(initialPattern).toContain('linear-gradient');
-      expect(initialPattern).toContain('#1565c0'); // Classic blue pattern (default)
+      expect(initialPattern).toContain('#1565c0'); // Classic blue pattern
 
       // Change to red backing
       settingsService.setCardBacking('classic-red');

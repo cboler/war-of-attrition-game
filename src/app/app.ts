@@ -1,18 +1,35 @@
-import { Component, signal, OnInit } from '@angular/core';
+import { Component, signal, OnInit, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { AuthService } from './core/services/auth.service';
+import { ProfileDialogComponent } from './shared/components/profile-dialog/profile-dialog.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatToolbarModule, MatButtonModule, MatIconModule],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule,
+    MatTooltipModule
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
 export class App implements OnInit {
+  private authService = inject(AuthService);
+  private dialog = inject(MatDialog);
+
   protected readonly title = signal('⚔️ Attrition');
   protected readonly isDarkMode = signal(false);
+  readonly activeProfile = this.authService.activeProfile;
   
   private readonly THEME_STORAGE_KEY = 'war-of-attrition-theme';
   
@@ -46,6 +63,14 @@ export class App implements OnInit {
       this.applyTheme(newValue);
       this.saveThemePreference(newValue);
       return newValue;
+    });
+  }
+
+  protected openProfileDialog(): void {
+    this.dialog.open(ProfileDialogComponent, {
+      width: '620px',
+      maxWidth: '95vw',
+      panelClass: 'glass-dialog-panel'
     });
   }
 }

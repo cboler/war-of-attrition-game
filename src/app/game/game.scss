@@ -31,26 +31,27 @@
 
 .game-controls {
   position: fixed;
-  top: 80px; // Position below the toolbar instead of at bottom
-  right: 20px; // Move to right side to avoid covering game area
+  top: 80px;
+  right: 20px;
   display: flex;
-  flex-direction: column; // Stack vertically to take less horizontal space
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.8);
-  padding: 8px;
-  border-radius: 8px;
-  backdrop-filter: blur(4px);
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px) saturate(180%);
+  padding: 10px 12px;
+  border-radius: 14px;
   z-index: 1000;
-  max-width: 180px; // Limit width
+  max-width: 190px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 
   @media (max-width: 959px) {
     top: 72px;
     right: 16px;
-    max-width: 160px;
+    max-width: 170px;
   }
 
   @media (max-width: 599px) {
-    // On mobile, move to top-left to avoid interfering with game
     top: 64px;
     right: auto;
     left: 8px;
@@ -62,79 +63,70 @@
     justify-content: flex-start;
   }
 
-  @media (max-width: 359px) {
-    bottom: 12px;
-    gap: 6px;
-    padding: 8px 10px;
-  }
-
   button {
     font-size: 12px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+    }
     
     .discard-count {
-      margin-left: 4px;
-      font-size: 0.9em;
-      opacity: 0.8;
-      background: rgba(255, 255, 255, 0.2);
-      padding: 2px 6px;
+      margin-left: 6px;
+      font-size: 0.85em;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.25);
+      padding: 2px 7px;
       border-radius: 12px;
       min-width: 20px;
       display: inline-block;
       text-align: center;
     }
-    min-height: 36px;
+    min-height: 38px;
     
     @media (max-width: 599px) {
       font-size: 11px;
       min-height: 32px;
       padding: 0 12px;
     }
-
-    @media (max-width: 359px) {
-      font-size: 10px;
-      min-height: 28px;
-      padding: 0 8px;
-    }
   }
 }
 
-.challenge-overlay {
+.challenge-overlay, .battle-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(15, 23, 42, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(12px) saturate(160%);
+  animation: overlayFadeIn 0.3s ease-out;
 }
 
-.battle-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  backdrop-filter: blur(4px);
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .challenge-card {
-  max-width: 600px; // Increased to accommodate more content
-  width: 90%;
-  animation: challengePopIn 0.3s ease-out;
+  max-width: 620px;
+  width: 92%;
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  animation: challengeSpringPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: #ffffff !important;
   
-  @keyframes challengePopIn {
+  @keyframes challengeSpringPop {
     0% {
       opacity: 0;
-      transform: scale(0.8) translateY(-20px);
+      transform: scale(0.82) translateY(-30px);
     }
     100% {
       opacity: 1;
@@ -143,11 +135,22 @@
   }
   
   mat-card-header {
-    background: linear-gradient(45deg, #ff6b35, #f7931e);
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
     color: white;
     margin: -16px -16px 16px -16px;
-    padding: 16px;
-    border-radius: 4px 4px 0 0;
+    padding: 20px 24px;
+    
+    mat-card-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    
+    mat-card-subtitle {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
   }
   
   mat-card-actions {
@@ -155,25 +158,33 @@
     gap: 12px;
     justify-content: flex-end;
     margin-top: 16px;
+    padding: 12px 16px;
+
+    button {
+      border-radius: 10px;
+      font-weight: 700;
+      padding: 0 20px;
+    }
   }
   
   .turn-context {
     margin-bottom: 20px;
-    padding: 12px;
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
     
     h4 {
       margin: 0 0 12px 0;
-      color: #333;
-      font-size: 1.1em;
-      font-weight: 600;
+      color: #1e293b;
+      font-size: 1.05em;
+      font-weight: 700;
     }
   }
   
   .cards-display {
     display: flex;
-    gap: 20px;
+    gap: 24px;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
@@ -187,46 +198,51 @@
       
       span {
         font-size: 0.9em;
-        font-weight: 500;
-        color: #666;
+        font-weight: 600;
+        color: #475569;
         text-align: center;
       }
       
       app-card {
-        transform: scale(0.8);
+        transform: scale(0.9);
       }
     }
   }
   
   .challenge-card-display {
     margin: 20px 0;
-    padding: 12px;
-    background: rgba(0, 123, 255, 0.1);
-    border-radius: 8px;
+    padding: 16px;
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
     text-align: center;
     
     h4 {
       margin: 0 0 12px 0;
-      color: #007bff;
-      font-size: 1.1em;
-      font-weight: 600;
+      color: #4f46e5;
+      font-size: 1.05em;
+      font-weight: 700;
     }
     
     app-card {
-      transform: scale(0.9);
+      transform: scale(1);
     }
   }
 }
 
 .battle-card {
-  max-width: 600px;
+  max-width: 640px;
   width: 95%;
-  animation: battlePopIn 0.4s ease-out;
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  animation: battleSpringPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: #ffffff !important;
   
-  @keyframes battlePopIn {
+  @keyframes battleSpringPop {
     0% {
       opacity: 0;
-      transform: scale(0.9) translateY(-30px);
+      transform: scale(0.85) translateY(-40px);
     }
     100% {
       opacity: 1;
@@ -235,34 +251,46 @@
   }
   
   mat-card-header {
-    background: linear-gradient(45deg, #d32f2f, #f44336);
+    background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
     color: white;
     margin: -16px -16px 16px -16px;
-    padding: 16px;
-    border-radius: 4px 4px 0 0;
+    padding: 20px 24px;
+
+    mat-card-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    mat-card-subtitle {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
   }
   
   .battle-cards {
     h4 {
-      margin: 16px 0 8px 0;
-      font-weight: 500;
+      margin: 16px 0 10px 0;
+      font-weight: 700;
+      color: #1e293b;
     }
     
     .opponent-battle-cards,
     .player-battle-cards {
       display: flex;
-      gap: 8px;
+      gap: 12px;
       justify-content: center;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
     }
     
     .opponent-battle-cards app-card {
       cursor: pointer;
-      transition: transform 0.2s ease;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
       
       &:hover {
-        transform: translateY(-4px);
+        transform: translateY(-8px) scale(1.08);
       }
     }
   }

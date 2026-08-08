@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Inject } from '@angular/core';
 import { SettingsService } from '../core/services/settings.service';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -33,6 +34,10 @@ import { SettingsService } from '../core/services/settings.service';
   styleUrl: './settings.scss'
 })
 export class Settings {
+  authService = inject(AuthService);
+  readonly activeProfile = this.authService.activeProfile;
+  readonly userStats = this.authService.userStats;
+
   constructor(
     public settingsService: SettingsService,
     private dialog: MatDialog,
@@ -53,10 +58,11 @@ export class Settings {
   onResetStatistics(): void {
     this.showConfirmDialog(
       'Reset Statistics', 
-      'Are you sure you want to reset all game statistics? This action cannot be undone.'
+      'Are you sure you want to reset all game statistics for your active profile? This action cannot be undone.'
     ).subscribe(result => {
       if (result) {
         this.settingsService.resetStatistics();
+        this.authService.resetActiveUserStats();
       }
     });
   }

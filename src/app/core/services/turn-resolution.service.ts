@@ -134,12 +134,10 @@ export class TurnResolutionService {
     const result = this.cardComparisonService.compareCards(challengeCard, originalOpponentCard);
     
     if (result === ComparisonResult.PLAYER_WINS) {
-      // Challenge successful - player keeps both cards, opponent's card needs to be removed from their deck and discarded
-      this.gameStateService.returnCardsToPlayerDeck([originalPlayerCard, challengeCard]);
-      
-      // Remove opponent's card from their deck (it was added during initial turn resolution) and discard it
+      // Challenge successful - opponent loses original card, player keeps both cards
       this.gameStateService.removeCardsFromOpponentDeck([originalOpponentCard]);
       this.gameStateService.addToDiscardPile([originalOpponentCard]);
+      this.gameStateService.returnCardsToPlayerDeck([originalPlayerCard, challengeCard]);
       
       return {
         winner: PlayerType.PLAYER,
@@ -190,9 +188,10 @@ export class TurnResolutionService {
     const result = this.cardComparisonService.compareCards(opponentChallengeCard, originalPlayerCard);
     
     if (result === ComparisonResult.OPPONENT_WINS) {
-      // Opponent challenge successful - opponent keeps both cards, player's card goes to discard
-      this.gameStateService.returnCardsToOpponentDeck([originalOpponentCard, opponentChallengeCard]);
+      // Opponent challenge successful - player loses original card, opponent keeps both cards
+      this.gameStateService.removeCardsFromPlayerDeck([originalPlayerCard]);
       this.gameStateService.addToDiscardPile([originalPlayerCard]);
+      this.gameStateService.returnCardsToOpponentDeck([originalOpponentCard, opponentChallengeCard]);
       
       return {
         winner: PlayerType.OPPONENT,
@@ -221,6 +220,7 @@ export class TurnResolutionService {
       };
     } else {
       // Opponent challenge failed - opponent loses both cards, player keeps their card
+      this.gameStateService.removeCardsFromOpponentDeck([originalOpponentCard]);
       this.gameStateService.returnCardsToPlayerDeck([originalPlayerCard]);
       this.gameStateService.addToDiscardPile([originalOpponentCard, opponentChallengeCard]);
       

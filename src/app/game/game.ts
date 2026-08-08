@@ -1,17 +1,20 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { GameDemoService } from '../services/game-demo.service';
 import { GameControllerService } from '../services/game-controller.service';
 import { GameBoardComponent } from '../shared/components/game-board/game-board.component';
 import { CardComponent } from '../shared/components/card/card.component';
 import { DiscardPileViewerComponent } from '../shared/components/discard-pile-viewer/discard-pile-viewer.component';
+import { VictoryDialogComponent } from '../shared/components/victory-dialog/victory-dialog.component';
+import { ProfileDialogComponent } from '../shared/components/profile-dialog/profile-dialog.component';
 import { Card, CardImpl, Suit, Rank } from '../core/models/card.model';
 import { ProgressService, ProgressData } from '../services/progress.service';
 import { GameStateService } from '../core/services/game-state.service';
 import { SettingsService } from '../core/services/settings.service';
+import { AuthService } from '../core/services/auth.service';
 import { GamePhase, PlayerType } from '../core/models/game-state.model';
 
 @Component({
@@ -27,6 +30,10 @@ import { GamePhase, PlayerType } from '../core/models/game-state.model';
   styleUrl: './game.scss'
 })
 export class Game implements OnInit, OnDestroy {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private victoryDialogShown = false;
+
   protected demoLog = signal<string[]>([]);
   // Demo UI state
   protected showOldDemo = signal<boolean>(false);
@@ -194,6 +201,7 @@ export class Game implements OnInit, OnDestroy {
    * Start a new game
    */
   startNewGame(): void {
+    this.victoryDialogShown = false;
     this.gameController.startNewGame();
     this.gameStartTime = Date.now();
     this.settingsService.recordGameStart();
@@ -316,10 +324,44 @@ export class Game implements OnInit, OnDestroy {
     }
     
     // Check for game end and record statistics
-    if (state.winner && this.gameStartTime) {
-      const gameDuration = Date.now() - this.gameStartTime;
+    if (state.winner && !this.victoryDialogShown) {
+      this.victoryDialogShown = true;
+      const gameDuration = this.gameStartTime ? Date.now() - this.gameStartTime : 30000;
+      
       this.settingsService.recordGameEnd(state.winner === 'player', stats.turnNumber, gameDuration);
-      this.gameStartTime = null; // Reset for next game
+      this.authService.recordGameResult({
+        won: state.winner === 'player',
+        turns: stats.turnNumber,
+        durationMs: gameDuration,
+        discardedCardsCount: stats.discardedCardCount
+      });
+      
+      this.gameStartTime = null;
+
+      // Open Victory Dialog
+      const dialogRef = this.dialog.open(VictoryDialogComponent, {
+        data: {
+          winner: state.winner,
+          totalTurns: stats.turnNumber,
+          playerCardCount: this.gameStateService.playerCardCount(),
+          opponentCardCount: this.gameStateService.opponentCardCount(),
+          discardedCardCount: this.gameStateService.discardedCardCount()
+        },
+        width: '520px',
+        maxWidth: '95vw',
+        disableClose: true
+      });
+
+      dialogRef.afterClosed().subscribe(res => {
+        if (res?.action === 'playAgain') {
+          this.startNewGame();
+        } else if (res?.action === 'openProfile') {
+          this.dialog.open(ProfileDialogComponent, {
+            width: '620px',
+            maxWidth: '95vw'
+          });
+        }
+      });
     }
   }
 

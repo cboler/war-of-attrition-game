@@ -139,8 +139,8 @@ describe('TurnResolutionService', () => {
       }
       
       // Simulate initial turn loss (opponent wins)
+      const spy = spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
       const initialResult = service.resolveTurn(playerCard, opponentCard);
-      // Assume opponent won, now player wants to challenge
       
       // Player draws challenge card
       const challengeCard = gameStateService.drawPlayerCard();
@@ -150,7 +150,7 @@ describe('TurnResolutionService', () => {
       }
       
       // Mock the challenge comparison to ensure challenge succeeds
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+      spy.and.returnValue(ComparisonResult.PLAYER_WINS);
       
       const result = service.resolveChallenge(playerCard, opponentCard, challengeCard);
       
