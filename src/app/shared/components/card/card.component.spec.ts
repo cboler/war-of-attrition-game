@@ -264,10 +264,10 @@ describe('CardComponent', () => {
       fixture.componentRef.setInput('faceDown', true);
       fixture.detectChanges();
 
-      // Get initial pattern (should be gray by default)
+      // Get initial pattern (should be blue by default)
       const initialPattern = component['cardBackingPattern']();
       expect(initialPattern).toContain('linear-gradient');
-      expect(initialPattern).toContain('#616161'); // Gray pattern (this is the actual default)
+      expect(initialPattern).toContain('#1565c0'); // Classic blue pattern (default)
 
       // Change to red backing
       settingsService.setCardBacking('classic-red');
@@ -277,7 +277,7 @@ describe('CardComponent', () => {
       const updatedPattern = component['cardBackingPattern']();
       expect(updatedPattern).toContain('linear-gradient');
       expect(updatedPattern).toContain('#c62828'); // Red pattern
-      expect(updatedPattern).not.toContain('#616161'); // Should not contain gray anymore
+      expect(updatedPattern).not.toContain('#1565c0'); // Should not contain blue anymore
 
       // Verify the DOM element also gets updated
       const cardBack = fixture.nativeElement.querySelector('.card-back');

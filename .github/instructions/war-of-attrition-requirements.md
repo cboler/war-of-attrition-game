@@ -44,19 +44,20 @@ The application is a two-player, head-to-head card game of attrition. The object
   2. This new card is compared against the *original winning card* of the opponent.  
 * **Outcome**:  
   * **Challenge Win**: If the challenger's new card wins, they keep **all** of their active cards (the original losing card and the new challenge card). The opponent's winning card is discarded.  
-  * **Challenge Loss**: If the challenger's new card loses or ties, they lose **all** of their active cards (both the original and the challenge card). The opponent keeps their winning card.
+  * **Challenge Loss**: If the challenger's new card loses, they lose **all** of their active cards (both the original and the challenge card). The opponent keeps their winning card.  
+  * **Challenge Tie**: If the challenger's new card ties with the opponent's original winning card, the turn immediately transitions into a **Battle phase**. All cards present on the field (challenger's original card, challenger's challenge card, and opponent's original card) remain staked for the battle.
 
 #### **2.4.3. Battle**
 
-* **Condition**: Occurs when the Player's and Opponent's cards are of equal value.  
+* **Condition**: Occurs when the Player's and Opponent's cards are of equal value (either during initial comparison or following a Challenge tie).  
 * **Mechanic**:  
   1. Both players place the next **three** cards from their deck face-down.  
   2. The Player is presented with the Opponent's three face-down cards and must select one.  
   3. The Opponent AI simultaneously selects one of the Player's three face-down cards.  
   4. These two selected cards are revealed and compared.  
 * **Outcome**:  
-  * **Battle Win**: The winner of the comparison keeps **all of their own cards** involved in the battle (the initial tying card, their three face-down cards). All of the **loser's** cards from the battle (initial tying card \+ three face-down cards) are sent to the discard pile.  
-  * **Recursive Battle**: If the two selected cards are also a tie, the Battle process repeats from step 1\. All cards currently staked remain in play for the next round of the Battle.
+  * **Battle Win**: The winner of the comparison keeps **all of their own cards** involved in the battle (all initial/challenge cards on the field plus their face-down battle cards). All of the **loser's** cards from the battle (all initial/challenge cards on the field plus their face-down battle cards) are sent to the discard pile.  
+  * **Recursive Battle**: If the two selected cards are also a tie, the Battle process repeats from step 1. All cards currently staked remain in play for the next round of the Battle.
 
 ### **2.5. Win/Loss Conditions**
 

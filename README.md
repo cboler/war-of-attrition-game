@@ -61,102 +61,85 @@ For more information on using the Angular CLI, including detailed command refere
 ## Mermaid diagram
 
 ```mermaid
----
-config:
-  layout: elk
----
 flowchart TD
-    %% Initialization
-    init["Start"] -- "Divide deck by color (Red/Black). Players shuffle." --> startTurn["Player clicks deck"]
-
-    %% Pre-Turn & End-Game Check
-    startTurn --> checkDrawCards{"Can both players draw a card?"}
-    checkDrawCards -- "No" --> determineWinnerOnDeckOut{"Is Player out of cards?"}
-    determineWinnerOnDeckOut -- "Yes" --> loseGame["Lose: No cards to draw"]
-    determineWinnerOnDeckOut -- "No (Opponent is out)" --> winGame["Win! Opponent has no cards"]
-    checkDrawCards -- "Yes" --> preCompare["Draw 1 card each. Increment turn count."]
-
-    %% Main Turn Loop
-    preCompare --> compareCards{"Compare cards"}
-
-    %% Special Ace vs. 2 Rule
-    compareCards -- "Player has Ace & Opponent has 2" --> resolveNormalLoss
-    compareCards -- "Opponent has Ace & Player has 2" --> resolveNormalWin
-
-    %% Standard Comparison
-    compareCards -- "Player > Opponent" --> opponentChallenge{"Opponent challenges?"}
-    compareCards -- "Opponent > Player" --> playerChallenge{"Player challenges?"}
-    compareCards -- "Values are Equal" --> battleCheck
-
-    %% Challenge Sub-flow
-    opponentChallenge -- "No" --> resolveNormalWin
-    opponentChallenge -- "Yes" --> drawOpponentChallenge["Opponent draws 1 card"]
-    drawOpponentChallenge --> compareOpponentChallenge{"P's original vs. O's new card"}
-    compareOpponentChallenge -- "Opponent wins" --> resolveChallengeLoss
-    compareOpponentChallenge -- "Player wins" --> resolveChallengeWin
-    compareOpponentChallenge -- "Cards are equal" --> battleCheck
-
-    playerChallenge -- "No" --> resolveNormalLoss
-    playerChallenge -- "Yes" --> drawPlayerChallenge["Player draws 1 card"]
-    drawPlayerChallenge --> comparePlayerChallenge{"O's original vs. P's new card"}
-    comparePlayerChallenge -- "Player wins" --> resolveChallengeWin
-    comparePlayerChallenge -- "Opponent wins" --> resolveChallengeLoss
-    comparePlayerChallenge -- "Cards are equal" --> battleCheck
-
-    %% Battle Sub-flow
-    battleCheck --> checkCardsForBattle{"Both have at least 4 cards?"}
-    checkCardsForBattle -- "No" --> loseGame["A player cannot continue battle; game over."]
-    checkCardsForBattle -- "Yes" --> setupBattle["Battle! Each places 3 cards face down."]
-    setupBattle --> selectBattleCards["Both sides select a new card from opponent's 3 cards."]
-    selectBattleCards --> compareBattleCards{"Compare the two newly selected cards"}
-    compareBattleCards -- "Player > Opponent" --> resolveBattleWin
-    compareBattleCards -- "Opponent > Player" --> resolveBattleLoss
-    compareBattleCards -- "Equal" --> battleCheck
-
-    %% Resolution Nodes
-    subgraph Turn Resolution
-        direction LR
-        resolveNormalWin("Win Turn: Keep your card; Opponent's card discarded")
-        resolveNormalLoss("Lose Turn: Your card discarded; Opponent keeps theirs")
-        resolveChallengeWin("Win Challenge: Keep your cards; Opponent's discarded")
-        resolveChallengeLoss("Lose Challenge: Your cards discarded; Opponent keeps theirs")
-        resolveBattleWin("Win Battle: Keep all your cards; Opponent's discarded")
-        resolveBattleLoss("Lose Battle: All your cards discarded; Opponent keeps theirs")
+    subgraph Setup ["Game Setup & Initialization"]
+        init["Start Game"] --> splitDeck["Split Deck by Color:<br/>Red (Player) & Black (Opponent)"]
+        splitDeck --> shuffle["Independent Deck Shuffling"]
+        shuffle --> startTurn["Player Clicks Deck to Begin Turn"]
     end
 
-    %% Link Resolutions to Next Turn
-    resolveNormalWin & resolveNormalLoss --> startTurn
-    resolveChallengeWin & resolveChallengeLoss --> startTurn
-    resolveBattleWin & resolveBattleLoss --> startTurn
-    
-    %% End Game
-    winGame --> playAgain{"Play again?"}
-    loseGame --> playAgain
-    playAgain --> init
+    subgraph DrawPhase ["Draw & Deck Check Phase"]
+        startTurn --> checkDraw{"Can both players draw a card?"}
+        checkDraw -- "No" --> checkDeckWinner{"Who has remaining cards?"}
+        checkDeckWinner -- "Player has cards" --> winGame["Player Wins Game!"]
+        checkDeckWinner -- "Opponent has cards" --> loseGame["Opponent Wins Game!"]
+        checkDraw -- "Yes" --> drawActive["Draw 1 Active Card Each & Increment Turn Count"]
+    end
+
+    subgraph NormalComparison ["Card Comparison Phase"]
+        drawActive --> compareCards{"Compare Active Card Values<br/>(Ace beats K..3; 2 beats Ace)"}
+        
+        compareCards -- "Player > Opponent" --> oppChallengeChoice{"Opponent AI challenges?"}
+        compareCards -- "Opponent > Player" --> playerChallengeChoice{"Player challenges?"}
+        compareCards -- "Values are Equal" --> battleCheck["Initiate Battle Check"]
+    end
+
+    subgraph ChallengeBranch ["Challenge Phase"]
+        oppChallengeChoice -- "No (Decline)" --> resolveNormalWin["Player Wins Turn:<br/>Keep active card; Opponent card discarded"]
+        oppChallengeChoice -- "Yes (Challenge)" --> drawOppChallenge["Opponent draws 1 Challenge Card"]
+        drawOppChallenge --> compareOppChallenge{"Compare Opponent's Challenge Card<br/>vs. Player's Original Card"}
+        
+        compareOppChallenge -- "Opponent Wins" --> resolveOppChallengeWin["Opponent Wins Challenge:<br/>Opponent keeps both cards; Player card discarded"]
+        compareOppChallenge -- "Player Wins" --> resolveOppChallengeLoss["Opponent Loses Challenge:<br/>Player keeps original card; Opponent loses both cards"]
+        compareOppChallenge -- "Cards are Equal (Tie)" --> battleCheck
+
+        playerChallengeChoice -- "No (Decline)" --> resolveNormalLoss["Opponent Wins Turn:<br/>Opponent keeps active card; Player card discarded"]
+        playerChallengeChoice -- "Yes (Challenge)" --> drawPlayerChallenge["Player draws 1 Challenge Card"]
+        drawPlayerChallenge --> comparePlayerChallenge{"Compare Player's Challenge Card<br/>vs. Opponent's Original Card"}
+        
+        comparePlayerChallenge -- "Player Wins" --> resolvePlayerChallengeWin["Player Wins Challenge:<br/>Player keeps both cards; Opponent card discarded"]
+        comparePlayerChallenge -- "Opponent Wins" --> resolvePlayerChallengeLoss["Player Loses Challenge:<br/>Opponent keeps original card; Player loses both cards"]
+        comparePlayerChallenge -- "Cards are Equal (Tie)" --> battleCheck
+    end
+
+    subgraph BattleBranch ["Battle Phase (Ties & Recursive Battles)"]
+        battleCheck --> checkBattleDeck{"Does each player have<br/>at least 3 cards in deck?"}
+        checkBattleDeck -- "No (Insufficient cards)" --> attritionLoss["Attrition Loss!<br/>Player unable to battle loses game immediately"]
+        attritionLoss --> loseGame
+        
+        checkBattleDeck -- "Yes" --> placeBattleCards["Battle! Each player places 3 face-down cards.<br/>All active cards on field remain staked."]
+        placeBattleCards --> selectBattleCards["Select 1 face-down card from Opponent's 3 cards.<br/>AI selects 1 face-down card from Player's 3 cards."]
+        selectBattleCards --> compareBattleCards{"Compare Selected Battle Cards"}
+        
+        compareBattleCards -- "Player > Opponent" --> resolveBattleWin["Player Wins Battle:<br/>Player keeps all staked cards;<br/>All Opponent battle cards discarded"]
+        compareBattleCards -- "Opponent > Player" --> resolveBattleLoss["Opponent Wins Battle:<br/>Opponent keeps all staked cards;<br/>All Player battle cards discarded"]
+        compareBattleCards -- "Equal (Tie)" --> battleCheck
+    end
+
+    subgraph TurnResolution ["Turn Resolution & Loop"]
+        resolveNormalWin & resolveNormalLoss --> nextTurnPrompt["Turn Complete"]
+        resolveOppChallengeWin & resolveOppChallengeLoss --> nextTurnPrompt
+        resolvePlayerChallengeWin & resolvePlayerChallengeLoss --> nextTurnPrompt
+        resolveBattleWin & resolveBattleLoss --> nextTurnPrompt
+        nextTurnPrompt --> startTurn
+    end
+
+    subgraph GameOver ["Game Over"]
+        winGame --> playAgain{"Play Again?"}
+        loseGame --> playAgain
+        playAgain -- "Yes" --> init
+        playAgain -- "No" --> endApp["End Session"]
+    end
 
     %% Styling
-    style init fill:#000000,color:#FFFFFF
-    style playAgain fill:#000000,color:#FFFFFF
-    style startTurn fill:#FFCDD2
-    style checkDrawCards fill:#4CAF50,color:#FFFFFF
-    style determineWinnerOnDeckOut fill:#D50000,color:#FFFFFF
-    style preCompare fill:#FFD600
-    style compareCards fill:#FF6D00,color:#FFFFFF
-    style battleCheck fill:#B71C1C,color:#FFFFFF
-    style setupBattle fill:#FFD600
-    style compareBattleCards fill:#B71C1C,color:#FFFFFF
-    style loseGame fill:#D50000,color:#FFFFFF
-    style opponentChallenge fill:#BBDEFB
-    style playerChallenge fill:#BBDEFB
-    style comparePlayerChallenge fill:#42A5F5,color:#FFFFFF
-    style compareOpponentChallenge fill:#42A5F5,color:#FFFFFF
-    style winGame fill:#00C853,color:#FFFFFF
-    style resolveNormalWin fill:#A5D6A7
-    style resolveNormalLoss fill:#EF9A9A
-    style resolveChallengeWin fill:#66BB6A
-    style resolveChallengeLoss fill:#E57373
-    style resolveBattleWin fill:#2E7D32,color:#FFFFFF
-    style resolveBattleLoss fill:#C62828,color:#FFFFFF
+    style init fill:#1e293b,color:#fff,stroke:#334155
+    style winGame fill:#15803d,color:#fff,stroke:#166534
+    style loseGame fill:#b91c1c,color:#fff,stroke:#991b1b
+    style attritionLoss fill:#991b1b,color:#fff,stroke:#7f1d1d
+    style compareCards fill:#d97706,color:#fff,stroke:#b45309
+    style compareOppChallenge fill:#2563eb,color:#fff,stroke:#1d4ed8
+    style comparePlayerChallenge fill:#2563eb,color:#fff,stroke:#1d4ed8
+    style compareBattleCards fill:#7c3aed,color:#fff,stroke:#6d28d9
 ```
 
 ## Development Progress

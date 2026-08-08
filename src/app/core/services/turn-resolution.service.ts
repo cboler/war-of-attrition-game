@@ -150,20 +150,31 @@ export class TurnResolutionService {
         nextPhase: GamePhase.NORMAL,
         canChallenge: false
       };
+    } else if (result === ComparisonResult.TIE) {
+      // Challenge ties - enter Battle with all cards on table preserved/staked
+      // Remove opponent's card from deck (it was added during initial turn resolution) so it stays on the table for battle
+      this.gameStateService.removeCardsFromOpponentDeck([originalOpponentCard]);
+      
+      return {
+        winner: null,
+        result: ComparisonResult.TIE,
+        message: 'Challenge ties! Battle initiated with all cards staked.',
+        cardsLost: [],
+        cardsKept: [originalPlayerCard, challengeCard, originalOpponentCard],
+        nextPhase: GamePhase.BATTLE,
+        canChallenge: false
+      };
     } else {
       // Challenge failed - player loses both cards, opponent already has their card from initial turn
       this.gameStateService.addToDiscardPile([originalPlayerCard, challengeCard]);
-      // Note: originalOpponentCard was already returned to opponent deck during initial turn resolution
       
       return {
         winner: PlayerType.OPPONENT,
-        result: result === ComparisonResult.TIE ? ComparisonResult.TIE : ComparisonResult.OPPONENT_WINS,
-        message: result === ComparisonResult.TIE ? 
-          'Challenge ties! You lose your cards.' : 
-          'Challenge failed! You lose your cards.',
+        result: ComparisonResult.OPPONENT_WINS,
+        message: 'Challenge failed! You lose your cards.',
         cardsLost: [originalPlayerCard, challengeCard],
         cardsKept: [originalOpponentCard],
-        nextPhase: result === ComparisonResult.TIE ? GamePhase.BATTLE : GamePhase.NORMAL,
+        nextPhase: GamePhase.NORMAL,
         canChallenge: false
       };
     }
@@ -193,6 +204,21 @@ export class TurnResolutionService {
         canChallenge: false,
         opponentChallenge: false
       };
+    } else if (result === ComparisonResult.TIE) {
+      // Opponent challenge ties - enter Battle with all active cards staked
+      // Remove player's card from deck (it was added during initial turn resolution) so it stays on table for battle
+      this.gameStateService.removeCardsFromPlayerDeck([originalPlayerCard]);
+      
+      return {
+        winner: null,
+        result: ComparisonResult.TIE,
+        message: 'Opponent challenge ties! Battle initiated with all cards staked.',
+        cardsLost: [],
+        cardsKept: [originalPlayerCard, originalOpponentCard, opponentChallengeCard],
+        nextPhase: GamePhase.BATTLE,
+        canChallenge: false,
+        opponentChallenge: false
+      };
     } else {
       // Opponent challenge failed - opponent loses both cards, player keeps their card
       this.gameStateService.returnCardsToPlayerDeck([originalPlayerCard]);
@@ -200,13 +226,11 @@ export class TurnResolutionService {
       
       return {
         winner: PlayerType.PLAYER,
-        result: result === ComparisonResult.TIE ? ComparisonResult.TIE : ComparisonResult.PLAYER_WINS,
-        message: result === ComparisonResult.TIE ? 
-          'Opponent challenge ties! Opponent loses their cards.' : 
-          'Opponent challenge failed! Opponent loses their cards.',
+        result: ComparisonResult.PLAYER_WINS,
+        message: 'Opponent challenge failed! Opponent loses their cards.',
         cardsLost: [originalOpponentCard, opponentChallengeCard],
         cardsKept: [originalPlayerCard],
-        nextPhase: result === ComparisonResult.TIE ? GamePhase.BATTLE : GamePhase.NORMAL,
+        nextPhase: GamePhase.NORMAL,
         canChallenge: false,
         opponentChallenge: false
       };

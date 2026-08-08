@@ -198,7 +198,7 @@ describe('TurnResolutionService', () => {
       expect(result.canChallenge).toBe(false);
     });
 
-    it('should resolve challenge tie as battle', () => {
+    it('should resolve challenge tie as battle with all cards staked', () => {
       // Setup: Start a turn and simulate the initial loss that leads to challenge
       const { playerCard, opponentCard } = gameStateService.startTurn();
       
@@ -222,9 +222,13 @@ describe('TurnResolutionService', () => {
       
       const result = service.resolveChallenge(playerCard, opponentCard, challengeCard);
       
-      expect(result.winner).toBe(PlayerType.OPPONENT);
+      expect(result.winner).toBeNull();
       expect(result.result).toBe(ComparisonResult.TIE);
-      expect(result.message).toBe('Challenge ties! You lose your cards.');
+      expect(result.message).toBe('Challenge ties! Battle initiated with all cards staked.');
+      expect(result.cardsKept).toContain(playerCard);
+      expect(result.cardsKept).toContain(challengeCard);
+      expect(result.cardsKept).toContain(opponentCard);
+      expect(result.cardsLost.length).toBe(0);
       expect(result.nextPhase).toBe(GamePhase.BATTLE);
     });
   });
