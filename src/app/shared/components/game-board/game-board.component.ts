@@ -40,25 +40,37 @@ import { SettingsService } from '../../../core/services/settings.service';
       <!-- Central Table Area -->
       <div class="table-area">
         <div class="active-cards">
-          @if (opponentActiveCard()) {
-            <app-card
-              [card]="opponentActiveCard()"
-              [faceDown]="false"
-              [glow]="opponentCardGlow()"
-              [animationState]="opponentCardAnimation()"
-              [fromPosition]="'deck'">
-            </app-card>
-          }
+          <div class="card-slot opponent-slot">
+            @if (opponentActiveCard()) {
+              <app-card
+                [card]="opponentActiveCard()"
+                [faceDown]="false"
+                [glow]="opponentCardGlow()"
+                [animationState]="opponentCardAnimation()"
+                [fromPosition]="'deck'">
+              </app-card>
+            } @else {
+              <div class="card-slot-placeholder">
+                <span class="slot-label">Opponent</span>
+              </div>
+            }
+          </div>
           
-          @if (playerActiveCard()) {
-            <app-card
-              [card]="playerActiveCard()"
-              [faceDown]="false"
-              [glow]="playerCardGlow()"
-              [animationState]="playerCardAnimation()"
-              [fromPosition]="'deck'">
-            </app-card>
-          }
+          <div class="card-slot player-slot">
+            @if (playerActiveCard()) {
+              <app-card
+                [card]="playerActiveCard()"
+                [faceDown]="false"
+                [glow]="playerCardGlow()"
+                [animationState]="playerCardAnimation()"
+                [fromPosition]="'deck'">
+              </app-card>
+            } @else {
+              <div class="card-slot-placeholder">
+                <span class="slot-label">Player</span>
+              </div>
+            }
+          </div>
         </div>
         
         @if (settingsService.showTurnCounter() && turnNumber() > 0) {

@@ -114,3 +114,14 @@ button, .mat-mdc-button, .mat-mdc-raised-button, .mat-mdc-icon-button {
     margin: 4px 2px;
   }
 }
+
+/* Glassmorphism dialog overlay panel */
+.glass-dialog-panel {
+  .mat-mdc-dialog-container {
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+}
+

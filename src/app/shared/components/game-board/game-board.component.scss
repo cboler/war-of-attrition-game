@@ -3,6 +3,8 @@
   flex-direction: column;
   width: 100%;
   max-width: 1400px;
+  min-width: 320px;
+  min-height: 480px;
   height: calc(100vh - 80px);
   margin: 0 auto;
   background: radial-gradient(circle at 50% 45%, #236b28 0%, #155219 65%, #0a330e 100%);
@@ -20,6 +22,12 @@
 
   @media (max-width: 599px) {
     height: calc(100dvh - 64px);
+    min-height: 440px;
+  }
+
+  @media (max-height: 540px) and (orientation: landscape) {
+    height: calc(100vh - 56px);
+    min-height: 380px;
   }
 }
 
