@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, inject, effect } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -88,6 +88,12 @@ export class Game implements OnInit, OnDestroy {
   protected currentMilestone: ProgressData['currentMilestone'];
   protected completedMilestone: ProgressData['milestones'][0] | undefined;
 
+  // Tracking last counts for health damage animations and clash animations
+  private lastPlayerCardCount = 26;
+  private lastOpponentCardCount = 26;
+  private lastClashResult: string | null = null;
+  private lastTurnNumber = 0;
+
   constructor(
     private gameDemoService: GameDemoService,
     private gameController: GameControllerService,
@@ -100,6 +106,21 @@ export class Game implements OnInit, OnDestroy {
     this.currentMilestone = this.progressService.getCurrentMilestone();
     this.completedMilestone = this.progressService.getCompletedMilestone(3);
     
+    // Setup reactive effect to automatically update UI state when GameControllerService or GameStateService signals change
+    effect(() => {
+      // Access gameController getters to register signal dependencies
+      const canAct = this.gameController.playerCanAct;
+      const msg = this.gameController.message;
+      const showPrompt = this.gameController.showChallengePrompt;
+      const chalCard = this.gameController.currentChallengeCard;
+      const showCardDisp = this.gameController.showChallengeCardDisplay;
+      const battlePhase = this.gameController.currentBattlePhase;
+      const battleStep = this.gameController.currentBattleStep;
+      const gameState = this.gameStateService.gameState();
+
+      this.updateGameState();
+    });
+
     // Initialize real game
     this.gameController.startNewGame();
     this.updateGameState();
@@ -202,6 +223,10 @@ export class Game implements OnInit, OnDestroy {
    */
   startNewGame(): void {
     this.victoryDialogShown = false;
+    this.lastPlayerCardCount = 26;
+    this.lastOpponentCardCount = 26;
+    this.lastClashResult = null;
+    this.lastTurnNumber = 0;
     this.gameController.startNewGame();
     this.gameStartTime = Date.now();
     this.settingsService.recordGameStart();
@@ -260,10 +285,12 @@ export class Game implements OnInit, OnDestroy {
    * Update UI state based on game controller state
    */
   private updateGameState(): void {
-    // Use current counts as "previous" when no previous values provided
-    const currentPlayerCount = this.gameStateService.playerCardCount();
-    const currentOpponentCount = this.gameStateService.opponentCardCount();
-    this.updateGameStateWithPreviousCounts(currentPlayerCount, currentOpponentCount);
+    const previousPlayerCount = this.lastPlayerCardCount;
+    const previousOpponentCount = this.lastOpponentCardCount;
+    this.updateGameStateWithPreviousCounts(previousPlayerCount, previousOpponentCount);
+    
+    this.lastPlayerCardCount = this.gameStateService.playerCardCount();
+    this.lastOpponentCardCount = this.gameStateService.opponentCardCount();
   }
 
   /**
@@ -318,14 +345,21 @@ export class Game implements OnInit, OnDestroy {
       }
       
       // Set card glow and clash animations based on last result
+      const currentTurn = state.stats?.turnNumber || 0;
+      const resultChanged = this.lastClashResult !== state.lastResult || this.lastTurnNumber !== currentTurn;
+
       if (state.lastResult === 'player_wins') {
         this.playerCardGlow.set('green');
         this.opponentCardGlow.set('red');
-        this.triggerClashAnimations('player-win');
+        if (resultChanged) {
+          this.triggerClashAnimations('player-win');
+        }
       } else if (state.lastResult === 'opponent_wins') {
         this.playerCardGlow.set('red');
         this.opponentCardGlow.set('green');
-        this.triggerClashAnimations('opponent-win');
+        if (resultChanged) {
+          this.triggerClashAnimations('opponent-win');
+        }
       } else if (state.lastResult === 'tie') {
         this.playerCardGlow.set('blue');
         this.opponentCardGlow.set('blue');
@@ -333,6 +367,9 @@ export class Game implements OnInit, OnDestroy {
         this.playerCardGlow.set(null);
         this.opponentCardGlow.set(null);
       }
+
+      this.lastClashResult = state.lastResult;
+      this.lastTurnNumber = currentTurn;
     } else {
       // No active turn, reset cards for demo
       if (!this.showOldDemo()) {

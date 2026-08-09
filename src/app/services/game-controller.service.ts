@@ -348,6 +348,10 @@ export class GameControllerService {
         return;
       }
 
+      // Store challenge card in active turn
+      activeTurn.challengeCard = opponentChallengeCard;
+      this.gameStateService.setActiveTurn(activeTurn);
+
       // Slight delay to show challenge message, then resolve automatically
       setTimeout(() => {
         this.ngZone.run(() => {
