@@ -99,16 +99,9 @@ export class GameControllerService {
     }
 
     if (!acceptChallenge) {
-      // Player declines challenge, accept the loss - discard player's card
-      const activeTurn = this.gameStateService.currentState.activeTurn;
-      if (activeTurn && activeTurn.playerCard) {
-        this.gameStateService.addToDiscardPile([activeTurn.playerCard]);
-        // Opponent keeps their card
-        if (activeTurn.opponentCard) {
-          this.gameStateService.returnCardsToOpponentDeck([activeTurn.opponentCard]);
-        }
-      }
-      
+      // Player declines challenge, accept the loss.
+      // Card movements (returning opponent's card and moving player's card to discard)
+      // were already processed during initial turn resolution in TurnResolutionService.
       this.gameMessage.set('You declined the challenge. Your card is discarded.');
       this.showChallenge.set(false);
       this.challengeAvailable.set(false);

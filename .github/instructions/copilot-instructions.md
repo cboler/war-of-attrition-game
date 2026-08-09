@@ -171,6 +171,28 @@ Each subdirectory in `src/app/` contains an `Agent.md` file with detailed inform
 3. Maintain responsive design patterns
 4. Test accessibility features
 
+## Standard Operating Procedure (SOP) for Issue & PR Workflow
+
+When receiving bug reports, feature requests, or enhancements:
+1. **Intake & Root Cause Analysis**:
+   - Analyze user bug reports, descriptions, and screenshots.
+   - Ground diagnosis in authoritative source code and rules in `war-of-attrition-requirements.md`.
+2. **GitHub Issue Creation**:
+   - Create a structured issue using GitHub CLI (`gh issue create`).
+   - Include a clear title, description, reproduction steps, and root cause summary.
+3. **Feature/Fix Branching**:
+   - Create a dedicated branch off `main` named `fix/<description>` or `feature/<description>`.
+4. **Planning & Implementation**:
+   - Produce an implementation plan artifact for non-trivial changes.
+   - Implement changes following Angular 20 signal-based state management and standalone component patterns.
+5. **Verification**:
+   - Run automated tests: `npx ng test --watch=false --browsers=ChromeHeadless`
+   - Run production build: `npm run build`
+6. **Pull Request Creation**:
+   - Push branch to remote repository.
+   - Create a Pull Request via GitHub CLI (`gh pr create --title "..." --body "Fixes #XX ..."`).
+   - Ensure PR body references the resolved issue number.
+
 ## Trust These Instructions
 
 These instructions are based on comprehensive repository analysis and testing. Only search for additional information if:
@@ -178,4 +200,4 @@ These instructions are based on comprehensive repository analysis and testing. O
 - You encounter errors not described here
 - You need to understand specific game logic details
 
-The repository is well-documented with Agent.md files in each directory providing detailed implementation guidance.
+The repository is well-documented with Agent.md files in each directory providing detailed implementation guidance.
