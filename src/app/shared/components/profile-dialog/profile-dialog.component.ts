@@ -203,24 +203,12 @@ export class ProfileDialogComponent implements AfterViewInit {
   }
 
   signInGoogle(): void {
-    // Attempt real GIS One-Tap prompt first
-    this.authService.promptGoogleSignIn();
-
-    // If GIS is not present/blocked or user wants custom entry, fallback to prompt
-    setTimeout(() => {
-      if (!this.profile().isGoogleAuth) {
-        const userEmail = prompt('Enter your Google Account email:');
-        if (userEmail && userEmail.trim()) {
-          const userName = userEmail.split('@')[0].replace(/\./g, ' ');
-          const formattedName = userName.charAt(0).toUpperCase() + userName.slice(1);
-          this.authService.signInWithGoogle({
-            name: formattedName,
-            email: userEmail.trim(),
-            avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(userEmail)}`
-          });
-        }
-      }
-    }, 400);
+    // Attempt real GIS One-Tap / OAuth prompt
+    try {
+      this.authService.promptGoogleSignIn();
+    } catch (e) {
+      console.warn('Google Sign-In could not be initialized:', e);
+    }
   }
 
   signOut(): void {
