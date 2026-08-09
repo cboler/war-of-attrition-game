@@ -1,6 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { UserProfile, DEFAULT_GUEST_PROFILE } from '../models/user-profile.model';
 import { GameStatistics } from '../models/settings.model';
+import { environment } from '../../../environments/environment';
 
 const STORAGE_KEY_ACTIVE_PROFILE = 'war-of-attrition-active-profile-id';
 const STORAGE_KEY_PROFILES = 'war-of-attrition-profiles';
@@ -26,7 +27,8 @@ export class AuthService {
   readonly userStats = computed<GameStatistics>(() => this.activeProfile().statistics);
 
   private gisInitialized = false;
-  private readonly DEFAULT_CLIENT_ID = '1058298273641-war-of-attrition-game.apps.googleusercontent.com';
+  private readonly DEFAULT_CLIENT_ID = environment.googleClientId || '';
+  readonly isGoogleAuthConfigured = computed<boolean>(() => !!this.DEFAULT_CLIENT_ID);
 
   constructor() {
     this.initializeProfiles();
@@ -53,6 +55,7 @@ export class AuthService {
    */
   initializeGoogleAuth(clientId?: string, callback?: (response: any) => void): void {
     const targetClientId = clientId || this.DEFAULT_CLIENT_ID;
+    if (!targetClientId) return;
     if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
       (window as any).google.accounts.id.initialize({
         client_id: targetClientId,
@@ -100,11 +103,12 @@ export class AuthService {
    * Render real Google Sign-In button into container element
    */
   renderGoogleButton(element: HTMLElement, clientId?: string): void {
-    if (typeof window === 'undefined') return;
+    const targetClientId = clientId || this.DEFAULT_CLIENT_ID;
+    if (!targetClientId || typeof window === 'undefined') return;
     
     const checkAndRender = () => {
       if ((window as any).google?.accounts?.id) {
-        this.initializeGoogleAuth(clientId);
+        this.initializeGoogleAuth(targetClientId);
         (window as any).google.accounts.id.renderButton(element, {
           theme: 'outline',
           size: 'large',
@@ -124,8 +128,10 @@ export class AuthService {
    * Trigger real Google One-Tap / OAuth prompt
    */
   promptGoogleSignIn(clientId?: string): void {
+    const targetClientId = clientId || this.DEFAULT_CLIENT_ID;
+    if (!targetClientId) return;
     if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
-      this.initializeGoogleAuth(clientId);
+      this.initializeGoogleAuth(targetClientId);
       (window as any).google.accounts.id.prompt();
     }
   }

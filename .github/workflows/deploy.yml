@@ -34,6 +34,8 @@ jobs:
 
     - name: Build application
       run: npm run build:prod
+      env:
+        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
 
     - name: Upload Pages artifact
       if: github.ref == 'refs/heads/main'
