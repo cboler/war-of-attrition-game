@@ -131,10 +131,10 @@
               <div class="opponent-battle-cards">
                 @for (card of opponentBattleCards(); track $index) {
                   <app-card
-                    [card]="null"
-                    [faceDown]="true"
+                    [card]="card"
+                    [faceDown]="isBattleCardFaceDown(card, 'opponent')"
                     [glow]="'blue'"
-                    [clickable]="true"
+                    [clickable]="battlePhase() === 'selection'"
                     (cardClicked)="onBattleCardSelect(card)">
                   </app-card>
                 }
@@ -144,8 +144,8 @@
               <div class="player-battle-cards">
                 @for (card of battleCards(); track $index) {
                   <app-card
-                    [card]="null"
-                    [faceDown]="true">
+                    [card]="card"
+                    [faceDown]="isBattleCardFaceDown(card, 'player')">
                   </app-card>
                 }
               </div>

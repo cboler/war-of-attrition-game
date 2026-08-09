@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -144,6 +144,7 @@ import { AuthService } from '../../../core/services/auth.service';
         <mat-divider class="body-divider"></mat-divider>
 
         <div class="auth-actions-row">
+          <div *ngIf="!profile().isGoogleAuth" #googleBtnContainer class="google-btn-wrapper"></div>
           <button *ngIf="!profile().isGoogleAuth" mat-raised-button class="google-signin-btn" (click)="signInGoogle()">
             <svg class="google-svg" viewBox="0 0 24 24" width="20" height="20">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -167,15 +168,23 @@ import { AuthService } from '../../../core/services/auth.service';
   `,
   styleUrls: ['./profile-dialog.component.scss']
 })
-export class ProfileDialogComponent {
+export class ProfileDialogComponent implements AfterViewInit {
   private authService = inject(AuthService);
   private dialogRef = inject(MatDialogRef<ProfileDialogComponent>);
+
+  @ViewChild('googleBtnContainer') googleBtnContainer?: ElementRef<HTMLDivElement>;
 
   readonly profile = this.authService.activeProfile;
   readonly stats = this.authService.userStats;
 
   isEditingName = false;
   editingName = '';
+
+  ngAfterViewInit(): void {
+    if (this.googleBtnContainer?.nativeElement && !this.profile().isGoogleAuth) {
+      this.authService.renderGoogleButton(this.googleBtnContainer.nativeElement);
+    }
+  }
 
   toggleEditName(): void {
     if (this.isEditingName) {
@@ -194,15 +203,24 @@ export class ProfileDialogComponent {
   }
 
   signInGoogle(): void {
-    // Prompt for Google account details or use Google Identity Services token
-    const sampleNames = ['Commander Alex', 'Ace Strategist', 'Vanguard Morgan'];
-    const chosenName = sampleNames[Math.floor(Math.random() * sampleNames.length)];
-    
-    this.authService.signInWithGoogle({
-      name: chosenName,
-      email: `${chosenName.toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
-      avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(chosenName)}`
-    });
+    // Attempt real GIS One-Tap prompt first
+    this.authService.promptGoogleSignIn();
+
+    // If GIS is not present/blocked or user wants custom entry, fallback to prompt
+    setTimeout(() => {
+      if (!this.profile().isGoogleAuth) {
+        const userEmail = prompt('Enter your Google Account email:');
+        if (userEmail && userEmail.trim()) {
+          const userName = userEmail.split('@')[0].replace(/\./g, ' ');
+          const formattedName = userName.charAt(0).toUpperCase() + userName.slice(1);
+          this.authService.signInWithGoogle({
+            name: formattedName,
+            email: userEmail.trim(),
+            avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(userEmail)}`
+          });
+        }
+      }
+    }, 400);
   }
 
   signOut(): void {

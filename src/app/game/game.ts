@@ -80,7 +80,7 @@ export class Game implements OnInit, OnDestroy {
   // Battle state
   protected battleCards = signal<Card[]>([]);
   protected opponentBattleCards = signal<Card[]>([]);
-  protected battlePhase = signal<'setup' | 'selection' | 'resolution'>('setup');
+  protected battlePhase = signal<'setup' | 'selection' | 'revealing' | 'resolution'>('setup');
   protected showBattleUI = signal<boolean>(false);
   
   // Progress data
@@ -217,7 +217,28 @@ export class Game implements OnInit, OnDestroy {
     const previousOpponentCount = this.gameStateService.opponentCardCount();
     
     this.gameController.selectBattleCard(selectedCard);
-    this.updateGameStateWithPreviousCounts(previousPlayerCount, previousOpponentCount);
+    
+    // Poll updates during reveal sequence
+    const pollInterval = setInterval(() => {
+      this.updateGameStateWithPreviousCounts(previousPlayerCount, previousOpponentCount);
+      if (this.gameController.currentBattleStep === 'none') {
+        clearInterval(pollInterval);
+      }
+    }, 100);
+  }
+
+  isBattleCardFaceDown(card: Card, owner: 'player' | 'opponent'): boolean {
+    if (this.gameController.isRevealAll) {
+      return false;
+    }
+    const step = this.gameController.currentBattleStep;
+    if (owner === 'opponent' && card === this.gameController.playerPickedCard) {
+      return step === 'none' || step === 'selection';
+    }
+    if (owner === 'player' && card === this.gameController.opponentPickedCard) {
+      return step !== 'revealing_opponent' && step !== 'revealing_all';
+    }
+    return true;
   }
 
   // Keep demo methods for old demo mode
@@ -267,7 +288,7 @@ export class Game implements OnInit, OnDestroy {
     this.battleCards.set(this.gameController.currentBattleCards);
     this.opponentBattleCards.set(this.gameController.currentOpponentBattleCards);
     this.battlePhase.set(this.gameController.currentBattlePhase);
-    this.showBattleUI.set(this.battlePhase() === 'selection');
+    this.showBattleUI.set(this.battlePhase() === 'selection' || this.battlePhase() === 'revealing');
     
     // Get current card counts from game state service
     const currentPlayerCount = this.gameStateService.playerCardCount();

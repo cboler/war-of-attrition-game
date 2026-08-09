@@ -25,8 +25,109 @@ export class AuthService {
   readonly isGoogleUser = computed<boolean>(() => this.activeProfile().provider === 'google');
   readonly userStats = computed<GameStatistics>(() => this.activeProfile().statistics);
 
+  private gisInitialized = false;
+  private readonly DEFAULT_CLIENT_ID = '1058298273641-war-of-attrition-game.apps.googleusercontent.com';
+
   constructor() {
     this.initializeProfiles();
+    this.loadGisScript();
+  }
+
+  /**
+   * Dynamically load Google Identity Services SDK script
+   */
+  private loadGisScript(): void {
+    if (typeof window === 'undefined' || document.getElementById('google-gsi-script')) {
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'google-gsi-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  /**
+   * Initialize Google Identity Services (GIS) with Client ID and callback
+   */
+  initializeGoogleAuth(clientId?: string, callback?: (response: any) => void): void {
+    const targetClientId = clientId || this.DEFAULT_CLIENT_ID;
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      (window as any).google.accounts.id.initialize({
+        client_id: targetClientId,
+        callback: (resp: any) => {
+          this.handleGoogleCredentialResponse(resp);
+          if (callback) callback(resp);
+        }
+      });
+      this.gisInitialized = true;
+    }
+  }
+
+  /**
+   * Handle real Google Identity Services JWT credential response
+   */
+  handleGoogleCredentialResponse(response: { credential: string }): UserProfile | null {
+    if (!response || !response.credential) {
+      return null;
+    }
+    try {
+      // Decode JWT token payload (base64url)
+      const base64Url = response.credential.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const payload = JSON.parse(jsonPayload);
+
+      return this.signInWithGoogle({
+        name: payload.name || payload.given_name || 'Google User',
+        email: payload.email || 'user@gmail.com',
+        avatarUrl: payload.picture || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(payload.name || 'User')}`,
+        googleId: payload.sub || `google-${Date.now()}`
+      });
+    } catch (e) {
+      console.error('Failed to parse Google credential token:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Render real Google Sign-In button into container element
+   */
+  renderGoogleButton(element: HTMLElement, clientId?: string): void {
+    if (typeof window === 'undefined') return;
+    
+    const checkAndRender = () => {
+      if ((window as any).google?.accounts?.id) {
+        this.initializeGoogleAuth(clientId);
+        (window as any).google.accounts.id.renderButton(element, {
+          theme: 'outline',
+          size: 'large',
+          type: 'standard',
+          shape: 'rectangular',
+          text: 'signin_with',
+          logo_alignment: 'left'
+        });
+      } else {
+        setTimeout(checkAndRender, 200);
+      }
+    };
+    checkAndRender();
+  }
+
+  /**
+   * Trigger real Google One-Tap / OAuth prompt
+   */
+  promptGoogleSignIn(clientId?: string): void {
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      this.initializeGoogleAuth(clientId);
+      (window as any).google.accounts.id.prompt();
+    }
   }
 
   private initializeProfiles(): void {

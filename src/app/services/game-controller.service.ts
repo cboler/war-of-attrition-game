@@ -1,6 +1,7 @@
 import { Injectable, signal, NgZone } from '@angular/core';
 import { GameStateService } from '../core/services/game-state.service';
 import { TurnResolutionService, TurnResult } from '../core/services/turn-resolution.service';
+import { SoundService } from '../core/services/sound.service';
 import { GamePhase, PlayerType } from '../core/models/game-state.model';
 import { Card } from '../core/models/card.model';
 
@@ -16,7 +17,11 @@ export class GameControllerService {
   private showChallengeCard = signal<boolean>(false);
   private battleCards = signal<Card[]>([]);
   private opponentBattleCards = signal<Card[]>([]);
-  private battlePhase = signal<'setup' | 'selection' | 'resolution'>('setup');
+  private battlePhase = signal<'setup' | 'selection' | 'revealing' | 'resolution'>('setup');
+  private selectedOpponentCard = signal<Card | null>(null);
+  private selectedPlayerCard = signal<Card | null>(null);
+  private revealAllBattleCards = signal<boolean>(false);
+  private battleStep = signal<'none' | 'selection' | 'revealing_player' | 'revealing_opponent' | 'revealing_all'>('none');
   private canPlayerAct = signal<boolean>(false);
 
   // Readonly getters
@@ -29,10 +34,15 @@ export class GameControllerService {
   get currentBattleCards() { return this.battleCards(); }
   get currentOpponentBattleCards() { return this.opponentBattleCards(); }
   get currentBattlePhase() { return this.battlePhase(); }
+  get currentBattleStep() { return this.battleStep(); }
+  get playerPickedCard() { return this.selectedOpponentCard(); }
+  get opponentPickedCard() { return this.selectedPlayerCard(); }
+  get isRevealAll() { return this.revealAllBattleCards(); }
 
   constructor(
     private gameStateService: GameStateService,
     private turnResolutionService: TurnResolutionService,
+    private soundService: SoundService,
     private ngZone: NgZone
   ) {}
 
@@ -59,6 +69,8 @@ export class GameControllerService {
     if (!this.canPlayerAct() || this.gameStateService.currentPhase !== GamePhase.NORMAL) {
       return false;
     }
+
+    this.soundService.playCardDraw();
 
     try {
       const { playerCard, opponentCard } = this.gameStateService.startTurn();
@@ -179,23 +191,52 @@ export class GameControllerService {
         return;
       }
 
-      // Simulate opponent selection (randomly pick from player's battle cards)
-      // Simulate opponent selection (randomly pick from opponent's battle cards)
-      const opponentSelection = this.opponentBattleCards()[Math.floor(Math.random() * this.opponentBattleCards().length)];
+      const playerCard = activeTurn.playerCard;
+      const opponentCard = activeTurn.opponentCard;
+      const opponentSelection = this.battleCards()[Math.floor(Math.random() * this.battleCards().length)];
 
-      const result = this.turnResolutionService.resolveBattle(
-        activeTurn.playerCard,
-        activeTurn.opponentCard,
-        this.battleCards(),
-        this.opponentBattleCards(),
-        selectedCard,
-        opponentSelection
-      );
+      this.selectedOpponentCard.set(selectedCard);
+      this.selectedPlayerCard.set(opponentSelection);
+      this.battlePhase.set('revealing');
+      this.battleStep.set('revealing_player');
+      this.gameMessage.set('Revealing your selected card from opponent...');
+      this.soundService.playCardFlip();
 
-      this.handleTurnResult(result);
+      setTimeout(() => {
+        this.battleStep.set('revealing_opponent');
+        this.gameMessage.set('Revealing opponent selected card from your deck...');
+        this.soundService.playCardFlip();
+      }, 700);
+
+      setTimeout(() => {
+        this.revealAllBattleCards.set(true);
+        this.battleStep.set('revealing_all');
+        this.gameMessage.set('Revealing all battle cards...');
+        this.soundService.playClash();
+      }, 1400);
+
+      setTimeout(() => {
+        const result = this.turnResolutionService.resolveBattle(
+          playerCard,
+          opponentCard,
+          this.battleCards(),
+          this.opponentBattleCards(),
+          selectedCard,
+          opponentSelection
+        );
+
+        this.selectedOpponentCard.set(null);
+        this.selectedPlayerCard.set(null);
+        this.revealAllBattleCards.set(false);
+        this.battleStep.set('none');
+
+        this.handleTurnResult(result);
+      }, 2600);
     } catch (error) {
       console.error('Error during battle:', error);
       this.gameMessage.set('Error during battle!');
+      this.battlePhase.set('setup');
+      this.battleStep.set('none');
     }
   }
 
@@ -207,6 +248,16 @@ export class GameControllerService {
 
     // Set the last result for clash animations
     this.gameStateService.setLastResult(result.result);
+
+    if (result.nextPhase === GamePhase.GAME_OVER) {
+      if (this.gameStateService.currentState.winner === PlayerType.PLAYER) {
+        this.soundService.playVictory();
+      } else {
+        this.soundService.playDefeat();
+      }
+    } else if (result.nextPhase === GamePhase.BATTLE) {
+      this.soundService.playClash();
+    }
 
     // Handle opponent challenge
     if (result.opponentChallenge) {
