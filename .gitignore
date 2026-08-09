@@ -44,3 +44,7 @@ Thumbs.db
 # Backup files
 docs_backup/
 requirements.html
+
+# Generated environment files
+/src/environments/*.ts
+
