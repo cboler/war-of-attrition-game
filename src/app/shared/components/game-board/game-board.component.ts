@@ -163,13 +163,13 @@ export class GameBoardComponent {
   // Output events
   playerDeckClicked = output<void>();
 
-  protected onPlayerDeckClick(): void {
-    console.log('GameBoardComponent.onPlayerDeckClick called, canPlayerAct:', this.canPlayerAct());
+  public onPlayerDeckClick(): void {
+    console.log('GameBoardComponent - Deck clicked! canPlayerAct is:', this.canPlayerAct());
     if (this.canPlayerAct()) {
-      console.log('Emitting playerDeckClicked event');
+      console.log('GameBoardComponent - Emitting playerDeckClicked event');
       this.playerDeckClicked.emit();
     } else {
-      console.log('Cannot act - not emitting event');
+      console.log('GameBoardComponent - Deck click ignored because canPlayerAct is false');
     }
   }
 }
