@@ -6,7 +6,7 @@
     "start": "ng serve",
     "build": "ng build --base-href /war-of-attrition-game/ && npm run move-build-files",
     "build:prod": "ng build --configuration production --base-href /war-of-attrition-game/ && npm run move-build-files",
-    "move-build-files": "mv docs/browser/* docs/ && rmdir docs/browser",
+    "move-build-files": "node scripts/move-build-files.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
