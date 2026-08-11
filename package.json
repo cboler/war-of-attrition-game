@@ -5,9 +5,10 @@
     "ng": "ng",
     "start": "ng serve",
     "prebuild": "node scripts/set-env.js",
+    "prebuild:prod": "node scripts/set-env.js",
     "prestart": "node scripts/set-env.js",
-    "build": "ng build --base-href /war-of-attrition-game/ && npm run move-build-files",
-    "build:prod": "ng build --configuration production --base-href /war-of-attrition-game/ && npm run move-build-files",
+    "build": "node scripts/set-env.js && ng build --base-href /war-of-attrition-game/ && npm run move-build-files",
+    "build:prod": "node scripts/set-env.js && ng build --configuration production --base-href /war-of-attrition-game/ && npm run move-build-files",
     "move-build-files": "node scripts/move-build-files.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
