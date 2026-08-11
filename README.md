@@ -79,8 +79,10 @@ flowchart TD
     subgraph NormalComparison ["Card Comparison Phase"]
         drawActive --> compareCards{"Compare Active Card Values<br/>(Ace beats K..3; 2 beats Ace)"}
         
-        compareCards -- "Player > Opponent" --> oppChallengeChoice{"Opponent AI challenges?"}
-        compareCards -- "Opponent > Player" --> playerChallengeChoice{"Player challenges?"}
+        compareCards -- "Player 2 beats Opponent Ace (No Challenge)" --> resolveNormalWin["Player Wins Turn:<br/>Keep active card; Opponent card discarded"]
+        compareCards -- "Opponent 2 beats Player Ace (No Challenge)" --> resolveNormalLoss["Opponent Wins Turn:<br/>Opponent keeps active card; Player card discarded"]
+        compareCards -- "Player > Opponent (Standard)" --> oppChallengeChoice{"Opponent AI challenges?"}
+        compareCards -- "Opponent > Player (Standard)" --> playerChallengeChoice{"Player challenges?"}
         compareCards -- "Values are Equal" --> battleCheck["Initiate Battle Check"]
     end
 

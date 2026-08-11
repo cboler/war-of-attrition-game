@@ -28,7 +28,10 @@ export class CardComparisonService {
     }
   }
 
-  private isSpecialAceVsTwoRule(playerCard: Card, opponentCard: Card): boolean {
+  /**
+   * Check if the cards trigger the special Ace vs 2 rule
+   */
+  isSpecialAceVsTwoRule(playerCard: Card, opponentCard: Card): boolean {
     const hasAce = playerCard.rank === Rank.ACE || opponentCard.rank === Rank.ACE;
     const hasTwo = playerCard.rank === Rank.TWO || opponentCard.rank === Rank.TWO;
     return hasAce && hasTwo;

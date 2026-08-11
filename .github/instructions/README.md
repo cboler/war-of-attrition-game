@@ -145,9 +145,9 @@ flowchart TD
     %% Main Turn Loop
     preCompare --> compareCards{"Compare cards"}
 
-    %% Special Ace vs. 2 Rule
-    compareCards -- "Player has Ace & Opponent has 2" --> resolveNormalLoss
-    compareCards -- "Opponent has Ace & Player has 2" --> resolveNormalWin
+    %% Special Ace vs. 2 Rule (Cannot be challenged)
+    compareCards -- "Player has 2 & Opponent has Ace (2 beats Ace - No Challenge)" --> resolveNormalWin
+    compareCards -- "Opponent has 2 & Player has Ace (2 beats Ace - No Challenge)" --> resolveNormalLoss
 
     %% Standard Comparison
     compareCards -- "Player > Opponent" --> opponentChallenge{"Opponent challenges?"}

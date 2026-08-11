@@ -29,20 +29,21 @@ export class TurnResolutionService {
 
   resolveTurn(playerCard: Card, opponentCard: Card): TurnResult {
     const result = this.cardComparisonService.compareCards(playerCard, opponentCard);
+    const isSpecialAceVsTwo = this.cardComparisonService.isSpecialAceVsTwoRule(playerCard, opponentCard);
     
     switch (result) {
       case ComparisonResult.PLAYER_WINS:
-        return this.resolveNormalWin(playerCard, opponentCard, PlayerType.PLAYER);
+        return this.resolveNormalWin(playerCard, opponentCard, PlayerType.PLAYER, isSpecialAceVsTwo);
       
       case ComparisonResult.OPPONENT_WINS:
-        return this.resolveNormalLoss(playerCard, opponentCard, PlayerType.OPPONENT);
+        return this.resolveNormalLoss(playerCard, opponentCard, PlayerType.OPPONENT, isSpecialAceVsTwo);
       
       case ComparisonResult.TIE:
         return this.resolveTie(playerCard, opponentCard);
     }
   }
 
-  private resolveNormalWin(playerCard: Card, opponentCard: Card, winner: PlayerType): TurnResult {
+  private resolveNormalWin(playerCard: Card, opponentCard: Card, winner: PlayerType, isSpecialAceVsTwo: boolean = false): TurnResult {
     const winnerCards = winner === PlayerType.PLAYER ? [playerCard] : [opponentCard];
     const loserCards = winner === PlayerType.PLAYER ? [opponentCard] : [playerCard];
     
@@ -52,12 +53,12 @@ export class TurnResolutionService {
     let message = '';
     
     if (winner === PlayerType.OPPONENT) {
-      // Player lost - they can challenge
-      canChallenge = true;
+      // Player lost - they can challenge unless 2 beat Ace
+      canChallenge = !isSpecialAceVsTwo;
       message = 'Opponent wins this turn!';
     } else {
-      // Opponent lost - check if AI wants to challenge
-      opponentChallenge = this.opponentAIService.shouldChallenge(opponentCard);
+      // Opponent lost - check if AI wants to challenge unless 2 beat Ace
+      opponentChallenge = !isSpecialAceVsTwo && this.opponentAIService.shouldChallenge(opponentCard);
       if (opponentChallenge) {
         // Don't process cards yet - let game controller handle opponent challenge
         message = 'You win this turn, but opponent challenges!';
@@ -75,7 +76,7 @@ export class TurnResolutionService {
         message = 'You win this turn!';
       }
     }
-    
+
     // Winner keeps their card, loser's card goes to discard
     if (winner === PlayerType.PLAYER) {
       this.gameStateService.returnCardsToPlayerDeck([playerCard]);
@@ -97,8 +98,8 @@ export class TurnResolutionService {
     };
   }
 
-  private resolveNormalLoss(playerCard: Card, opponentCard: Card, winner: PlayerType): TurnResult {
-    return this.resolveNormalWin(playerCard, opponentCard, winner);
+  private resolveNormalLoss(playerCard: Card, opponentCard: Card, winner: PlayerType, isSpecialAceVsTwo: boolean = false): TurnResult {
+    return this.resolveNormalWin(playerCard, opponentCard, winner, isSpecialAceVsTwo);
   }
 
   private resolveTie(playerCard: Card, opponentCard: Card): TurnResult {

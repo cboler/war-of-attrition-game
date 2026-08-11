@@ -373,12 +373,39 @@ describe('TurnResolutionService', () => {
       gameStateService.initializeGame(); // Reset game state for each test
     });
     
-    it('should trigger opponent challenge when opponent loses with low value card', () => {
-      // Use specific cards that will trigger opponent challenge
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.ACE); // High value
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO); // Low value - should trigger challenge
+    it('should not allow player to challenge when opponent 2 beats player Ace', () => {
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.ACE);
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO);
       
-      // Mock AI to always challenge 2s
+      const result = service.resolveTurn(playerCard, opponentCard);
+      
+      expect(result.winner).toBe(PlayerType.OPPONENT);
+      expect(result.result).toBe(ComparisonResult.OPPONENT_WINS);
+      expect(result.canChallenge).toBe(false);
+      expect(result.nextPhase).toBe(GamePhase.NORMAL);
+    });
+
+    it('should not allow opponent to challenge when player 2 beats opponent Ace', () => {
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.TWO);
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.ACE);
+      
+      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(true);
+      
+      const result = service.resolveTurn(playerCard, opponentCard);
+      
+      expect(result.winner).toBe(PlayerType.PLAYER);
+      expect(result.result).toBe(ComparisonResult.PLAYER_WINS);
+      expect(result.opponentChallenge).toBe(false);
+      expect(result.canChallenge).toBe(false);
+      expect(result.nextPhase).toBe(GamePhase.NORMAL);
+    });
+
+    it('should trigger opponent challenge when opponent loses with low value card', () => {
+      // Use specific cards (not 2 vs Ace) that will trigger opponent challenge
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.KING); // High value
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.THREE); // Low value - should trigger challenge
+      
+      // Mock AI to always challenge
       spyOn(opponentAIService, 'shouldChallenge').and.returnValue(true);
       
       // Mock comparison to ensure player wins initially
@@ -398,10 +425,10 @@ describe('TurnResolutionService', () => {
     });
 
     it('should not trigger opponent challenge when opponent loses with high value card', () => {
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.TWO); // Low value
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.ACE); // High value - should not challenge
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.FIVE);
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.KING); // High value - should not challenge
       
-      // Mock AI to not challenge Aces
+      // Mock AI to not challenge Kings
       spyOn(opponentAIService, 'shouldChallenge').and.returnValue(false);
       
       // Mock comparison to ensure player wins

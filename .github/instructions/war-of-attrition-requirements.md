@@ -38,7 +38,7 @@ The application is a two-player, head-to-head card game of attrition. The object
 
 #### **2.4.2. Challenge**
 
-* **Condition**: Occurs when a player has just lost a standard comparison. The losing player is given the option to "Challenge".  
+* **Condition**: Occurs when a player has just lost a standard comparison. (Note: Special 2 vs. Ace wins cannot be challenged by either player.) The losing player is given the option to "Challenge".  
 * **Mechanic**:  
   1. The losing player draws a new, second card from their deck.  
   2. This new card is compared against the *original winning card* of the opponent.  
