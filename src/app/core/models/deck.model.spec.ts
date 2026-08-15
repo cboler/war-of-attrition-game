@@ -125,12 +125,11 @@ describe('Deck Model', () => {
     });
 
     it('should correctly identify when deck has minimum cards for battle', () => {
-      // Create deck with exactly 4 cards
+      // The clash card is already staked; Battle needs 3 new cards.
       const battleDeck = new Deck([
         new CardImpl(Suit.HEARTS, Rank.ACE),
         new CardImpl(Suit.HEARTS, Rank.KING),
-        new CardImpl(Suit.HEARTS, Rank.QUEEN),
-        new CardImpl(Suit.HEARTS, Rank.JACK)
+        new CardImpl(Suit.HEARTS, Rank.QUEEN)
       ]);
       
       expect(battleDeck.hasMinimumForBattle).toBe(true);

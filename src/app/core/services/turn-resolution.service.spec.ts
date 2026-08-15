@@ -1,506 +1,272 @@
 import { TestBed } from '@angular/core/testing';
-import { TurnResolutionService } from '../services/turn-resolution.service';
-import { GameStateService } from '../services/game-state.service';
-import { CardComparisonService, ComparisonResult } from '../services/card-comparison.service';
-import { OpponentAIService } from '../services/opponent-ai.service';
-import { CardImpl, Suit, Rank } from '../models/card.model';
 import { GamePhase, PlayerType } from '../models/game-state.model';
+import { CardComparisonService, ComparisonResult } from './card-comparison.service';
+import { GameStateService } from './game-state.service';
+import { OpponentAIService } from './opponent-ai.service';
+import { TurnResolutionService } from './turn-resolution.service';
 
 describe('TurnResolutionService', () => {
   let service: TurnResolutionService;
-  let gameStateService: GameStateService;
-  let cardComparisonService: CardComparisonService;
-  let opponentAIService: OpponentAIService;
+  let gameState: GameStateService;
+  let comparison: CardComparisonService;
+  let opponentAI: OpponentAIService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
     service = TestBed.inject(TurnResolutionService);
-    gameStateService = TestBed.inject(GameStateService);
-    cardComparisonService = TestBed.inject(CardComparisonService);
-    opponentAIService = TestBed.inject(OpponentAIService);
-    
-    gameStateService.initializeGame();
+    gameState = TestBed.inject(GameStateService);
+    comparison = TestBed.inject(CardComparisonService);
+    opponentAI = TestBed.inject(OpponentAIService);
+    gameState.initializeGame({ shuffle: false });
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+  function activeCards() {
+    const cards = gameState.startTurn();
+    if (!cards.playerCard || !cards.opponentCard) throw new Error('Expected both active cards');
+    return { playerCard: cards.playerCard, opponentCard: cards.opponentCard };
+  }
+
+  function expectConserved(): void {
+    expect(gameState.cardConservationReport().valid).toBeTrue();
+  }
+
+  it('settles an ordinary decisive turn exactly once', () => {
+    const cards = activeCards();
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+
+    const result = service.resolveTurn(cards.playerCard, cards.opponentCard);
+
+    expect(result.winner).toBe(PlayerType.PLAYER);
+    expect(gameState.playerCardCount()).toBe(26);
+    expect(gameState.opponentCardCount()).toBe(25);
+    expect(gameState.discardedCardCount()).toBe(1);
+    expect(gameState.currentState.activeTurn).toBeNull();
+    expectConserved();
   });
 
-  describe('Normal turn resolution', () => {
-    beforeEach(() => {
-      gameStateService.initializeGame(); // Reset game state for each test
-    });
-    
-    it('should resolve player win correctly when opponent does not challenge', () => {
-      // Use the real game flow: start turn first to draw cards from decks
-      const { playerCard, opponentCard } = gameStateService.startTurn();
-      
-      if (!playerCard || !opponentCard) {
-        fail('Failed to draw cards for test');
-        return;
-      }
-      
-      // Mock the comparison to ensure player wins
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
-      
-      // Mock the opponent AI to not challenge
-      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(false);
-      
-      const result = service.resolveTurn(playerCard, opponentCard);
-      
-      expect(result.winner).toBe(PlayerType.PLAYER);
-      expect(result.result).toBe(ComparisonResult.PLAYER_WINS);
-      expect(result.message).toBe('You win this turn!');
-      expect(result.cardsKept).toContain(playerCard);
-      expect(result.cardsLost).toContain(opponentCard);
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-      expect(result.canChallenge).toBe(false);
-    });
+  it('does not pre-settle a player loss while the challenge decision is pending', () => {
+    const cards = activeCards();
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
 
-    it('should trigger opponent challenge when player wins and opponent decides to challenge', () => {
-      // Use the real game flow: start turn first to draw cards from decks
-      const { playerCard, opponentCard } = gameStateService.startTurn();
-      
-      if (!playerCard || !opponentCard) {
-        fail('Failed to draw cards for test');
-        return;
-      }
-      
-      // Mock the comparison to ensure player wins
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
-      
-      // Mock the opponent AI to challenge
-      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(true);
-      
-      const result = service.resolveTurn(playerCard, opponentCard);
-      
-      expect(result.winner).toBeNull(); // No winner yet due to challenge
-      expect(result.result).toBe(ComparisonResult.PLAYER_WINS);
-      expect(result.message).toBe('You win this turn, but opponent challenges!');
-      expect(result.cardsKept).toContain(playerCard);
-      expect(result.cardsKept).toContain(opponentCard);
-      expect(result.cardsLost.length).toBe(0); // No cards lost yet
-      expect(result.nextPhase).toBe(GamePhase.CHALLENGE);
-      expect(result.canChallenge).toBe(false);
-      expect(result.opponentChallenge).toBe(true);
-    });
+    const result = service.resolveTurn(cards.playerCard, cards.opponentCard);
 
-    it('should resolve opponent win correctly and offer challenge', () => {
-      // Use the real game flow: start turn first to draw cards from decks
-      const { playerCard, opponentCard } = gameStateService.startTurn();
-      
-      if (!playerCard || !opponentCard) {
-        fail('Failed to draw cards for test');
-        return;
-      }
-      
-      // Mock the comparison to ensure opponent wins
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
-      
-      const result = service.resolveTurn(playerCard, opponentCard);
-      
-      expect(result.winner).toBe(PlayerType.OPPONENT);
-      expect(result.result).toBe(ComparisonResult.OPPONENT_WINS);
-      expect(result.message).toBe('Opponent wins this turn!');
-      expect(result.cardsKept).toContain(opponentCard);
-      expect(result.cardsLost).toContain(playerCard);
-      expect(result.nextPhase).toBe(GamePhase.CHALLENGE);
-      expect(result.canChallenge).toBe(true);
-    });
-
-    it('should resolve tie and initiate battle', () => {
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.EIGHT);
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.EIGHT);
-      
-      const result = service.resolveTurn(playerCard, opponentCard);
-      
-      expect(result.winner).toBeNull();
-      expect(result.result).toBe(ComparisonResult.TIE);
-      expect(result.message).toBe('Cards tie! Preparing for battle...');
-      expect(result.cardsKept).toContain(playerCard);
-      expect(result.cardsKept).toContain(opponentCard);
-      expect(result.nextPhase).toBe(GamePhase.BATTLE);
-      expect(result.canChallenge).toBe(false);
-    });
+    expect(result.winner).toBeNull();
+    expect(result.canChallenge).toBeTrue();
+    expect(gameState.discardedCardCount()).toBe(0);
+    expect(gameState.getStake(PlayerType.PLAYER)).toEqual([cards.playerCard]);
+    expect(gameState.getStake(PlayerType.OPPONENT)).toEqual([cards.opponentCard]);
+    expectConserved();
   });
 
-  describe('Challenge resolution', () => {
-    beforeEach(() => {
-      gameStateService.initializeGame(); // Reset game state for each test
-    });
-    
-    it('should resolve successful challenge', () => {
-      // Setup: Start a turn and simulate the initial loss that leads to challenge
-      const { playerCard, opponentCard } = gameStateService.startTurn();
-      
-      if (!playerCard || !opponentCard) {
-        fail('Failed to draw cards for test');
-        return;
-      }
-      
-      // Simulate initial turn loss (opponent wins)
-      const spy = spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
-      const initialResult = service.resolveTurn(playerCard, opponentCard);
-      
-      // Player draws challenge card
-      const challengeCard = gameStateService.drawPlayerCard();
-      if (!challengeCard) {
-        fail('Failed to draw challenge card');
-        return;
-      }
-      
-      // Mock the challenge comparison to ensure challenge succeeds
-      spy.and.returnValue(ComparisonResult.PLAYER_WINS);
-      
-      const result = service.resolveChallenge(playerCard, opponentCard, challengeCard);
-      
-      expect(result.winner).toBe(PlayerType.PLAYER);
-      expect(result.result).toBe(ComparisonResult.PLAYER_WINS);
-      expect(result.message).toBe('Challenge successful! You keep your cards.');
-      expect(result.cardsKept).toContain(playerCard);
-      expect(result.cardsKept).toContain(challengeCard);
-      expect(result.cardsLost).toContain(opponentCard);
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-      expect(result.canChallenge).toBe(false);
-    });
+  it('settles a player concession without searching a deck for the active card', () => {
+    const cards = activeCards();
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    service.resolveTurn(cards.playerCard, cards.opponentCard);
 
-    it('should resolve failed challenge', () => {
-      // Setup: Start a turn and simulate the initial loss that leads to challenge
-      const { playerCard, opponentCard } = gameStateService.startTurn();
-      
-      if (!playerCard || !opponentCard) {
-        fail('Failed to draw cards for test');
-        return;
-      }
-      
-      // Simulate initial turn loss (opponent wins)
-      const initialResult = service.resolveTurn(playerCard, opponentCard);
-      
-      // Player draws challenge card
-      const challengeCard = gameStateService.drawPlayerCard();
-      if (!challengeCard) {
-        fail('Failed to draw challenge card');
-        return;
-      }
-      
-      // Mock the challenge comparison to ensure challenge fails
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
-      
-      const result = service.resolveChallenge(playerCard, opponentCard, challengeCard);
-      
-      expect(result.winner).toBe(PlayerType.OPPONENT);
-      expect(result.result).toBe(ComparisonResult.OPPONENT_WINS);
-      expect(result.message).toBe('Challenge failed! You lose your cards.');
-      expect(result.cardsLost).toContain(playerCard);
-      expect(result.cardsLost).toContain(challengeCard);
-      expect(result.cardsKept).toContain(opponentCard);
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-      expect(result.canChallenge).toBe(false);
-    });
+    service.resolveChallengeConcession(PlayerType.PLAYER);
 
-    it('should resolve challenge tie as battle with all cards staked', () => {
-      // Setup: Start a turn and simulate the initial loss that leads to challenge
-      const { playerCard, opponentCard } = gameStateService.startTurn();
-      
-      if (!playerCard || !opponentCard) {
-        fail('Failed to draw cards for test');
-        return;
-      }
-      
-      // Simulate initial turn loss (opponent wins)
-      const initialResult = service.resolveTurn(playerCard, opponentCard);
-      
-      // Player draws challenge card
-      const challengeCard = gameStateService.drawPlayerCard();
-      if (!challengeCard) {
-        fail('Failed to draw challenge card');
-        return;
-      }
-      
-      // Mock the challenge comparison to ensure challenge ties
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.TIE);
-      
-      const result = service.resolveChallenge(playerCard, opponentCard, challengeCard);
-      
-      expect(result.winner).toBeNull();
-      expect(result.result).toBe(ComparisonResult.TIE);
-      expect(result.message).toBe('Challenge ties! Battle initiated with all cards staked.');
-      expect(result.cardsKept).toContain(playerCard);
-      expect(result.cardsKept).toContain(challengeCard);
-      expect(result.cardsKept).toContain(opponentCard);
-      expect(result.cardsLost.length).toBe(0);
-      expect(result.nextPhase).toBe(GamePhase.BATTLE);
-    });
+    expect(gameState.playerCardCount()).toBe(25);
+    expect(gameState.opponentCardCount()).toBe(26);
+    expect(gameState.discardedCards()).toEqual([cards.playerCard]);
+    expectConserved();
   });
 
-  describe('Battle resolution', () => {
-    beforeEach(() => {
-      gameStateService.initializeGame(); // Reset game state for each test
-    });
-    
-    it('should resolve player battle win', () => {
-      // Setup: Start a turn and simulate the scenario that leads to battle
-      const { playerCard, opponentCard } = gameStateService.startTurn();
-      
-      if (!playerCard || !opponentCard) {
-        fail('Failed to draw cards for test');
-        return;
-      }
-      
-      // Draw battle cards from both decks (3 cards each for battle)
-      const playerBattleCards = gameStateService.currentPlayerDeck.drawMultiple(3);
-      const opponentBattleCards = gameStateService.currentOpponentDeck.drawMultiple(3);
-      
-      if (playerBattleCards.length !== 3 || opponentBattleCards.length !== 3) {
-        fail('Failed to draw battle cards');
-        return;
-      }
-      
-      // These would normally be selected from the opponent's battle cards, but for test we'll create them
-      const selectedPlayerCard = new CardImpl(Suit.HEARTS, Rank.KING);
-      const selectedOpponentCard = new CardImpl(Suit.SPADES, Rank.QUEEN);
-      
-      // Mock the battle comparison to ensure player wins
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
-      
-      const result = service.resolveBattle(
-        playerCard,
-        opponentCard,
-        playerBattleCards,
-        opponentBattleCards,
-        selectedPlayerCard,
-        selectedOpponentCard
-      );
-      
-      expect(result.winner).toBe(PlayerType.PLAYER);
-      expect(result.result).toBe(ComparisonResult.PLAYER_WINS);
-      expect(result.message).toBe('You win the battle! All opponent cards discarded.');
-      expect(result.cardsKept.length).toBe(4); // 1 original + 3 battle cards
-      expect(result.cardsLost.length).toBe(4); // 1 original + 3 battle cards from opponent
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-      expect(result.canChallenge).toBe(false);
-    });
+  it('accounts for player challenge win, loss, and tie without double removal', () => {
+    const compareSpy = spyOn(comparison, 'compareCards');
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    const outcomes = [
+      ComparisonResult.PLAYER_WINS,
+      ComparisonResult.OPPONENT_WINS,
+      ComparisonResult.TIE
+    ];
 
-    it('should resolve opponent battle win', () => {
-      // Setup: Start a turn and simulate the scenario that leads to battle
-      const { playerCard, opponentCard } = gameStateService.startTurn();
-      
-      if (!playerCard || !opponentCard) {
-        fail('Failed to draw cards for test');
-        return;
-      }
-      
-      // Draw battle cards from both decks (3 cards each for battle)
-      const playerBattleCards = gameStateService.currentPlayerDeck.drawMultiple(3);
-      const opponentBattleCards = gameStateService.currentOpponentDeck.drawMultiple(3);
-      
-      if (playerBattleCards.length !== 3 || opponentBattleCards.length !== 3) {
-        fail('Failed to draw battle cards');
-        return;
-      }
-      
-      // These would normally be selected from battle cards
-      const selectedPlayerCard = new CardImpl(Suit.HEARTS, Rank.QUEEN);
-      const selectedOpponentCard = new CardImpl(Suit.SPADES, Rank.KING);
-      
-      // Mock the battle comparison to ensure opponent wins
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
-      
-      const result = service.resolveBattle(
-        playerCard,
-        opponentCard,
-        playerBattleCards,
-        opponentBattleCards,
-        selectedPlayerCard,
-        selectedOpponentCard
-      );
-      
-      expect(result.winner).toBe(PlayerType.OPPONENT);
-      expect(result.result).toBe(ComparisonResult.OPPONENT_WINS);
-      expect(result.message).toBe('Opponent wins the battle! All your cards discarded.');
-      expect(result.cardsLost.length).toBe(4); // player's original + 3 battle cards
-      expect(result.cardsKept.length).toBe(4); // opponent's original + 3 battle cards
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-      expect(result.canChallenge).toBe(false);
-    });
+    for (const outcome of outcomes) {
+      gameState.initializeGame({ shuffle: false });
+      const cards = activeCards();
+      compareSpy.and.returnValue(ComparisonResult.OPPONENT_WINS);
+      service.resolveTurn(cards.playerCard, cards.opponentCard);
+      const reinforcement = gameState.beginChallenge(PlayerType.PLAYER);
+      expect(reinforcement).not.toBeNull();
+      compareSpy.and.returnValue(outcome);
 
-    it('should handle battle tie and continue battle if possible', () => {
-      // Setup: Start a turn and simulate the scenario that leads to battle
-      const { playerCard, opponentCard } = gameStateService.startTurn();
-      
-      if (!playerCard || !opponentCard) {
-        fail('Failed to draw cards for test');
-        return;
+      const result = service.resolveChallenge(PlayerType.PLAYER);
+      expectConserved();
+
+      if (outcome === ComparisonResult.PLAYER_WINS) {
+        expect(gameState.playerCardCount()).toBe(26);
+        expect(gameState.opponentCardCount()).toBe(25);
+        expect(gameState.discardedCardCount()).toBe(1);
+      } else if (outcome === ComparisonResult.OPPONENT_WINS) {
+        expect(gameState.playerCardCount()).toBe(24);
+        expect(gameState.opponentCardCount()).toBe(26);
+        expect(gameState.discardedCardCount()).toBe(2);
+      } else {
+        expect(result.nextPhase).toBe(GamePhase.BATTLE);
+        expect(gameState.getStake(PlayerType.PLAYER).length).toBe(2);
+        expect(gameState.getStake(PlayerType.OPPONENT).length).toBe(1);
+        expect(gameState.discardedCardCount()).toBe(0);
       }
-      
-      // Draw battle cards from both decks (3 cards each for battle)
-      const playerBattleCards = gameStateService.currentPlayerDeck.drawMultiple(3);
-      const opponentBattleCards = gameStateService.currentOpponentDeck.drawMultiple(3);
-      
-      if (playerBattleCards.length !== 3 || opponentBattleCards.length !== 3) {
-        fail('Failed to draw battle cards');
-        return;
-      }
-      
-      // These would normally be selected from battle cards
-      const selectedPlayerCard = new CardImpl(Suit.HEARTS, Rank.QUEEN);
-      const selectedOpponentCard = new CardImpl(Suit.SPADES, Rank.QUEEN);
-      
-      // Mock the battle comparison to ensure tie
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.TIE);
-      
-      const result = service.resolveBattle(
-        playerCard,
-        opponentCard,
-        playerBattleCards,
-        opponentBattleCards,
-        selectedPlayerCard,
-        selectedOpponentCard
-      );
-      
-      expect(result.winner).toBeNull();
-      expect(result.result).toBe(ComparisonResult.TIE);
-      expect(result.message).toBe('Battle ties again! Another battle required.');
-      expect(result.cardsKept.length).toBe(8); // All cards stay in play
-      expect(result.cardsLost.length).toBe(0);
-      expect(result.nextPhase).toBe(GamePhase.BATTLE);
-      expect(result.canChallenge).toBe(false);
-    });
+    }
   });
 
-  describe('Opponent Challenge resolution', () => {
-    beforeEach(() => {
-      gameStateService.initializeGame(); // Reset game state for each test
-    });
-    
-    it('should not allow player to challenge when opponent 2 beats player Ace', () => {
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.ACE);
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO);
-      
-      const result = service.resolveTurn(playerCard, opponentCard);
-      
-      expect(result.winner).toBe(PlayerType.OPPONENT);
-      expect(result.result).toBe(ComparisonResult.OPPONENT_WINS);
-      expect(result.canChallenge).toBe(false);
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-    });
+  it('accounts for opponent challenge win, loss, and tie symmetrically', () => {
+    const compareSpy = spyOn(comparison, 'compareCards');
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    spyOn(opponentAI, 'shouldChallenge').and.returnValue(true);
+    const outcomes = [
+      ComparisonResult.OPPONENT_WINS,
+      ComparisonResult.PLAYER_WINS,
+      ComparisonResult.TIE
+    ];
 
-    it('should not allow opponent to challenge when player 2 beats opponent Ace', () => {
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.TWO);
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.ACE);
-      
-      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(true);
-      
-      const result = service.resolveTurn(playerCard, opponentCard);
-      
-      expect(result.winner).toBe(PlayerType.PLAYER);
-      expect(result.result).toBe(ComparisonResult.PLAYER_WINS);
-      expect(result.opponentChallenge).toBe(false);
-      expect(result.canChallenge).toBe(false);
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-    });
+    for (const outcome of outcomes) {
+      gameState.initializeGame({ shuffle: false });
+      const cards = activeCards();
+      compareSpy.and.returnValue(ComparisonResult.PLAYER_WINS);
+      const pending = service.resolveTurn(cards.playerCard, cards.opponentCard);
+      expect(pending.opponentChallenge).toBeTrue();
+      gameState.beginChallenge(PlayerType.OPPONENT);
+      compareSpy.and.returnValue(outcome);
 
-    it('should trigger opponent challenge when opponent loses with low value card', () => {
-      // Use specific cards (not 2 vs Ace) that will trigger opponent challenge
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.KING); // High value
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.THREE); // Low value - should trigger challenge
-      
-      // Mock AI to always challenge
-      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(true);
-      
-      // Mock comparison to ensure player wins initially
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
-      
-      // Mock the game state service methods to avoid deck count issues
-      spyOn(gameStateService, 'returnCardsToPlayerDeck').and.stub();
-      spyOn(gameStateService, 'addToDiscardPile').and.stub();
-      
-      const result = service.resolveTurn(playerCard, opponentCard);
-      
-      expect(result.winner).toBeNull(); // No winner yet due to challenge
-      expect(result.message).toBe('You win this turn, but opponent challenges!');
-      expect(result.nextPhase).toBe(GamePhase.CHALLENGE);
-      expect(result.opponentChallenge).toBe(true);
-      expect(result.canChallenge).toBe(false);
-    });
+      const result = service.resolveChallenge(PlayerType.OPPONENT);
+      expectConserved();
 
-    it('should not trigger opponent challenge when opponent loses with high value card', () => {
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.FIVE);
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.KING); // High value - should not challenge
-      
-      // Mock AI to not challenge Kings
-      spyOn(opponentAIService, 'shouldChallenge').and.returnValue(false);
-      
-      // Mock comparison to ensure player wins
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
-      
-      // Mock the game state service methods to avoid deck count issues
-      spyOn(gameStateService, 'returnCardsToPlayerDeck').and.stub();
-      spyOn(gameStateService, 'addToDiscardPile').and.stub();
-      
-      const result = service.resolveTurn(playerCard, opponentCard);
-      
-      expect(result.winner).toBe(PlayerType.PLAYER);
-      expect(result.message).toBe('You win this turn!');
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-      expect(result.opponentChallenge).toBe(false);
-      expect(result.canChallenge).toBe(false);
-    });
-
-    it('should resolve successful opponent challenge', () => {
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.FIVE);
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO);
-      const opponentChallengeCard = new CardImpl(Suit.CLUBS, Rank.SEVEN);
-      
-      // Mock comparison to ensure opponent challenge wins
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
-      
-      // Mock the game state service methods to avoid deck count issues
-      spyOn(gameStateService, 'returnCardsToOpponentDeck').and.stub();
-      spyOn(gameStateService, 'addToDiscardPile').and.stub();
-      
-      const result = service.resolveOpponentChallenge(playerCard, opponentCard, opponentChallengeCard);
-      
-      expect(result.winner).toBe(PlayerType.OPPONENT);
-      expect(result.result).toBe(ComparisonResult.OPPONENT_WINS);
-      expect(result.message).toBe('Opponent challenge successful! Opponent keeps their cards.');
-      expect(result.cardsKept).toContain(opponentCard);
-      expect(result.cardsKept).toContain(opponentChallengeCard);
-      expect(result.cardsLost).toContain(playerCard);
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-      expect(result.canChallenge).toBe(false);
-    });
-
-    it('should resolve failed opponent challenge', () => {
-      const playerCard = new CardImpl(Suit.HEARTS, Rank.KING);
-      const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO);
-      const opponentChallengeCard = new CardImpl(Suit.CLUBS, Rank.THREE);
-      
-      // Mock comparison to ensure opponent challenge fails
-      spyOn(cardComparisonService, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
-      
-      // Mock the game state service methods to avoid deck count issues
-      spyOn(gameStateService, 'returnCardsToPlayerDeck').and.stub();
-      spyOn(gameStateService, 'addToDiscardPile').and.stub();
-      
-      const result = service.resolveOpponentChallenge(playerCard, opponentCard, opponentChallengeCard);
-      
-      expect(result.winner).toBe(PlayerType.PLAYER);
-      expect(result.result).toBe(ComparisonResult.PLAYER_WINS);
-      expect(result.message).toBe('Opponent challenge failed! Opponent loses their cards.');
-      expect(result.cardsKept).toContain(playerCard);
-      expect(result.cardsLost).toContain(opponentCard);
-      expect(result.cardsLost).toContain(opponentChallengeCard);
-      expect(result.nextPhase).toBe(GamePhase.NORMAL);
-      expect(result.canChallenge).toBe(false);
-    });
+      if (outcome === ComparisonResult.OPPONENT_WINS) {
+        expect(gameState.opponentCardCount()).toBe(26);
+        expect(gameState.playerCardCount()).toBe(25);
+        expect(gameState.discardedCardCount()).toBe(1);
+      } else if (outcome === ComparisonResult.PLAYER_WINS) {
+        expect(gameState.opponentCardCount()).toBe(24);
+        expect(gameState.playerCardCount()).toBe(26);
+        expect(gameState.discardedCardCount()).toBe(2);
+      } else {
+        expect(result.nextPhase).toBe(GamePhase.BATTLE);
+        expect(gameState.getStake(PlayerType.OPPONENT).length).toBe(2);
+      }
+    }
   });
 
-  describe('Win condition checking', () => {
-    it('should check win conditions', () => {
-      const result = service.checkWinConditions();
-      
-      expect(typeof result).toBe('boolean');
-    });
+  it('passes only AI-owned cards and public information into challenge strategy', () => {
+    const cards = activeCards();
+    const hiddenPlayerIds = new Set(gameState.currentPlayerDeck.toArray().map(card => card.id));
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    const strategy = spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+
+    service.resolveTurn(cards.playerCard, cards.opponentCard);
+
+    const context = strategy.calls.mostRecent().args[1]!;
+    expect(context.ownDeck.every(card => !card.isRed)).toBeTrue();
+    expect(context.publicCards).toContain(cards.playerCard);
+    expect(context.publicCards).toContain(cards.opponentCard);
+    expect(context.publicCards.some(card => hiddenPlayerIds.has(card.id))).toBeFalse();
+  });
+
+  it('defers decisive Battle settlement until casualties have been presented', () => {
+    const cards = activeCards();
+    const compareSpy = spyOn(comparison, 'compareCards');
+    compareSpy.and.returnValue(ComparisonResult.TIE);
+    service.resolveTurn(cards.playerCard, cards.opponentCard);
+    const layer = gameState.dealBattleLayer()!;
+    compareSpy.and.returnValue(ComparisonResult.PLAYER_WINS);
+
+    const result = service.resolveBattleSelection(layer.opponentCards[0].id, layer.playerCards[0].id);
+
+    expect(result.pendingBattleSettlement).toBeTrue();
+    expect(result.casualtyRevealCards.length).toBe(2);
+    expect(result.hiddenWinnerCardCount).toBe(2);
+    expect(result.cardsKept).not.toContain(layer.playerCards[1]);
+    expect(gameState.discardedCardCount()).toBe(0);
+    expect(gameState.currentState.activeTurn).not.toBeNull();
+    expectConserved();
+
+    service.finalizeBattle(PlayerType.PLAYER);
+    expect(gameState.discardedCardCount()).toBe(4);
+    expect(gameState.playerCardCount()).toBe(26);
+    expect(gameState.opponentCardCount()).toBe(22);
+    expectConserved();
+  });
+
+  it('accumulates recursive Battle stakes and reveals every hidden loser casualty only', () => {
+    const cards = activeCards();
+    const compareSpy = spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.TIE);
+    service.resolveTurn(cards.playerCard, cards.opponentCard);
+    const first = gameState.dealBattleLayer()!;
+    const tied = service.resolveBattleSelection(first.opponentCards[0].id, first.playerCards[0].id);
+    expect(tied.nextPhase).toBe(GamePhase.BATTLE);
+    const second = gameState.dealBattleLayer()!;
+    compareSpy.and.returnValue(ComparisonResult.PLAYER_WINS);
+
+    const result = service.resolveBattleSelection(second.opponentCards[0].id, second.playerCards[0].id);
+
+    expect(result.cardsLost.length).toBe(7);
+    expect(result.casualtyRevealCards.length).toBe(4);
+    expect(result.hiddenWinnerCardCount).toBe(4);
+    expect(gameState.currentState.activeTurn?.battleLayers.length).toBe(2);
+    expect(gameState.discardedCardCount()).toBe(0);
+    expectConserved();
+
+    service.finalizeBattle(PlayerType.PLAYER);
+    expect(gameState.discardedCardCount()).toBe(7);
+    expect(gameState.playerCardCount()).toBe(26);
+    expect(gameState.opponentCardCount()).toBe(19);
+    expectConserved();
+  });
+
+  it('ends by attrition with the full 52-card ledger intact when three new cards are unavailable', () => {
+    const compareSpy = spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+
+    for (let loss = 0; loss < 23; loss++) {
+      const cards = activeCards();
+      service.resolveTurn(cards.playerCard, cards.opponentCard);
+      service.resolveChallengeConcession(PlayerType.PLAYER);
+    }
+    expect(gameState.playerCardCount()).toBe(3);
+
+    const finalCards = activeCards();
+    compareSpy.and.returnValue(ComparisonResult.TIE);
+    const result = service.resolveTurn(finalCards.playerCard, finalCards.opponentCard);
+
+    expect(result.nextPhase).toBe(GamePhase.GAME_OVER);
+    expect(result.winner).toBe(PlayerType.OPPONENT);
+    expect(gameState.playerCardCount()).toBe(2);
+    expect(gameState.opponentCardCount()).toBe(26);
+    expect(gameState.discardedCardCount()).toBe(24);
+    expectConserved();
+  });
+
+  it('defers recursive-Battle attrition settlement until hidden casualties are revealed', () => {
+    const compareSpy = spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    for (let loss = 0; loss < 22; loss++) {
+      const cards = activeCards();
+      service.resolveTurn(cards.playerCard, cards.opponentCard);
+      service.resolveChallengeConcession(PlayerType.PLAYER);
+    }
+    expect(gameState.playerCardCount()).toBe(4);
+
+    const cards = activeCards();
+    compareSpy.and.returnValue(ComparisonResult.TIE);
+    service.resolveTurn(cards.playerCard, cards.opponentCard);
+    const layer = gameState.dealBattleLayer()!;
+    const result = service.resolveBattleSelection(layer.opponentCards[0].id, layer.playerCards[0].id);
+
+    expect(result.nextPhase).toBe(GamePhase.GAME_OVER);
+    expect(result.pendingBattleSettlement).toBeTrue();
+    expect(result.winner).toBe(PlayerType.OPPONENT);
+    expect(result.casualtyRevealCards.length).toBe(2);
+    expect(gameState.discardedCardCount()).toBe(22);
+    expect(gameState.currentState.activeTurn).not.toBeNull();
+    expectConserved();
+
+    service.finalizeBattle(PlayerType.OPPONENT, true);
+    expect(gameState.currentPhase).toBe(GamePhase.GAME_OVER);
+    expect(gameState.discardedCardCount()).toBe(26);
+    expectConserved();
   });
 });

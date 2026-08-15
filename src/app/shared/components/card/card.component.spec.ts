@@ -16,7 +16,10 @@ describe('CardComponent', () => {
     fixture = TestBed.createComponent(CardComponent);
     component = fixture.componentInstance;
     settingsService = TestBed.inject(SettingsService);
+    settingsService.setAutoPlayAnimations(true);
   });
+
+  afterEach(() => settingsService.resetSettings());
 
   it('should create', () => {
     expect(component).toBeTruthy();

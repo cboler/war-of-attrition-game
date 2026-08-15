@@ -27,7 +27,7 @@ export class App implements OnInit {
   private authService = inject(AuthService);
   private dialog = inject(MatDialog);
 
-  protected readonly title = signal('⚔️ Attrition');
+  protected readonly title = signal('ATTRITION');
   protected readonly isDarkMode = signal(false);
   readonly activeProfile = this.authService.activeProfile;
   

@@ -90,7 +90,9 @@ export class Deck {
   }
 
   get hasMinimumForBattle(): boolean {
-    return this.cards.length >= 4; // Need 1 for comparison + 3 for battle
+    // The normal/challenge card is already on the table when Battle begins.
+    // README's authoritative flow therefore requires exactly three NEW cards.
+    return this.cards.length >= 3;
   }
 
   peek(): Card | null {

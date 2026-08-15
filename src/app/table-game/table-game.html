@@ -1,0 +1,178 @@
+<div class="table-page" (click)="onTableClick($event)">
+  <app-card-table>
+    <app-player-seat
+      table-seat-top
+      name="Opponent"
+      position="top"
+      [cardCount]="gameState.opponentCardCount()"
+      [cardsAtRisk]="controller.opponentCardsAtRisk()"
+      [thinking]="opponentThinking()"
+      [quip]="opponentQuip()" />
+
+    <div table-center class="playfield">
+      <div class="table-tools" aria-label="Table controls">
+        <span class="turn-mark">HAND {{ gameState.gameStats().turnNumber }}</span>
+        <button type="button" (click)="toggleSound()" [attr.aria-pressed]="settings.soundEnabled()">
+          {{ settings.soundEnabled() ? 'Sound on' : 'Sound off' }}
+        </button>
+        <a routerLink="/settings">Settings</a>
+        <a routerLink="/classic">Classic</a>
+        <button type="button" (click)="restart()">New game</button>
+      </div>
+
+      <div class="announcement" aria-live="polite" aria-atomic="true">
+        @if (battleActive()) {
+          <span class="eyebrow">BATTLE · LAYER {{ newestBattleRound() }}</span>
+        }
+        <strong>{{ controller.tableMessage() }}</strong>
+      </div>
+
+      <section class="stakes" [class.in-battle]="battleActive()" aria-label="Cards at stake">
+        <div class="side-stake opponent-stake">
+          <div class="battle-layers opponent-layers">
+            @for (layer of controller.battleLayers(); track layer.round) {
+              <div class="battle-layer" [class.receded]="layer.receded" [style.--layer]="layer.round">
+                @for (view of layer.opponentCards; track view.id; let index = $index) {
+                  <button
+                    class="battle-card-shell"
+                    type="button"
+                    [class.eligible]="view.eligible"
+                    [class.selected]="view.selected"
+                    [class.casualty]="view.casualty"
+                    [class.returning]="isReturning(view.id)"
+                    [class.to-boneyard]="isGoingToBoneyard(view.id)"
+                    [disabled]="!view.eligible"
+                    [attr.aria-label]="view.eligible ? 'Select opponent Battle card ' + (index + 1) + ' from newest layer' : (view.faceDown ? 'Hidden opponent Battle card' : null)"
+                    (click)="chooseTarget(view)">
+                    <app-card
+                      [card]="view.card"
+                      [faceDown]="view.faceDown"
+                      [glow]="view.eligible ? 'blue' : view.selected ? cardGlow(player.OPPONENT) : null" />
+                    @if (view.eligible) {
+                      <span class="target-pointer" aria-hidden="true">↑</span>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="active-card-shell" [class.returning]="controller.activeOpponentCard() && isReturning(controller.activeOpponentCard()!.id)" [class.to-boneyard]="controller.activeOpponentCard() && isGoingToBoneyard(controller.activeOpponentCard()!.id)">
+            @if (controller.activeOpponentCard(); as card) {
+              <app-card [card]="card" [faceDown]="activeCardsFaceDown()" [glow]="cardGlow(player.OPPONENT)" />
+            }
+            @if (controller.opponentChallengeCard(); as card) {
+              <div class="reinforcement opponent-reinforcement" [class.to-boneyard]="isGoingToBoneyard(card.id)" [class.returning]="isReturning(card.id)">
+                <app-card [card]="card" [faceDown]="challengeCardsFaceDown()" [glow]="cardGlow(player.OPPONENT)" />
+              </div>
+            }
+            @if (opponentThinking()) {
+              <span class="decision-callout opponent-callout">{{ controller.tableMessage() }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="clash-mark" aria-hidden="true"><span></span></div>
+
+        <div class="side-stake player-stake">
+          <div class="active-card-shell" [class.returning]="controller.activePlayerCard() && isReturning(controller.activePlayerCard()!.id)" [class.to-boneyard]="controller.activePlayerCard() && isGoingToBoneyard(controller.activePlayerCard()!.id)">
+            @if (controller.activePlayerCard(); as card) {
+              <app-card [card]="card" [faceDown]="activeCardsFaceDown()" [glow]="cardGlow(player.PLAYER)" />
+            }
+            @if (controller.playerChallengeCard(); as card) {
+              <div class="reinforcement player-reinforcement" [class.to-boneyard]="isGoingToBoneyard(card.id)" [class.returning]="isReturning(card.id)">
+                <app-card [card]="card" [faceDown]="challengeCardsFaceDown()" [glow]="cardGlow(player.PLAYER)" />
+              </div>
+            }
+            @if (controller.canChooseChallenge()) {
+              <div class="decision-callout player-callout" role="group" aria-label="Challenge decision">
+                <strong>Send reinforcement?</strong>
+                <span>
+                  <button type="button" (click)="chooseChallenge(true)">Challenge</button>
+                  <button type="button" (click)="chooseChallenge(false)">Concede</button>
+                </span>
+              </div>
+            }
+          </div>
+
+          <div class="battle-layers player-layers">
+            @for (layer of controller.battleLayers(); track layer.round) {
+              <div class="battle-layer" [class.receded]="layer.receded" [style.--layer]="layer.round">
+                @for (view of layer.playerCards; track view.id; let index = $index) {
+                  <div
+                    class="battle-card-shell"
+                    [class.selected]="view.selected"
+                    [class.casualty]="view.casualty"
+                    [class.returning]="isReturning(view.id)"
+                    [class.to-boneyard]="isGoingToBoneyard(view.id)">
+                    <app-card [card]="view.card" [faceDown]="view.faceDown" [glow]="view.selected ? cardGlow(player.PLAYER) : null" />
+                    @if (controller.opponentPointerIndex() === index && controller.presentationState() === state.OPPONENT_TARGET_SELECTION && layer.round === newestBattleRound()) {
+                      <span class="target-pointer opponent-pointer" aria-hidden="true">↑</span>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+
+      <button
+        class="boneyard"
+        type="button"
+        [class.has-cards]="gameState.discardedCardCount() > 0"
+        [attr.aria-expanded]="boneyardOpen()"
+        (click)="toggleBoneyard()">
+        <span class="pile" aria-hidden="true">
+          <span></span><span></span>
+          @if (gameState.discardedCards().at(-1); as topCard) {
+            <app-card [card]="topCard" [faceDown]="false" />
+          }
+        </span>
+        <strong>Boneyard</strong>
+        <small>{{ gameState.discardedCardCount() }} lost</small>
+      </button>
+
+      @if (boneyardOpen()) {
+        <aside class="boneyard-drawer" aria-label="Boneyard cards">
+          <header>
+            <div><span>BONEYARD</span><strong>{{ gameState.discardedCardCount() }} public cards</strong></div>
+            <button type="button" (click)="toggleBoneyard()" aria-label="Close Boneyard">×</button>
+          </header>
+          <div class="boneyard-grid">
+            @for (card of gameState.discardedCards(); track card.id) {
+              <app-card [card]="card" [faceDown]="false" />
+            } @empty {
+              <p>No casualties yet.</p>
+            }
+          </div>
+        </aside>
+      }
+
+      @if (controller.presentationCanAdvance()) {
+        <button class="advance" type="button" (click)="advancePresentation()">
+          Tap to advance <span aria-hidden="true">›</span>
+        </button>
+      }
+
+      @if (controller.presentationState() === state.GAME_OVER) {
+        <div class="game-over" role="dialog" aria-modal="false" aria-labelledby="game-over-title">
+          <span>THE TABLE IS QUIET</span>
+          <h2 id="game-over-title">{{ controller.tableMessage() }}</h2>
+          <p>{{ gameState.gameStats().turnNumber }} hands · {{ gameState.discardedCardCount() }} cards in the Boneyard</p>
+          <button type="button" (click)="restart()">Deal again</button>
+        </div>
+      }
+    </div>
+
+    <app-player-seat
+      table-seat-bottom
+      name="You"
+      position="bottom"
+      [cardCount]="gameState.playerCardCount()"
+      [cardsAtRisk]="controller.playerCardsAtRisk()"
+      [deckInteractive]="controller.canDraw()"
+      [quip]="playerQuip()"
+      (deckActivated)="draw()" />
+  </app-card-table>
+</div>

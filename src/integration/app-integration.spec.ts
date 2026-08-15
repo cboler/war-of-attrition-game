@@ -12,6 +12,9 @@ class MockGameComponent { }
 @Component({ template: 'Settings Page' })
 class MockSettingsComponent { }
 
+@Component({ template: 'Classic Page' })
+class MockClassicComponent { }
+
 describe('App Integration Tests', () => {
   let fixture: ComponentFixture<App>;
   let router: Router;
@@ -23,6 +26,7 @@ describe('App Integration Tests', () => {
       providers: [
         provideRouter([
           { path: '', component: MockGameComponent },
+          { path: 'classic', component: MockClassicComponent },
           { path: 'settings', component: MockSettingsComponent }
         ])
       ]
@@ -90,7 +94,9 @@ describe('App Integration Tests', () => {
       const gameButton = fixture.nativeElement.querySelector('button[routerLink="/"]');
       const settingsButton = fixture.nativeElement.querySelector('button[routerLink="/settings"]');
       
-      expect(gameButton.getAttribute('aria-label')).toBe('Game');
+      const classicButton = fixture.nativeElement.querySelector('button[routerLink="/classic"]');
+      expect(gameButton.getAttribute('aria-label')).toBe('Card table');
+      expect(classicButton.getAttribute('aria-label')).toBe('Classic game');
       expect(settingsButton.getAttribute('aria-label')).toBe('Settings');
     });
 
