@@ -1,6 +1,8 @@
-import { ComponentFixture, fakeAsync, flushMicrotasks, TestBed } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { CardComparisonService, ComparisonResult } from '../core/services/card-comparison.service';
+import { GameStateService } from '../core/services/game-state.service';
+import { OpponentAIService } from '../core/services/opponent-ai.service';
 import { SettingsService } from '../core/services/settings.service';
 import { GameControllerService, PresentationState } from '../services/game-controller.service';
 import { TableGame } from './table-game';
@@ -62,5 +64,28 @@ describe('TableGame presentation', () => {
     expect(oldLayer.opponentCards.filter(view => !view.selected).every(view => view.card === null)).toBeTrue();
     expect(oldLayer.playerCards.filter(view => !view.selected).every(view => view.card === null)).toBeTrue();
     compareSpy.and.callThrough();
+  }));
+
+  it('keeps a settled ordinary casualty out of the visible Boneyard until it arrives', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    settings.setAnimationSpeed('normal');
+    const gameState = TestBed.inject(GameStateService);
+    const opponentAI = TestBed.inject(OpponentAIService);
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+
+    controller.playerDrawCard();
+    tick(641);
+    fixture.detectChanges();
+
+    expect(gameState.discardedCardCount()).toBe(1);
+    expect(controller.visibleBoneyardCount()).toBe(0);
+    expect(fixture.nativeElement.querySelector('.boneyard small').textContent.trim()).toBe('0 lost');
+
+    tick(3000);
+    fixture.detectChanges();
+    expect(controller.visibleBoneyardCount()).toBe(1);
+    expect(fixture.nativeElement.querySelector('.boneyard small').textContent.trim()).toBe('1 lost');
   }));
 });

@@ -21,7 +21,8 @@ export class TableReactionService {
     const lostTwo = cards.some(card => card.rank === Rank.TWO);
     const largeLoss = cards.length >= 8;
     if (!lostAce && !lostTwo && !largeLoss) return null;
-    if (this.random() > (largeLoss ? 0.82 : 0.68)) return null;
+    // Even earned reactions should be exceptional; silence is the default.
+    if (this.random() >= (largeLoss ? 0.22 : 0.16)) return null;
 
     let variants: readonly string[];
     if (lostAce && lostTwo) {

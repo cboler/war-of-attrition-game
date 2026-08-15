@@ -71,7 +71,7 @@ export class GameDemoService {
       while (settledResult.nextPhase === GamePhase.BATTLE) {
         const layer = this.gameStateService.dealBattleLayer();
         if (!layer) {
-          this.gameStateService.settleAttritionLoss();
+          this.gameStateService.settleAttrition();
           break;
         }
         settledResult = this.turnResolutionService.resolveBattleSelection(

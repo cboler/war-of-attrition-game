@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { GamePhase, PlayerType } from '../models/game-state.model';
+import { GameOutcome, GamePhase, PlayerType } from '../models/game-state.model';
 import { CardComparisonService, ComparisonResult } from './card-comparison.service';
 import { GameStateService } from './game-state.service';
 import { OpponentAIService } from './opponent-ai.service';
@@ -28,6 +28,44 @@ describe('TurnResolutionService', () => {
 
   function expectConserved(): void {
     expect(gameState.cardConservationReport().valid).toBeTrue();
+  }
+
+  function reduceDecksTo(
+    playerCount: number,
+    opponentCount: number
+  ): jasmine.Spy {
+    const compareSpy = spyOn(comparison, 'compareCards');
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+
+    while (gameState.playerCardCount() > playerCount) {
+      const cards = activeCards();
+      compareSpy.and.returnValue(ComparisonResult.OPPONENT_WINS);
+      service.resolveTurn(cards.playerCard, cards.opponentCard);
+      service.resolveChallengeConcession(PlayerType.PLAYER);
+      expectConserved();
+    }
+    while (gameState.opponentCardCount() > opponentCount) {
+      const cards = activeCards();
+      compareSpy.and.returnValue(ComparisonResult.PLAYER_WINS);
+      service.resolveTurn(cards.playerCard, cards.opponentCard);
+      expectConserved();
+    }
+    return compareSpy;
+  }
+
+  function resolveTerminalAttrition(
+    playerRemaining: number,
+    opponentRemaining: number
+  ) {
+    const compareSpy = reduceDecksTo(playerRemaining + 1, opponentRemaining + 1);
+    const cards = activeCards();
+    expect(gameState.playerCardCount()).toBe(playerRemaining);
+    expect(gameState.opponentCardCount()).toBe(opponentRemaining);
+    compareSpy.and.returnValue(ComparisonResult.TIE);
+    const result = service.resolveTurn(cards.playerCard, cards.opponentCard);
+    expectConserved();
+    return result;
   }
 
   it('settles an ordinary decisive turn exactly once', () => {
@@ -150,7 +188,7 @@ describe('TurnResolutionService', () => {
     }
   });
 
-  it('passes only AI-owned cards and public information into challenge strategy', () => {
+  it('passes an unordered color pool, deck count, and public information into challenge strategy', () => {
     const cards = activeCards();
     const hiddenPlayerIds = new Set(gameState.currentPlayerDeck.toArray().map(card => card.id));
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
@@ -160,10 +198,79 @@ describe('TurnResolutionService', () => {
     service.resolveTurn(cards.playerCard, cards.opponentCard);
 
     const context = strategy.calls.mostRecent().args[1]!;
-    expect(context.ownDeck.every(card => !card.isRed)).toBeTrue();
+    expect(context.ownDeckCount).toBe(25);
+    expect(context.ownCardPool.every(card => !card.isRed)).toBeTrue();
+    expect((context as unknown as { ownDeck?: unknown }).ownDeck).toBeUndefined();
     expect(context.publicCards).toContain(cards.playerCard);
     expect(context.publicCards).toContain(cards.opponentCard);
     expect(context.publicCards.some(card => hiddenPlayerIds.has(card.id))).toBeFalse();
+  });
+
+  it('awards attrition to the player with 3 cards when the opponent has only 2', () => {
+    const result = resolveTerminalAttrition(3, 2);
+    expect(result.winner).toBe(PlayerType.PLAYER);
+    expect(result.terminalOutcome).toBe(GameOutcome.PLAYER_WIN);
+    expect(gameState.currentState.outcome).toBe(GameOutcome.PLAYER_WIN);
+  });
+
+  it('awards attrition to the opponent with 3 cards when the player has only 2', () => {
+    const result = resolveTerminalAttrition(2, 3);
+    expect(result.winner).toBe(PlayerType.OPPONENT);
+    expect(result.terminalOutcome).toBe(GameOutcome.OPPONENT_WIN);
+    expect(gameState.currentState.outcome).toBe(GameOutcome.OPPONENT_WIN);
+  });
+
+  it('uses remaining-card count when neither side can continue: player 2, opponent 1', () => {
+    const result = resolveTerminalAttrition(2, 1);
+    expect(result.winner).toBe(PlayerType.PLAYER);
+    expect(result.terminalOutcome).toBe(GameOutcome.PLAYER_WIN);
+  });
+
+  it('uses remaining-card count when neither side can continue: player 1, opponent 2', () => {
+    const result = resolveTerminalAttrition(1, 2);
+    expect(result.winner).toBe(PlayerType.OPPONENT);
+    expect(result.terminalOutcome).toBe(GameOutcome.OPPONENT_WIN);
+  });
+
+  it('ends in a true tie when neither side can continue at 2 cards each', () => {
+    const result = resolveTerminalAttrition(2, 2);
+    expect(result.winner).toBeNull();
+    expect(result.terminalOutcome).toBe(GameOutcome.TIE);
+    expect(gameState.currentState.winner).toBeNull();
+    expect(gameState.currentState.outcome).toBe(GameOutcome.TIE);
+    expect(gameState.currentState.activeTurn).not.toBeNull();
+  });
+
+  it('ends in a true tie at 0 cards each when both final cards tie', () => {
+    const result = resolveTerminalAttrition(0, 0);
+    expect(result.winner).toBeNull();
+    expect(result.terminalOutcome).toBe(GameOutcome.TIE);
+    expect(gameState.currentState.outcome).toBe(GameOutcome.TIE);
+    expect(gameState.playerCardCount()).toBe(0);
+    expect(gameState.opponentCardCount()).toBe(0);
+  });
+
+  it('preserves accumulated recursive layers when equal exhaustion ends in a true tie', () => {
+    const compareSpy = reduceDecksTo(7, 7);
+    const cards = activeCards();
+    compareSpy.and.returnValue(ComparisonResult.TIE);
+    service.resolveTurn(cards.playerCard, cards.opponentCard);
+    const first = gameState.dealBattleLayer()!;
+    service.resolveBattleSelection(first.opponentCards[0].id, first.playerCards[0].id);
+    const second = gameState.dealBattleLayer()!;
+
+    const result = service.resolveBattleSelection(
+      second.opponentCards[0].id,
+      second.playerCards[0].id
+    );
+
+    expect(result.terminalOutcome).toBe(GameOutcome.TIE);
+    expect(result.pendingBattleSettlement).toBeFalse();
+    expect(gameState.currentState.outcome).toBe(GameOutcome.TIE);
+    expect(gameState.currentState.activeTurn?.battleLayers.length).toBe(2);
+    expect(gameState.getStake(PlayerType.PLAYER).length).toBe(7);
+    expect(gameState.getStake(PlayerType.OPPONENT).length).toBe(7);
+    expectConserved();
   });
 
   it('defers decisive Battle settlement until casualties have been presented', () => {

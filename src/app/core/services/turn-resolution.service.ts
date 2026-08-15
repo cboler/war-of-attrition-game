@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Card } from '../models/card.model';
-import { GamePhase, PlayerType } from '../models/game-state.model';
+import { Deck } from '../models/deck.model';
+import { GameOutcome, GamePhase, PlayerType } from '../models/game-state.model';
 import { BattleSettlementPreview, GameStateService } from './game-state.service';
 import { CardComparisonService, ComparisonResult } from './card-comparison.service';
 import { OpponentAIService } from './opponent-ai.service';
@@ -20,6 +21,7 @@ export interface TurnResult {
   readonly hiddenWinnerCardCount: number;
   /** Decisive Battles are presented before their cards are physically settled. */
   readonly pendingBattleSettlement: boolean;
+  readonly terminalOutcome: GameOutcome | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +29,7 @@ export class TurnResolutionService {
   private readonly gameState = inject(GameStateService);
   private readonly comparison = inject(CardComparisonService);
   private readonly opponentAI = inject(OpponentAIService);
+  private readonly opponentCardPool = Deck.createBlackDeck().toArray();
 
   resolveTurn(playerCard: Card, opponentCard: Card): TurnResult {
     this.requireCurrentCards(playerCard, opponentCard);
@@ -41,7 +44,8 @@ export class TurnResolutionService {
         opponentCard,
         {
           opposingCard: playerCard,
-          ownDeck: this.gameState.currentOpponentDeck.toArray(),
+          ownDeckCount: this.gameState.currentOpponentDeck.count,
+          ownCardPool: this.opponentCardPool,
           publicCards: this.publicInformation()
         }
       );
@@ -156,7 +160,11 @@ export class TurnResolutionService {
 
   finalizeBattle(winner: PlayerType, gameOverAfterSettlement = false): GamePhase {
     this.gameState.settleActiveTurn(winner);
-    if (gameOverAfterSettlement) this.gameState.endGame(winner);
+    if (gameOverAfterSettlement) {
+      this.gameState.endGame(
+        winner === PlayerType.PLAYER ? GameOutcome.PLAYER_WIN : GameOutcome.OPPONENT_WIN
+      );
+    }
     return this.gameState.currentPhase;
   }
 
@@ -178,21 +186,35 @@ export class TurnResolutionService {
 
   private resolveAttrition(message: string): TurnResult {
     const turn = this.gameState.currentState.activeTurn;
+    const outcome = this.gameState.determineAttritionOutcome();
+    if (outcome === GameOutcome.TIE) {
+      this.gameState.endGame(GameOutcome.TIE);
+      return this.result({
+        winner: null,
+        comparison: ComparisonResult.TIE,
+        message: `${message} Neither side can continue. The war ends in a true tie.`,
+        nextPhase: GamePhase.GAME_OVER,
+        cardsKept: this.publicInformationOnTable(),
+        terminalOutcome: GameOutcome.TIE
+      });
+    }
+
+    const winner = outcome === GameOutcome.PLAYER_WIN ? PlayerType.PLAYER : PlayerType.OPPONENT;
     if (turn && turn.battleLayers.length > 0) {
-      const winner = this.gameState.determineAttritionWinner();
       const preview = this.gameState.previewBattleSettlement(winner);
       return this.resultFromPreview(
         preview,
         ComparisonResult.TIE,
         `${message} ${winner === PlayerType.PLAYER ? 'You win' : 'Opponent wins'} by attrition.`,
-        GamePhase.GAME_OVER
+        GamePhase.GAME_OVER,
+        outcome
       );
     }
     const stakesBeforeSettlement = {
       player: this.gameState.getStake(PlayerType.PLAYER),
       opponent: this.gameState.getStake(PlayerType.OPPONENT)
     };
-    const winner = this.gameState.settleAttritionLoss();
+    this.gameState.settleAttrition();
     const losingCards = winner === PlayerType.PLAYER
       ? stakesBeforeSettlement.opponent
       : stakesBeforeSettlement.player;
@@ -201,7 +223,8 @@ export class TurnResolutionService {
       comparison: ComparisonResult.TIE,
       message: `${message} ${winner === PlayerType.PLAYER ? 'You win' : 'Opponent wins'} by attrition.`,
       nextPhase: GamePhase.GAME_OVER,
-      cardsLost: losingCards
+      cardsLost: losingCards,
+      terminalOutcome: outcome
     });
   }
 
@@ -219,7 +242,8 @@ export class TurnResolutionService {
       nextPhase: this.gameState.currentPhase,
       cardsLost: preview.losingCards,
       cardsKept: preview.publicWinnerCards,
-      opponentConsidered
+      opponentConsidered,
+      terminalOutcome: this.gameState.currentState.outcome
     });
   }
 
@@ -227,7 +251,8 @@ export class TurnResolutionService {
     preview: BattleSettlementPreview,
     comparison: ComparisonResult,
     message: string,
-    nextPhase = GamePhase.NORMAL
+    nextPhase = GamePhase.NORMAL,
+    terminalOutcome: GameOutcome | null = null
   ): TurnResult {
     return this.result({
       winner: preview.winner,
@@ -238,7 +263,8 @@ export class TurnResolutionService {
       cardsKept: preview.publicWinnerCards,
       casualtyRevealCards: preview.casualtyRevealCards,
       hiddenWinnerCardCount: preview.hiddenWinnerCardCount,
-      pendingBattleSettlement: true
+      pendingBattleSettlement: true,
+      terminalOutcome
     });
   }
 
@@ -255,6 +281,7 @@ export class TurnResolutionService {
     casualtyRevealCards?: readonly Card[];
     hiddenWinnerCardCount?: number;
     pendingBattleSettlement?: boolean;
+    terminalOutcome?: GameOutcome | null;
   }): TurnResult {
     this.gameState.setLastResult(options.comparison);
     return {
@@ -269,7 +296,8 @@ export class TurnResolutionService {
       opponentConsidered: options.opponentConsidered ?? false,
       casualtyRevealCards: options.casualtyRevealCards ?? [],
       hiddenWinnerCardCount: options.hiddenWinnerCardCount ?? 0,
-      pendingBattleSettlement: options.pendingBattleSettlement ?? false
+      pendingBattleSettlement: options.pendingBattleSettlement ?? false,
+      terminalOutcome: options.terminalOutcome ?? null
     };
   }
 

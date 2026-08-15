@@ -13,6 +13,13 @@ export enum PlayerType {
   OPPONENT = 'opponent'
 }
 
+/** A terminal result. Unlike `winner`, this represents a true tie explicitly. */
+export enum GameOutcome {
+  PLAYER_WIN = 'player_win',
+  OPPONENT_WIN = 'opponent_win',
+  TIE = 'tie'
+}
+
 export interface GameStats {
   turnNumber: number;
   playerCardCount: number;
@@ -49,6 +56,7 @@ export interface GameState {
   stats: GameStats;
   activeTurn: ActiveTurn | null;
   winner: PlayerType | null;
+  outcome: GameOutcome | null;
   isPlayerTurn: boolean;
   canChallenge: boolean;
   lastResult: string | null;

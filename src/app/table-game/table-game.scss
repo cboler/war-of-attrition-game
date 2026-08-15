@@ -53,6 +53,15 @@
   text-wrap: balance;
 }
 .announcement strong { color: rgba(255, 249, 235, 0.86); font: 500 clamp(0.78rem, 1.4vw, 0.96rem)/1.25 Georgia, serif; }
+.announcement strong.status-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
 .eyebrow { color: #e7be70; font: 700 0.62rem/1 system-ui, sans-serif; letter-spacing: 0.2em; }
 
 .stakes {
@@ -71,6 +80,10 @@
 .battle-card-shell { position: relative; width: clamp(62px, 8vw, 84px); aspect-ratio: 2.5 / 3.5; transition: transform 320ms cubic-bezier(.2,.75,.2,1), opacity 260ms ease, filter 260ms ease; }
 .active-card-shell { z-index: 7; transform: rotate(-0.7deg); }
 .player-stake .active-card-shell { transform: rotate(0.8deg); }
+.opponent-stake .active-card-shell.dealing { animation: deal-from-opponent 280ms cubic-bezier(.2,.75,.2,1) both; }
+.player-stake .active-card-shell.dealing { animation: deal-from-player 280ms cubic-bezier(.2,.75,.2,1) both; }
+.opponent-stake .active-card-shell.clashing { animation: clash-from-opponent 300ms ease-out both; }
+.player-stake .active-card-shell.clashing { animation: clash-from-player 300ms ease-out both; }
 .active-card-shell app-card,
 .battle-card-shell app-card { --card-width: 100%; --card-height: 100%; position: absolute; inset: 0; display: block; }
 
@@ -81,9 +94,11 @@
 .reinforcement { position: absolute; z-index: -1; width: 100%; height: 100%; }
 .opponent-reinforcement { transform: translate(45%, 12%) rotate(7deg); }
 .player-reinforcement { transform: translate(-45%, -12%) rotate(-7deg); }
+.opponent-reinforcement.dealing { animation: reinforce-from-opponent 360ms cubic-bezier(.2,.75,.2,1) both; }
+.player-reinforcement.dealing { animation: reinforce-from-player 360ms cubic-bezier(.2,.75,.2,1) both; }
 
 .battle-layers { position: relative; z-index: 5; width: min(390px, 72vw); min-height: 84px; }
-.battle-layer { position: absolute; left: 50%; display: flex; gap: clamp(8px, 1.8vw, 18px); transform: translateX(-50%); transition: opacity 250ms ease, filter 250ms ease, transform 250ms ease; }
+.battle-layer { position: absolute; left: 50%; display: flex; gap: clamp(8px, 1.8vw, 18px); transform: translateX(-50%); animation: stake-layer-in 420ms cubic-bezier(.2,.75,.2,1) both; transition: opacity 250ms ease, filter 250ms ease, transform 250ms ease; }
 .opponent-layers .battle-layer {
   left: calc(50% + (var(--layer) - 1) * 4px);
   bottom: calc((var(--layer) - 1) * -16px);
@@ -94,12 +109,17 @@
 }
 .battle-layer.receded { opacity: 0.48; filter: saturate(0.52); transform: translateX(-50%) scale(0.91); }
 .battle-card-shell { width: clamp(54px, 7vw, 72px); padding: 0; border: 0; background: transparent; appearance: none; }
+.battle-card-shell:nth-child(1) { rotate: -2deg; }
+.battle-card-shell:nth-child(2) { translate: 0 -3px; }
+.battle-card-shell:nth-child(3) { rotate: 2deg; }
 .battle-card-shell:disabled { color: inherit; }
 .battle-card-shell.eligible { cursor: pointer; }
 .battle-card-shell.eligible:hover,
 .battle-card-shell.eligible:focus-visible { z-index: 9; transform: translateY(-9px); outline: none; filter: drop-shadow(0 10px 12px rgba(0,0,0,.28)); }
 .battle-card-shell.eligible:focus-visible::after { content: ''; position: absolute; inset: -5px; border: 2px solid #f1ca7c; border-radius: 8px; }
-.battle-card-shell.selected { z-index: 8; transform: translateY(5px) scale(1.04); }
+.battle-card-shell.selected { z-index: 8; transform: scale(1.06); filter: drop-shadow(0 12px 13px rgba(0,0,0,.3)); }
+.opponent-layers .battle-card-shell.selected { transform: translateY(11px) scale(1.06); }
+.player-layers .battle-card-shell.selected { transform: translateY(-11px) scale(1.06); }
 .battle-card-shell.casualty { animation: casualty-flip 380ms ease both; }
 
 .target-pointer { position: absolute; left: 50%; bottom: -27px; color: #f2d28d; transform: translateX(-50%); font: 700 1.4rem/1 system-ui, sans-serif; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); animation: pointer-bob 800ms ease-in-out infinite; }
@@ -128,7 +148,8 @@
 .decision-callout button:last-child { color: #4c3c23; background: transparent; }
 .decision-callout button:focus-visible { outline: 3px solid #d89c37; outline-offset: 2px; }
 
-.returning { animation: return-home 520ms ease-in both; }
+.opponent-stake .returning { animation: return-opponent 520ms ease-in both; }
+.player-stake .returning { animation: return-player 520ms ease-in both; }
 .to-boneyard { animation: to-boneyard 600ms ease-in both; }
 
 .boneyard {
@@ -160,6 +181,7 @@
   inset: 9px 9px 9px auto;
   z-index: 30;
   width: min(390px, calc(100% - 18px));
+  box-sizing: border-box;
   padding: 15px;
   overflow: auto;
   border: 1px solid rgba(238, 213, 165, 0.22);
@@ -198,6 +220,7 @@
   inset: 50% auto auto 50%;
   z-index: 40;
   width: min(390px, calc(100% - 32px));
+  box-sizing: border-box;
   padding: 24px;
   transform: translate(-50%, -50%);
   border: 1px solid rgba(232, 204, 149, 0.28);
@@ -214,8 +237,20 @@
 
 @keyframes pointer-bob { 50% { transform: translate(-50%, -5px); } }
 @keyframes casualty-flip { 0% { transform: rotateY(90deg); } 100% { transform: rotateY(0); } }
-@keyframes return-home { to { transform: translateY(90px) scale(.72); opacity: 0; } }
+@keyframes deal-from-opponent { from { transform: translateY(-76px) rotate(-7deg) scale(.86); opacity: .25; } }
+@keyframes deal-from-player { from { transform: translateY(76px) rotate(7deg) scale(.86); opacity: .25; } }
+@keyframes clash-from-opponent { 50% { transform: translateY(8px) rotate(1deg) scale(1.03); } }
+@keyframes clash-from-player { 50% { transform: translateY(-8px) rotate(-1deg) scale(1.03); } }
+@keyframes reinforce-from-opponent { from { transform: translate(45%, -65%) rotate(14deg) scale(.86); opacity: .2; } }
+@keyframes reinforce-from-player { from { transform: translate(-45%, 65%) rotate(-14deg) scale(.86); opacity: .2; } }
+@keyframes stake-layer-in { from { opacity: 0; filter: blur(2px); transform: translateX(-50%) scale(.82); } }
+@keyframes return-opponent { to { transform: translateY(-90px) scale(.72); opacity: 0; } }
+@keyframes return-player { to { transform: translateY(90px) scale(.72); opacity: 0; } }
 @keyframes to-boneyard { to { transform: translate(38vw, 0) rotate(14deg) scale(.45); opacity: .15; } }
+
+.motion-disabled *,
+.motion-disabled *::before,
+.motion-disabled *::after { animation: none !important; transition: none !important; }
 
 @media (max-width: 820px) {
   .stakes { inset-inline: 42px 72px; }

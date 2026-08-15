@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { GamePhase, PlayerType } from '../models/game-state.model';
+import { GameOutcome, GamePhase, PlayerType } from '../models/game-state.model';
 import { GameStateService } from './game-state.service';
 
 describe('GameStateService card ledger', () => {
@@ -105,6 +105,14 @@ describe('GameStateService card ledger', () => {
     expect(service.currentPhase).toBe(GamePhase.NORMAL);
     expect(service.currentState.activeTurn).toBeNull();
     expect(service.discardedCardCount()).toBe(0);
+    expectConserved();
+  });
+
+  it('represents an equal terminal state as a true tie rather than an arbitrary winner', () => {
+    service.endGame();
+    expect(service.currentPhase).toBe(GamePhase.GAME_OVER);
+    expect(service.currentState.outcome).toBe(GameOutcome.TIE);
+    expect(service.currentState.winner).toBeNull();
     expectConserved();
   });
 });

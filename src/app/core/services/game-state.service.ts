@@ -4,6 +4,7 @@ import { Deck } from '../models/deck.model';
 import {
   ActiveTurn,
   BattleLayer,
+  GameOutcome,
   GamePhase,
   GameState,
   GameStats,
@@ -36,6 +37,7 @@ export class GameStateService {
   private readonly turnNumber = signal(0);
   private readonly activeTurn = signal<ActiveTurn | null>(null);
   private readonly winner = signal<PlayerType | null>(null);
+  private readonly outcome = signal<GameOutcome | null>(null);
   private readonly isPlayerTurn = signal(true);
   private readonly canChallenge = signal(false);
   private readonly lastResult = signal<string | null>(null);
@@ -57,6 +59,7 @@ export class GameStateService {
     stats: this.gameStats(),
     activeTurn: this.activeTurn(),
     winner: this.winner(),
+    outcome: this.outcome(),
     isPlayerTurn: this.isPlayerTurn(),
     canChallenge: this.canChallenge(),
     lastResult: this.lastResult()
@@ -84,6 +87,7 @@ export class GameStateService {
     this.turnNumber.set(0);
     this.activeTurn.set(null);
     this.winner.set(null);
+    this.outcome.set(null);
     this.isPlayerTurn.set(true);
     this.canChallenge.set(false);
     this.lastResult.set(null);
@@ -267,48 +271,53 @@ export class GameStateService {
     const loserDeckEmpty = preview.loser === PlayerType.PLAYER
       ? this.playerDeck().isEmpty
       : this.opponentDeck().isEmpty;
-    if (loserDeckEmpty) this.endGame(winner);
+    if (loserDeckEmpty) this.endGame(this.outcomeForWinner(winner));
     this.assertCardConservation();
     return preview;
   }
 
-  settleAttritionLoss(): PlayerType {
-    const attritionWinner = this.determineAttritionWinner();
-    if (this.activeTurn()) this.settleActiveTurn(attritionWinner);
-    this.endGame(attritionWinner);
+  settleAttrition(): GameOutcome {
+    const outcome = this.determineAttritionOutcome();
+    const attritionWinner = this.winnerForOutcome(outcome);
+    if (attritionWinner && this.activeTurn()) this.settleActiveTurn(attritionWinner);
+    this.endGame(outcome);
     this.assertCardConservation();
-    return attritionWinner;
+    return outcome;
   }
 
-  determineAttritionWinner(): PlayerType {
+  determineAttritionOutcome(): GameOutcome {
     const playerCanContinue = this.playerDeck().count >= 3;
     const opponentCanContinue = this.opponentDeck().count >= 3;
-    let attritionWinner: PlayerType;
 
     if (playerCanContinue !== opponentCanContinue) {
-      attritionWinner = playerCanContinue ? PlayerType.PLAYER : PlayerType.OPPONENT;
-    } else {
-      // README does not define simultaneous insufficiency. Preserve the old
-      // count-based outcome (including opponent winning an exact tie).
-      attritionWinner = this.playerDeck().count > this.opponentDeck().count
-        ? PlayerType.PLAYER
-        : PlayerType.OPPONENT;
+      return playerCanContinue ? GameOutcome.PLAYER_WIN : GameOutcome.OPPONENT_WIN;
     }
 
-    return attritionWinner;
+    if (this.playerDeck().count > this.opponentDeck().count) return GameOutcome.PLAYER_WIN;
+    if (this.opponentDeck().count > this.playerDeck().count) return GameOutcome.OPPONENT_WIN;
+    return GameOutcome.TIE;
   }
 
-  endGame(explicitWinner?: PlayerType): void {
-    let gameWinner = explicitWinner;
-    if (!gameWinner) {
-      if (this.playerDeck().isEmpty && !this.opponentDeck().isEmpty) gameWinner = PlayerType.OPPONENT;
-      else if (this.opponentDeck().isEmpty && !this.playerDeck().isEmpty) gameWinner = PlayerType.PLAYER;
-      else gameWinner = this.playerDeck().count > this.opponentDeck().count
-        ? PlayerType.PLAYER
-        : PlayerType.OPPONENT;
+  endGame(explicitOutcome?: GameOutcome): void {
+    let gameOutcome = explicitOutcome;
+    if (!gameOutcome) {
+      if (this.playerDeck().isEmpty && !this.opponentDeck().isEmpty) {
+        gameOutcome = GameOutcome.OPPONENT_WIN;
+      } else if (this.opponentDeck().isEmpty && !this.playerDeck().isEmpty) {
+        gameOutcome = GameOutcome.PLAYER_WIN;
+      } else if (this.playerDeck().count > this.opponentDeck().count) {
+        gameOutcome = GameOutcome.PLAYER_WIN;
+      } else if (this.opponentDeck().count > this.playerDeck().count) {
+        gameOutcome = GameOutcome.OPPONENT_WIN;
+      } else {
+        gameOutcome = GameOutcome.TIE;
+      }
     }
     this.gamePhase.set(GamePhase.GAME_OVER);
-    this.winner.set(gameWinner);
+    const turn = this.activeTurn();
+    if (turn) this.activeTurn.set({ ...turn, phase: GamePhase.GAME_OVER });
+    this.outcome.set(gameOutcome);
+    this.winner.set(this.winnerForOutcome(gameOutcome));
     this.canChallenge.set(false);
   }
 
@@ -390,5 +399,15 @@ export class GameStateService {
     const nextDeck = source().copy();
     nextDeck.addCards([...cards]);
     source.set(nextDeck);
+  }
+
+  private outcomeForWinner(winner: PlayerType): GameOutcome {
+    return winner === PlayerType.PLAYER ? GameOutcome.PLAYER_WIN : GameOutcome.OPPONENT_WIN;
+  }
+
+  private winnerForOutcome(outcome: GameOutcome): PlayerType | null {
+    if (outcome === GameOutcome.PLAYER_WIN) return PlayerType.PLAYER;
+    if (outcome === GameOutcome.OPPONENT_WIN) return PlayerType.OPPONENT;
+    return null;
   }
 }

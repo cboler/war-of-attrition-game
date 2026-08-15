@@ -1,4 +1,4 @@
-<div class="table-page" (click)="onTableClick($event)">
+<div class="table-page" [class.motion-disabled]="!settings.autoPlayAnimations()" (click)="onTableClick($event)">
   <app-card-table>
     <app-player-seat
       table-seat-top
@@ -11,7 +11,9 @@
 
     <div table-center class="playfield">
       <div class="table-tools" aria-label="Table controls">
-        <span class="turn-mark">HAND {{ gameState.gameStats().turnNumber }}</span>
+        @if (settings.showTurnCounter()) {
+          <span class="turn-mark">TURN {{ gameState.gameStats().turnNumber }}</span>
+        }
         <button type="button" (click)="toggleSound()" [attr.aria-pressed]="settings.soundEnabled()">
           {{ settings.soundEnabled() ? 'Sound on' : 'Sound off' }}
         </button>
@@ -24,7 +26,7 @@
         @if (battleActive()) {
           <span class="eyebrow">BATTLE · LAYER {{ newestBattleRound() }}</span>
         }
-        <strong>{{ controller.tableMessage() }}</strong>
+        <strong [class.status-only]="opponentThinking()">{{ controller.tableMessage() }}</strong>
       </div>
 
       <section class="stakes" [class.in-battle]="battleActive()" aria-label="Cards at stake">
@@ -57,12 +59,12 @@
             }
           </div>
 
-          <div class="active-card-shell" [class.returning]="controller.activeOpponentCard() && isReturning(controller.activeOpponentCard()!.id)" [class.to-boneyard]="controller.activeOpponentCard() && isGoingToBoneyard(controller.activeOpponentCard()!.id)">
+          <div class="active-card-shell" [class.dealing]="controller.presentationState() === state.DRAWING" [class.clashing]="controller.presentationState() === state.CLASH_RESOLUTION" [class.returning]="controller.activeOpponentCard() && isReturning(controller.activeOpponentCard()!.id)" [class.to-boneyard]="controller.activeOpponentCard() && isGoingToBoneyard(controller.activeOpponentCard()!.id)">
             @if (controller.activeOpponentCard(); as card) {
               <app-card [card]="card" [faceDown]="activeCardsFaceDown()" [glow]="cardGlow(player.OPPONENT)" />
             }
             @if (controller.opponentChallengeCard(); as card) {
-              <div class="reinforcement opponent-reinforcement" [class.to-boneyard]="isGoingToBoneyard(card.id)" [class.returning]="isReturning(card.id)">
+              <div class="reinforcement opponent-reinforcement" [class.dealing]="controller.presentationState() === state.CHALLENGE_DRAW" [class.to-boneyard]="isGoingToBoneyard(card.id)" [class.returning]="isReturning(card.id)">
                 <app-card [card]="card" [faceDown]="challengeCardsFaceDown()" [glow]="cardGlow(player.OPPONENT)" />
               </div>
             }
@@ -75,12 +77,12 @@
         <div class="clash-mark" aria-hidden="true"><span></span></div>
 
         <div class="side-stake player-stake">
-          <div class="active-card-shell" [class.returning]="controller.activePlayerCard() && isReturning(controller.activePlayerCard()!.id)" [class.to-boneyard]="controller.activePlayerCard() && isGoingToBoneyard(controller.activePlayerCard()!.id)">
+          <div class="active-card-shell" [class.dealing]="controller.presentationState() === state.DRAWING" [class.clashing]="controller.presentationState() === state.CLASH_RESOLUTION" [class.returning]="controller.activePlayerCard() && isReturning(controller.activePlayerCard()!.id)" [class.to-boneyard]="controller.activePlayerCard() && isGoingToBoneyard(controller.activePlayerCard()!.id)">
             @if (controller.activePlayerCard(); as card) {
               <app-card [card]="card" [faceDown]="activeCardsFaceDown()" [glow]="cardGlow(player.PLAYER)" />
             }
             @if (controller.playerChallengeCard(); as card) {
-              <div class="reinforcement player-reinforcement" [class.to-boneyard]="isGoingToBoneyard(card.id)" [class.returning]="isReturning(card.id)">
+              <div class="reinforcement player-reinforcement" [class.dealing]="controller.presentationState() === state.CHALLENGE_DRAW" [class.to-boneyard]="isGoingToBoneyard(card.id)" [class.returning]="isReturning(card.id)">
                 <app-card [card]="card" [faceDown]="challengeCardsFaceDown()" [glow]="cardGlow(player.PLAYER)" />
               </div>
             }
@@ -120,27 +122,27 @@
       <button
         class="boneyard"
         type="button"
-        [class.has-cards]="gameState.discardedCardCount() > 0"
+        [class.has-cards]="controller.visibleBoneyardCount() > 0"
         [attr.aria-expanded]="boneyardOpen()"
         (click)="toggleBoneyard()">
         <span class="pile" aria-hidden="true">
           <span></span><span></span>
-          @if (gameState.discardedCards().at(-1); as topCard) {
+          @if (controller.visibleBoneyardCards().at(-1); as topCard) {
             <app-card [card]="topCard" [faceDown]="false" />
           }
         </span>
         <strong>Boneyard</strong>
-        <small>{{ gameState.discardedCardCount() }} lost</small>
+        <small>{{ controller.visibleBoneyardCount() }} lost</small>
       </button>
 
       @if (boneyardOpen()) {
         <aside class="boneyard-drawer" aria-label="Boneyard cards">
           <header>
-            <div><span>BONEYARD</span><strong>{{ gameState.discardedCardCount() }} public cards</strong></div>
+            <div><span>BONEYARD</span><strong>{{ controller.visibleBoneyardCount() }} public cards</strong></div>
             <button type="button" (click)="toggleBoneyard()" aria-label="Close Boneyard">×</button>
           </header>
           <div class="boneyard-grid">
-            @for (card of gameState.discardedCards(); track card.id) {
+            @for (card of controller.visibleBoneyardCards(); track card.id) {
               <app-card [card]="card" [faceDown]="false" />
             } @empty {
               <p>No casualties yet.</p>
@@ -156,10 +158,10 @@
       }
 
       @if (controller.presentationState() === state.GAME_OVER) {
-        <div class="game-over" role="dialog" aria-modal="false" aria-labelledby="game-over-title">
+        <div class="game-over" role="region" aria-live="assertive" aria-atomic="true" aria-labelledby="game-over-title">
           <span>THE TABLE IS QUIET</span>
           <h2 id="game-over-title">{{ controller.tableMessage() }}</h2>
-          <p>{{ gameState.gameStats().turnNumber }} hands · {{ gameState.discardedCardCount() }} cards in the Boneyard</p>
+          <p>{{ gameState.gameStats().turnNumber }} {{ gameState.gameStats().turnNumber === 1 ? 'turn' : 'turns' }} · {{ controller.visibleBoneyardCount() }} cards in the Boneyard</p>
           <button type="button" (click)="restart()">Deal again</button>
         </div>
       }

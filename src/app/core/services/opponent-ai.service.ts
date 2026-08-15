@@ -10,9 +10,11 @@ export const AI_RANDOM = new InjectionToken<() => number>('AI_RANDOM', {
 export interface OpponentChallengeContext {
   /** The public card the reinforcement must defeat. */
   readonly opposingCard: Card;
-  /** AI-owned hidden cards. A human is likewise entitled to know their own cards. */
-  readonly ownDeck: readonly Card[];
-  /** Revealed table cards and boneyard cards only. Never the human's hidden deck. */
+  /** Number of face-down cards left. The order and exact contents are never supplied. */
+  readonly ownDeckCount: number;
+  /** The AI's known original color pool, equivalent to knowing the physical deck list. */
+  readonly ownCardPool: readonly Card[];
+  /** Revealed table cards and Boneyard cards only. Never either hidden draw order. */
   readonly publicCards: readonly Card[];
 }
 
@@ -35,38 +37,46 @@ export class OpponentAIService {
   }
 
   challengeScore(cardAtRisk: Card, context?: OpponentChallengeContext): number {
-    const deck = context?.ownDeck ?? [];
-    const ownDeckCount = deck.length;
+    const ownDeckCount = context?.ownDeckCount ?? 0;
     const cardValue = this.strategicValue(cardAtRisk.rank);
 
     // Valuable cards deserve defense; expendable low cards normally do not.
     let score = cardValue * 0.68;
 
-    if (context && deck.length > 0) {
-      const outcomes = deck.map(candidate =>
+    if (context) {
+      // A physical player knows the original cards of their color and can
+      // eliminate cards that are visibly on the table or in the Boneyard.
+      // They cannot inspect the shuffled pile. Deriving candidates here keeps
+      // exact hidden content and order outside the decision boundary.
+      const publicIds = new Set(context.publicCards.map(card => card.id));
+      const candidates = context.ownCardPool.filter(card => !publicIds.has(card.id));
+      const outcomes = candidates.map(candidate =>
         this.comparison.compareCards(candidate, context.opposingCard)
       );
       const wins = outcomes.filter(result => result === ComparisonResult.PLAYER_WINS).length;
       const ties = outcomes.filter(result => result === ComparisonResult.TIE).length;
-      const usefulDrawRate = (wins + ties * 0.35) / outcomes.length;
-      score += usefulDrawRate * 32;
+      if (outcomes.length > 0) {
+        const winRate = wins / outcomes.length;
+        const tieRate = ties / outcomes.length;
+        const canSupportBattle = ownDeckCount >= 4;
+        score += winRate * 34;
+        score += tieRate * (canSupportBattle ? 10 : -22);
 
-      const averageStrength = deck.reduce(
-        (total, card) => total + this.strategicValue(card.rank),
-        0
-      ) / deck.length;
-      score += (averageStrength - 45) * 0.12;
-    }
+        const averageStrength = candidates.reduce(
+          (total, card) => total + this.strategicValue(card.rank),
+          0
+        ) / candidates.length;
+        score += (averageStrength - 45) * 0.08;
 
-    // The same card becomes more precious as elimination approaches.
-    if (context) {
+        // Drawing the tying reinforcement leaves three new cards to fund a
+        // Battle. Unsupported ties are materially worse than clean wins.
+        if (!canSupportBattle && ties > 0) score -= 8;
+      }
+
+      // The same card becomes more precious as elimination approaches.
       if (ownDeckCount <= 3) score += 38;
       else if (ownDeckCount <= 6) score += 27;
       else if (ownDeckCount <= 10) score += 14;
-
-      // A tied reinforcement starts Battle. After drawing it, three more cards
-      // are required, so a nearly empty deck should avoid unsupported gambles.
-      if (ownDeckCount < 4) score -= 28;
     }
 
     return Math.max(0, Math.min(100, Math.round(score)));

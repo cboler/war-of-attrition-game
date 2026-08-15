@@ -40,7 +40,7 @@ describe('deterministic engine simulation harness', () => {
         while (result.nextPhase === GamePhase.BATTLE) {
           const layer = gameState.dealBattleLayer();
           if (!layer) {
-            gameState.settleAttritionLoss();
+            gameState.settleAttrition();
             break;
           }
           result = resolver.resolveBattleSelection(

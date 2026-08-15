@@ -58,13 +58,6 @@
               </div>
 
               <div class="toggle-setting">
-                <mat-slide-toggle [checked]="settingsService.confirmChallenges()"
-                                 (change)="settingsService.setConfirmChallenges($event.checked)">
-                  Confirm Challenges
-                </mat-slide-toggle>
-              </div>
-
-              <div class="toggle-setting">
                 <mat-slide-toggle [checked]="settingsService.autoPlayAnimations()"
                                  (change)="settingsService.setAutoPlayAnimations($event.checked)">
                   Auto-play Animations
