@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
 import { Game } from './game';
 import { GameStateService } from '../core/services/game-state.service';
 import { GameControllerService } from '../services/game-controller.service';
@@ -44,9 +44,12 @@ describe('GameComponent', () => {
     expect(gameController.startNewGame).toHaveBeenCalled();
   });
 
-  it('should reactively update canPlayerAct and unfreeze UI after opponent challenge timeout', fakeAsync(() => {
+  it('should reactively return to a playable table after an opponent challenge sequence', fakeAsync(() => {
     const opponentAI = TestBed.inject(OpponentAIService);
     const cardComparison = TestBed.inject(CardComparisonService);
+    const settings = TestBed.inject(SettingsService);
+    settings.setAutoPlayAnimations(false);
+    settings.setSoundEnabled(false);
     
     spyOn(cardComparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
     spyOn(opponentAI, 'shouldChallenge').and.returnValue(true);
@@ -58,18 +61,12 @@ describe('GameComponent', () => {
     const drawn = component['gameController'].playerDrawCard();
     expect(drawn).toBe(true);
 
-    // Check that player can no longer act during opponent challenge animation
-    fixture.detectChanges();
-    expect(component['effectiveCanPlayerAct']()).toBe(false);
-    expect(component['gameMessage']()).toContain('Opponent is challenging');
-
-    // Fast-forward time past the 1500ms challenge resolution timeout + 800ms health damage animation
-    tick(2500);
+    flushMicrotasks();
     fixture.detectChanges();
 
-    // UI should now be updated and un-frozen
     expect(component['canPlayerAct']()).toBe(true);
     expect(component['effectiveCanPlayerAct']()).toBe(true);
-    expect(component['gameMessage']()).not.toContain('Opponent is challenging');
+    expect(component['gameMessage']()).toContain('Draw when ready');
+    settings.resetSettings();
   }));
 });

@@ -1,237 +1,118 @@
 import { TestBed } from '@angular/core/testing';
+import { GameOutcome, GamePhase, PlayerType } from '../models/game-state.model';
 import { GameStateService } from './game-state.service';
-import { GamePhase, PlayerType } from '../models/game-state.model';
-import { CardImpl, Suit, Rank } from '../models/card.model';
 
-describe('GameStateService', () => {
+describe('GameStateService card ledger', () => {
   let service: GameStateService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
     service = TestBed.inject(GameStateService);
+    service.initializeGame({ shuffle: false });
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+  function expectConserved(): void {
+    const report = service.cardConservationReport();
+    expect(report.valid).withContext(JSON.stringify(report)).toBeTrue();
+    expect(report.total).toBe(52);
+    expect(report.unique).toBe(52);
+  }
+
+  it('initializes two color-owned decks with 52 unique suit/rank identities', () => {
+    expect(service.playerCardCount()).toBe(26);
+    expect(service.opponentCardCount()).toBe(26);
+    expect(service.currentPlayerDeck.toArray().every(card => card.isRed)).toBeTrue();
+    expect(service.currentOpponentDeck.toArray().every(card => !card.isRed)).toBeTrue();
+    expectConserved();
   });
 
-  describe('Game initialization', () => {
-    it('should initialize game with correct initial state', () => {
-      service.initializeGame();
-      
-      const state = service.currentState;
-      
-      expect(state.phase).toBe(GamePhase.NORMAL);
-      expect(state.stats.turnNumber).toBe(0);
-      expect(state.stats.playerCardCount).toBe(26);
-      expect(state.stats.opponentCardCount).toBe(26);
-      expect(state.stats.discardedCardCount).toBe(0);
-      expect(state.activeTurn).toBeNull();
-      expect(state.winner).toBeNull();
-      expect(state.isPlayerTurn).toBe(true);
-      expect(state.canChallenge).toBe(false);
-    });
-
-    it('should create shuffled decks', () => {
-      service.initializeGame();
-      
-      // Verify that both decks have 26 cards
-      expect(service.currentPlayerDeck.count).toBe(26);
-      expect(service.currentOpponentDeck.count).toBe(26);
-      
-      // Verify that player deck has only red cards
-      const playerCards = service.currentPlayerDeck.toArray();
-      playerCards.forEach(card => {
-        expect(card.isRed).toBe(true);
-      });
-      
-      // Verify that opponent deck has only black cards
-      const opponentCards = service.currentOpponentDeck.toArray();
-      opponentCards.forEach(card => {
-        expect(card.isRed).toBe(false);
-      });
-    });
+  it('moves ordinary draw cards into the table stake without losing them', () => {
+    service.startTurn();
+    expect(service.playerCardCount()).toBe(25);
+    expect(service.opponentCardCount()).toBe(25);
+    expect(service.getStake(PlayerType.PLAYER).length).toBe(1);
+    expect(service.getStake(PlayerType.OPPONENT).length).toBe(1);
+    expectConserved();
   });
 
-  describe('Turn management', () => {
-    beforeEach(() => {
-      service.initializeGame();
-    });
-
-    it('should start a turn and draw cards', () => {
-      const result = service.startTurn();
-      
-      expect(result.playerCard).toBeTruthy();
-      expect(result.opponentCard).toBeTruthy();
-      expect(service.currentState.stats.turnNumber).toBe(1);
-      expect(service.currentState.activeTurn).toBeTruthy();
-      expect(service.currentPlayerDeck.count).toBe(25);
-      expect(service.currentOpponentDeck.count).toBe(25);
-    });
-
-    it('should not start turn if not in normal phase', () => {
-      service.setPhase(GamePhase.BATTLE);
-      
-      expect(() => service.startTurn()).toThrowError('Cannot start turn in current phase');
-    });
-
-    it('should end game when player deck is empty', () => {
-      // Empty the player deck
-      while (!service.currentPlayerDeck.isEmpty) {
-        service.currentPlayerDeck.draw();
-      }
-      
-      const result = service.startTurn();
-      
-      expect(result.playerCard).toBeNull();
-      expect(result.opponentCard).toBeNull();
-      expect(service.currentState.phase).toBe(GamePhase.GAME_OVER);
-      expect(service.currentState.winner).toBe(PlayerType.OPPONENT);
-    });
-
-    it('should end game when opponent deck is empty', () => {
-      // Empty the opponent deck
-      while (!service.currentOpponentDeck.isEmpty) {
-        service.currentOpponentDeck.draw();
-      }
-      
-      const result = service.startTurn();
-      
-      expect(result.playerCard).toBeNull();
-      expect(result.opponentCard).toBeNull();
-      expect(service.currentState.phase).toBe(GamePhase.GAME_OVER);
-      expect(service.currentState.winner).toBe(PlayerType.PLAYER);
-    });
+  it('adds reinforcement to the existing stake exactly once', () => {
+    service.startTurn();
+    service.beginChallenge(PlayerType.PLAYER);
+    expect(service.playerCardCount()).toBe(24);
+    expect(service.getStake(PlayerType.PLAYER).length).toBe(2);
+    expect(service.currentState.activeTurn?.playerChallengeCard).not.toBeNull();
+    expectConserved();
   });
 
-  describe('Card management', () => {
-    beforeEach(() => {
-      service.initializeGame();
-    });
+  it('deals immutable recursive layers and restricts targets to the newest three', () => {
+    service.startTurn();
+    service.setPhase(GamePhase.BATTLE);
+    const first = service.dealBattleLayer()!;
+    service.selectNewestBattleTargets(first.opponentCards[0].id, first.playerCards[1].id);
+    const second = service.dealBattleLayer()!;
 
-    it('should add cards to discard pile', () => {
-      const cards = [
-        new CardImpl(Suit.HEARTS, Rank.ACE),
-        new CardImpl(Suit.SPADES, Rank.KING)
-      ];
-      
-      service.addToDiscardPile(cards);
-      
-      expect(service.currentState.stats.discardedCardCount).toBe(2);
-      expect(service.currentDiscardPile.length).toBe(2);
-    });
-
-    it('should update card count signals when deck changes', () => {
-      const initialPlayerCount = service.playerCardCount();
-      const initialOpponentCount = service.opponentCardCount();
-      
-      expect(initialPlayerCount).toBe(26);
-      expect(initialOpponentCount).toBe(26);
-      
-      // Draw a card from player deck
-      const drawnCard = service.drawPlayerCard();
-      expect(drawnCard).toBeTruthy();
-      
-      // Check if the count signal updated
-      const newPlayerCount = service.playerCardCount();
-      expect(newPlayerCount).toBe(25);
-      
-      // Add card back to verify the other direction
-      service.returnCardsToPlayerDeck([drawnCard!]);
-      const restoredPlayerCount = service.playerCardCount();
-      expect(restoredPlayerCount).toBe(26);
-    });
-
-    it('should return cards to player deck after drawing', () => {
-      const initialCount = service.currentPlayerDeck.count;
-      
-      // First draw a card (simulating normal game flow)
-      const drawnCard = service.drawPlayerCard();
-      expect(service.currentPlayerDeck.count).toBe(initialCount - 1);
-      
-      // Then return it (winner keeps their card)
-      if (drawnCard) {
-        service.returnCardsToPlayerDeck([drawnCard]);
-        expect(service.currentPlayerDeck.count).toBe(initialCount);
-      }
-    });
-
-    it('should return cards to opponent deck after drawing', () => {
-      const initialCount = service.currentOpponentDeck.count;
-      
-      // First draw a card (simulating normal game flow)
-      const drawnCard = service.drawOpponentCard();
-      expect(service.currentOpponentDeck.count).toBe(initialCount - 1);
-      
-      // Then return it (winner keeps their card)
-      if (drawnCard) {
-        service.returnCardsToOpponentDeck([drawnCard]);
-        expect(service.currentOpponentDeck.count).toBe(initialCount);
-      }
-    });
+    expect(service.currentState.activeTurn?.battleLayers.length).toBe(2);
+    expect(() => service.selectNewestBattleTargets(
+      first.opponentCards[2].id,
+      first.playerCards[2].id
+    )).toThrowError('Only cards in the newest Battle layer may be selected');
+    expect(() => service.selectNewestBattleTargets(
+      second.opponentCards[0].id,
+      second.playerCards[0].id
+    )).not.toThrow();
+    expectConserved();
   });
 
-  describe('Game end conditions', () => {
-    beforeEach(() => {
-      service.initializeGame();
-    });
-
-    it('should check end conditions and end game when player has no cards', () => {
-      // Empty player deck
-      while (!service.currentPlayerDeck.isEmpty) {
-        service.currentPlayerDeck.draw();
-      }
-      
-      const gameEnded = service.checkGameEndConditions();
-      
-      expect(gameEnded).toBe(true);
-      expect(service.currentState.phase).toBe(GamePhase.GAME_OVER);
-      expect(service.currentState.winner).toBe(PlayerType.OPPONENT);
-    });
-
-    it('should check end conditions and end game when opponent has no cards', () => {
-      // Empty opponent deck
-      while (!service.currentOpponentDeck.isEmpty) {
-        service.currentOpponentDeck.draw();
-      }
-      
-      const gameEnded = service.checkGameEndConditions();
-      
-      expect(gameEnded).toBe(true);
-      expect(service.currentState.phase).toBe(GamePhase.GAME_OVER);
-      expect(service.currentState.winner).toBe(PlayerType.PLAYER);
-    });
-
-    it('should end game when insufficient cards for battle', () => {
-      // Set phase to battle
-      service.setPhase(GamePhase.BATTLE);
-      
-      // Reduce player deck to less than 4 cards
-      while (service.currentPlayerDeck.count >= 4) {
-        service.currentPlayerDeck.draw();
-      }
-      
-      const gameEnded = service.checkGameEndConditions();
-      
-      expect(gameEnded).toBe(true);
-      expect(service.currentState.phase).toBe(GamePhase.GAME_OVER);
-    });
+  it('will not create a recursive layer before the current one has resolved', () => {
+    service.startTurn();
+    service.setPhase(GamePhase.BATTLE);
+    service.dealBattleLayer();
+    expect(() => service.dealBattleLayer()).toThrowError(
+      'A recursive Battle layer cannot be dealt before the current layer resolves'
+    );
+    expectConserved();
   });
 
-  describe('Reset functionality', () => {
-    it('should reset game to initial state', () => {
-      service.initializeGame();
-      service.startTurn(); // Make some changes
-      
-      service.reset();
-      
-      const state = service.currentState;
-      expect(state.phase).toBe(GamePhase.NORMAL);
-      expect(state.stats.turnNumber).toBe(0);
-      expect(state.stats.playerCardCount).toBe(26);
-      expect(state.stats.opponentCardCount).toBe(26);
-      expect(state.activeTurn).toBeNull();
-      expect(state.winner).toBeNull();
-    });
+  it('settles only owned cards: winner returns home and loser enters the Boneyard', () => {
+    service.startTurn();
+    const preview = service.settleActiveTurn(PlayerType.PLAYER);
+    expect(preview.losingCards.length).toBe(1);
+    expect(service.playerCardCount()).toBe(26);
+    expect(service.opponentCardCount()).toBe(25);
+    expect(service.discardedCardCount()).toBe(1);
+    expect(service.currentState.activeTurn).toBeNull();
+    expectConserved();
+  });
+
+  it('keeps hidden winner cards out of the public Battle settlement preview', () => {
+    service.startTurn();
+    service.setPhase(GamePhase.BATTLE);
+    const layer = service.dealBattleLayer()!;
+    service.selectNewestBattleTargets(layer.opponentCards[0].id, layer.playerCards[0].id);
+
+    const preview = service.previewBattleSettlement(PlayerType.PLAYER);
+    expect(preview.hiddenWinnerCardCount).toBe(2);
+    expect(preview.publicWinnerCards.map(card => card.id)).not.toContain(layer.playerCards[1].id);
+    expect(preview.casualtyRevealCards.map(card => card.id)).toContain(layer.opponentCards[1].id);
+    expect(preview.casualtyRevealCards.length).toBe(2);
+    expectConserved();
+  });
+
+  it('resets a completed game to a fresh conserved ledger', () => {
+    service.startTurn();
+    service.settleActiveTurn(PlayerType.OPPONENT);
+    service.reset();
+    expect(service.currentPhase).toBe(GamePhase.NORMAL);
+    expect(service.currentState.activeTurn).toBeNull();
+    expect(service.discardedCardCount()).toBe(0);
+    expectConserved();
+  });
+
+  it('represents an equal terminal state as a true tie rather than an arbitrary winner', () => {
+    service.endGame();
+    expect(service.currentPhase).toBe(GamePhase.GAME_OVER);
+    expect(service.currentState.outcome).toBe(GameOutcome.TIE);
+    expect(service.currentState.winner).toBeNull();
+    expectConserved();
   });
 });

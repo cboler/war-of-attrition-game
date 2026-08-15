@@ -84,6 +84,16 @@ export class SoundService {
     }
   }
 
+  /** Short, muted contact as a card lands on felt. */
+  playCardLand(): void {
+    this.playPercussiveTone(105, 0.045, 0.11);
+  }
+
+  /** Lower slide used when revealed casualties enter the Boneyard. */
+  playBoneyard(): void {
+    this.playPercussiveTone(72, 0.12, 0.14);
+  }
+
   /**
    * Sound effect for battle clash
    */
@@ -180,6 +190,26 @@ export class SoundService {
       });
     } catch (e) {
       console.warn('Audio playback error:', e);
+    }
+  }
+
+  private playPercussiveTone(frequency: number, duration: number, volume: number): void {
+    if (!this.canPlay()) return;
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    } catch (error) {
+      console.warn('Audio playback error:', error);
     }
   }
 }

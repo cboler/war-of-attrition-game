@@ -1,67 +1,110 @@
-import { Injectable } from '@angular/core';
-import { Card } from '../models/card.model';
-import { Rank } from '../models/card.model';
+import { InjectionToken, Injectable, inject } from '@angular/core';
+import { Card, Rank } from '../models/card.model';
+import { CardComparisonService, ComparisonResult } from './card-comparison.service';
 
-/**
- * Service for handling opponent AI decision making
- */
-@Injectable({
-  providedIn: 'root'
-})
+export const AI_RANDOM = new InjectionToken<() => number>('AI_RANDOM', {
+  providedIn: 'root',
+  factory: () => Math.random
+});
+
+export interface OpponentChallengeContext {
+  /** The public card the reinforcement must defeat. */
+  readonly opposingCard: Card;
+  /** Number of face-down cards left. The order and exact contents are never supplied. */
+  readonly ownDeckCount: number;
+  /** The AI's known original color pool, equivalent to knowing the physical deck list. */
+  readonly ownCardPool: readonly Card[];
+  /** Revealed table cards and Boneyard cards only. Never either hidden draw order. */
+  readonly publicCards: readonly Card[];
+}
+
+@Injectable({ providedIn: 'root' })
 export class OpponentAIService {
+  private readonly random = inject(AI_RANDOM);
+  private readonly comparison = inject(CardComparisonService);
 
-  /**
-   * Determine if the opponent should challenge based on the card value
-   * Opponents are more likely to challenge with lower value cards (especially 2s)
-   * @param opponentCard The card the opponent would lose
-   * @returns true if the opponent should challenge
-   */
-  shouldChallenge(opponentCard: Card): boolean {
-    // Base probabilities for challenging based on card value
-    const challengeProbabilities: Record<number, number> = {
-      2: 0.95,   // Almost always challenge for 2s (lowest value, worth saving)
-      3: 0.80,   // High chance for 3s
-      4: 0.65,   // Good chance for 4s
-      5: 0.50,   // Medium chance for 5s
-      6: 0.40,   // Lower chance for 6s
-      7: 0.30,   // Even lower for 7s
-      8: 0.25,   // Reduced chance for 8s
-      9: 0.20,   // Low chance for 9s
-      10: 0.15,  // Very low chance for 10s
-      11: 0.10,  // Minimal chance for Jacks
-      12: 0.05,  // Very minimal chance for Queens
-      13: 0.03,  // Almost never challenge for Kings
-      14: 0.01   // Rarely challenge for Aces (highest value)
-    };
+  shouldChallenge(cardAtRisk: Card, context?: OpponentChallengeContext): boolean {
+    const score = this.challengeScore(cardAtRisk, context);
+    if (score >= 80) return true;
+    if (score < 20) return false;
 
-    const cardValue = this.getCardValue(opponentCard);
-    const probability = challengeProbabilities[cardValue] || 0.20; // Default 20% for unknown values
-    
-    // Generate random number between 0 and 1
-    const randomValue = Math.random();
-    
-    return randomValue < probability;
+    const probability = score >= 60
+      ? 0.82
+      : score >= 40
+        ? 0.38 + ((score - 40) / 20) * 0.32
+        : 0.12;
+    return this.random() < probability;
   }
 
-  /**
-   * Get the numerical value of a card for challenge probability calculation
-   */
-  private getCardValue(card: Card): number {
-    switch (card.rank) {
-      case Rank.TWO: return 2;
-      case Rank.THREE: return 3;
-      case Rank.FOUR: return 4;
-      case Rank.FIVE: return 5;
-      case Rank.SIX: return 6;
-      case Rank.SEVEN: return 7;
-      case Rank.EIGHT: return 8;
-      case Rank.NINE: return 9;
-      case Rank.TEN: return 10;
-      case Rank.JACK: return 11;
-      case Rank.QUEEN: return 12;
-      case Rank.KING: return 13;
-      case Rank.ACE: return 14;
-      default: return 7; // Default to middle value
+  challengeScore(cardAtRisk: Card, context?: OpponentChallengeContext): number {
+    const ownDeckCount = context?.ownDeckCount ?? 0;
+    const cardValue = this.strategicValue(cardAtRisk.rank);
+
+    // Valuable cards deserve defense; expendable low cards normally do not.
+    let score = cardValue * 0.68;
+
+    if (context) {
+      // A physical player knows the original cards of their color and can
+      // eliminate cards that are visibly on the table or in the Boneyard.
+      // They cannot inspect the shuffled pile. Deriving candidates here keeps
+      // exact hidden content and order outside the decision boundary.
+      const publicIds = new Set(context.publicCards.map(card => card.id));
+      const candidates = context.ownCardPool.filter(card => !publicIds.has(card.id));
+      const outcomes = candidates.map(candidate =>
+        this.comparison.compareCards(candidate, context.opposingCard)
+      );
+      const wins = outcomes.filter(result => result === ComparisonResult.PLAYER_WINS).length;
+      const ties = outcomes.filter(result => result === ComparisonResult.TIE).length;
+      if (outcomes.length > 0) {
+        const winRate = wins / outcomes.length;
+        const tieRate = ties / outcomes.length;
+        const canSupportBattle = ownDeckCount >= 4;
+        score += winRate * 34;
+        score += tieRate * (canSupportBattle ? 10 : -22);
+
+        const averageStrength = candidates.reduce(
+          (total, card) => total + this.strategicValue(card.rank),
+          0
+        ) / candidates.length;
+        score += (averageStrength - 45) * 0.08;
+
+        // Drawing the tying reinforcement leaves three new cards to fund a
+        // Battle. Unsupported ties are materially worse than clean wins.
+        if (!canSupportBattle && ties > 0) score -= 8;
+      }
+
+      // The same card becomes more precious as elimination approaches.
+      if (ownDeckCount <= 3) score += 38;
+      else if (ownDeckCount <= 6) score += 27;
+      else if (ownDeckCount <= 10) score += 14;
+    }
+
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  /** Face-down Battle cards are indistinguishable, so selection is fair/random. */
+  selectBattleTarget(cardCount: number): number {
+    if (!Number.isInteger(cardCount) || cardCount <= 0) {
+      throw new Error('Battle target selection requires at least one card');
+    }
+    return Math.min(cardCount - 1, Math.floor(this.random() * cardCount));
+  }
+
+  private strategicValue(rank: Rank): number {
+    switch (rank) {
+      case Rank.TWO: return 100;
+      case Rank.ACE: return 95;
+      case Rank.KING: return 75;
+      case Rank.QUEEN: return 65;
+      case Rank.JACK: return 60;
+      case Rank.TEN: return 55;
+      case Rank.NINE: return 50;
+      case Rank.EIGHT: return 45;
+      case Rank.SEVEN: return 40;
+      case Rank.SIX: return 30;
+      case Rank.FIVE: return 24;
+      case Rank.FOUR: return 18;
+      case Rank.THREE: return 10;
     }
   }
 }

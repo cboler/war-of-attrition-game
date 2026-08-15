@@ -1,0 +1,283 @@
+:host { display: block; min-height: 100%; }
+
+.table-page {
+  min-height: 100%;
+  padding: 8px;
+  background: #0c1815;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.playfield { position: relative; height: 100%; min-height: 330px; }
+
+.table-tools {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(242, 232, 209, 0.58);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.table-tools button,
+.table-tools a {
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 4px;
+  color: inherit;
+  background: rgba(3, 16, 12, 0.22);
+  font: inherit;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.table-tools button:hover,
+.table-tools a:hover { color: #fff8e8; background: rgba(3, 16, 12, 0.42); }
+.table-tools :focus-visible { outline: 2px solid #efc879; outline-offset: 2px; }
+.turn-mark { padding-right: 5px; }
+
+.announcement {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  z-index: 12;
+  display: grid;
+  max-width: min(440px, 55vw);
+  gap: 3px;
+  transform: translateX(-50%);
+  text-align: center;
+  text-wrap: balance;
+}
+.announcement strong { color: rgba(255, 249, 235, 0.86); font: 500 clamp(0.78rem, 1.4vw, 0.96rem)/1.25 Georgia, serif; }
+.announcement strong.status-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.eyebrow { color: #e7be70; font: 700 0.62rem/1 system-ui, sans-serif; letter-spacing: 0.2em; }
+
+.stakes {
+  position: absolute;
+  inset: 46px clamp(76px, 12vw, 160px) 18px;
+  display: grid;
+  grid-template-rows: 1fr 22px 1fr;
+  align-items: center;
+  justify-items: center;
+}
+.side-stake { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 118px; }
+.opponent-stake { align-self: end; flex-direction: column; }
+.player-stake { align-self: start; flex-direction: column; }
+
+.active-card-shell,
+.battle-card-shell { position: relative; width: clamp(62px, 8vw, 84px); aspect-ratio: 2.5 / 3.5; transition: transform 320ms cubic-bezier(.2,.75,.2,1), opacity 260ms ease, filter 260ms ease; }
+.active-card-shell { z-index: 7; transform: rotate(-0.7deg); }
+.player-stake .active-card-shell { transform: rotate(0.8deg); }
+.opponent-stake .active-card-shell.dealing { animation: deal-from-opponent 280ms cubic-bezier(.2,.75,.2,1) both; }
+.player-stake .active-card-shell.dealing { animation: deal-from-player 280ms cubic-bezier(.2,.75,.2,1) both; }
+.opponent-stake .active-card-shell.clashing { animation: clash-from-opponent 300ms ease-out both; }
+.player-stake .active-card-shell.clashing { animation: clash-from-player 300ms ease-out both; }
+.active-card-shell app-card,
+.battle-card-shell app-card { --card-width: 100%; --card-height: 100%; position: absolute; inset: 0; display: block; }
+
+.clash-mark { display: grid; width: 48px; height: 20px; place-items: center; opacity: 0.45; }
+.clash-mark span { width: 34px; height: 1px; background: linear-gradient(90deg, transparent, #e9d19d, transparent); }
+.in-battle .clash-mark span { width: 9px; height: 9px; border: 1px solid #dfb865; border-radius: 50%; background: transparent; box-shadow: 0 0 0 5px rgba(223, 184, 101, 0.08); }
+
+.reinforcement { position: absolute; z-index: -1; width: 100%; height: 100%; }
+.opponent-reinforcement { transform: translate(45%, 12%) rotate(7deg); }
+.player-reinforcement { transform: translate(-45%, -12%) rotate(-7deg); }
+.opponent-reinforcement.dealing { animation: reinforce-from-opponent 360ms cubic-bezier(.2,.75,.2,1) both; }
+.player-reinforcement.dealing { animation: reinforce-from-player 360ms cubic-bezier(.2,.75,.2,1) both; }
+
+.battle-layers { position: relative; z-index: 5; width: min(390px, 72vw); min-height: 84px; }
+.battle-layer { position: absolute; left: 50%; display: flex; gap: clamp(8px, 1.8vw, 18px); transform: translateX(-50%); animation: stake-layer-in 420ms cubic-bezier(.2,.75,.2,1) both; transition: opacity 250ms ease, filter 250ms ease, transform 250ms ease; }
+.opponent-layers .battle-layer {
+  left: calc(50% + (var(--layer) - 1) * 4px);
+  bottom: calc((var(--layer) - 1) * -16px);
+}
+.player-layers .battle-layer {
+  left: calc(50% - (var(--layer) - 1) * 4px);
+  top: calc((var(--layer) - 1) * -16px);
+}
+.battle-layer.receded { opacity: 0.48; filter: saturate(0.52); transform: translateX(-50%) scale(0.91); }
+.battle-card-shell { width: clamp(54px, 7vw, 72px); padding: 0; border: 0; background: transparent; appearance: none; }
+.battle-card-shell:nth-child(1) { rotate: -2deg; }
+.battle-card-shell:nth-child(2) { translate: 0 -3px; }
+.battle-card-shell:nth-child(3) { rotate: 2deg; }
+.battle-card-shell:disabled { color: inherit; }
+.battle-card-shell.eligible { cursor: pointer; }
+.battle-card-shell.eligible:hover,
+.battle-card-shell.eligible:focus-visible { z-index: 9; transform: translateY(-9px); outline: none; filter: drop-shadow(0 10px 12px rgba(0,0,0,.28)); }
+.battle-card-shell.eligible:focus-visible::after { content: ''; position: absolute; inset: -5px; border: 2px solid #f1ca7c; border-radius: 8px; }
+.battle-card-shell.selected { z-index: 8; transform: scale(1.06); filter: drop-shadow(0 12px 13px rgba(0,0,0,.3)); }
+.opponent-layers .battle-card-shell.selected { transform: translateY(11px) scale(1.06); }
+.player-layers .battle-card-shell.selected { transform: translateY(-11px) scale(1.06); }
+.battle-card-shell.casualty { animation: casualty-flip 380ms ease both; }
+
+.target-pointer { position: absolute; left: 50%; bottom: -27px; color: #f2d28d; transform: translateX(-50%); font: 700 1.4rem/1 system-ui, sans-serif; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); animation: pointer-bob 800ms ease-in-out infinite; }
+.opponent-pointer { color: #ddd4c3; }
+
+.decision-callout {
+  position: absolute;
+  z-index: 18;
+  min-width: 172px;
+  padding: 9px 11px;
+  border: 1px solid rgba(235, 211, 163, 0.3);
+  border-radius: 9px;
+  color: #282014;
+  background: #f0e4ca;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+  font: 0.74rem/1.25 system-ui, sans-serif;
+}
+.player-callout { top: 50%; left: calc(100% + 17px); transform: translateY(-50%); }
+.opponent-callout { right: calc(100% + 17px); bottom: 50%; transform: translateY(50%); text-align: center; }
+.decision-callout::before { content: ''; position: absolute; top: 50%; width: 9px; height: 9px; background: inherit; transform: translateY(-50%) rotate(45deg); }
+.player-callout::before { left: -5px; border-left: inherit; border-bottom: inherit; }
+.opponent-callout::before { right: -5px; border-right: inherit; border-top: inherit; }
+.decision-callout strong { display: block; margin-bottom: 8px; font: 600 0.78rem/1.2 Georgia, serif; }
+.decision-callout span { display: flex; gap: 5px; }
+.decision-callout button { flex: 1; padding: 6px; border: 1px solid #6f5b36; border-radius: 4px; color: #f9f0dd; background: #4c3c23; font: 700 0.62rem/1 system-ui, sans-serif; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; }
+.decision-callout button:last-child { color: #4c3c23; background: transparent; }
+.decision-callout button:focus-visible { outline: 3px solid #d89c37; outline-offset: 2px; }
+
+.opponent-stake .returning { animation: return-opponent 520ms ease-in both; }
+.player-stake .returning { animation: return-player 520ms ease-in both; }
+.to-boneyard { animation: to-boneyard 600ms ease-in both; }
+
+.boneyard {
+  position: absolute;
+  right: 17px;
+  top: 50%;
+  z-index: 16;
+  display: grid;
+  width: 70px;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px;
+  transform: translateY(-50%);
+  border: 0;
+  color: rgba(244, 235, 214, 0.7);
+  background: transparent;
+  cursor: pointer;
+}
+.boneyard:focus-visible { outline: 2px solid #efc879; outline-offset: 3px; }
+.boneyard strong { margin-top: 5px; font: 600 0.67rem/1 Georgia, serif; letter-spacing: 0.04em; }
+.boneyard small { font-size: 0.58rem; }
+.pile { position: relative; display: block; width: 38px; height: 53px; border: 1px dashed rgba(255,255,255,.2); border-radius: 3px; }
+.pile > span { position: absolute; inset: 0; border: 1px solid rgba(238,226,201,.35); border-radius: 3px; transform: rotate(-5deg); }
+.pile > span:nth-child(2) { transform: rotate(5deg); }
+.pile app-card { --card-width: 100%; --card-height: 100%; position: absolute; inset: 0; display: block; transform: rotate(2deg); }
+
+.boneyard-drawer {
+  position: absolute;
+  inset: 9px 9px 9px auto;
+  z-index: 30;
+  width: min(390px, calc(100% - 18px));
+  box-sizing: border-box;
+  padding: 15px;
+  overflow: auto;
+  border: 1px solid rgba(238, 213, 165, 0.22);
+  border-radius: 14px;
+  color: #f4ead7;
+  background: rgba(10, 30, 25, 0.97);
+  box-shadow: -18px 0 45px rgba(0,0,0,.35);
+}
+.boneyard-drawer header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+.boneyard-drawer header span,
+.boneyard-drawer header strong { display: block; }
+.boneyard-drawer header span { color: #dcb669; font-size: .62rem; letter-spacing: .16em; }
+.boneyard-drawer header strong { margin-top: 4px; font: 500 1rem/1.2 Georgia, serif; }
+.boneyard-drawer header button { width: 32px; height: 32px; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; color: inherit; background: transparent; font-size: 1.25rem; cursor: pointer; }
+.boneyard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 9px; }
+.boneyard-grid app-card { --card-width: 100%; --card-height: auto; display: block; aspect-ratio: 2.5 / 3.5; }
+
+.advance {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  z-index: 20;
+  padding: 6px 9px;
+  border: 1px solid rgba(240, 218, 171, 0.16);
+  border-radius: 999px;
+  color: rgba(248, 240, 222, 0.64);
+  background: rgba(7, 25, 20, 0.44);
+  font-size: 0.64rem;
+  cursor: pointer;
+}
+.advance span { font-size: 1rem; vertical-align: -1px; }
+.advance:focus-visible { outline: 2px solid #efc879; outline-offset: 2px; }
+
+.game-over {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 40;
+  width: min(390px, calc(100% - 32px));
+  box-sizing: border-box;
+  padding: 24px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(232, 204, 149, 0.28);
+  border-radius: 14px;
+  color: #f6ecd8;
+  background: rgba(10, 29, 24, 0.96);
+  box-shadow: 0 24px 70px rgba(0,0,0,.52);
+  text-align: center;
+}
+.game-over > span { color: #deb969; font-size: .62rem; letter-spacing: .18em; }
+.game-over h2 { margin: 8px 0 5px; font: 500 1.7rem/1.1 Georgia, serif; }
+.game-over p { color: rgba(246,236,216,.65); font-size: .75rem; }
+.game-over button { margin-top: 10px; padding: 9px 16px; border: 1px solid #e4bf72; border-radius: 5px; color: #2b2417; background: #e4bf72; font-weight: 700; cursor: pointer; }
+
+@keyframes pointer-bob { 50% { transform: translate(-50%, -5px); } }
+@keyframes casualty-flip { 0% { transform: rotateY(90deg); } 100% { transform: rotateY(0); } }
+@keyframes deal-from-opponent { from { transform: translateY(-76px) rotate(-7deg) scale(.86); opacity: .25; } }
+@keyframes deal-from-player { from { transform: translateY(76px) rotate(7deg) scale(.86); opacity: .25; } }
+@keyframes clash-from-opponent { 50% { transform: translateY(8px) rotate(1deg) scale(1.03); } }
+@keyframes clash-from-player { 50% { transform: translateY(-8px) rotate(-1deg) scale(1.03); } }
+@keyframes reinforce-from-opponent { from { transform: translate(45%, -65%) rotate(14deg) scale(.86); opacity: .2; } }
+@keyframes reinforce-from-player { from { transform: translate(-45%, 65%) rotate(-14deg) scale(.86); opacity: .2; } }
+@keyframes stake-layer-in { from { opacity: 0; filter: blur(2px); transform: translateX(-50%) scale(.82); } }
+@keyframes return-opponent { to { transform: translateY(-90px) scale(.72); opacity: 0; } }
+@keyframes return-player { to { transform: translateY(90px) scale(.72); opacity: 0; } }
+@keyframes to-boneyard { to { transform: translate(38vw, 0) rotate(14deg) scale(.45); opacity: .15; } }
+
+.motion-disabled *,
+.motion-disabled *::before,
+.motion-disabled *::after { animation: none !important; transition: none !important; }
+
+@media (max-width: 820px) {
+  .stakes { inset-inline: 42px 72px; }
+  .table-tools .turn-mark { display: none; }
+  .announcement { max-width: 52vw; }
+  .decision-callout { min-width: 155px; }
+}
+
+@media (max-width: 620px) {
+  .table-page { padding: 0; }
+  .table-tools { top: 5px; left: 5px; gap: 2px; }
+  .table-tools a,
+  .table-tools button { padding: 5px; font-size: .56rem; }
+  .table-tools a:nth-of-type(2) { display: none; }
+  .announcement { top: 58px; max-width: 78vw; }
+  .stakes { inset: 67px 42px 17px 6px; grid-template-rows: 1fr 17px 1fr; }
+  .side-stake { min-height: 130px; }
+  .battle-layers { width: 240px; }
+  .battle-layer { gap: 6px; }
+  .active-card-shell { width: 59px; }
+  .battle-card-shell { width: 50px; }
+  .opponent-callout { right: auto; bottom: auto; top: calc(100% + 9px); left: 50%; transform: translateX(-50%); }
+  .opponent-callout::before { top: -5px; right: auto; left: 50%; transform: translateX(-50%) rotate(45deg); }
+  .boneyard { right: 1px; }
+  .advance { left: 6px; bottom: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}

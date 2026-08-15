@@ -57,16 +57,40 @@ export class GameDemoService {
       log.push(`   Opponent drew: ${opponentCard.toString()}`);
       
       const result = this.turnResolutionService.resolveTurn(playerCard, opponentCard);
+      let settledResult = result;
+
+      if (settledResult.canChallenge) {
+        settledResult = this.turnResolutionService.resolveChallengeConcession(PlayerType.PLAYER);
+      } else if (settledResult.opponentChallenge) {
+        const reinforcement = this.gameStateService.beginChallenge(PlayerType.OPPONENT);
+        settledResult = reinforcement
+          ? this.turnResolutionService.resolveChallenge(PlayerType.OPPONENT)
+          : this.turnResolutionService.resolveChallengeConcession(PlayerType.OPPONENT);
+      }
+
+      while (settledResult.nextPhase === GamePhase.BATTLE) {
+        const layer = this.gameStateService.dealBattleLayer();
+        if (!layer) {
+          this.gameStateService.settleAttrition();
+          break;
+        }
+        settledResult = this.turnResolutionService.resolveBattleSelection(
+          layer.opponentCards[0].id,
+          layer.playerCards[0].id
+        );
+        if (settledResult.pendingBattleSettlement && settledResult.winner) {
+          this.turnResolutionService.finalizeBattle(
+            settledResult.winner,
+            settledResult.nextPhase === GamePhase.GAME_OVER
+          );
+        }
+      }
       
-      log.push(`   Result: ${result.message}`);
-      log.push(`   Winner: ${result.winner || 'None (tie)'}`);
-      log.push(`   Next phase: ${result.nextPhase}`);
-      log.push(`   Cards kept: ${result.cardsKept.length}`);
-      log.push(`   Cards lost: ${result.cardsLost.length}`);
-      
-      // Reset to normal phase for next turn (simplified demo)
-      this.gameStateService.setPhase(GamePhase.NORMAL);
-      this.gameStateService.setChallengeAvailable(false);
+      log.push(`   Result: ${settledResult.message}`);
+      log.push(`   Winner: ${settledResult.winner || 'None (tie)'}`);
+      log.push(`   Next phase: ${this.gameStateService.currentPhase}`);
+      log.push(`   Public cards kept: ${settledResult.cardsKept.length}`);
+      log.push(`   Cards lost: ${settledResult.cardsLost.length}`);
       
       log.push(`   Current cards - Player: ${this.gameStateService.currentStats.playerCardCount}, Opponent: ${this.gameStateService.currentStats.opponentCardCount}`);
       log.push('');

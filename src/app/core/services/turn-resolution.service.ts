@@ -1,317 +1,324 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Card } from '../models/card.model';
-import { GamePhase, PlayerType, ActiveTurn } from '../models/game-state.model';
-import { GameStateService } from './game-state.service';
+import { Deck } from '../models/deck.model';
+import { GameOutcome, GamePhase, PlayerType } from '../models/game-state.model';
+import { BattleSettlementPreview, GameStateService } from './game-state.service';
 import { CardComparisonService, ComparisonResult } from './card-comparison.service';
 import { OpponentAIService } from './opponent-ai.service';
 
 export interface TurnResult {
-  winner: PlayerType | null;
-  result: ComparisonResult;
-  message: string;
-  cardsLost: Card[];
-  cardsKept: Card[];
-  nextPhase: GamePhase;
-  canChallenge: boolean;
-  opponentChallenge?: boolean; // New field to indicate if opponent wants to challenge
+  readonly winner: PlayerType | null;
+  readonly result: ComparisonResult;
+  readonly message: string;
+  readonly cardsLost: readonly Card[];
+  /** Only cards whose identities are public are returned here. */
+  readonly cardsKept: readonly Card[];
+  readonly nextPhase: GamePhase;
+  readonly canChallenge: boolean;
+  readonly opponentChallenge: boolean;
+  readonly opponentConsidered: boolean;
+  readonly casualtyRevealCards: readonly Card[];
+  readonly hiddenWinnerCardCount: number;
+  /** Decisive Battles are presented before their cards are physically settled. */
+  readonly pendingBattleSettlement: boolean;
+  readonly terminalOutcome: GameOutcome | null;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class TurnResolutionService {
-
-  constructor(
-    private gameStateService: GameStateService,
-    private cardComparisonService: CardComparisonService,
-    private opponentAIService: OpponentAIService
-  ) {}
+  private readonly gameState = inject(GameStateService);
+  private readonly comparison = inject(CardComparisonService);
+  private readonly opponentAI = inject(OpponentAIService);
+  private readonly opponentCardPool = Deck.createBlackDeck().toArray();
 
   resolveTurn(playerCard: Card, opponentCard: Card): TurnResult {
-    const result = this.cardComparisonService.compareCards(playerCard, opponentCard);
-    const isSpecialAceVsTwo = this.cardComparisonService.isSpecialAceVsTwoRule(playerCard, opponentCard);
-    
-    switch (result) {
-      case ComparisonResult.PLAYER_WINS:
-        return this.resolveNormalWin(playerCard, opponentCard, PlayerType.PLAYER, isSpecialAceVsTwo);
-      
-      case ComparisonResult.OPPONENT_WINS:
-        return this.resolveNormalLoss(playerCard, opponentCard, PlayerType.OPPONENT, isSpecialAceVsTwo);
-      
-      case ComparisonResult.TIE:
-        return this.resolveTie(playerCard, opponentCard);
-    }
-  }
+    this.requireCurrentCards(playerCard, opponentCard);
+    const result = this.comparison.compareCards(playerCard, opponentCard);
+    const special = this.comparison.isSpecialAceVsTwoRule(playerCard, opponentCard);
 
-  private resolveNormalWin(playerCard: Card, opponentCard: Card, winner: PlayerType, isSpecialAceVsTwo: boolean = false): TurnResult {
-    const winnerCards = winner === PlayerType.PLAYER ? [playerCard] : [opponentCard];
-    const loserCards = winner === PlayerType.PLAYER ? [opponentCard] : [playerCard];
-    
-    // Check if the loser should challenge
-    let canChallenge = false;
-    let opponentChallenge = false;
-    let message = '';
-    
-    if (winner === PlayerType.OPPONENT) {
-      // Player lost - they can challenge unless 2 beat Ace
-      canChallenge = !isSpecialAceVsTwo;
-      message = 'Opponent wins this turn!';
-    } else {
-      // Opponent lost - check if AI wants to challenge unless 2 beat Ace
-      opponentChallenge = !isSpecialAceVsTwo && this.opponentAIService.shouldChallenge(opponentCard);
-      if (opponentChallenge) {
-        // Don't process cards yet - let game controller handle opponent challenge
-        message = 'You win this turn, but opponent challenges!';
-        return {
-          winner: null, // No winner yet due to challenge
-          result: ComparisonResult.PLAYER_WINS,
-          message,
-          cardsLost: [],
-          cardsKept: [playerCard, opponentCard], // Hold cards for challenge resolution
-          nextPhase: GamePhase.CHALLENGE,
-          canChallenge: false, // Player can't challenge, but opponent is challenging
-          opponentChallenge: true
-        };
-      } else {
-        message = 'You win this turn!';
-      }
-    }
+    if (result === ComparisonResult.TIE) return this.enterBattle('Cards tie. Battle.');
 
-    // Winner keeps their card, loser's card goes to discard
-    if (winner === PlayerType.PLAYER) {
-      this.gameStateService.returnCardsToPlayerDeck([playerCard]);
-    } else {
-      this.gameStateService.returnCardsToOpponentDeck([opponentCard]);
-    }
-    
-    this.gameStateService.addToDiscardPile(loserCards);
-    
-    return {
-      winner,
-      result: winner === PlayerType.PLAYER ? ComparisonResult.PLAYER_WINS : ComparisonResult.OPPONENT_WINS,
-      message,
-      cardsLost: loserCards,
-      cardsKept: winnerCards,
-      nextPhase: canChallenge ? GamePhase.CHALLENGE : GamePhase.NORMAL,
-      canChallenge,
-      opponentChallenge: false
-    };
-  }
-
-  private resolveNormalLoss(playerCard: Card, opponentCard: Card, winner: PlayerType, isSpecialAceVsTwo: boolean = false): TurnResult {
-    return this.resolveNormalWin(playerCard, opponentCard, winner, isSpecialAceVsTwo);
-  }
-
-  private resolveTie(playerCard: Card, opponentCard: Card): TurnResult {
-    // Check if both players have enough cards for battle
-    if (!this.gameStateService.currentPlayerDeck.hasMinimumForBattle || 
-        !this.gameStateService.currentOpponentDeck.hasMinimumForBattle) {
-      // Can't conduct battle, game ends
-      this.gameStateService.endGame();
-      return {
-        winner: null,
-        result: ComparisonResult.TIE,
-        message: 'Battle cannot be conducted - insufficient cards. Game ends.',
-        cardsLost: [playerCard, opponentCard],
-        cardsKept: [],
-        nextPhase: GamePhase.GAME_OVER,
-        canChallenge: false
-      };
-    }
-
-    // Start battle
-    return {
-      winner: null,
-      result: ComparisonResult.TIE,
-      message: 'Cards tie! Preparing for battle...',
-      cardsLost: [],
-      cardsKept: [playerCard, opponentCard], // These cards are held for battle
-      nextPhase: GamePhase.BATTLE,
-      canChallenge: false
-    };
-  }
-
-  resolveChallenge(originalPlayerCard: Card, originalOpponentCard: Card, challengeCard: Card): TurnResult {
-    const result = this.cardComparisonService.compareCards(challengeCard, originalOpponentCard);
-    
     if (result === ComparisonResult.PLAYER_WINS) {
-      // Challenge successful - opponent loses original card, player keeps both cards
-      this.gameStateService.removeCardsFromOpponentDeck([originalOpponentCard]);
-      this.gameStateService.addToDiscardPile([originalOpponentCard]);
-      this.gameStateService.returnCardsToPlayerDeck([originalPlayerCard, challengeCard]);
-      
-      return {
-        winner: PlayerType.PLAYER,
-        result: ComparisonResult.PLAYER_WINS,
-        message: 'Challenge successful! You keep your cards.',
-        cardsLost: [originalOpponentCard],
-        cardsKept: [originalPlayerCard, challengeCard],
-        nextPhase: GamePhase.NORMAL,
-        canChallenge: false
-      };
-    } else if (result === ComparisonResult.TIE) {
-      // Challenge ties - enter Battle with all cards on table preserved/staked
-      // Remove opponent's card from deck (it was added during initial turn resolution) so it stays on the table for battle
-      this.gameStateService.removeCardsFromOpponentDeck([originalOpponentCard]);
-      
-      return {
-        winner: null,
-        result: ComparisonResult.TIE,
-        message: 'Challenge ties! Battle initiated with all cards staked.',
-        cardsLost: [],
-        cardsKept: [originalPlayerCard, challengeCard, originalOpponentCard],
-        nextPhase: GamePhase.BATTLE,
-        canChallenge: false
-      };
-    } else {
-      // Challenge failed - player loses both cards, opponent already has their card from initial turn
-      this.gameStateService.addToDiscardPile([originalPlayerCard, challengeCard]);
-      
-      return {
-        winner: PlayerType.OPPONENT,
-        result: ComparisonResult.OPPONENT_WINS,
-        message: 'Challenge failed! You lose your cards.',
-        cardsLost: [originalPlayerCard, challengeCard],
-        cardsKept: [originalOpponentCard],
-        nextPhase: GamePhase.NORMAL,
-        canChallenge: false
-      };
-    }
-  }
-
-  /**
-   * Resolve opponent challenge
-   * @param originalPlayerCard Player's original card from the turn
-   * @param originalOpponentCard Opponent's original card from the turn  
-   * @param opponentChallengeCard Opponent's challenge card (drawn automatically)
-   */
-  resolveOpponentChallenge(originalPlayerCard: Card, originalOpponentCard: Card, opponentChallengeCard: Card): TurnResult {
-    const result = this.cardComparisonService.compareCards(opponentChallengeCard, originalPlayerCard);
-    
-    if (result === ComparisonResult.OPPONENT_WINS) {
-      // Opponent challenge successful - player loses original card, opponent keeps both cards
-      this.gameStateService.removeCardsFromPlayerDeck([originalPlayerCard]);
-      this.gameStateService.addToDiscardPile([originalPlayerCard]);
-      this.gameStateService.returnCardsToOpponentDeck([originalOpponentCard, opponentChallengeCard]);
-      
-      return {
-        winner: PlayerType.OPPONENT,
-        result: ComparisonResult.OPPONENT_WINS,
-        message: 'Opponent challenge successful! Opponent keeps their cards.',
-        cardsLost: [originalPlayerCard],
-        cardsKept: [originalOpponentCard, opponentChallengeCard],
-        nextPhase: GamePhase.NORMAL,
-        canChallenge: false,
-        opponentChallenge: false
-      };
-    } else if (result === ComparisonResult.TIE) {
-      // Opponent challenge ties - enter Battle with all active cards staked
-      // Remove player's card from deck (it was added during initial turn resolution) so it stays on table for battle
-      this.gameStateService.removeCardsFromPlayerDeck([originalPlayerCard]);
-      
-      return {
-        winner: null,
-        result: ComparisonResult.TIE,
-        message: 'Opponent challenge ties! Battle initiated with all cards staked.',
-        cardsLost: [],
-        cardsKept: [originalPlayerCard, originalOpponentCard, opponentChallengeCard],
-        nextPhase: GamePhase.BATTLE,
-        canChallenge: false,
-        opponentChallenge: false
-      };
-    } else {
-      // Opponent challenge failed - opponent loses both cards, player keeps their card
-      this.gameStateService.removeCardsFromOpponentDeck([originalOpponentCard]);
-      this.gameStateService.returnCardsToPlayerDeck([originalPlayerCard]);
-      this.gameStateService.addToDiscardPile([originalOpponentCard, opponentChallengeCard]);
-      
-      return {
-        winner: PlayerType.PLAYER,
-        result: ComparisonResult.PLAYER_WINS,
-        message: 'Opponent challenge failed! Opponent loses their cards.',
-        cardsLost: [originalOpponentCard, opponentChallengeCard],
-        cardsKept: [originalPlayerCard],
-        nextPhase: GamePhase.NORMAL,
-        canChallenge: false,
-        opponentChallenge: false
-      };
-    }
-  }
-
-  resolveBattle(
-    originalPlayerCard: Card, 
-    originalOpponentCard: Card,
-    playerBattleCards: Card[], 
-    opponentBattleCards: Card[],
-    selectedPlayerCard: Card, 
-    selectedOpponentCard: Card
-  ): TurnResult {
-    const result = this.cardComparisonService.compareCards(selectedPlayerCard, selectedOpponentCard);
-    
-    const allPlayerCards = [originalPlayerCard, ...playerBattleCards];
-    const allOpponentCards = [originalOpponentCard, ...opponentBattleCards];
-    
-    if (result === ComparisonResult.PLAYER_WINS) {
-      // Player wins battle - keeps all their cards, opponent's cards discarded
-      this.gameStateService.returnCardsToPlayerDeck(allPlayerCards);
-      this.gameStateService.addToDiscardPile(allOpponentCards);
-      
-      return {
-        winner: PlayerType.PLAYER,
-        result: ComparisonResult.PLAYER_WINS,
-        message: 'You win the battle! All opponent cards discarded.',
-        cardsLost: allOpponentCards,
-        cardsKept: allPlayerCards,
-        nextPhase: GamePhase.NORMAL,
-        canChallenge: false
-      };
-    } else if (result === ComparisonResult.OPPONENT_WINS) {
-      // Opponent wins battle - keeps all their cards, player's cards discarded
-      this.gameStateService.addToDiscardPile(allPlayerCards);
-      this.gameStateService.returnCardsToOpponentDeck(allOpponentCards);
-      
-      return {
-        winner: PlayerType.OPPONENT,
-        result: ComparisonResult.OPPONENT_WINS,
-        message: 'Opponent wins the battle! All your cards discarded.',
-        cardsLost: allPlayerCards,
-        cardsKept: allOpponentCards,
-        nextPhase: GamePhase.NORMAL,
-        canChallenge: false
-      };
-    } else {
-      // Another tie - need another battle if possible
-      if (!this.gameStateService.currentPlayerDeck.hasMinimumForBattle || 
-          !this.gameStateService.currentOpponentDeck.hasMinimumForBattle) {
-        // Can't conduct another battle, game ends
-        this.gameStateService.addToDiscardPile([...allPlayerCards, ...allOpponentCards]);
-        this.gameStateService.endGame();
-        
-        return {
+      const canOpponentChallenge = !special && this.gameState.currentOpponentDeck.count > 0;
+      const opponentChallenges = canOpponentChallenge && this.opponentAI.shouldChallenge(
+        opponentCard,
+        {
+          opposingCard: playerCard,
+          ownDeckCount: this.gameState.currentOpponentDeck.count,
+          ownCardPool: this.opponentCardPool,
+          publicCards: this.publicInformation()
+        }
+      );
+      if (opponentChallenges) {
+        this.gameState.setPhase(GamePhase.CHALLENGE);
+        return this.result({
           winner: null,
-          result: ComparisonResult.TIE,
-          message: 'Another tie in battle, but insufficient cards for another battle. Game ends.',
-          cardsLost: [...allPlayerCards, ...allOpponentCards],
-          cardsKept: [],
-          nextPhase: GamePhase.GAME_OVER,
-          canChallenge: false
-        };
+          comparison: result,
+          message: 'Your card holds. Opponent is considering reinforcement.',
+          nextPhase: GamePhase.CHALLENGE,
+          opponentChallenge: true,
+          opponentConsidered: true,
+          cardsKept: [playerCard, opponentCard]
+        });
       }
-      
-      // Continue battle with more cards
-      return {
-        winner: null,
-        result: ComparisonResult.TIE,
-        message: 'Battle ties again! Another battle required.',
-        cardsLost: [],
-        cardsKept: [...allPlayerCards, ...allOpponentCards],
-        nextPhase: GamePhase.BATTLE,
-        canChallenge: false
-      };
+      return this.settle(PlayerType.PLAYER, result, 'Your card survives.', true);
     }
+
+    if (!special && this.gameState.currentPlayerDeck.count > 0) {
+      this.gameState.setPhase(GamePhase.CHALLENGE);
+      this.gameState.setChallengeAvailable(true);
+      return this.result({
+        winner: null,
+        comparison: result,
+        message: 'Your card is beaten. Send reinforcement?',
+        nextPhase: GamePhase.CHALLENGE,
+        canChallenge: true,
+        cardsKept: [playerCard, opponentCard]
+      });
+    }
+    return this.settle(PlayerType.OPPONENT, result, 'Opponent card survives.');
+  }
+
+  resolveChallengeConcession(loser: PlayerType): TurnResult {
+    const winner = loser === PlayerType.PLAYER ? PlayerType.OPPONENT : PlayerType.PLAYER;
+    const comparison = winner === PlayerType.PLAYER
+      ? ComparisonResult.PLAYER_WINS
+      : ComparisonResult.OPPONENT_WINS;
+    return this.settle(winner, comparison, loser === PlayerType.PLAYER
+      ? 'You concede. Your card goes to the Boneyard.'
+      : 'Opponent concedes. Their card goes to the Boneyard.');
+  }
+
+  resolveChallenge(challenger: PlayerType): TurnResult {
+    const turn = this.gameState.currentState.activeTurn;
+    if (!turn) throw new Error('No active turn for challenge resolution');
+    const challengeCard = challenger === PlayerType.PLAYER
+      ? turn.playerChallengeCard
+      : turn.opponentChallengeCard;
+    if (!challengeCard) throw new Error('The challenger has not played a reinforcement');
+
+    const result = challenger === PlayerType.PLAYER
+      ? this.comparison.compareCards(challengeCard, turn.opponentCard)
+      : this.comparison.compareCards(turn.playerCard, challengeCard);
+
+    if (result === ComparisonResult.TIE) {
+      return this.enterBattle('Reinforcement ties. Everything stays on the table.');
+    }
+
+    const challengerWon = challenger === PlayerType.PLAYER
+      ? result === ComparisonResult.PLAYER_WINS
+      : result === ComparisonResult.OPPONENT_WINS;
+    const winner = challengerWon
+      ? challenger
+      : challenger === PlayerType.PLAYER ? PlayerType.OPPONENT : PlayerType.PLAYER;
+    return this.settle(
+      winner,
+      result,
+      challengerWon
+        ? challenger === PlayerType.PLAYER
+          ? 'Reinforcement holds. You save both cards.'
+          : 'Opponent reinforcement holds.'
+        : challenger === PlayerType.PLAYER
+          ? 'Reinforcement falls. Both of your cards are lost.'
+          : 'Opponent reinforcement falls. You hold.'
+    );
+  }
+
+  resolveBattleSelection(
+    opponentCardIdChosenByPlayer: string,
+    playerCardIdChosenByOpponent: string
+  ): TurnResult {
+    const selected = this.gameState.selectNewestBattleTargets(
+      opponentCardIdChosenByPlayer,
+      playerCardIdChosenByOpponent
+    );
+    const comparison = this.comparison.compareCards(selected.playerCard, selected.opponentCard);
+    if (comparison === ComparisonResult.TIE) {
+      if (!this.gameState.canDealBattleLayer()) {
+        return this.resolveAttrition('Battle ties, but there are not three more cards to stake.');
+      }
+      this.gameState.setPhase(GamePhase.BATTLE);
+      return this.result({
+        winner: null,
+        comparison,
+        message: 'Still tied. The stake grows.',
+        nextPhase: GamePhase.BATTLE,
+        cardsKept: [selected.playerCard, selected.opponentCard]
+      });
+    }
+
+    const winner = comparison === ComparisonResult.PLAYER_WINS
+      ? PlayerType.PLAYER
+      : PlayerType.OPPONENT;
+    const preview = this.gameState.previewBattleSettlement(winner);
+    return this.resultFromPreview(
+      preview,
+      comparison,
+      winner === PlayerType.PLAYER ? 'You win the Battle.' : 'Opponent wins the Battle.'
+    );
+  }
+
+  finalizeBattle(winner: PlayerType, gameOverAfterSettlement = false): GamePhase {
+    this.gameState.settleActiveTurn(winner);
+    if (gameOverAfterSettlement) {
+      this.gameState.endGame(
+        winner === PlayerType.PLAYER ? GameOutcome.PLAYER_WIN : GameOutcome.OPPONENT_WIN
+      );
+    }
+    return this.gameState.currentPhase;
   }
 
   checkWinConditions(): boolean {
-    return this.gameStateService.checkGameEndConditions();
+    return this.gameState.checkGameEndConditions();
+  }
+
+  private enterBattle(message: string): TurnResult {
+    if (!this.gameState.canDealBattleLayer()) return this.resolveAttrition(message);
+    this.gameState.setPhase(GamePhase.BATTLE);
+    return this.result({
+      winner: null,
+      comparison: ComparisonResult.TIE,
+      message,
+      nextPhase: GamePhase.BATTLE,
+      cardsKept: this.publicInformationOnTable()
+    });
+  }
+
+  private resolveAttrition(message: string): TurnResult {
+    const turn = this.gameState.currentState.activeTurn;
+    const outcome = this.gameState.determineAttritionOutcome();
+    if (outcome === GameOutcome.TIE) {
+      this.gameState.endGame(GameOutcome.TIE);
+      return this.result({
+        winner: null,
+        comparison: ComparisonResult.TIE,
+        message: `${message} Neither side can continue. The war ends in a true tie.`,
+        nextPhase: GamePhase.GAME_OVER,
+        cardsKept: this.publicInformationOnTable(),
+        terminalOutcome: GameOutcome.TIE
+      });
+    }
+
+    const winner = outcome === GameOutcome.PLAYER_WIN ? PlayerType.PLAYER : PlayerType.OPPONENT;
+    if (turn && turn.battleLayers.length > 0) {
+      const preview = this.gameState.previewBattleSettlement(winner);
+      return this.resultFromPreview(
+        preview,
+        ComparisonResult.TIE,
+        `${message} ${winner === PlayerType.PLAYER ? 'You win' : 'Opponent wins'} by attrition.`,
+        GamePhase.GAME_OVER,
+        outcome
+      );
+    }
+    const stakesBeforeSettlement = {
+      player: this.gameState.getStake(PlayerType.PLAYER),
+      opponent: this.gameState.getStake(PlayerType.OPPONENT)
+    };
+    this.gameState.settleAttrition();
+    const losingCards = winner === PlayerType.PLAYER
+      ? stakesBeforeSettlement.opponent
+      : stakesBeforeSettlement.player;
+    return this.result({
+      winner,
+      comparison: ComparisonResult.TIE,
+      message: `${message} ${winner === PlayerType.PLAYER ? 'You win' : 'Opponent wins'} by attrition.`,
+      nextPhase: GamePhase.GAME_OVER,
+      cardsLost: losingCards,
+      terminalOutcome: outcome
+    });
+  }
+
+  private settle(
+    winner: PlayerType,
+    comparison: ComparisonResult,
+    message: string,
+    opponentConsidered = false
+  ): TurnResult {
+    const preview = this.gameState.settleActiveTurn(winner);
+    return this.result({
+      winner,
+      comparison,
+      message,
+      nextPhase: this.gameState.currentPhase,
+      cardsLost: preview.losingCards,
+      cardsKept: preview.publicWinnerCards,
+      opponentConsidered,
+      terminalOutcome: this.gameState.currentState.outcome
+    });
+  }
+
+  private resultFromPreview(
+    preview: BattleSettlementPreview,
+    comparison: ComparisonResult,
+    message: string,
+    nextPhase = GamePhase.NORMAL,
+    terminalOutcome: GameOutcome | null = null
+  ): TurnResult {
+    return this.result({
+      winner: preview.winner,
+      comparison,
+      message,
+      nextPhase,
+      cardsLost: preview.losingCards,
+      cardsKept: preview.publicWinnerCards,
+      casualtyRevealCards: preview.casualtyRevealCards,
+      hiddenWinnerCardCount: preview.hiddenWinnerCardCount,
+      pendingBattleSettlement: true,
+      terminalOutcome
+    });
+  }
+
+  private result(options: {
+    winner: PlayerType | null;
+    comparison: ComparisonResult;
+    message: string;
+    nextPhase: GamePhase;
+    cardsLost?: readonly Card[];
+    cardsKept?: readonly Card[];
+    canChallenge?: boolean;
+    opponentChallenge?: boolean;
+    opponentConsidered?: boolean;
+    casualtyRevealCards?: readonly Card[];
+    hiddenWinnerCardCount?: number;
+    pendingBattleSettlement?: boolean;
+    terminalOutcome?: GameOutcome | null;
+  }): TurnResult {
+    this.gameState.setLastResult(options.comparison);
+    return {
+      winner: options.winner,
+      result: options.comparison,
+      message: options.message,
+      cardsLost: options.cardsLost ?? [],
+      cardsKept: options.cardsKept ?? [],
+      nextPhase: options.nextPhase,
+      canChallenge: options.canChallenge ?? false,
+      opponentChallenge: options.opponentChallenge ?? false,
+      opponentConsidered: options.opponentConsidered ?? false,
+      casualtyRevealCards: options.casualtyRevealCards ?? [],
+      hiddenWinnerCardCount: options.hiddenWinnerCardCount ?? 0,
+      pendingBattleSettlement: options.pendingBattleSettlement ?? false,
+      terminalOutcome: options.terminalOutcome ?? null
+    };
+  }
+
+  private publicInformation(): readonly Card[] {
+    return [...this.gameState.currentDiscardPile, ...this.publicInformationOnTable()];
+  }
+
+  private publicInformationOnTable(): readonly Card[] {
+    const turn = this.gameState.currentState.activeTurn;
+    if (!turn) return [];
+    const publicIds = new Set(turn.publicCardIds);
+    return [
+      ...this.gameState.getStake(PlayerType.PLAYER),
+      ...this.gameState.getStake(PlayerType.OPPONENT)
+    ].filter(card => publicIds.has(card.id));
+  }
+
+  private requireCurrentCards(playerCard: Card, opponentCard: Card): void {
+    const turn = this.gameState.currentState.activeTurn;
+    if (!turn || turn.playerCard.id !== playerCard.id || turn.opponentCard.id !== opponentCard.id) {
+      throw new Error('Turn resolution must use the active cards currently on the table');
+    }
   }
 }

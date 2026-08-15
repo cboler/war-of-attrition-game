@@ -1,30 +1,52 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { Card } from '../models/card.model';
 import { Deck } from '../models/deck.model';
-import { GameState, GamePhase, PlayerType, GameStats, ActiveTurn } from '../models/game-state.model';
+import {
+  ActiveTurn,
+  BattleLayer,
+  GameOutcome,
+  GamePhase,
+  GameState,
+  GameStats,
+  PlayerType
+} from '../models/game-state.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+export interface CardConservationReport {
+  readonly total: number;
+  readonly unique: number;
+  readonly duplicateIds: readonly string[];
+  readonly missingIds: readonly string[];
+  readonly valid: boolean;
+}
+
+export interface BattleSettlementPreview {
+  readonly winner: PlayerType;
+  readonly loser: PlayerType;
+  readonly losingCards: readonly Card[];
+  readonly casualtyRevealCards: readonly Card[];
+  readonly publicWinnerCards: readonly Card[];
+  readonly hiddenWinnerCardCount: number;
+}
+
+@Injectable({ providedIn: 'root' })
 export class GameStateService {
-  
-  private playerDeck = signal<Deck>(Deck.createRedDeck());
-  private opponentDeck = signal<Deck>(Deck.createBlackDeck());
-  private discardPile = signal<Card[]>([]);
-  private gamePhase = signal<GamePhase>(GamePhase.SETUP);
-  private turnNumber = signal<number>(0);
-  private activeTurn = signal<ActiveTurn | null>(null);
-  private winner = signal<PlayerType | null>(null);
-  private isPlayerTurn = signal<boolean>(true);
-  private canChallenge = signal<boolean>(false);
-  private lastResult = signal<string | null>(null);
+  private readonly playerDeck = signal<Deck>(Deck.createRedDeck());
+  private readonly opponentDeck = signal<Deck>(Deck.createBlackDeck());
+  private readonly discardPile = signal<readonly Card[]>([]);
+  private readonly gamePhase = signal(GamePhase.SETUP);
+  private readonly turnNumber = signal(0);
+  private readonly activeTurn = signal<ActiveTurn | null>(null);
+  private readonly winner = signal<PlayerType | null>(null);
+  private readonly outcome = signal<GameOutcome | null>(null);
+  private readonly isPlayerTurn = signal(true);
+  private readonly canChallenge = signal(false);
+  private readonly lastResult = signal<string | null>(null);
 
-  // Computed values
   readonly playerCardCount = computed(() => this.playerDeck().count);
   readonly opponentCardCount = computed(() => this.opponentDeck().count);
   readonly discardedCardCount = computed(() => this.discardPile().length);
-  readonly discardedCards = computed(() => [...this.discardPile()]); // Public accessor for discard pile
-  
+  readonly discardedCards = computed(() => [...this.discardPile()]);
+
   readonly gameStats = computed<GameStats>(() => ({
     turnNumber: this.turnNumber(),
     playerCardCount: this.playerCardCount(),
@@ -37,210 +59,355 @@ export class GameStateService {
     stats: this.gameStats(),
     activeTurn: this.activeTurn(),
     winner: this.winner(),
+    outcome: this.outcome(),
     isPlayerTurn: this.isPlayerTurn(),
     canChallenge: this.canChallenge(),
     lastResult: this.lastResult()
   }));
 
-  // Readonly getters for external access
-  get currentPhase() { return this.gamePhase(); }
-  get currentStats() { return this.gameStats(); }
-  get currentState() { return this.gameState(); }
-  get currentPlayerDeck() { return this.playerDeck(); }
-  get currentOpponentDeck() { return this.opponentDeck(); }
-  get currentDiscardPile() { return this.discardPile(); }
+  get currentPhase(): GamePhase { return this.gamePhase(); }
+  get currentStats(): GameStats { return this.gameStats(); }
+  get currentState(): GameState { return this.gameState(); }
+  get currentPlayerDeck(): Deck { return this.playerDeck().copy(); }
+  get currentOpponentDeck(): Deck { return this.opponentDeck().copy(); }
+  get currentDiscardPile(): readonly Card[] { return [...this.discardPile()]; }
 
-  initializeGame(): void {
-    // Reset all state
-    this.playerDeck.set(Deck.createRedDeck());
-    this.opponentDeck.set(Deck.createBlackDeck());
+  initializeGame(options: { shuffle?: boolean } = {}): void {
+    const nextPlayerDeck = Deck.createRedDeck();
+    const nextOpponentDeck = Deck.createBlackDeck();
+    if (options.shuffle !== false) {
+      nextPlayerDeck.shuffle();
+      nextOpponentDeck.shuffle();
+    }
+
+    this.playerDeck.set(nextPlayerDeck);
+    this.opponentDeck.set(nextOpponentDeck);
     this.discardPile.set([]);
-    this.gamePhase.set(GamePhase.SETUP);
+    this.gamePhase.set(GamePhase.NORMAL);
     this.turnNumber.set(0);
     this.activeTurn.set(null);
     this.winner.set(null);
+    this.outcome.set(null);
     this.isPlayerTurn.set(true);
     this.canChallenge.set(false);
     this.lastResult.set(null);
-
-    // Shuffle both decks
-    this.playerDeck().shuffle();
-    this.opponentDeck().shuffle();
-
-    // Move to normal phase
-    this.gamePhase.set(GamePhase.NORMAL);
+    this.assertCardConservation();
   }
 
   startTurn(): { playerCard: Card | null; opponentCard: Card | null } {
     if (this.gamePhase() !== GamePhase.NORMAL) {
       throw new Error('Cannot start turn in current phase');
     }
-
-    // Check if both players can draw cards
     if (this.playerDeck().isEmpty || this.opponentDeck().isEmpty) {
       this.endGame();
       return { playerCard: null, opponentCard: null };
     }
 
-    // Draw cards - need to update signals to trigger reactivity
-    const playerCard = this.drawPlayerCard();
-    const opponentCard = this.drawOpponentCard();
-
+    const playerCard = this.takeTopCard(PlayerType.PLAYER);
+    const opponentCard = this.takeTopCard(PlayerType.OPPONENT);
     if (!playerCard || !opponentCard) {
-      this.endGame();
-      return { playerCard: null, opponentCard: null };
+      throw new Error('Both decks were checked before drawing but a card was unavailable');
     }
 
-    // Increment turn number
     this.turnNumber.update(turn => turn + 1);
-
-    // Create active turn
     this.activeTurn.set({
       playerCard,
       opponentCard,
-      phase: GamePhase.NORMAL
+      phase: GamePhase.NORMAL,
+      playerChallengeCard: null,
+      opponentChallengeCard: null,
+      battleLayers: [],
+      publicCardIds: [playerCard.id, opponentCard.id]
     });
+    this.assertCardConservation();
+    return { playerCard, opponentCard };
+  }
 
+  beginChallenge(challenger: PlayerType): Card | null {
+    const turn = this.requireActiveTurn();
+    if (turn.playerChallengeCard || turn.opponentChallengeCard) {
+      throw new Error('Only one reinforcement may be played in a turn');
+    }
+
+    const challengeCard = this.takeTopCard(challenger);
+    if (!challengeCard) return null;
+
+    this.gamePhase.set(GamePhase.CHALLENGE);
+    this.canChallenge.set(false);
+    this.activeTurn.set({
+      ...turn,
+      phase: GamePhase.CHALLENGE,
+      playerChallengeCard: challenger === PlayerType.PLAYER ? challengeCard : null,
+      opponentChallengeCard: challenger === PlayerType.OPPONENT ? challengeCard : null,
+      publicCardIds: [...turn.publicCardIds, challengeCard.id]
+    });
+    this.assertCardConservation();
+    return challengeCard;
+  }
+
+  canDealBattleLayer(): boolean {
+    return this.playerDeck().count >= 3 && this.opponentDeck().count >= 3;
+  }
+
+  dealBattleLayer(): BattleLayer | null {
+    const turn = this.requireActiveTurn();
+    if (!this.canDealBattleLayer()) return null;
+    const previousLayer = turn.battleLayers.at(-1);
+    if (previousLayer &&
+        (!previousLayer.selectedPlayerCardId || !previousLayer.selectedOpponentCardId)) {
+      throw new Error('A recursive Battle layer cannot be dealt before the current layer resolves');
+    }
+
+    const playerCards = this.takeTopCards(PlayerType.PLAYER, 3);
+    const opponentCards = this.takeTopCards(PlayerType.OPPONENT, 3);
+    const layer: BattleLayer = {
+      round: turn.battleLayers.length + 1,
+      playerCards,
+      opponentCards,
+      selectedPlayerCardId: null,
+      selectedOpponentCardId: null
+    };
+
+    this.gamePhase.set(GamePhase.BATTLE);
+    this.canChallenge.set(false);
+    this.activeTurn.set({
+      ...turn,
+      phase: GamePhase.BATTLE,
+      battleLayers: [...turn.battleLayers, layer]
+    });
+    this.assertCardConservation();
+    return layer;
+  }
+
+  selectNewestBattleTargets(
+    opponentCardIdChosenByPlayer: string,
+    playerCardIdChosenByOpponent: string
+  ): { playerCard: Card; opponentCard: Card } {
+    const turn = this.requireActiveTurn();
+    const latestIndex = turn.battleLayers.length - 1;
+    const latest = turn.battleLayers[latestIndex];
+    if (!latest) throw new Error('No Battle layer is available for selection');
+
+    const opponentCard = latest.opponentCards.find(card => card.id === opponentCardIdChosenByPlayer);
+    const playerCard = latest.playerCards.find(card => card.id === playerCardIdChosenByOpponent);
+    if (!opponentCard || !playerCard) {
+      throw new Error('Only cards in the newest Battle layer may be selected');
+    }
+
+    const selectedLayer: BattleLayer = {
+      ...latest,
+      selectedPlayerCardId: playerCard.id,
+      selectedOpponentCardId: opponentCard.id
+    };
+    const layers = [...turn.battleLayers];
+    layers[latestIndex] = selectedLayer;
+    this.activeTurn.set({
+      ...turn,
+      battleLayers: layers,
+      publicCardIds: [...new Set([...turn.publicCardIds, playerCard.id, opponentCard.id])]
+    });
+    this.assertCardConservation();
     return { playerCard, opponentCard };
   }
 
   setPhase(phase: GamePhase): void {
     this.gamePhase.set(phase);
+    const turn = this.activeTurn();
+    if (turn) this.activeTurn.set({ ...turn, phase });
   }
 
   setChallengeAvailable(available: boolean): void {
     this.canChallenge.set(available);
   }
 
-  setActiveTurn(turn: ActiveTurn | null): void {
-    this.activeTurn.set(turn);
-  }
-
-  addToDiscardPile(cards: Card[]): void {
-    this.discardPile.update(pile => [...pile, ...cards]);
-    this.validateDeckCounts();
-  }
-
-  returnCardsToPlayerDeck(cards: Card[]): void {
-    // Create a new deck instance to trigger signal updates
-    const newDeck = this.playerDeck().copy();
-    newDeck.addCards(cards);
-    this.playerDeck.set(newDeck);
-    this.validateDeckCounts();
-  }
-
-  returnCardsToOpponentDeck(cards: Card[]): void {
-    // Create a new deck instance to trigger signal updates
-    const newDeck = this.opponentDeck().copy();
-    newDeck.addCards(cards);
-    this.opponentDeck.set(newDeck);
-    this.validateDeckCounts();
-  }
-
-  removeCardsFromPlayerDeck(cards: Card[]): void {
-    const currentDeck = this.playerDeck();
-    let cardArray = [...currentDeck.toArray()];
-    
-    for (const card of cards) {
-      const index = cardArray.findIndex(c => c.suit === card.suit && c.rank === card.rank);
-      if (index !== -1) {
-        cardArray.splice(index, 1);
-      }
-    }
-    
-    this.playerDeck.set(new Deck(cardArray));
-  }
-
-  removeCardsFromOpponentDeck(cards: Card[]): void {
-    const currentDeck = this.opponentDeck();
-    let cardArray = [...currentDeck.toArray()];
-    
-    for (const card of cards) {
-      const index = cardArray.findIndex(c => c.suit === card.suit && c.rank === card.rank);
-      if (index !== -1) {
-        cardArray.splice(index, 1);
-      }
-    }
-    
-    this.opponentDeck.set(new Deck(cardArray));
-  }
-
-  private validateDeckCounts(): void {
-    const playerCount = this.playerDeck().count;
-    const opponentCount = this.opponentDeck().count;
-    
-    if (playerCount > 26 || opponentCount > 26) {
-      console.error(`Invalid deck count detected: Player(${playerCount}) Opponent(${opponentCount})`);
-      throw new Error(`Invalid deck count: Player(${playerCount}) Opponent(${opponentCount}) - No deck should exceed 26 cards`);
-    }
-  }
-
-  /**
-   * Draw a card from player deck and update signals
-   */
-  drawPlayerCard(): Card | null {
-    // Create a new deck instance to trigger signal updates
-    const newDeck = this.playerDeck().copy();
-    const card = newDeck.draw();
-    this.playerDeck.set(newDeck);
-    return card;
-  }
-
-  /**
-   * Draw a card from opponent deck and update signals
-   */
-  drawOpponentCard(): Card | null {
-    // Create a new deck instance to trigger signal updates
-    const newDeck = this.opponentDeck().copy();
-    const card = newDeck.draw();
-    this.opponentDeck.set(newDeck);
-    return card;
-  }
-
   setLastResult(result: string): void {
     this.lastResult.set(result);
   }
 
-  endGame(): void {
-    this.gamePhase.set(GamePhase.GAME_OVER);
-    
-    // Determine winner
-    if (this.playerCardCount() === 0) {
-      this.winner.set(PlayerType.OPPONENT);
-    } else if (this.opponentCardCount() === 0) {
-      this.winner.set(PlayerType.PLAYER);
-    } else {
-      // Determine winner by who has more cards
-      this.winner.set(
-        this.playerCardCount() > this.opponentCardCount() 
-          ? PlayerType.PLAYER 
-          : PlayerType.OPPONENT
-      );
+  getStake(owner: PlayerType): readonly Card[] {
+    const turn = this.activeTurn();
+    if (!turn) return [];
+    if (owner === PlayerType.PLAYER) {
+      return [
+        turn.playerCard,
+        ...(turn.playerChallengeCard ? [turn.playerChallengeCard] : []),
+        ...turn.battleLayers.flatMap(layer => layer.playerCards)
+      ];
     }
-    
+    return [
+      turn.opponentCard,
+      ...(turn.opponentChallengeCard ? [turn.opponentChallengeCard] : []),
+      ...turn.battleLayers.flatMap(layer => layer.opponentCards)
+    ];
+  }
+
+  previewBattleSettlement(winner: PlayerType): BattleSettlementPreview {
+    const turn = this.requireActiveTurn();
+    const loser = winner === PlayerType.PLAYER ? PlayerType.OPPONENT : PlayerType.PLAYER;
+    const winningCards = this.getStake(winner);
+    const losingCards = this.getStake(loser);
+    const publicIds = new Set(turn.publicCardIds);
+    return {
+      winner,
+      loser,
+      losingCards,
+      casualtyRevealCards: losingCards.filter(card => !publicIds.has(card.id)),
+      publicWinnerCards: winningCards.filter(card => publicIds.has(card.id)),
+      hiddenWinnerCardCount: winningCards.filter(card => !publicIds.has(card.id)).length
+    };
+  }
+
+  settleActiveTurn(winner: PlayerType): BattleSettlementPreview {
+    const preview = this.previewBattleSettlement(winner);
+    const winningCards = this.getStake(winner);
+
+    this.returnOwnedCards(winner, winningCards);
+    this.discardPile.update(cards => [...cards, ...preview.losingCards]);
     this.activeTurn.set(null);
+    this.canChallenge.set(false);
+    this.lastResult.set(winner === PlayerType.PLAYER ? 'player_wins' : 'opponent_wins');
+    this.gamePhase.set(GamePhase.NORMAL);
+
+    const loserDeckEmpty = preview.loser === PlayerType.PLAYER
+      ? this.playerDeck().isEmpty
+      : this.opponentDeck().isEmpty;
+    if (loserDeckEmpty) this.endGame(this.outcomeForWinner(winner));
+    this.assertCardConservation();
+    return preview;
+  }
+
+  settleAttrition(): GameOutcome {
+    const outcome = this.determineAttritionOutcome();
+    const attritionWinner = this.winnerForOutcome(outcome);
+    if (attritionWinner && this.activeTurn()) this.settleActiveTurn(attritionWinner);
+    this.endGame(outcome);
+    this.assertCardConservation();
+    return outcome;
+  }
+
+  determineAttritionOutcome(): GameOutcome {
+    const playerCanContinue = this.playerDeck().count >= 3;
+    const opponentCanContinue = this.opponentDeck().count >= 3;
+
+    if (playerCanContinue !== opponentCanContinue) {
+      return playerCanContinue ? GameOutcome.PLAYER_WIN : GameOutcome.OPPONENT_WIN;
+    }
+
+    if (this.playerDeck().count > this.opponentDeck().count) return GameOutcome.PLAYER_WIN;
+    if (this.opponentDeck().count > this.playerDeck().count) return GameOutcome.OPPONENT_WIN;
+    return GameOutcome.TIE;
+  }
+
+  endGame(explicitOutcome?: GameOutcome): void {
+    let gameOutcome = explicitOutcome;
+    if (!gameOutcome) {
+      if (this.playerDeck().isEmpty && !this.opponentDeck().isEmpty) {
+        gameOutcome = GameOutcome.OPPONENT_WIN;
+      } else if (this.opponentDeck().isEmpty && !this.playerDeck().isEmpty) {
+        gameOutcome = GameOutcome.PLAYER_WIN;
+      } else if (this.playerDeck().count > this.opponentDeck().count) {
+        gameOutcome = GameOutcome.PLAYER_WIN;
+      } else if (this.opponentDeck().count > this.playerDeck().count) {
+        gameOutcome = GameOutcome.OPPONENT_WIN;
+      } else {
+        gameOutcome = GameOutcome.TIE;
+      }
+    }
+    this.gamePhase.set(GamePhase.GAME_OVER);
+    const turn = this.activeTurn();
+    if (turn) this.activeTurn.set({ ...turn, phase: GamePhase.GAME_OVER });
+    this.outcome.set(gameOutcome);
+    this.winner.set(this.winnerForOutcome(gameOutcome));
     this.canChallenge.set(false);
   }
 
   checkGameEndConditions(): boolean {
-    // Check if either player is out of cards
-    if (this.playerCardCount() === 0 || this.opponentCardCount() === 0) {
+    if (this.playerDeck().isEmpty || this.opponentDeck().isEmpty) {
       this.endGame();
       return true;
     }
+    return this.gamePhase() === GamePhase.GAME_OVER;
+  }
 
-    // Check if either player can't complete a battle (needs 4 cards minimum)
-    if (this.gamePhase() === GamePhase.BATTLE) {
-      if (!this.playerDeck().hasMinimumForBattle || !this.opponentDeck().hasMinimumForBattle) {
-        this.endGame();
-        return true;
-      }
+  cardConservationReport(): CardConservationReport {
+    const cards = [
+      ...this.playerDeck().toArray(),
+      ...this.opponentDeck().toArray(),
+      ...this.discardPile(),
+      ...this.getStake(PlayerType.PLAYER),
+      ...this.getStake(PlayerType.OPPONENT)
+    ];
+    const counts = new Map<string, number>();
+    // A standard deck contains one card per suit/rank pair, so Card.id is a
+    // stable identity without introducing a second identity system.
+    for (const card of cards) counts.set(card.id, (counts.get(card.id) ?? 0) + 1);
+
+    const expectedIds = new Set(new Deck().toArray().map(card => card.id));
+    const duplicateIds = [...counts.entries()]
+      .filter(([, count]) => count > 1)
+      .map(([id]) => id);
+    const missingIds = [...expectedIds].filter(id => !counts.has(id));
+    return {
+      total: cards.length,
+      unique: counts.size,
+      duplicateIds,
+      missingIds,
+      valid: cards.length === 52 && counts.size === 52 && duplicateIds.length === 0 && missingIds.length === 0
+    };
+  }
+
+  assertCardConservation(): void {
+    const report = this.cardConservationReport();
+    if (!report.valid) {
+      throw new Error(
+        `Card conservation violated: total=${report.total}, unique=${report.unique}, ` +
+        `duplicates=${report.duplicateIds.join(',') || 'none'}, missing=${report.missingIds.join(',') || 'none'}`
+      );
     }
-
-    return false;
   }
 
   reset(): void {
     this.initializeGame();
+  }
+
+  private requireActiveTurn(): ActiveTurn {
+    const turn = this.activeTurn();
+    if (!turn) throw new Error('No active turn is on the table');
+    return turn;
+  }
+
+  private takeTopCard(owner: PlayerType): Card | null {
+    const source = owner === PlayerType.PLAYER ? this.playerDeck : this.opponentDeck;
+    const nextDeck = source().copy();
+    const card = nextDeck.draw();
+    source.set(nextDeck);
+    return card;
+  }
+
+  private takeTopCards(owner: PlayerType, count: number): Card[] {
+    const cards: Card[] = [];
+    for (let index = 0; index < count; index++) {
+      const card = this.takeTopCard(owner);
+      if (!card) throw new Error(`Unable to draw ${count} cards for ${owner}`);
+      cards.push(card);
+    }
+    return cards;
+  }
+
+  private returnOwnedCards(owner: PlayerType, cards: readonly Card[]): void {
+    const source = owner === PlayerType.PLAYER ? this.playerDeck : this.opponentDeck;
+    const nextDeck = source().copy();
+    nextDeck.addCards([...cards]);
+    source.set(nextDeck);
+  }
+
+  private outcomeForWinner(winner: PlayerType): GameOutcome {
+    return winner === PlayerType.PLAYER ? GameOutcome.PLAYER_WIN : GameOutcome.OPPONENT_WIN;
+  }
+
+  private winnerForOutcome(outcome: GameOutcome): PlayerType | null {
+    if (outcome === GameOutcome.PLAYER_WIN) return PlayerType.PLAYER;
+    if (outcome === GameOutcome.OPPONENT_WIN) return PlayerType.OPPONENT;
+    return null;
   }
 }
