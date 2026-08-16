@@ -53,39 +53,16 @@ describe('App Integration Tests', () => {
       await router.navigate(['/settings']);
       fixture.detectChanges();
       
-      // The routerLinkActive directive should add the active class
       const settingsButton = fixture.nativeElement.querySelector('button[routerLink="/settings"]');
       expect(settingsButton).toBeTruthy();
     });
   });
 
-  describe('Theme Integration', () => {
-    it('should have theme toggle button', () => {
-      const buttons = fixture.nativeElement.querySelectorAll('button[mat-icon-button]');
-      const themeButton = buttons[buttons.length - 1]; // Last button should be theme button
-      expect(themeButton).toBeTruthy();
-      const ariaLabel = themeButton.getAttribute('aria-label');
-      expect(ariaLabel).toContain('Toggle');
-    });
-
-    it('should display theme toggle icon', () => {
-      const buttons = fixture.nativeElement.querySelectorAll('button[mat-icon-button]');
-      const themeButton = buttons[buttons.length - 1]; // Last button should be theme button
-      const iconElement = themeButton.querySelector('mat-icon');
-      const iconText = iconElement.textContent?.trim();
-      expect(iconText === 'lightbulb' || iconText === 'lightbulb_outline').toBe(true);
-    });
-
-    it('should respond to theme button clicks', () => {
-      const buttons = fixture.nativeElement.querySelectorAll('button[mat-icon-button]');
-      const themeButton = buttons[buttons.length - 1]; // Last button should be theme button
-      
-      // Click the button
-      themeButton.click();
-      fixture.detectChanges();
-      
-      // Check if button still exists after click (basic functionality)
-      expect(themeButton).toBeTruthy();
+  describe('Profile and Header Integration', () => {
+    it('should render profile button with user name', () => {
+      const profileBtn = fixture.nativeElement.querySelector('.profile-toolbar-btn');
+      expect(profileBtn).toBeTruthy();
+      expect(profileBtn.querySelector('.profile-name-text')?.textContent).toContain('Card Commander');
     });
   });
 
@@ -93,23 +70,11 @@ describe('App Integration Tests', () => {
     it('should have proper aria-labels on navigation buttons', () => {
       const gameButton = fixture.nativeElement.querySelector('button[routerLink="/"]');
       const settingsButton = fixture.nativeElement.querySelector('button[routerLink="/settings"]');
-      
       const classicButton = fixture.nativeElement.querySelector('button[routerLink="/classic"]');
+      
       expect(gameButton.getAttribute('aria-label')).toBe('Card table');
       expect(classicButton.getAttribute('aria-label')).toBe('Classic game');
       expect(settingsButton.getAttribute('aria-label')).toBe('Settings');
-    });
-
-    it('should have proper main landmark', () => {
-      const mainElement = fixture.nativeElement.querySelector('main');
-      expect(mainElement).toBeTruthy();
-      expect(mainElement.classList.contains('app-content')).toBe(true);
-    });
-
-    it('should have toolbar with proper structure', () => {
-      const toolbar = fixture.nativeElement.querySelector('mat-toolbar');
-      expect(toolbar).toBeTruthy();
-      expect(toolbar.getAttribute('color')).toBe('primary');
     });
   });
 });

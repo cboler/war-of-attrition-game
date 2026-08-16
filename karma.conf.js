@@ -1,16 +1,23 @@
 // Karma configuration file, see link for more information
 // https://karma-runner.github.io/1.0/config/configuration-file.html
 
+if (process.platform === 'win32' && !process.env.CHROME_BIN) {
+  const fs = require('fs');
+  const winChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  if (fs.existsSync(winChrome)) {
+    process.env.CHROME_BIN = winChrome;
+  }
+}
+
 module.exports = function (config) {
   config.set({
     basePath: '',
-    frameworks: ['jasmine', '@angular-devkit/build-angular'],
+    frameworks: ['jasmine'],
     plugins: [
       require('karma-jasmine'),
       require('karma-chrome-launcher'),
       require('karma-jasmine-html-reporter'),
-      require('karma-coverage'),
-      require('@angular-devkit/build-angular/plugins/karma')
+      require('karma-coverage')
     ],
     client: {
       jasmine: {
@@ -33,16 +40,15 @@ module.exports = function (config) {
       ]
     },
     reporters: ['progress', 'kjhtml'],
-    browsers: ['ChromeHeadless'],
+    browsers: ['ChromeHeadlessCI'],
     customLaunchers: {
-      ChromeHeadless: {
+      ChromeHeadlessCI: {
         base: 'Chrome',
         flags: [
           '--no-sandbox',
           '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--headless',
           '--disable-gpu',
+          '--headless=new',
           '--remote-debugging-port=9222'
         ]
       }

@@ -10,16 +10,35 @@
       [quip]="opponentQuip()" />
 
     <div table-center class="playfield">
+      <!-- Achievement Unlocked Toast Banner -->
+      @if (achievements.latestUnlock(); as ach) {
+        <div class="achievement-toast" role="status" aria-live="polite" (click)="achievements.dismissToast()">
+          <mat-icon class="toast-icon">{{ ach.icon }}</mat-icon>
+          <div class="toast-content">
+            <span class="toast-eyebrow">ACHIEVEMENT UNLOCKED</span>
+            <strong class="toast-title">{{ ach.name }}</strong>
+            <small class="toast-desc">{{ ach.description }}</small>
+          </div>
+          <button type="button" class="toast-close" (click)="achievements.dismissToast()" aria-label="Dismiss achievement notification">×</button>
+        </div>
+      }
+
       <div class="table-tools" aria-label="Table controls">
         @if (settings.showTurnCounter()) {
           <span class="turn-mark">TURN {{ gameState.gameStats().turnNumber }}</span>
         }
-        <button type="button" (click)="toggleSound()" [attr.aria-pressed]="settings.soundEnabled()">
-          {{ settings.soundEnabled() ? 'Sound on' : 'Sound off' }}
+        <button type="button" class="tool-btn" (click)="toggleStoryBook()" aria-label="Open Story Book Journal">
+          <mat-icon class="tool-icon">auto_stories</mat-icon>
+          <span>Story</span>
         </button>
-        <a routerLink="/settings">Settings</a>
-        <a routerLink="/classic">Classic</a>
-        <button type="button" (click)="restart()">New game</button>
+        <button type="button" class="tool-btn" (click)="toggleSound()" [attr.aria-pressed]="settings.soundEnabled()" aria-label="Toggle sound">
+          <mat-icon class="tool-icon">{{ settings.soundEnabled() ? 'volume_up' : 'volume_off' }}</mat-icon>
+        </button>
+        <a routerLink="/settings" class="tool-btn" aria-label="Settings">
+          <mat-icon class="tool-icon">settings</mat-icon>
+        </a>
+        <a routerLink="/classic" class="tool-btn classic-link">Classic</a>
+        <button type="button" class="tool-btn new-game-btn" (click)="restart()">New</button>
       </div>
 
       <div class="announcement" aria-live="polite" aria-atomic="true">
@@ -30,6 +49,7 @@
       </div>
 
       <section class="stakes" [class.in-battle]="battleActive()" aria-label="Cards at stake">
+        <!-- Opponent Stake -->
         <div class="side-stake opponent-stake">
           <div class="battle-layers opponent-layers">
             @for (layer of controller.battleLayers(); track layer.round) {
@@ -46,13 +66,13 @@
                     [disabled]="!view.eligible"
                     [attr.aria-label]="view.eligible ? 'Select opponent Battle card ' + (index + 1) + ' from newest layer' : (view.faceDown ? 'Hidden opponent Battle card' : null)"
                     (click)="chooseTarget(view)">
+                    @if (view.eligible) {
+                      <span class="target-pointer pointer-down" aria-hidden="true">↓</span>
+                    }
                     <app-card
                       [card]="view.card"
                       [faceDown]="view.faceDown"
                       [glow]="view.eligible ? 'blue' : view.selected ? cardGlow(player.OPPONENT) : null" />
-                    @if (view.eligible) {
-                      <span class="target-pointer" aria-hidden="true">↑</span>
-                    }
                   </button>
                 }
               </div>
@@ -60,6 +80,9 @@
           </div>
 
           <div class="active-card-shell" [class.dealing]="controller.presentationState() === state.DRAWING" [class.clashing]="controller.presentationState() === state.CLASH_RESOLUTION" [class.returning]="controller.activeOpponentCard() && isReturning(controller.activeOpponentCard()!.id)" [class.to-boneyard]="controller.activeOpponentCard() && isGoingToBoneyard(controller.activeOpponentCard()!.id)">
+            @if (opponentThinking()) {
+              <span class="decision-callout opponent-callout">{{ controller.tableMessage() }}</span>
+            }
             @if (controller.activeOpponentCard(); as card) {
               <app-card [card]="card" [faceDown]="activeCardsFaceDown()" [glow]="cardGlow(player.OPPONENT)" />
             }
@@ -68,14 +91,12 @@
                 <app-card [card]="card" [faceDown]="challengeCardsFaceDown()" [glow]="cardGlow(player.OPPONENT)" />
               </div>
             }
-            @if (opponentThinking()) {
-              <span class="decision-callout opponent-callout">{{ controller.tableMessage() }}</span>
-            }
           </div>
         </div>
 
         <div class="clash-mark" aria-hidden="true"><span></span></div>
 
+        <!-- Player Stake -->
         <div class="side-stake player-stake">
           <div class="active-card-shell" [class.dealing]="controller.presentationState() === state.DRAWING" [class.clashing]="controller.presentationState() === state.CLASH_RESOLUTION" [class.returning]="controller.activePlayerCard() && isReturning(controller.activePlayerCard()!.id)" [class.to-boneyard]="controller.activePlayerCard() && isGoingToBoneyard(controller.activePlayerCard()!.id)">
             @if (controller.activePlayerCard(); as card) {
@@ -109,7 +130,7 @@
                     [class.to-boneyard]="isGoingToBoneyard(view.id)">
                     <app-card [card]="view.card" [faceDown]="view.faceDown" [glow]="view.selected ? cardGlow(player.PLAYER) : null" />
                     @if (controller.opponentPointerIndex() === index && controller.presentationState() === state.OPPONENT_TARGET_SELECTION && layer.round === newestBattleRound()) {
-                      <span class="target-pointer opponent-pointer" aria-hidden="true">↑</span>
+                      <span class="target-pointer pointer-up opponent-pointer" aria-hidden="true">↑</span>
                     }
                   </div>
                 }
@@ -119,14 +140,25 @@
         </div>
       </section>
 
+      <!-- Physical Boneyard Representation -->
       <button
         class="boneyard"
+        [class]="'boneyard ' + boneyardThicknessClass()"
         type="button"
         [class.has-cards]="controller.visibleBoneyardCount() > 0"
         [attr.aria-expanded]="boneyardOpen()"
         (click)="toggleBoneyard()">
         <span class="pile" aria-hidden="true">
-          <span></span><span></span>
+          @if (controller.visibleBoneyardCount() >= 15) {
+            <span class="fan-extra-two"></span>
+          }
+          @if (controller.visibleBoneyardCount() >= 5) {
+            <span class="fan-extra-one"></span>
+          }
+          @if (controller.visibleBoneyardCount() >= 2) {
+            <span class="fan-base-two"></span>
+            <span class="fan-base-one"></span>
+          }
           @if (controller.visibleBoneyardCards().at(-1); as topCard) {
             <app-card [card]="topCard" [faceDown]="false" />
           }
@@ -157,12 +189,50 @@
         </button>
       }
 
+      <!-- Game-Over Summary Card -->
       @if (controller.presentationState() === state.GAME_OVER) {
         <div class="game-over" role="region" aria-live="assertive" aria-atomic="true" aria-labelledby="game-over-title">
-          <span>THE TABLE IS QUIET</span>
+          <span class="game-over-eyebrow">WAR RESOLUTION</span>
           <h2 id="game-over-title">{{ controller.tableMessage() }}</h2>
-          <p>{{ gameState.gameStats().turnNumber }} {{ gameState.gameStats().turnNumber === 1 ? 'turn' : 'turns' }} · {{ controller.visibleBoneyardCount() }} cards in the Boneyard</p>
-          <button type="button" (click)="restart()">Deal again</button>
+          
+          @if (controller.currentGameSummary(); as summary) {
+            <div class="game-over-stats">
+              <div class="stat-pill">
+                <strong>{{ summary.turns }}</strong>
+                <span>{{ summary.turns === 1 ? 'Turn' : 'Turns' }}</span>
+              </div>
+              <div class="stat-pill">
+                <strong>{{ summary.battlesCount }}</strong>
+                <span>{{ summary.battlesCount === 1 ? 'Battle' : 'Battles' }}</span>
+              </div>
+              @if (summary.deepestBattleLayer > 1) {
+                <div class="stat-pill">
+                  <strong>Layer {{ summary.deepestBattleLayer }}</strong>
+                  <span>Deepest Battle</span>
+                </div>
+              }
+              @if (summary.playerChallengesCount > 0) {
+                <div class="stat-pill">
+                  <strong>{{ summary.playerChallengesWon }}/{{ summary.playerChallengesCount }}</strong>
+                  <span>Challenges Won</span>
+                </div>
+              }
+              @if (summary.isComeback) {
+                <div class="stat-pill highlight">
+                  <strong>Comeback</strong>
+                  <span>-{{ summary.maxDeficit }} Deficit</span>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="game-over-actions">
+            <button type="button" class="story-book-action" (click)="toggleStoryBook()">
+              <mat-icon>auto_stories</mat-icon>
+              <span>Story Book</span>
+            </button>
+            <button type="button" class="deal-again-action" (click)="restart()">Deal Again</button>
+          </div>
         </div>
       }
     </div>
@@ -174,7 +244,13 @@
       [cardCount]="gameState.playerCardCount()"
       [cardsAtRisk]="controller.playerCardsAtRisk()"
       [deckInteractive]="controller.canDraw()"
+      [deckHand]="settings.deckHand()"
       [quip]="playerQuip()"
       (deckActivated)="draw()" />
   </app-card-table>
+
+  <!-- Story Book Drawer -->
+  @if (storyBookOpen()) {
+    <app-story-book-drawer (closed)="toggleStoryBook()" />
+  }
 </div>

@@ -36,44 +36,94 @@ describe('AuthService', () => {
     expect(service.activeProfile().email).toBe('ace@example.com');
   });
 
-  it('should record game results accurately and calculate win rate %', () => {
+  it('should record game results accurately and calculate win rate % and streaks', () => {
     service.recordGameResult({
-      won: true,
+      outcome: 'player_win',
       turns: 25,
       durationMs: 45000,
-      challengesCount: 3,
+      playerChallengesCount: 3,
+      playerChallengesWon: 2,
       battlesCount: 1,
-      recursiveBattlesCount: 0,
-      discardedCardsCount: 38
+      deepestBattleLayer: 2,
+      playerCardsRemaining: 14,
+      largestBattleVictory: 8
     });
 
     let stats = service.userStats();
     expect(stats.gamesPlayed).toBe(1);
     expect(stats.gamesWon).toBe(1);
+    expect(stats.currentWinStreak).toBe(1);
+    expect(stats.bestWinStreak).toBe(1);
     expect(stats.winRatePercentage).toBe(100);
     expect(stats.totalTurns).toBe(25);
     expect(stats.totalChallenges).toBe(3);
+    expect(stats.successfulChallenges).toBe(2);
+    expect(stats.challengeSuccessRate).toBe(67);
     expect(stats.totalBattles).toBe(1);
-    expect(stats.cardsDiscarded).toBe(38);
+    expect(stats.highestCardsRemainingAtVictory).toBe(14);
 
-    // Record second game (loss)
+    // Record second game (win) -> streak should be 2
     service.recordGameResult({
-      won: false,
-      turns: 35,
-      durationMs: 55000,
-      challengesCount: 4,
-      battlesCount: 2,
-      recursiveBattlesCount: 1,
-      discardedCardsCount: 40
+      outcome: 'player_win',
+      turns: 15,
+      durationMs: 25000,
+      playerCardsRemaining: 1
     });
 
     stats = service.userStats();
     expect(stats.gamesPlayed).toBe(2);
-    expect(stats.gamesWon).toBe(1);
+    expect(stats.gamesWon).toBe(2);
+    expect(stats.currentWinStreak).toBe(2);
+    expect(stats.bestWinStreak).toBe(2);
+    expect(stats.winsWithOneCardRemaining).toBe(1);
+
+    // Record third game (loss) -> win streak resets to 0, bestWinStreak stays 2
+    service.recordGameResult({
+      outcome: 'opponent_win',
+      turns: 35,
+      durationMs: 55000,
+      playerChallengesCount: 4,
+      battlesCount: 2,
+      largestBattleLoss: 6
+    });
+
+    stats = service.userStats();
+    expect(stats.gamesPlayed).toBe(3);
+    expect(stats.gamesWon).toBe(2);
     expect(stats.gamesLost).toBe(1);
-    expect(stats.winRatePercentage).toBe(50);
-    expect(stats.averageTurnsPerGame).toBe(30);
-    expect(stats.totalChallenges).toBe(7);
+    expect(stats.currentWinStreak).toBe(0);
+    expect(stats.bestWinStreak).toBe(2);
+    expect(stats.winRatePercentage).toBe(67);
+  });
+
+  it('should handle game abandonment without resetting win streak or incrementing losses', () => {
+    // Win a game first
+    service.recordGameResult({
+      outcome: 'player_win',
+      turns: 20,
+      durationMs: 30000
+    });
+
+    expect(service.userStats().currentWinStreak).toBe(1);
+    expect(service.userStats().gamesLost).toBe(0);
+
+    // Abandon next game
+    service.recordGameAbandoned();
+
+    const stats = service.userStats();
+    expect(stats.gamesAbandoned).toBe(1);
+    expect(stats.gamesPlayed).toBe(1); // not incremented
+    expect(stats.gamesLost).toBe(0); // not a loss
+    expect(stats.currentWinStreak).toBe(1); // NOT reset!
+  });
+
+  it('should unlock achievements without duplicates', () => {
+    service.unlockAchievement('war.assassin');
+    expect(service.userStats().unlockedAchievements).toContain('war.assassin');
+
+    // Duplicate call
+    service.unlockAchievement('war.assassin');
+    expect(service.userStats().unlockedAchievements.length).toBe(1);
   });
 
   it('should sign out back to guest profile', () => {
@@ -86,7 +136,7 @@ describe('AuthService', () => {
   });
 
   it('should reset active user stats', () => {
-    service.recordGameResult({ won: true, turns: 20, durationMs: 30000 });
+    service.recordGameResult({ outcome: 'player_win', turns: 20, durationMs: 30000 });
     expect(service.userStats().gamesPlayed).toBe(1);
 
     service.resetActiveUserStats();

@@ -1,4 +1,4 @@
-import { GameStatistics } from './settings.model';
+import { DEFAULT_STATISTICS, GameStatistics } from './settings.model';
 
 export type AuthProvider = 'guest' | 'google';
 
@@ -21,20 +21,7 @@ export const DEFAULT_GUEST_PROFILE: UserProfile = {
   avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=Commander',
   provider: 'guest',
   isGoogleAuth: false,
-  statistics: {
-    gamesPlayed: 0,
-    gamesWon: 0,
-    gamesLost: 0,
-    totalTurns: 0,
-    averageTurnsPerGame: 0,
-    totalPlayTime: 0,
-    averageGameDuration: 0,
-    totalChallenges: 0,
-    totalBattles: 0,
-    recursiveBattles: 0,
-    cardsDiscarded: 0,
-    winRatePercentage: 0
-  },
+  statistics: { ...DEFAULT_STATISTICS },
   createdAt: new Date().toISOString(),
   lastLoginAt: new Date().toISOString()
 };

@@ -229,7 +229,6 @@ export class Game implements OnInit, OnDestroy {
     this.lastTurnNumber = 0;
     this.gameController.startNewGame();
     this.gameStartTime = Date.now();
-    this.settingsService.recordGameStart();
     this.updateGameState();
   }
 
@@ -386,12 +385,10 @@ export class Game implements OnInit, OnDestroy {
       this.victoryDialogShown = true;
       const gameDuration = this.gameStartTime ? Date.now() - this.gameStartTime : 30000;
       
-      this.settingsService.recordGameEnd(state.winner === 'player', stats.turnNumber, gameDuration);
       this.authService.recordGameResult({
-        won: state.winner === 'player',
+        outcome: state.winner === 'player' ? 'player_win' : 'opponent_win',
         turns: stats.turnNumber,
-        durationMs: gameDuration,
-        discardedCardsCount: stats.discardedCardCount
+        durationMs: gameDuration
       });
       
       this.gameStartTime = null;
