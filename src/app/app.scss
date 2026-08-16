@@ -20,43 +20,172 @@
     padding: 0 10px;
   }
 
-  span:first-child {
-    color: #e5c175;
-    font: 600 0.95rem/1 Georgia, serif;
-    letter-spacing: 0.18em;
+  .app-title-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .app-title-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    margin: -6px -10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    .app-title-text {
+      color: #e5c175;
+      font: 600 0.95rem/1 Georgia, serif;
+      letter-spacing: 0.18em;
+      transition: color 0.2s ease;
+    }
+
+    .restart-hint-icon {
+      font-size: 15px;
+      width: 15px;
+      height: 15px;
+      color: rgba(229, 193, 117, 0.5);
+      opacity: 0.7;
+      transition: all 0.2s ease;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(228, 191, 114, 0.25);
+
+      .app-title-text {
+        color: #ffd54f;
+      }
+
+      .restart-hint-icon {
+        color: #ffd54f;
+        opacity: 1;
+        transform: rotate(-30deg);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid #ffd54f;
+      outline-offset: 2px;
+    }
+  }
+
+  .restart-callout {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+    z-index: 1100;
+    width: 220px;
+    padding: 14px;
+    border: 1px solid rgba(228, 191, 114, 0.4);
+    border-radius: 12px;
+    background: rgba(13, 34, 28, 0.98);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(228, 191, 114, 0.15);
+    animation: callout-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 24px;
+      width: 10px;
+      height: 10px;
+      background: #0d221c;
+      border-left: 1px solid rgba(228, 191, 114, 0.4);
+      border-top: 1px solid rgba(228, 191, 114, 0.4);
+      transform: rotate(45deg);
+    }
+
+    .callout-header strong {
+      display: block;
+      color: #fff9ee;
+      font: 600 0.92rem/1.2 Georgia, serif;
+    }
+
+    .callout-desc {
+      margin: 4px 0 12px;
+      color: rgba(247, 240, 225, 0.72);
+      font-size: 0.72rem;
+      line-height: 1.3;
+    }
+
+    .callout-actions {
+      display: flex;
+      gap: 8px;
+
+      .callout-btn {
+        flex: 1;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font: 700 0.68rem/1 system-ui, sans-serif;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &.primary {
+          border: 1px solid #ffd54f;
+          background: #ffd54f;
+          color: #0c1815;
+
+          &:hover {
+            background: #ffe082;
+            box-shadow: 0 2px 8px rgba(255, 213, 79, 0.35);
+          }
+        }
+
+        &.secondary {
+          border: 1px solid rgba(247, 240, 225, 0.25);
+          background: transparent;
+          color: #f7f0e1;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+        }
+
+        &:focus-visible {
+          outline: 2px solid #ffd54f;
+          outline-offset: 1px;
+        }
+      }
+    }
+  }
+
+  @keyframes callout-pop {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  button.mat-mdc-icon-button {
+    color: rgba(247, 240, 225, 0.85);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    &.active {
+      color: #ffd54f;
+      background-color: rgba(229, 193, 117, 0.18);
+    }
   }
 }
 
 .toolbar-spacer {
   flex: 1 1 auto;
-}
-
-.nav-links {
-  display: flex;
-  gap: 8px;
-  margin-right: 12px;
-  
-  @media (max-width: 599px) {
-    display: none;
-  }
-  
-  button {
-    transition: all 0.2s ease;
-    min-height: 40px;
-    border-radius: 8px;
-    color: rgba(247, 240, 225, 0.7);
-    
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-    }
-    
-    &.active {
-      background-color: rgba(229, 193, 117, 0.18);
-      color: #ffd54f;
-      border: 1px solid rgba(229, 193, 117, 0.35);
-    }
-  }
 }
 
 .profile-toolbar-btn {

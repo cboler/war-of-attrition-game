@@ -12,9 +12,6 @@ class MockGameComponent { }
 @Component({ template: 'Settings Page' })
 class MockSettingsComponent { }
 
-@Component({ template: 'Classic Page' })
-class MockClassicComponent { }
-
 describe('App Integration Tests', () => {
   let fixture: ComponentFixture<App>;
   let router: Router;
@@ -26,7 +23,6 @@ describe('App Integration Tests', () => {
       providers: [
         provideRouter([
           { path: '', component: MockGameComponent },
-          { path: 'classic', component: MockClassicComponent },
           { path: 'settings', component: MockSettingsComponent }
         ])
       ]
@@ -58,44 +54,38 @@ describe('App Integration Tests', () => {
     });
   });
 
-  describe('Theme Integration', () => {
-    it('should have theme toggle button with proper aria-label', () => {
-      const themeButton = fixture.nativeElement.querySelector('button[aria-label*="theme"]');
-      expect(themeButton).toBeTruthy();
-      const ariaLabel = themeButton.getAttribute('aria-label');
-      expect(ariaLabel).toContain('Toggle');
-    });
-
-    it('should toggle theme and update icon on click', () => {
-      const themeButton = fixture.nativeElement.querySelector('button[aria-label*="theme"]');
-      expect(themeButton).toBeTruthy();
-      const initialIcon = themeButton.querySelector('mat-icon')?.textContent?.trim();
-
-      themeButton.click();
-      fixture.detectChanges();
-
-      const newIcon = themeButton.querySelector('mat-icon')?.textContent?.trim();
-      expect(newIcon).not.toBe(initialIcon);
-    });
-  });
-
   describe('Profile and Header Integration', () => {
     it('should render profile button with user name', () => {
       const profileBtn = fixture.nativeElement.querySelector('.profile-toolbar-btn');
       expect(profileBtn).toBeTruthy();
       expect(profileBtn.querySelector('.profile-name-text')?.textContent).toContain('Card Commander');
     });
-  });
 
-  describe('Accessibility Integration', () => {
-    it('should have proper aria-labels on navigation buttons', () => {
-      const gameButton = fixture.nativeElement.querySelector('button[routerLink="/"]');
+    it('should render settings button in toolbar', () => {
       const settingsButton = fixture.nativeElement.querySelector('button[routerLink="/settings"]');
-      const classicButton = fixture.nativeElement.querySelector('button[routerLink="/classic"]');
-      
-      expect(gameButton.getAttribute('aria-label')).toBe('Card table');
-      expect(classicButton.getAttribute('aria-label')).toBe('Classic game');
+      expect(settingsButton).toBeTruthy();
       expect(settingsButton.getAttribute('aria-label')).toBe('Settings');
+    });
+
+    it('should open and close restart game callout when clicking ATTRITION title', () => {
+      expect(fixture.nativeElement.querySelector('.restart-callout')).toBeNull();
+
+      const titleBtn = fixture.nativeElement.querySelector('.app-title-btn');
+      expect(titleBtn).toBeTruthy();
+
+      titleBtn.click();
+      fixture.detectChanges();
+
+      const callout = fixture.nativeElement.querySelector('.restart-callout');
+      expect(callout).toBeTruthy();
+      expect(callout.textContent).toContain('Start New Game?');
+
+      const cancelBtn = callout.querySelector('.callout-btn.secondary');
+      cancelBtn.click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.restart-callout')).toBeNull();
     });
   });
 });
+

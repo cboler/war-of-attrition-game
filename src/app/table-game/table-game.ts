@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { PlayerType } from '../core/models/game-state.model';
 import { GameStateService } from '../core/services/game-state.service';
@@ -20,7 +19,6 @@ import { StoryBookDrawerComponent } from '../shared/components/story-book-drawer
   selector: 'app-table-game',
   imports: [
     CommonModule,
-    RouterLink,
     MatIconModule,
     CardComponent,
     CardTableComponent,
@@ -103,10 +101,6 @@ export class TableGame implements OnInit {
     this.boneyardOpen.set(false);
     this.storyBookOpen.set(false);
     this.controller.startNewGame();
-  }
-
-  protected toggleSound(): void {
-    this.settings.setSoundEnabled(!this.settings.soundEnabled());
   }
 
   protected toggleBoneyard(): void {

@@ -13,9 +13,19 @@
         <!-- General Settings Tab -->
         <mat-tab label="General">
           <div class="tab-content">
-            <!-- Ergonomics / Handedness -->
+            <!-- Ergonomics & Appearance -->
             <div class="setting-section">
-              <h3>Ergonomics & Controls</h3>
+              <h3>Appearance & Controls</h3>
+              <mat-form-field appearance="outline">
+                <mat-label>Theme</mat-label>
+                <mat-select [value]="settingsService.theme()" 
+                           (selectionChange)="settingsService.setTheme($event.value)">
+                  <mat-option value="dark">Dark Theme (Default)</mat-option>
+                  <mat-option value="light">Light Theme</mat-option>
+                  <mat-option value="auto">Auto (System)</mat-option>
+                </mat-select>
+              </mat-form-field>
+
               <mat-form-field appearance="outline">
                 <mat-label>Deck Hand</mat-label>
                 <mat-select [value]="settingsService.deckHand()" 

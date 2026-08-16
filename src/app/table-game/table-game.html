@@ -9,7 +9,7 @@
       [thinking]="opponentThinking()"
       [quip]="opponentQuip()" />
 
-    <div table-center class="playfield">
+    <div table-center class="playfield" [class.hand-left]="settings.deckHand() === 'left'" [class.hand-right]="settings.deckHand() === 'right'">
       <!-- Achievement Unlocked Toast Banner -->
       @if (achievements.latestUnlock(); as ach) {
         <div class="achievement-toast" role="status" aria-live="polite" (click)="achievements.dismissToast()">
@@ -22,24 +22,6 @@
           <button type="button" class="toast-close" (click)="achievements.dismissToast()" aria-label="Dismiss achievement notification">×</button>
         </div>
       }
-
-      <div class="table-tools" aria-label="Table controls">
-        @if (settings.showTurnCounter()) {
-          <span class="turn-mark">TURN {{ gameState.gameStats().turnNumber }}</span>
-        }
-        <button type="button" class="tool-btn" (click)="toggleStoryBook()" aria-label="Open Story Book Journal">
-          <mat-icon class="tool-icon">auto_stories</mat-icon>
-          <span>Story</span>
-        </button>
-        <button type="button" class="tool-btn" (click)="toggleSound()" [attr.aria-pressed]="settings.soundEnabled()" aria-label="Toggle sound">
-          <mat-icon class="tool-icon">{{ settings.soundEnabled() ? 'volume_up' : 'volume_off' }}</mat-icon>
-        </button>
-        <a routerLink="/settings" class="tool-btn" aria-label="Settings">
-          <mat-icon class="tool-icon">settings</mat-icon>
-        </a>
-        <a routerLink="/classic" class="tool-btn classic-link">Classic</a>
-        <button type="button" class="tool-btn new-game-btn" (click)="restart()">New</button>
-      </div>
 
       <div class="announcement" aria-live="polite" aria-atomic="true">
         @if (battleActive()) {
@@ -110,10 +92,10 @@
             @if (controller.canChooseChallenge()) {
               <div class="decision-callout player-callout" role="group" aria-label="Challenge decision">
                 <strong>Send reinforcement?</strong>
-                <span>
-                  <button type="button" (click)="chooseChallenge(true)">Challenge</button>
-                  <button type="button" (click)="chooseChallenge(false)">Concede</button>
-                </span>
+                <div class="callout-actions">
+                  <button type="button" class="callout-btn primary" (click)="chooseChallenge(true)">Challenge</button>
+                  <button type="button" class="callout-btn secondary" (click)="chooseChallenge(false)">Concede</button>
+                </div>
               </div>
             }
           </div>
@@ -140,32 +122,54 @@
         </div>
       </section>
 
-      <!-- Physical Boneyard Representation -->
-      <button
-        class="boneyard"
-        [ngClass]="boneyardThicknessClass()"
-        type="button"
-        [class.has-cards]="controller.visibleBoneyardCount() > 0"
-        [attr.aria-expanded]="boneyardOpen()"
-        (click)="toggleBoneyard()">
-        <span class="pile" aria-hidden="true">
-          @if (controller.visibleBoneyardCount() >= 15) {
-            <span class="fan-extra-two"></span>
+      <!-- Colocated Story Book & Boneyard Utility Hub -->
+      <aside
+        class="table-utility-hub"
+        [class.hub-left]="settings.deckHand() === 'left'"
+        [class.hub-right]="settings.deckHand() === 'right'"
+        aria-label="Table records and boneyard">
+        
+        <button
+          type="button"
+          class="story-turn-btn"
+          (click)="toggleStoryBook()"
+          aria-label="Open Story Book Journal"
+          title="Story Book Journal">
+          <mat-icon>auto_stories</mat-icon>
+          @if (settings.showTurnCounter()) {
+            <span class="story-turn-label">Turn {{ gameState.gameStats().turnNumber }}</span>
+          } @else {
+            <span class="story-turn-label">Story</span>
           }
-          @if (controller.visibleBoneyardCount() >= 5) {
-            <span class="fan-extra-one"></span>
-          }
-          @if (controller.visibleBoneyardCount() >= 2) {
-            <span class="fan-base-two"></span>
-            <span class="fan-base-one"></span>
-          }
-          @if (controller.visibleBoneyardCards().at(-1); as topCard) {
-            <app-card [card]="topCard" [faceDown]="false" />
-          }
-        </span>
-        <strong>Boneyard</strong>
-        <small>{{ controller.visibleBoneyardCount() }} lost</small>
-      </button>
+        </button>
+
+        <button
+          class="boneyard"
+          [ngClass]="boneyardThicknessClass()"
+          type="button"
+          [class.has-cards]="controller.visibleBoneyardCount() > 0"
+          [attr.aria-expanded]="boneyardOpen()"
+          (click)="toggleBoneyard()"
+          aria-label="Open Boneyard casualty pile">
+          <span class="pile" aria-hidden="true">
+            @if (controller.visibleBoneyardCount() >= 15) {
+              <span class="fan-extra-two"></span>
+            }
+            @if (controller.visibleBoneyardCount() >= 5) {
+              <span class="fan-extra-one"></span>
+            }
+            @if (controller.visibleBoneyardCount() >= 2) {
+              <span class="fan-base-two"></span>
+              <span class="fan-base-one"></span>
+            }
+            @if (controller.visibleBoneyardCards().at(-1); as topCard) {
+              <app-card [card]="topCard" [faceDown]="false" />
+            }
+          </span>
+          <strong>Boneyard</strong>
+          <small>{{ controller.visibleBoneyardCount() }} lost</small>
+        </button>
+      </aside>
 
       @if (boneyardOpen()) {
         <aside class="boneyard-drawer" aria-label="Boneyard cards">
@@ -184,8 +188,9 @@
       }
 
       @if (controller.presentationCanAdvance()) {
-        <button class="advance" type="button" (click)="advancePresentation()">
-          Tap to advance <span aria-hidden="true">›</span>
+        <button class="advance-pill" type="button" (click)="advancePresentation()" aria-label="Tap to advance">
+          <span>Tap to advance</span>
+          <mat-icon class="advance-icon">chevron_right</mat-icon>
         </button>
       }
 
@@ -227,11 +232,14 @@
           }
 
           <div class="game-over-actions">
-            <button type="button" class="story-book-action" (click)="toggleStoryBook()">
+            <button type="button" class="game-over-btn secondary" (click)="toggleStoryBook()">
               <mat-icon>auto_stories</mat-icon>
               <span>Story Book</span>
             </button>
-            <button type="button" class="deal-again-action" (click)="restart()">Deal Again</button>
+            <button type="button" class="game-over-btn primary" (click)="restart()">
+              <mat-icon>refresh</mat-icon>
+              <span>Deal Again</span>
+            </button>
           </div>
         </div>
       }

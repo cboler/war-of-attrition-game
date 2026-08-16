@@ -5,16 +5,11 @@ const srcDir = path.join(__dirname, '../docs/browser');
 const destDir = path.join(__dirname, '../docs');
 
 if (fs.existsSync(srcDir)) {
-  const files = fs.readdirSync(srcDir);
-  for (const file of files) {
-    const oldPath = path.join(srcDir, file);
-    const newPath = path.join(destDir, file);
-    fs.renameSync(oldPath, newPath);
-  }
   try {
-    fs.rmdirSync(srcDir);
+    fs.cpSync(srcDir, destDir, { recursive: true });
+    fs.rmSync(srcDir, { recursive: true, force: true });
   } catch (e) {
-    console.warn('Could not remove browser directory:', e.message);
+    console.warn('Error syncing browser build files:', e.message);
   }
 }
 

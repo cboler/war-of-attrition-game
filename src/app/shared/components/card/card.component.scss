@@ -1,34 +1,28 @@
 :host {
   display: block;
-  width: var(--card-width, 72px);
-  height: var(--card-height, 104px);
+  width: var(--card-width, clamp(76px, 18vw, 120px));
+  height: var(--card-height, clamp(106px, 25.2vw, 168px));
 }
 
 .card {
+  container-type: inline-size;
   width: 100%;
   height: 100%;
-  border-radius: 10px;
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: clamp(7px, 8cqi, 12px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
   position: relative;
   background: #ffffff;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   user-select: none;
   perspective: 1000px;
   transform-style: preserve-3d;
-
-  @media (max-width: 599px) {
-    border-radius: 8px;
-  }
-
-  @media (max-width: 359px) {
-    border-radius: 6px;
-  }
+  box-sizing: border-box;
 
   &:hover {
     transform: translateY(-4px) rotateX(4deg);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   // Glow effects for game states
@@ -85,23 +79,19 @@
   height: 100%;
   background: linear-gradient(45deg, #1e3a8a 25%, #1d4ed8 25%, #1d4ed8 50%, #1e3a8a 50%, #1e3a8a 75%, #1d4ed8 75%);
   background-size: 10px 10px;
-  border-radius: 9px;
+  border-radius: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
-
-  @media (max-width: 599px) {
-    border-radius: 7px;
-  }
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.45);
 }
 
 .card-pattern {
-  width: 84%;
-  height: 84%;
-  border: 1px dashed rgba(255, 215, 0, 0.5);
+  width: 86%;
+  height: 86%;
+  border: 1px dashed rgba(255, 215, 0, 0.55);
   background-image: 
     radial-gradient(
       circle at 50% 50%,
@@ -109,20 +99,20 @@
       rgba(255, 255, 255, 0.08) 50%,
       transparent 100%
     );
-  border-radius: 5px;
+  border-radius: clamp(4px, 5cqi, 7px);
 }
 
 .card-face {
   width: 100%;
   height: 100%;
-  padding: 5px 6px;
+  padding: clamp(4px, 7cqi, 10px);
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   box-sizing: border-box;
   background: radial-gradient(circle at center, #ffffff 60%, #f8fafc 100%);
-  border-radius: 9px;
+  border-radius: inherit;
   overflow: hidden;
 
   // Glossy highlight reflection overlay
@@ -133,19 +123,9 @@
     left: 0;
     right: 0;
     height: 45%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, transparent 80%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, transparent 80%);
     pointer-events: none;
-    border-radius: 9px 9px 0 0;
-  }
-
-  @media (max-width: 599px) {
-    padding: 3px 4px;
-    border-radius: 7px;
-  }
-
-  @media (max-width: 359px) {
-    padding: 2px 3px;
-    border-radius: 5px;
+    border-radius: inherit;
   }
 }
 
@@ -154,32 +134,18 @@
   flex-direction: column;
   align-items: center;
   font-weight: 800;
-  font-size: 11px;
   line-height: 1;
 
-  @media (max-width: 599px) {
-    font-size: 9px;
-  }
-
-  @media (max-width: 359px) {
-    font-size: 8px;
-  }
-
   .rank {
+    font-size: clamp(11px, 17cqi, 22px);
     margin-bottom: 1px;
     letter-spacing: -0.5px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   .suit {
-    font-size: 9px;
-
-    @media (max-width: 599px) {
-      font-size: 7px;
-    }
-
-    @media (max-width: 359px) {
-      font-size: 6px;
-    }
+    font-size: clamp(9px, 13cqi, 18px);
+    line-height: 1;
   }
 }
 
@@ -203,28 +169,21 @@
 }
 
 .suit-symbol {
-  font-size: 26px;
+  font-size: clamp(24px, 38cqi, 54px);
   font-weight: bold;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
-
-  @media (max-width: 599px) {
-    font-size: 21px;
-  }
-
-  @media (max-width: 359px) {
-    font-size: 17px;
-  }
+  line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.18));
 }
 
 // Color styling for red and black cards
 .red-card {
-  .rank, .suit-symbol {
+  .rank, .suit, .suit-symbol {
     color: #dc2626;
   }
 }
 
 .black-card {
-  .rank, .suit-symbol {
+  .rank, .suit, .suit-symbol {
     color: #0f172a;
   }
 }
