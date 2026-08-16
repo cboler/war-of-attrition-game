@@ -62,86 +62,81 @@ For more information on using the Angular CLI, including detailed command refere
 
 ```mermaid
 flowchart TD
-    subgraph Setup ["Game Setup & Initialization"]
-        init["Start Game"] --> splitDeck["Split Deck by Color:<br/>Red (Player) & Black (Opponent)"]
-        splitDeck --> shuffle["Independent Deck Shuffling"]
-        shuffle --> startTurn["Player Clicks Deck to Begin Turn"]
-    end
+    START["Start War of Attrition"] --> SETUP["Split standard deck by color<br/>Player: Red · Opponent: Black"]
+    SETUP --> SHUFFLE["Shuffle both decks independently"]
+    SHUFFLE --> READY["Ready for next turn"]
 
-    subgraph DrawPhase ["Draw & Deck Check Phase"]
-        startTurn --> checkDraw{"Can both players draw a card?"}
-        checkDraw -- "No" --> checkDeckWinner{"Who has remaining cards?"}
-        checkDeckWinner -- "Player has cards" --> winGame["Player Wins Game!"]
-        checkDeckWinner -- "Opponent has cards" --> loseGame["Opponent Wins Game!"]
-        checkDraw -- "Yes" --> drawActive["Draw 1 Active Card Each & Increment Turn Count"]
-    end
+    READY --> CAN_DRAW{"Can both players draw?"}
+    CAN_DRAW -- No --> DRAW_END{"Compare remaining cards"}
+    DRAW_END -- Player has more --> PLAYER_GAME_WIN["Player wins the war"]
+    DRAW_END -- Opponent has more --> OPP_GAME_WIN["Opponent wins the war"]
+    DRAW_END -- Equal --> GAME_TIE["Game ends in a true tie"]
 
-    subgraph NormalComparison ["Card Comparison Phase"]
-        drawActive --> compareCards{"Compare Active Card Values<br/>(Ace beats K..3; 2 beats Ace)"}
-        
-        compareCards -- "Player 2 beats Opponent Ace (No Challenge)" --> resolveNormalWin["Player Wins Turn:<br/>Keep active card; Opponent card discarded"]
-        compareCards -- "Opponent 2 beats Player Ace (No Challenge)" --> resolveNormalLoss["Opponent Wins Turn:<br/>Opponent keeps active card; Player card discarded"]
-        compareCards -- "Player > Opponent (Standard)" --> oppChallengeChoice{"Opponent AI challenges?"}
-        compareCards -- "Opponent > Player (Standard)" --> playerChallengeChoice{"Player challenges?"}
-        compareCards -- "Values are Equal" --> battleCheck["Initiate Battle Check"]
-    end
+    CAN_DRAW -- Yes --> DRAW["Each player draws 1 active card<br/>Cards become table stakes"]
+    DRAW --> COMPARE{"Compare active cards"}
 
-    subgraph ChallengeBranch ["Challenge Phase"]
-        oppChallengeChoice -- "No (Decline)" --> resolveNormalWin["Player Wins Turn:<br/>Keep active card; Opponent card discarded"]
-        oppChallengeChoice -- "Yes (Challenge)" --> drawOppChallenge["Opponent draws 1 Challenge Card"]
-        drawOppChallenge --> compareOppChallenge{"Compare Opponent's Challenge Card<br/>vs. Player's Original Card"}
-        
-        compareOppChallenge -- "Opponent Wins" --> resolveOppChallengeWin["Opponent Wins Challenge:<br/>Opponent keeps both cards; Player card discarded"]
-        compareOppChallenge -- "Player Wins" --> resolveOppChallengeLoss["Opponent Loses Challenge:<br/>Player keeps original card; Opponent loses both cards"]
-        compareOppChallenge -- "Cards are Equal (Tie)" --> battleCheck
+    COMPARE -- "2 vs Ace" --> SPECIAL["2 defeats Ace<br/>No challenge"]
+    SPECIAL --> NORMAL_RESOLVE
 
-        playerChallengeChoice -- "No (Decline)" --> resolveNormalLoss["Opponent Wins Turn:<br/>Opponent keeps active card; Player card discarded"]
-        playerChallengeChoice -- "Yes (Challenge)" --> drawPlayerChallenge["Player draws 1 Challenge Card"]
-        drawPlayerChallenge --> comparePlayerChallenge{"Compare Player's Challenge Card<br/>vs. Opponent's Original Card"}
-        
-        comparePlayerChallenge -- "Player Wins" --> resolvePlayerChallengeWin["Player Wins Challenge:<br/>Player keeps both cards; Opponent card discarded"]
-        comparePlayerChallenge -- "Opponent Wins" --> resolvePlayerChallengeLoss["Player Loses Challenge:<br/>Opponent keeps original card; Player loses both cards"]
-        comparePlayerChallenge -- "Cards are Equal (Tie)" --> battleCheck
-    end
+    COMPARE -- Equal --> BATTLE_CHECK
+    COMPARE -- Player wins --> OPP_CHOICE{"Opponent sends reinforcement?"}
+    COMPARE -- Opponent wins --> PLAYER_CHOICE{"Player sends reinforcement?"}
 
-    subgraph BattleBranch ["Battle Phase (Ties & Recursive Battles)"]
-        battleCheck --> checkBattleDeck{"Does each player have<br/>at least 3 cards in deck?"}
-        checkBattleDeck -- "No (Insufficient cards)" --> attritionLoss["Attrition Loss!<br/>Player unable to battle loses game immediately"]
-        attritionLoss --> loseGame
-        
-        checkBattleDeck -- "Yes" --> placeBattleCards["Battle! Each player places 3 face-down cards.<br/>All active cards on field remain staked."]
-        placeBattleCards --> selectBattleCards["Select 1 face-down card from Opponent's 3 cards.<br/>AI selects 1 face-down card from Player's 3 cards."]
-        selectBattleCards --> compareBattleCards{"Compare Selected Battle Cards"}
-        
-        compareBattleCards -- "Player > Opponent" --> resolveBattleWin["Player Wins Battle:<br/>Player keeps all staked cards;<br/>All Opponent battle cards discarded"]
-        compareBattleCards -- "Opponent > Player" --> resolveBattleLoss["Opponent Wins Battle:<br/>Opponent keeps all staked cards;<br/>All Player battle cards discarded"]
-        compareBattleCards -- "Equal (Tie)" --> battleCheck
-    end
+    OPP_CHOICE -- No --> NORMAL_RESOLVE["Loser's card → Boneyard<br/>Winner's card → deck"]
+    PLAYER_CHOICE -- No --> NORMAL_RESOLVE
 
-    subgraph TurnResolution ["Turn Resolution & Loop"]
-        resolveNormalWin & resolveNormalLoss --> nextTurnPrompt["Turn Complete"]
-        resolveOppChallengeWin & resolveOppChallengeLoss --> nextTurnPrompt
-        resolvePlayerChallengeWin & resolvePlayerChallengeLoss --> nextTurnPrompt
-        resolveBattleWin & resolveBattleLoss --> nextTurnPrompt
-        nextTurnPrompt --> startTurn
-    end
+    OPP_CHOICE -- Yes --> OPP_REINFORCE["Opponent draws 1 reinforcement"]
+    PLAYER_CHOICE -- Yes --> PLAYER_REINFORCE["Player draws 1 reinforcement"]
 
-    subgraph GameOver ["Game Over"]
-        winGame --> playAgain{"Play Again?"}
-        loseGame --> playAgain
-        playAgain -- "Yes" --> init
-        playAgain -- "No" --> endApp["End Session"]
-    end
+    OPP_REINFORCE --> OPP_COMPARE{"Reinforcement vs<br/>original winning card"}
+    PLAYER_REINFORCE --> PLAYER_COMPARE{"Reinforcement vs<br/>original winning card"}
 
-    %% Styling
-    style init fill:#1e293b,color:#fff,stroke:#334155
-    style winGame fill:#15803d,color:#fff,stroke:#166534
-    style loseGame fill:#b91c1c,color:#fff,stroke:#991b1b
-    style attritionLoss fill:#991b1b,color:#fff,stroke:#7f1d1d
-    style compareCards fill:#d97706,color:#fff,stroke:#b45309
-    style compareOppChallenge fill:#2563eb,color:#fff,stroke:#1d4ed8
-    style comparePlayerChallenge fill:#2563eb,color:#fff,stroke:#1d4ed8
-    style compareBattleCards fill:#7c3aed,color:#fff,stroke:#6d28d9
+    OPP_COMPARE -- Challenger wins --> CHALLENGE_RESOLVE
+    OPP_COMPARE -- Original card wins --> CHALLENGE_RESOLVE
+    OPP_COMPARE -- Equal --> BATTLE_CHECK
+
+    PLAYER_COMPARE -- Challenger wins --> CHALLENGE_RESOLVE["Winner's owned stakes → deck<br/>Loser's owned stakes → Boneyard"]
+    PLAYER_COMPARE -- Original card wins --> CHALLENGE_RESOLVE
+    PLAYER_COMPARE -- Equal --> BATTLE_CHECK
+
+    NORMAL_RESOLVE --> READY
+    CHALLENGE_RESOLVE --> READY
+
+    BATTLE_CHECK{"Can BOTH players add<br/>3 new Battle cards?"}
+
+    BATTLE_CHECK -- Yes --> DEAL_BATTLE["Each player adds 3 NEW<br/>face-down cards to the stake"]
+    DEAL_BATTLE --> SELECT["Player blindly selects 1 of opponent's NEW cards<br/>Opponent blindly selects 1 of player's NEW cards"]
+    SELECT --> REVEAL["Reveal ONLY the 2 selected cards"]
+    REVEAL --> BATTLE_COMPARE{"Compare selected cards"}
+
+    BATTLE_COMPARE -- Player wins --> PLAYER_BATTLE_WIN
+    BATTLE_COMPARE -- Opponent wins --> OPP_BATTLE_WIN
+    BATTLE_COMPARE -- Equal --> RECURSE["Battle continues<br/>Previous layer remains staked and locked"]
+    RECURSE --> BATTLE_CHECK
+
+    BATTLE_CHECK -- No --> CAN_EITHER{"Can exactly one player<br/>add 3 cards?"}
+    CAN_EITHER -- Player only --> PLAYER_BATTLE_WIN
+    CAN_EITHER -- Opponent only --> OPP_BATTLE_WIN
+    CAN_EITHER -- Neither --> ATTRITION_COUNT{"Compare remaining<br/>deck counts"}
+    ATTRITION_COUNT -- Player has more --> PLAYER_BATTLE_WIN
+    ATTRITION_COUNT -- Opponent has more --> OPP_BATTLE_WIN
+    ATTRITION_COUNT -- Equal --> GAME_TIE
+
+    PLAYER_BATTLE_WIN["Player wins Battle"]
+    OPP_BATTLE_WIN["Opponent wins Battle"]
+
+    PLAYER_BATTLE_WIN --> PLAYER_PRIVACY["Return player's hidden stakes FACE-DOWN<br/>Reveal opponent's remaining hidden casualties"]
+    OPP_BATTLE_WIN --> OPP_PRIVACY["Return opponent's hidden stakes FACE-DOWN<br/>Reveal player's remaining hidden casualties"]
+
+    PLAYER_PRIVACY --> PLAYER_SETTLE["Opponent casualties → Boneyard<br/>Player stakes → deck"]
+    OPP_PRIVACY --> OPP_SETTLE["Player casualties → Boneyard<br/>Opponent stakes → deck"]
+
+    PLAYER_SETTLE --> READY
+    OPP_SETTLE --> READY
+
+    PLAYER_GAME_WIN --> END["Game Over"]
+    OPP_GAME_WIN --> END
+    GAME_TIE --> END
 ```
 
 ## Development Progress
