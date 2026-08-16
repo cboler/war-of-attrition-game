@@ -13,16 +13,15 @@
         <!-- General Settings Tab -->
         <mat-tab label="General">
           <div class="tab-content">
-            <!-- Theme Settings -->
+            <!-- Ergonomics / Handedness -->
             <div class="setting-section">
-              <h3>Appearance</h3>
+              <h3>Ergonomics & Controls</h3>
               <mat-form-field appearance="outline">
-                <mat-label>Theme</mat-label>
-                <mat-select [value]="settingsService.theme()" 
-                           (selectionChange)="settingsService.setTheme($event.value)">
-                  <mat-option value="light">Light</mat-option>
-                  <mat-option value="dark">Dark</mat-option>
-                  <mat-option value="auto">Auto (System)</mat-option>
+                <mat-label>Deck Hand</mat-label>
+                <mat-select [value]="settingsService.deckHand()" 
+                           (selectionChange)="settingsService.setDeckHand($event.value)">
+                  <mat-option value="right">Right-handed (Default)</mat-option>
+                  <mat-option value="left">Left-handed</mat-option>
                 </mat-select>
               </mat-form-field>
             </div>
@@ -139,18 +138,13 @@
                 </div>
                 
                 <div class="stat-item">
-                  <div class="stat-value">{{ userStats().totalTurns }}</div>
-                  <div class="stat-label">Total Turns</div>
+                  <div class="stat-value">{{ userStats().currentWinStreak || 0 }} / {{ userStats().bestWinStreak || 0 }}</div>
+                  <div class="stat-label">Streak (Cur / Best)</div>
                 </div>
 
                 <div class="stat-item">
-                  <div class="stat-value">{{ userStats().averageTurnsPerGame || 0 }}</div>
-                  <div class="stat-label">Avg Turns / Game</div>
-                </div>
-
-                <div class="stat-item">
-                  <div class="stat-value">{{ userStats().totalChallenges || 0 }}</div>
-                  <div class="stat-label">Challenges</div>
+                  <div class="stat-value">{{ userStats().gamesAbandoned || 0 }}</div>
+                  <div class="stat-label">Games Abandoned</div>
                 </div>
 
                 <div class="stat-item">
@@ -159,8 +153,23 @@
                 </div>
 
                 <div class="stat-item">
-                  <div class="stat-value">{{ userStats().cardsDiscarded || 0 }}</div>
-                  <div class="stat-label">Cards Discarded</div>
+                  <div class="stat-value">Layer {{ userStats().deepestRecursiveBattle || 1 }}</div>
+                  <div class="stat-label">Deepest Battle</div>
+                </div>
+
+                <div class="stat-item">
+                  <div class="stat-value">{{ userStats().successfulChallenges || 0 }} / {{ userStats().totalChallenges || 0 }}</div>
+                  <div class="stat-label">Challenges Won</div>
+                </div>
+
+                <div class="stat-item">
+                  <div class="stat-value">{{ userStats().acesDefeatedByTwo || 0 }}</div>
+                  <div class="stat-label">Aces Beaten by 2</div>
+                </div>
+
+                <div class="stat-item">
+                  <div class="stat-value">{{ userStats().comebackWins || 0 }}</div>
+                  <div class="stat-label">Comeback Wins</div>
                 </div>
               </div>
 
@@ -175,34 +184,11 @@
         </mat-tab>
 
         <!-- Advanced Tab -->
-        <mat-tab label="Advanced">
+        <mat-tab label="Reset">
           <div class="tab-content">
             <div class="setting-section">
-              <h3>Import/Export Settings</h3>
-              <p>Save your settings to a file or load settings from a previously saved file.</p>
-              
-              <div class="import-export-actions">
-                <button mat-raised-button (click)="onExportSettings()">
-                  <mat-icon>download</mat-icon>
-                  Export Settings
-                </button>
-                
-                <button mat-raised-button>
-                  <mat-icon>upload</mat-icon>
-                  Import Settings
-                  <input type="file" 
-                         accept=".json" 
-                         (change)="onImportSettings($event)" 
-                         style="position: absolute; left: -9999px;">
-                </button>
-              </div>
-            </div>
-
-            <mat-divider></mat-divider>
-
-            <div class="setting-section">
               <h3>Reset Settings</h3>
-              <p>Reset all settings to their default values. This action cannot be undone.</p>
+              <p>Reset all settings preferences to their default values. This action cannot be undone.</p>
               
               <button mat-raised-button color="warn" (click)="onResetSettings()">
                 <mat-icon>restore</mat-icon>

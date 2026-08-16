@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { Settings } from './settings';
 import { SettingsService } from '../core/services/settings.service';
 import { AuthService } from '../core/services/auth.service';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 
@@ -11,22 +11,29 @@ describe('SettingsComponent', () => {
   let component: Settings;
   let fixture: ComponentFixture<Settings>;
   let settingsService: SettingsService;
+  let authService: AuthService;
+  let dialogSpy: jasmine.SpyObj<MatDialog>;
 
   beforeEach(async () => {
+    dialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
+    dialogSpy.open.and.returnValue({
+      afterClosed: () => of(true)
+    } as any);
+
     await TestBed.configureTestingModule({
       imports: [Settings, NoopAnimationsModule],
       providers: [
         SettingsService,
         AuthService,
         provideRouter([]),
-        { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => ({ subscribe: (fn: any) => fn(true) }) }) } },
-        { provide: MatSnackBar, useValue: { open: () => {} } }
+        { provide: MatDialog, useValue: dialogSpy }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(Settings);
     component = fixture.componentInstance;
     settingsService = TestBed.inject(SettingsService);
+    authService = TestBed.inject(AuthService);
     fixture.detectChanges();
   });
 
@@ -44,12 +51,17 @@ describe('SettingsComponent', () => {
     expect(formatted).not.toBe('Never');
   });
 
-  it('should export settings as JSON file download', () => {
-    spyOn(settingsService, 'exportSettings').and.returnValue('{}');
-    spyOn(URL, 'createObjectURL').and.returnValue('blob:url');
-    spyOn(URL, 'revokeObjectURL');
+  it('should reset settings when confirmed', () => {
+    spyOn(settingsService, 'resetSettings');
+    component.onResetSettings();
+    expect(dialogSpy.open).toHaveBeenCalled();
+    expect(settingsService.resetSettings).toHaveBeenCalled();
+  });
 
-    component.onExportSettings();
-    expect(settingsService.exportSettings).toHaveBeenCalled();
+  it('should reset active profile stats when confirmed', () => {
+    spyOn(authService, 'resetActiveUserStats');
+    component.onResetStatistics();
+    expect(dialogSpy.open).toHaveBeenCalled();
+    expect(authService.resetActiveUserStats).toHaveBeenCalled();
   });
 });

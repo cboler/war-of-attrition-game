@@ -1,3 +1,5 @@
+import { UnlockedAchievement } from './achievement.model';
+
 export interface CardBackingOption {
   id: string;
   name: string;
@@ -7,62 +9,128 @@ export interface CardBackingOption {
 }
 
 export interface GameStatistics {
+  // Basic
   gamesPlayed: number;
   gamesWon: number;
   gamesLost: number;
+  gamesTied: number;
+  gamesAbandoned: number;
+  winRatePercentage: number;
+  currentWinStreak: number;
+  bestWinStreak: number;
+
+  // Game Length
   totalTurns: number;
   averageTurnsPerGame: number;
+  longestGameTurns: number;
+  shortestGameTurns: number;
   totalPlayTime: number; // in milliseconds
   averageGameDuration: number; // in milliseconds
-  totalChallenges?: number;
-  totalBattles?: number;
-  recursiveBattles?: number;
+
+  // Battles
+  totalBattles: number;
+  mostBattlesInGame: number;
+  deepestRecursiveBattle: number;
+  mostCardsAtStake: number;
+  mostCardsLostInBattle: number;
+  mostOpponentCardsDefeatedInBattle: number;
+
+  // Challenges
+  totalChallenges: number;
+  successfulChallenges: number;
+  challengeSuccessRate: number;
+  mostChallengesInGame: number;
+  mostSuccessfulChallengesInGame: number;
+
+  // Memorable Card Events
+  acesDefeatedByTwo: number;
+  twosSavedByChallenge: number;
+  acesLostInBattles: number;
+  aceAndTwoLostInSameBattle: number;
+
+  // Victory Quality
+  highestCardsRemainingAtVictory: number;
+  lowestCardsRemainingAtVictory: number;
+  winsWithOneCardRemaining: number;
+  comebackWins: number;
+  largestComebackDeficit: number;
+
+  // Achievements & Metadata
+  unlockedAchievements: readonly string[];
+  unlockedAchievementDetails?: readonly UnlockedAchievement[];
   cardsDiscarded?: number;
-  winRatePercentage?: number;
+  recursiveBattles?: number;
   lastPlayed?: Date | string;
 }
 
 export interface AppSettings {
-  // Theme and appearance
+  // Appearance
   theme: 'light' | 'dark' | 'auto';
-  
+
+  // Handedness / thumb ergonomics
+  deckHand: 'right' | 'left';
+
   // Card customization
   selectedCardBacking: string; // ID of the selected backing
-  
+
   // Game preferences
   animationSpeed: 'slow' | 'normal' | 'fast';
   soundEnabled: boolean;
   showTurnCounter: boolean;
-  
-  // Statistics
-  statistics: GameStatistics;
-  
+
   // Advanced settings
   confirmChallenges: boolean;
   autoPlayAnimations: boolean;
   showCardDetails: boolean;
 }
 
+export const DEFAULT_STATISTICS: GameStatistics = {
+  gamesPlayed: 0,
+  gamesWon: 0,
+  gamesLost: 0,
+  gamesTied: 0,
+  gamesAbandoned: 0,
+  winRatePercentage: 0,
+  currentWinStreak: 0,
+  bestWinStreak: 0,
+  totalTurns: 0,
+  averageTurnsPerGame: 0,
+  longestGameTurns: 0,
+  shortestGameTurns: 0,
+  totalPlayTime: 0,
+  averageGameDuration: 0,
+  totalBattles: 0,
+  mostBattlesInGame: 0,
+  deepestRecursiveBattle: 0,
+  mostCardsAtStake: 0,
+  mostCardsLostInBattle: 0,
+  mostOpponentCardsDefeatedInBattle: 0,
+  totalChallenges: 0,
+  successfulChallenges: 0,
+  challengeSuccessRate: 0,
+  mostChallengesInGame: 0,
+  mostSuccessfulChallengesInGame: 0,
+  acesDefeatedByTwo: 0,
+  twosSavedByChallenge: 0,
+  acesLostInBattles: 0,
+  aceAndTwoLostInSameBattle: 0,
+  highestCardsRemainingAtVictory: 0,
+  lowestCardsRemainingAtVictory: 0,
+  winsWithOneCardRemaining: 0,
+  comebackWins: 0,
+  largestComebackDeficit: 0,
+  unlockedAchievements: [],
+  cardsDiscarded: 0,
+  recursiveBattles: 0
+};
+
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'auto',
+  deckHand: 'right',
   selectedCardBacking: 'classic-blue',
   animationSpeed: 'normal',
   soundEnabled: true,
   showTurnCounter: true,
-  statistics: {
-    gamesPlayed: 0,
-    gamesWon: 0,
-    gamesLost: 0,
-    totalTurns: 0,
-    averageTurnsPerGame: 0,
-    totalPlayTime: 0,
-    averageGameDuration: 0,
-    totalChallenges: 0,
-    totalBattles: 0,
-    recursiveBattles: 0,
-    cardsDiscarded: 0,
-    winRatePercentage: 0
-  },
   confirmChallenges: false,
   autoPlayAnimations: true,
   showCardDetails: true

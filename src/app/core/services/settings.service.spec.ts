@@ -4,11 +4,8 @@ import { DEFAULT_SETTINGS, CARD_BACKING_OPTIONS } from '../models/settings.model
 
 describe('SettingsService', () => {
   let service: SettingsService;
-  let localStorageSpy: jasmine.Spy;
 
   beforeEach(() => {
-    // Mock localStorage
-    localStorageSpy = jasmine.createSpy('localStorage');
     spyOn(localStorage, 'getItem').and.returnValue(null);
     spyOn(localStorage, 'setItem');
 
@@ -22,10 +19,12 @@ describe('SettingsService', () => {
 
   it('should initialize with default settings', () => {
     expect(service.currentSettings()).toEqual(DEFAULT_SETTINGS);
+    expect(service.theme()).toBe('auto');
+    expect(service.deckHand()).toBe('right');
   });
 
   describe('Theme management', () => {
-    it('should update theme', () => {
+    it('should update theme to dark', () => {
       service.setTheme('dark');
       expect(service.theme()).toBe('dark');
     });
@@ -34,10 +33,22 @@ describe('SettingsService', () => {
       service.setTheme('light');
       expect(service.theme()).toBe('light');
     });
+  });
 
-    it('should update theme to auto', () => {
-      service.setTheme('auto');
-      expect(service.theme()).toBe('auto');
+  describe('Handedness management', () => {
+    it('should default to right-handed', () => {
+      expect(service.deckHand()).toBe('right');
+    });
+
+    it('should update deck hand to left', () => {
+      service.setDeckHand('left');
+      expect(service.deckHand()).toBe('left');
+    });
+
+    it('should update deck hand to right', () => {
+      service.setDeckHand('left');
+      service.setDeckHand('right');
+      expect(service.deckHand()).toBe('right');
     });
   });
 
@@ -98,124 +109,38 @@ describe('SettingsService', () => {
     });
   });
 
-  describe('Statistics management', () => {
-    it('should record game start', () => {
-      const initialGamesPlayed = service.statistics().gamesPlayed;
-      service.recordGameStart();
-      expect(service.statistics().gamesPlayed).toBe(initialGamesPlayed + 1);
-      expect(service.statistics().lastPlayed).toBeInstanceOf(Date);
-    });
-
-    it('should record game win', () => {
-      const turns = 10;
-      const duration = 60000; // 1 minute
-      
-      service.recordGameEnd(true, turns, duration);
-      
-      const stats = service.statistics();
-      expect(stats.gamesWon).toBe(1);
-      expect(stats.gamesLost).toBe(0);
-      expect(stats.totalTurns).toBe(turns);
-      expect(stats.totalPlayTime).toBe(duration);
-    });
-
-    it('should record game loss', () => {
-      const turns = 15;
-      const duration = 90000; // 1.5 minutes
-      
-      service.recordGameEnd(false, turns, duration);
-      
-      const stats = service.statistics();
-      expect(stats.gamesWon).toBe(0);
-      expect(stats.gamesLost).toBe(1);
-      expect(stats.totalTurns).toBe(turns);
-      expect(stats.totalPlayTime).toBe(duration);
-    });
-
-    it('should calculate averages correctly', () => {
-      // Simulate 2 games
-      service.recordGameStart();
-      service.recordGameEnd(true, 10, 60000);
-      service.recordGameStart();
-      service.recordGameEnd(false, 20, 120000);
-      
-      const stats = service.statistics();
-      expect(stats.gamesPlayed).toBe(2);
-      expect(stats.averageTurnsPerGame).toBe(15); // (10 + 20) / 2
-      expect(stats.averageGameDuration).toBe(90000); // (60000 + 120000) / 2
-    });
-
-    it('should reset statistics', () => {
-      // Set some statistics first
-      service.recordGameStart();
-      service.recordGameEnd(true, 10, 60000);
-      
-      service.resetStatistics();
-      
-      const stats = service.statistics();
-      expect(stats.gamesPlayed).toBe(0);
-      expect(stats.gamesWon).toBe(0);
-      expect(stats.gamesLost).toBe(0);
-      expect(stats.totalTurns).toBe(0);
-      expect(stats.totalPlayTime).toBe(0);
-    });
-  });
-
   describe('Settings management', () => {
     it('should update partial settings', () => {
-      service.updateSettings({ 
-        theme: 'dark', 
-        soundEnabled: false 
+      service.updateSettings({
+        theme: 'dark',
+        deckHand: 'left',
+        soundEnabled: false
       });
-      
+
       expect(service.theme()).toBe('dark');
+      expect(service.deckHand()).toBe('left');
       expect(service.soundEnabled()).toBe(false);
-      // Other settings should remain unchanged
       expect(service.selectedCardBacking()).toBe(DEFAULT_SETTINGS.selectedCardBacking);
     });
 
     it('should reset all settings', () => {
-      // Change some settings first
       service.setTheme('dark');
+      service.setDeckHand('left');
       service.setSoundEnabled(false);
       service.setCardBacking('classic-red');
-      
+
       service.resetSettings();
-      
+
       expect(service.currentSettings()).toEqual(DEFAULT_SETTINGS);
     });
-  });
 
-  describe('Import/Export functionality', () => {
-    it('should export settings as JSON string', () => {
-      const exported = service.exportSettings();
-      const parsed = JSON.parse(exported);
-      expect(parsed).toEqual(service.currentSettings());
-    });
-
-    it('should import valid settings', () => {
-      const customSettings = {
-        theme: 'dark' as const,
-        selectedCardBacking: 'classic-red',
-        soundEnabled: false
-      };
-      
-      const result = service.importSettings(JSON.stringify(customSettings));
-      
-      expect(result).toBe(true);
-      expect(service.theme()).toBe('dark');
-      expect(service.selectedCardBacking()).toBe('classic-red');
-      expect(service.soundEnabled()).toBe(false);
-    });
-
-    it('should reject invalid JSON', () => {
-      const result = service.importSettings('invalid json');
-      expect(result).toBe(false);
-    });
-
-    it('should reject non-object data', () => {
-      const result = service.importSettings('"just a string"');
-      expect(result).toBe(false);
+    it('should have export/import and redundant statistics removed from SettingsService', () => {
+      const anyService = service as any;
+      expect(anyService.exportSettings).toBeUndefined();
+      expect(anyService.importSettings).toBeUndefined();
+      expect(anyService.statistics).toBeUndefined();
+      expect(anyService.updateStatistics).toBeUndefined();
+      expect(anyService.resetStatistics).toBeUndefined();
     });
   });
 });

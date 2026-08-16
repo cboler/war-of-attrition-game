@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { UserProfile, DEFAULT_GUEST_PROFILE } from '../models/user-profile.model';
-import { GameStatistics } from '../models/settings.model';
+import { GameStatistics, DEFAULT_STATISTICS } from '../models/settings.model';
 import { environment } from '../../../environments/environment';
 
 const STORAGE_KEY_ACTIVE_PROFILE = 'war-of-attrition-active-profile-id';
@@ -142,11 +142,17 @@ export class AuthService {
       let profiles: UserProfile[] = [];
 
       if (savedProfilesJson) {
-        profiles = JSON.parse(savedProfilesJson);
+        const parsed = JSON.parse(savedProfilesJson);
+        if (Array.isArray(parsed)) {
+          profiles = parsed.map(p => ({
+            ...p,
+            statistics: { ...DEFAULT_STATISTICS, ...(p.statistics || {}) }
+          }));
+        }
       }
 
       if (!profiles || profiles.length === 0) {
-        profiles = [{ ...DEFAULT_GUEST_PROFILE }];
+        profiles = [{ ...DEFAULT_GUEST_PROFILE, statistics: { ...DEFAULT_STATISTICS } }];
       }
 
       this.profilesSignal.set(profiles);
@@ -213,20 +219,7 @@ export class AuthService {
         avatarUrl: googleData.avatarUrl || 'https://lh3.googleusercontent.com/a/default-user',
         provider: 'google',
         isGoogleAuth: true,
-        statistics: {
-          gamesPlayed: 0,
-          gamesWon: 0,
-          gamesLost: 0,
-          totalTurns: 0,
-          averageTurnsPerGame: 0,
-          totalPlayTime: 0,
-          averageGameDuration: 0,
-          totalChallenges: 0,
-          totalBattles: 0,
-          recursiveBattles: 0,
-          cardsDiscarded: 0,
-          winRatePercentage: 0
-        },
+        statistics: { ...DEFAULT_STATISTICS },
         createdAt: now,
         lastLoginAt: now
       };
@@ -261,49 +254,127 @@ export class AuthService {
    * Record game results into active user profile statistics
    */
   recordGameResult(params: {
-    won: boolean;
+    outcome: 'player_win' | 'opponent_win' | 'tie';
     turns: number;
     durationMs: number;
-    challengesCount?: number;
+    playerCardsRemaining?: number;
+    opponentCardsRemaining?: number;
     battlesCount?: number;
-    recursiveBattlesCount?: number;
-    discardedCardsCount?: number;
+    deepestBattleLayer?: number;
+    maxCardsAtStake?: number;
+    largestBattleLoss?: number;
+    largestBattleVictory?: number;
+    playerChallengesCount?: number;
+    playerChallengesWon?: number;
+    acesDefeatedByTwo?: number;
+    twosSavedByChallenge?: number;
+    acesLostInBattles?: number;
+    aceAndTwoLostInSameBattle?: number;
+    maxDeficitExperienced?: number;
+    isComeback?: boolean;
   }): GameStatistics {
     const currentProfile = this.activeProfile();
-    const oldStats = currentProfile.statistics || {
-      gamesPlayed: 0, gamesWon: 0, gamesLost: 0, totalTurns: 0,
-      averageTurnsPerGame: 0, totalPlayTime: 0, averageGameDuration: 0,
-      totalChallenges: 0, totalBattles: 0, recursiveBattles: 0,
-      cardsDiscarded: 0, winRatePercentage: 0
-    };
+    const oldStats: GameStatistics = { ...DEFAULT_STATISTICS, ...(currentProfile.statistics || {}) };
+
+    const isWin = params.outcome === 'player_win';
+    const isLoss = params.outcome === 'opponent_win';
+    const isTie = params.outcome === 'tie';
 
     const newGamesPlayed = oldStats.gamesPlayed + 1;
-    const newGamesWon = oldStats.gamesWon + (params.won ? 1 : 0);
-    const newGamesLost = oldStats.gamesLost + (params.won ? 0 : 1);
+    const newGamesWon = oldStats.gamesWon + (isWin ? 1 : 0);
+    const newGamesLost = oldStats.gamesLost + (isLoss ? 1 : 0);
+    const newGamesTied = oldStats.gamesTied + (isTie ? 1 : 0);
     const newTotalTurns = oldStats.totalTurns + params.turns;
     const newTotalPlayTime = oldStats.totalPlayTime + params.durationMs;
-    const newTotalChallenges = (oldStats.totalChallenges || 0) + (params.challengesCount || 0);
-    const newTotalBattles = (oldStats.totalBattles || 0) + (params.battlesCount || 0);
-    const newRecursiveBattles = (oldStats.recursiveBattles || 0) + (params.recursiveBattlesCount || 0);
-    const newCardsDiscarded = (oldStats.cardsDiscarded || 0) + (params.discardedCardsCount || 0);
+
+    const newWinStreak = isWin ? (oldStats.currentWinStreak || 0) + 1 : (isLoss ? 0 : oldStats.currentWinStreak);
+    const newBestWinStreak = Math.max(oldStats.bestWinStreak || 0, newWinStreak);
 
     const newAvgTurns = Math.round((newTotalTurns / newGamesPlayed) * 10) / 10;
     const newAvgDuration = Math.round(newTotalPlayTime / newGamesPlayed);
     const newWinRate = Math.round((newGamesWon / newGamesPlayed) * 100);
 
+    const newLongestGame = oldStats.longestGameTurns === 0
+      ? params.turns
+      : Math.max(oldStats.longestGameTurns, params.turns);
+    const newShortestGame = oldStats.shortestGameTurns === 0
+      ? params.turns
+      : Math.min(oldStats.shortestGameTurns, params.turns);
+
+    // Battles
+    const newTotalBattles = (oldStats.totalBattles || 0) + (params.battlesCount || 0);
+    const newMostBattlesInGame = Math.max(oldStats.mostBattlesInGame || 0, params.battlesCount || 0);
+    const newDeepestBattle = Math.max(oldStats.deepestRecursiveBattle || 0, params.deepestBattleLayer || 0);
+    const newMostCardsAtStake = Math.max(oldStats.mostCardsAtStake || 0, params.maxCardsAtStake || 0);
+    const newMostCardsLost = Math.max(oldStats.mostCardsLostInBattle || 0, params.largestBattleLoss || 0);
+    const newMostCardsDefeated = Math.max(oldStats.mostOpponentCardsDefeatedInBattle || 0, params.largestBattleVictory || 0);
+
+    // Challenges
+    const newTotalChallenges = (oldStats.totalChallenges || 0) + (params.playerChallengesCount || 0);
+    const newSuccessfulChallenges = (oldStats.successfulChallenges || 0) + (params.playerChallengesWon || 0);
+    const newChallengeRate = newTotalChallenges > 0 ? Math.round((newSuccessfulChallenges / newTotalChallenges) * 100) : 0;
+    const newMostChallengesInGame = Math.max(oldStats.mostChallengesInGame || 0, params.playerChallengesCount || 0);
+    const newMostSuccessfulChallengesInGame = Math.max(oldStats.mostSuccessfulChallengesInGame || 0, params.playerChallengesWon || 0);
+
+    // Memorable events
+    const newAcesDefeatedByTwo = (oldStats.acesDefeatedByTwo || 0) + (params.acesDefeatedByTwo || 0);
+    const newTwosSaved = (oldStats.twosSavedByChallenge || 0) + (params.twosSavedByChallenge || 0);
+    const newAcesLost = (oldStats.acesLostInBattles || 0) + (params.acesLostInBattles || 0);
+    const newAceAndTwoLost = (oldStats.aceAndTwoLostInSameBattle || 0) + (params.aceAndTwoLostInSameBattle || 0);
+
+    // Victory quality
+    const cardsRemaining = params.playerCardsRemaining ?? 0;
+    let newHighestRemaining = oldStats.highestCardsRemainingAtVictory || 0;
+    let newLowestRemaining = oldStats.lowestCardsRemainingAtVictory || 0;
+    let newOneCardWins = oldStats.winsWithOneCardRemaining || 0;
+    let newComebackWins = oldStats.comebackWins || 0;
+    let newLargestComeback = oldStats.largestComebackDeficit || 0;
+
+    if (isWin) {
+      newHighestRemaining = Math.max(newHighestRemaining, cardsRemaining);
+      newLowestRemaining = newLowestRemaining === 0 ? cardsRemaining : Math.min(newLowestRemaining, cardsRemaining);
+      if (cardsRemaining === 1) newOneCardWins++;
+      if (params.isComeback) {
+        newComebackWins++;
+        newLargestComeback = Math.max(newLargestComeback, params.maxDeficitExperienced || 0);
+      }
+    }
+
     const updatedStats: GameStatistics = {
+      ...oldStats,
       gamesPlayed: newGamesPlayed,
       gamesWon: newGamesWon,
       gamesLost: newGamesLost,
+      gamesTied: newGamesTied,
+      winRatePercentage: newWinRate,
+      currentWinStreak: newWinStreak,
+      bestWinStreak: newBestWinStreak,
       totalTurns: newTotalTurns,
       averageTurnsPerGame: newAvgTurns,
+      longestGameTurns: newLongestGame,
+      shortestGameTurns: newShortestGame,
       totalPlayTime: newTotalPlayTime,
       averageGameDuration: newAvgDuration,
-      totalChallenges: newTotalChallenges,
       totalBattles: newTotalBattles,
-      recursiveBattles: newRecursiveBattles,
-      cardsDiscarded: newCardsDiscarded,
-      winRatePercentage: newWinRate,
+      mostBattlesInGame: newMostBattlesInGame,
+      deepestRecursiveBattle: newDeepestBattle,
+      mostCardsAtStake: newMostCardsAtStake,
+      mostCardsLostInBattle: newMostCardsLost,
+      mostOpponentCardsDefeatedInBattle: newMostCardsDefeated,
+      totalChallenges: newTotalChallenges,
+      successfulChallenges: newSuccessfulChallenges,
+      challengeSuccessRate: newChallengeRate,
+      mostChallengesInGame: newMostChallengesInGame,
+      mostSuccessfulChallengesInGame: newMostSuccessfulChallengesInGame,
+      acesDefeatedByTwo: newAcesDefeatedByTwo,
+      twosSavedByChallenge: newTwosSaved,
+      acesLostInBattles: newAcesLost,
+      aceAndTwoLostInSameBattle: newAceAndTwoLost,
+      highestCardsRemainingAtVictory: newHighestRemaining,
+      lowestCardsRemainingAtVictory: newLowestRemaining,
+      winsWithOneCardRemaining: newOneCardWins,
+      comebackWins: newComebackWins,
+      largestComebackDeficit: newLargestComeback,
       lastPlayed: new Date().toISOString()
     };
 
@@ -320,28 +391,70 @@ export class AuthService {
   }
 
   /**
-   * Reset active user statistics
+   * Record an abandoned game without resetting win streak or adding to losses.
    */
-  resetActiveUserStats(): void {
+  recordGameAbandoned(): GameStatistics {
     const currentProfile = this.activeProfile();
-    const resetStats: GameStatistics = {
-      gamesPlayed: 0,
-      gamesWon: 0,
-      gamesLost: 0,
-      totalTurns: 0,
-      averageTurnsPerGame: 0,
-      totalPlayTime: 0,
-      averageGameDuration: 0,
-      totalChallenges: 0,
-      totalBattles: 0,
-      recursiveBattles: 0,
-      cardsDiscarded: 0,
-      winRatePercentage: 0
+    const oldStats: GameStatistics = { ...DEFAULT_STATISTICS, ...(currentProfile.statistics || {}) };
+
+    const updatedStats: GameStatistics = {
+      ...oldStats,
+      gamesAbandoned: (oldStats.gamesAbandoned || 0) + 1,
+      lastPlayed: new Date().toISOString()
     };
 
     const updatedProfile: UserProfile = {
       ...currentProfile,
-      statistics: resetStats
+      statistics: updatedStats
+    };
+
+    const profiles = this.profilesSignal().map(p => p.id === updatedProfile.id ? updatedProfile : p);
+    this.profilesSignal.set(profiles);
+    this.persistProfiles();
+
+    return updatedStats;
+  }
+
+  /**
+   * Unlock an achievement for the active profile
+   */
+  unlockAchievement(achievementId: string): void {
+    const currentProfile = this.activeProfile();
+    const stats = currentProfile.statistics || { ...DEFAULT_STATISTICS };
+    const currentUnlocked = stats.unlockedAchievements || [];
+
+    if (currentUnlocked.includes(achievementId)) return;
+
+    const newUnlocked = [...currentUnlocked, achievementId];
+    const newDetails = [
+      ...(stats.unlockedAchievementDetails || []),
+      { id: achievementId, unlockedAt: new Date().toISOString() }
+    ];
+
+    const updatedStats: GameStatistics = {
+      ...stats,
+      unlockedAchievements: newUnlocked,
+      unlockedAchievementDetails: newDetails
+    };
+
+    const updatedProfile: UserProfile = {
+      ...currentProfile,
+      statistics: updatedStats
+    };
+
+    const profiles = this.profilesSignal().map(p => p.id === updatedProfile.id ? updatedProfile : p);
+    this.profilesSignal.set(profiles);
+    this.persistProfiles();
+  }
+
+  /**
+   * Reset active user statistics
+   */
+  resetActiveUserStats(): void {
+    const currentProfile = this.activeProfile();
+    const updatedProfile: UserProfile = {
+      ...currentProfile,
+      statistics: { ...DEFAULT_STATISTICS }
     };
 
     const profiles = this.profilesSignal().map(p => p.id === updatedProfile.id ? updatedProfile : p);

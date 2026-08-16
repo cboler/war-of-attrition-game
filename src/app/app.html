@@ -8,12 +8,12 @@
     <button mat-icon-button routerLink="/classic" routerLinkActive="active" aria-label="Classic game" matTooltip="Classic Game">
       <mat-icon>history</mat-icon>
     </button>
-    <button mat-icon-button routerLink="/settings" routerLinkActive="active" [attr.aria-label]="'Settings'" matTooltip="Settings & Statistics">
+    <button mat-icon-button routerLink="/settings" routerLinkActive="active" aria-label="Settings" matTooltip="Settings">
       <mat-icon>settings</mat-icon>
     </button>
   </nav>
   
-  <button mat-button class="profile-toolbar-btn" (click)="openProfileDialog()" matTooltip="User Profile & Lifetime Stats">
+  <button mat-button class="profile-toolbar-btn" (click)="openProfileDialog()" matTooltip="User Profile & Career Records">
     <div class="avatar-badge">
       <img [src]="activeProfile().avatarUrl" [alt]="activeProfile().name" />
       <span class="provider-indicator" [class.google]="activeProfile().isGoogleAuth"></span>

@@ -11,6 +11,11 @@
   gap: clamp(18px, 5vw, 64px);
   height: 100%;
   padding: 8px clamp(14px, 4vw, 44px);
+  transition: flex-direction 200ms ease;
+}
+
+.seat.deck-left {
+  flex-direction: row-reverse;
 }
 
 .identity {
@@ -38,24 +43,41 @@
 
 .deck {
   position: relative;
-  width: 58px;
-  height: 81px;
+  width: 62px;
+  height: 86px;
   padding: 0;
   border: 0;
   border-radius: 5px;
   background: transparent;
   appearance: none;
+  transition: transform 180ms ease, filter 180ms ease;
 }
 
 .deck app-card { --card-width: 100%; --card-height: 100%; position: absolute; inset: 0; display: block; }
-.deck-shadow { position: absolute; inset: 0; border-radius: 5px; background: #ece5d7; opacity: 0.8; }
-.shadow-one { transform: translate(-3px, 3px); }
-.shadow-two { transform: translate(-6px, 6px); opacity: 0.5; }
+.deck-shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background: #ece5d7;
+  border: 1px solid rgba(60, 45, 30, 0.25);
+  pointer-events: none;
+}
+
+.shadow-one   { transform: translate(-2px, 2px); opacity: 0.85; }
+.shadow-two   { transform: translate(-4px, 4px); opacity: 0.7; }
+.shadow-three { transform: translate(-6px, 6px); opacity: 0.55; }
+.shadow-four  { transform: translate(-8px, 8px); opacity: 0.4; }
+
+.seat.deck-left .shadow-one   { transform: translate(2px, 2px); }
+.seat.deck-left .shadow-two   { transform: translate(4px, 4px); }
+.seat.deck-left .shadow-three { transform: translate(6px, 6px); }
+.seat.deck-left .shadow-four  { transform: translate(8px, 8px); }
+
 .deck-count {
   position: absolute;
   right: -11px;
   bottom: -8px;
-  z-index: 3;
+  z-index: 5;
   display: grid;
   width: 27px;
   height: 27px;
@@ -65,6 +87,12 @@
   color: #fffaf0;
   background: #183229;
   font: 700 0.72rem/1 system-ui, sans-serif;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.seat.deck-left .deck-count {
+  right: auto;
+  left: -11px;
 }
 
 .deck.actionable { cursor: pointer; animation: deck-breathe 1.9s ease-in-out infinite; }
@@ -98,9 +126,9 @@
 }
 
 @media (max-width: 620px) {
-  .seat { justify-content: space-between; padding-inline: 20px; }
+  .seat { justify-content: space-between; padding-inline: 18px; }
   .identity { min-width: 0; }
-  .deck { width: 46px; height: 64px; }
+  .deck { width: 52px; height: 73px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

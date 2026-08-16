@@ -4,6 +4,8 @@ import { CardComparisonService, ComparisonResult } from '../core/services/card-c
 import { GameStateService } from '../core/services/game-state.service';
 import { OpponentAIService } from '../core/services/opponent-ai.service';
 import { SettingsService } from '../core/services/settings.service';
+import { AchievementService } from '../services/achievement.service';
+import { StoryBookService } from '../services/story-book.service';
 import { GameControllerService, PresentationState } from '../services/game-controller.service';
 import { TableGame } from './table-game';
 
@@ -12,6 +14,8 @@ describe('TableGame presentation', () => {
   let controller: GameControllerService;
   let comparison: CardComparisonService;
   let settings: SettingsService;
+  let achievements: AchievementService;
+  let storyBook: StoryBookService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -23,6 +27,8 @@ describe('TableGame presentation', () => {
     settings.setSoundEnabled(false);
     controller = TestBed.inject(GameControllerService);
     comparison = TestBed.inject(CardComparisonService);
+    achievements = TestBed.inject(AchievementService);
+    storyBook = TestBed.inject(StoryBookService);
     fixture = TestBed.createComponent(TableGame);
     fixture.detectChanges();
   });
@@ -35,6 +41,43 @@ describe('TableGame presentation', () => {
     expect(deck).toBeTruthy();
     expect(deck.disabled).toBeFalse();
     expect(deck.getAttribute('aria-label')).toBe('Draw from your deck');
+  });
+
+  it('binds handedness correctly to the player seat', () => {
+    const seatElem = fixture.nativeElement.querySelector('app-player-seat[table-seat-bottom] .seat');
+    expect(seatElem.classList.contains('deck-left')).toBeFalse();
+
+    settings.setDeckHand('left');
+    fixture.detectChanges();
+    expect(seatElem.classList.contains('deck-left')).toBeTrue();
+  });
+
+  it('opens and closes the Story Book drawer using semantic selector', () => {
+    expect(fixture.nativeElement.querySelector('app-story-book-drawer')).toBeNull();
+
+    const storyBtn = fixture.nativeElement.querySelector('button[aria-label="Open Story Book Journal"]') as HTMLButtonElement;
+    expect(storyBtn).toBeTruthy();
+    storyBtn.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-story-book-drawer')).toBeTruthy();
+  });
+
+  it('clears Story Book on new game and does not leak events between games', () => {
+    storyBook.addEntry({
+      turnNumber: 1,
+      type: 'clash',
+      text: 'Sample event',
+      badge: 'victory'
+    });
+    expect(storyBook.hasEntries()).toBeTrue();
+
+    // Trigger new game
+    controller.startNewGame();
+    fixture.detectChanges();
+
+    expect(storyBook.entries().length).toBe(0);
+    expect(storyBook.hasEntries()).toBeFalse();
   });
 
   it('exposes only sanitized hidden views and newest-layer target actions', fakeAsync(() => {
