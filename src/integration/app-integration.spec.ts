@@ -58,6 +58,27 @@ describe('App Integration Tests', () => {
     });
   });
 
+  describe('Theme Integration', () => {
+    it('should have theme toggle button with proper aria-label', () => {
+      const themeButton = fixture.nativeElement.querySelector('button[aria-label*="theme"]');
+      expect(themeButton).toBeTruthy();
+      const ariaLabel = themeButton.getAttribute('aria-label');
+      expect(ariaLabel).toContain('Toggle');
+    });
+
+    it('should toggle theme and update icon on click', () => {
+      const themeButton = fixture.nativeElement.querySelector('button[aria-label*="theme"]');
+      expect(themeButton).toBeTruthy();
+      const initialIcon = themeButton.querySelector('mat-icon')?.textContent?.trim();
+
+      themeButton.click();
+      fixture.detectChanges();
+
+      const newIcon = themeButton.querySelector('mat-icon')?.textContent?.trim();
+      expect(newIcon).not.toBe(initialIcon);
+    });
+  });
+
   describe('Profile and Header Integration', () => {
     it('should render profile button with user name', () => {
       const profileBtn = fixture.nativeElement.querySelector('.profile-toolbar-btn');

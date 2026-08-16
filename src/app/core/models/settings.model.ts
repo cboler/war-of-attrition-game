@@ -64,6 +64,9 @@ export interface GameStatistics {
 }
 
 export interface AppSettings {
+  // Appearance
+  theme: 'light' | 'dark' | 'auto';
+
   // Handedness / thumb ergonomics
   deckHand: 'right' | 'left';
 
@@ -74,9 +77,6 @@ export interface AppSettings {
   animationSpeed: 'slow' | 'normal' | 'fast';
   soundEnabled: boolean;
   showTurnCounter: boolean;
-
-  // Statistics
-  statistics: GameStatistics;
 
   // Advanced settings
   confirmChallenges: boolean;
@@ -125,12 +125,12 @@ export const DEFAULT_STATISTICS: GameStatistics = {
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  theme: 'auto',
   deckHand: 'right',
   selectedCardBacking: 'classic-blue',
   animationSpeed: 'normal',
   soundEnabled: true,
   showTurnCounter: true,
-  statistics: { ...DEFAULT_STATISTICS },
   confirmChallenges: false,
   autoPlayAnimations: true,
   showCardDetails: true

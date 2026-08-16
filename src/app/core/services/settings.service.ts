@@ -2,8 +2,6 @@ import { Injectable, signal, computed, effect } from '@angular/core';
 import {
   AppSettings,
   DEFAULT_SETTINGS,
-  DEFAULT_STATISTICS,
-  GameStatistics,
   CardBackingOption,
   CARD_BACKING_OPTIONS
 } from '../models/settings.model';
@@ -19,12 +17,12 @@ export class SettingsService {
 
   // Public readonly signals
   readonly currentSettings = this.settings.asReadonly();
+  readonly theme = computed(() => this.currentSettings().theme);
   readonly deckHand = computed(() => this.currentSettings().deckHand);
   readonly selectedCardBacking = computed(() => this.currentSettings().selectedCardBacking);
   readonly animationSpeed = computed(() => this.currentSettings().animationSpeed);
   readonly soundEnabled = computed(() => this.currentSettings().soundEnabled);
   readonly showTurnCounter = computed(() => this.currentSettings().showTurnCounter);
-  readonly statistics = computed(() => this.currentSettings().statistics);
   readonly confirmChallenges = computed(() => this.currentSettings().confirmChallenges);
   readonly autoPlayAnimations = computed(() => this.currentSettings().autoPlayAnimations);
   readonly showCardDetails = computed(() => this.currentSettings().showCardDetails);
@@ -49,6 +47,11 @@ export class SettingsService {
 
   resetSettings(): void {
     this.settings.set({ ...DEFAULT_SETTINGS });
+  }
+
+  // Theme management
+  setTheme(theme: 'light' | 'dark' | 'auto'): void {
+    this.updateSettings({ theme });
   }
 
   // Handedness management
@@ -88,25 +91,6 @@ export class SettingsService {
     this.updateSettings({ showCardDetails: show });
   }
 
-  // Statistics management
-  updateStatistics(stats: Partial<GameStatistics>): void {
-    const currentStats = this.statistics();
-    const updatedStats = { ...currentStats, ...stats };
-
-    if (updatedStats.gamesPlayed > 0) {
-      updatedStats.averageTurnsPerGame = Math.round(updatedStats.totalTurns / updatedStats.gamesPlayed);
-      updatedStats.averageGameDuration = Math.round(updatedStats.totalPlayTime / updatedStats.gamesPlayed);
-    }
-
-    this.updateSettings({ statistics: updatedStats });
-  }
-
-  resetStatistics(): void {
-    this.updateSettings({
-      statistics: { ...DEFAULT_STATISTICS }
-    });
-  }
-
   // Persistence methods
   private loadSettings(): AppSettings {
     try {
@@ -127,26 +111,5 @@ export class SettingsService {
     } catch (error) {
       console.warn('Failed to save settings to localStorage:', error);
     }
-  }
-
-  // Utility methods
-  exportSettings(): string {
-    return JSON.stringify(this.currentSettings(), null, 2);
-  }
-
-  importSettings(settingsJson: string): boolean {
-    try {
-      const imported = JSON.parse(settingsJson);
-      if (imported && typeof imported === 'object') {
-        const merged = { ...DEFAULT_SETTINGS, ...imported };
-        this.settings.set(merged);
-        return true;
-      }
-    } catch (error) {
-      if (typeof window !== 'undefined' && (window as any).console) {
-        console.warn('Failed to import settings:', error);
-      }
-    }
-    return false;
   }
 }

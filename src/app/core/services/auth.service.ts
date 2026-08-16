@@ -142,11 +142,17 @@ export class AuthService {
       let profiles: UserProfile[] = [];
 
       if (savedProfilesJson) {
-        profiles = JSON.parse(savedProfilesJson);
+        const parsed = JSON.parse(savedProfilesJson);
+        if (Array.isArray(parsed)) {
+          profiles = parsed.map(p => ({
+            ...p,
+            statistics: { ...DEFAULT_STATISTICS, ...(p.statistics || {}) }
+          }));
+        }
       }
 
       if (!profiles || profiles.length === 0) {
-        profiles = [{ ...DEFAULT_GUEST_PROFILE }];
+        profiles = [{ ...DEFAULT_GUEST_PROFILE, statistics: { ...DEFAULT_STATISTICS } }];
       }
 
       this.profilesSignal.set(profiles);

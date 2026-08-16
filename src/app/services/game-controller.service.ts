@@ -10,6 +10,10 @@ import { AuthService } from '../core/services/auth.service';
 import { PresentationSequencerService } from './presentation-sequencer.service';
 import { TableReaction, TableReactionService } from './table-reaction.service';
 import { GameEventBusService } from './game-event-bus.service';
+import { StoryBookService } from './story-book.service';
+
+export const MODEST_COMEBACK_DEFICIT_THRESHOLD = 3;
+export const SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD = 15;
 
 export enum PresentationState {
   READY = 'ready',
@@ -76,6 +80,7 @@ export class GameControllerService {
   private readonly eventBus = inject(GameEventBusService);
   private readonly comparison = inject(CardComparisonService);
   private readonly authService = inject(AuthService);
+  private readonly storyBook = inject(StoryBookService);
 
   private readonly gameMessage = signal('Your deck is ready.');
   private readonly phase = signal(PresentationState.READY);
@@ -228,6 +233,7 @@ export class GameControllerService {
     this.opponentPointer.set(null);
     this.reaction.set(null);
     this.gameSummarySignal.set(null);
+    this.storyBook.clear();
 
     // Reset active game telemetry
     this.gameStartTime = Date.now();
@@ -779,10 +785,11 @@ export class GameControllerService {
   }
 
   private finishAtGameOver(): void {
+    if (this.phase() === PresentationState.GAME_OVER) return;
     const outcome = this.gameState.currentState.outcome ?? GameOutcome.TIE;
     this.phase.set(PresentationState.GAME_OVER);
 
-    const isComeback = outcome === GameOutcome.PLAYER_WIN && this.maxDeficitExperienced >= 3;
+    const isComeback = outcome === GameOutcome.PLAYER_WIN && this.maxDeficitExperienced >= MODEST_COMEBACK_DEFICIT_THRESHOLD;
     const durationMs = Math.max(1000, Date.now() - this.gameStartTime);
     const pCardsRemaining = this.gameState.playerCardCount();
     const oCardsRemaining = this.gameState.opponentCardCount();

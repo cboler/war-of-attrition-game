@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from './auth.service';
+import { DEFAULT_STATISTICS } from '../models/settings.model';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -16,11 +17,52 @@ describe('AuthService', () => {
     localStorage.clear();
   });
 
-  it('should be created with default guest profile', () => {
+  it('should be created with default guest profile and full DEFAULT_STATISTICS', () => {
     expect(service).toBeTruthy();
     expect(service.activeProfile().name).toBe('Card Commander');
     expect(service.isAuthenticated()).toBe(false);
     expect(service.userStats().gamesPlayed).toBe(0);
+    expect(service.userStats().gamesAbandoned).toBe(0);
+    expect(service.userStats().unlockedAchievements).toEqual([]);
+    expect(service.userStats().currentWinStreak).toBe(0);
+  });
+
+  it('should correctly normalize and deep-merge legacy stored profile statistics', () => {
+    // Simulate legacy profile stored before the new stats/achievements schema
+    const legacyProfile = [{
+      id: 'legacy-user-1',
+      name: 'Old Veteran',
+      avatarUrl: 'https://example.com/avatar.jpg',
+      provider: 'guest',
+      statistics: {
+        gamesPlayed: 10,
+        gamesWon: 7,
+        gamesLost: 3,
+        totalTurns: 150
+      }
+    }];
+    localStorage.setItem('war-of-attrition-profiles', JSON.stringify(legacyProfile));
+    localStorage.setItem('war-of-attrition-active-profile-id', 'legacy-user-1');
+
+    // Create a new instance to test constructor initialization
+    const freshService = new AuthService();
+
+    const stats = freshService.userStats();
+    // Preserves old values
+    expect(stats.gamesPlayed).toBe(10);
+    expect(stats.gamesWon).toBe(7);
+    expect(stats.gamesLost).toBe(3);
+    expect(stats.totalTurns).toBe(150);
+
+    // Normalizes newly introduced fields with default values without undefined errors
+    expect(stats.gamesAbandoned).toBe(0);
+    expect(stats.gamesTied).toBe(0);
+    expect(stats.currentWinStreak).toBe(0);
+    expect(stats.bestWinStreak).toBe(0);
+    expect(stats.unlockedAchievements).toEqual([]);
+    expect(stats.acesDefeatedByTwo).toBe(0);
+    expect(stats.twosSavedByChallenge).toBe(0);
+    expect(stats.comebackWins).toBe(0);
   });
 
   it('should sign in with Google data and update signals', () => {
@@ -115,6 +157,30 @@ describe('AuthService', () => {
     expect(stats.gamesPlayed).toBe(1); // not incremented
     expect(stats.gamesLost).toBe(0); // not a loss
     expect(stats.currentWinStreak).toBe(1); // NOT reset!
+  });
+
+  it('should handle tied games correctly preserving streaks and updating total ties', () => {
+    service.recordGameResult({
+      outcome: 'player_win',
+      turns: 20,
+      durationMs: 30000
+    });
+
+    expect(service.userStats().currentWinStreak).toBe(1);
+
+    // Record tie game
+    service.recordGameResult({
+      outcome: 'tie',
+      turns: 40,
+      durationMs: 50000
+    });
+
+    const stats = service.userStats();
+    expect(stats.gamesPlayed).toBe(2);
+    expect(stats.gamesTied).toBe(1);
+    expect(stats.gamesWon).toBe(1);
+    expect(stats.gamesLost).toBe(0);
+    expect(stats.currentWinStreak).toBe(1); // preserved on tie
   });
 
   it('should unlock achievements without duplicates', () => {

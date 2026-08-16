@@ -1,24 +1,24 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   ElementRef,
   HostListener,
+  OnDestroy,
   ViewChild,
   inject,
-  input,
-  output,
-  effect
+  output
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { StoryBookEntry, StoryBookService } from '../../../services/story-book.service';
+import { StoryBookService } from '../../../services/story-book.service';
 import { CardComponent } from '../card/card.component';
 
 @Component({
   selector: 'app-story-book-drawer',
   imports: [CommonModule, MatIconModule, CardComponent],
   template: `
-    <div class="drawer-backdrop" (click)="closed.emit()" aria-hidden="true"></div>
+    <div class="drawer-backdrop" (click)="closeDrawer()" aria-hidden="true"></div>
     <aside
       #drawerContainer
       class="story-book-drawer"
@@ -35,7 +35,7 @@ import { CardComponent } from '../card/card.component';
           type="button"
           class="close-button"
           aria-label="Close Story Book"
-          (click)="closed.emit()">
+          (click)="closeDrawer()">
           <mat-icon>close</mat-icon>
         </button>
       </header>
@@ -52,8 +52,8 @@ import { CardComponent } from '../card/card.component';
             @for (entry of storyBook.entries(); track entry.id) {
               <article
                 class="story-node"
-                [class]="'type-' + entry.type"
-                [class.has-badge]="entry.badge">
+                [ngClass]="'type-' + entry.type"
+                [class.has-badge]="!!entry.badge">
                 
                 @if (entry.eyebrow) {
                   <span class="node-eyebrow">{{ entry.eyebrow }}</span>
@@ -76,7 +76,7 @@ import { CardComponent } from '../card/card.component';
                 </div>
 
                 @if (entry.badge) {
-                  <span class="node-badge" [class]="'badge-' + entry.badge" aria-hidden="true">
+                  <span class="node-badge" [ngClass]="'badge-' + entry.badge" aria-hidden="true">
                     @switch (entry.badge) {
                       @case ('victory') { <mat-icon>shield</mat-icon> }
                       @case ('defeat') { <mat-icon>heart_broken</mat-icon> }
@@ -94,21 +94,65 @@ import { CardComponent } from '../card/card.component';
 
       <footer class="drawer-footer">
         <span>Game in progress · Clears on New Game</span>
-        <button type="button" class="done-btn" (click)="closed.emit()">Back to Table</button>
+        <button type="button" class="done-btn" (click)="closeDrawer()">Back to Table</button>
       </footer>
     </aside>
   `,
   styleUrl: './story-book-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class StoryBookDrawerComponent {
+export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   protected readonly storyBook = inject(StoryBookService);
   closed = output<void>();
 
+  @ViewChild('drawerContainer') private drawerContainer?: ElementRef<HTMLElement>;
   @ViewChild('closeBtn') private closeBtn?: ElementRef<HTMLButtonElement>;
 
-  @HostListener('keydown.escape')
-  onEscape(): void {
+  private previousActiveElement: HTMLElement | null = null;
+
+  ngAfterViewInit(): void {
+    if (typeof document !== 'undefined') {
+      this.previousActiveElement = document.activeElement as HTMLElement | null;
+      setTimeout(() => {
+        this.closeBtn?.nativeElement.focus();
+      }, 0);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.previousActiveElement && typeof this.previousActiveElement.focus === 'function') {
+      this.previousActiveElement.focus();
+    }
+  }
+
+  closeDrawer(): void {
     this.closed.emit();
+  }
+
+  @HostListener('keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeDrawer();
+      return;
+    }
+
+    if (event.key === 'Tab' && this.drawerContainer) {
+      const focusableElements = this.drawerContainer.nativeElement.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    }
   }
 }

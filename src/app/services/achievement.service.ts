@@ -3,6 +3,7 @@ import { ACHIEVEMENTS, AchievementDefinition, UnlockedAchievement } from '../cor
 import { GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { AuthService } from '../core/services/auth.service';
 import { GameEvent, GameEventBusService } from './game-event-bus.service';
+import { SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD } from './game-controller.service';
 
 @Injectable({ providedIn: 'root' })
 export class AchievementService {
@@ -116,7 +117,7 @@ export class AchievementService {
             this.unlock('war.untouchable', event.turns);
           }
           // NEVER TELL ME THE ODDS: Win after trailing by at least 15 cards
-          if (event.maxDeficitExperienced >= 15) {
+          if (event.maxDeficitExperienced >= SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD) {
             this.unlock('war.comeback_15', event.turns);
           }
         }

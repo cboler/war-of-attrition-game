@@ -4,7 +4,6 @@ import { GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { GameEvent, GameEventBusService } from './game-event-bus.service';
 
 export type StoryBookEntryType =
-  | 'turn'
   | 'clash'
   | 'challenge'
   | 'battle_header'
@@ -56,55 +55,33 @@ export class StoryBookService {
 
   private handleGameEvent(event: GameEvent): void {
     switch (event.type) {
-      case 'turn_started':
-        this.addEntry({
-          turnNumber: event.turnNumber,
-          type: 'turn',
-          text: `TURN ${event.turnNumber}`
-        });
-        break;
-
       case 'clash_resolved': {
-        const pCardStr = this.formatCard(event.playerCard);
-        const oCardStr = this.formatCard(event.opponentCard);
-        let narrative = '';
-        if (event.winner === PlayerType.PLAYER) {
-          narrative = event.specialRule
+        // Curated narrative: record special rule assassinations or tied clashes that initiate battles
+        if (event.specialRule) {
+          const pCardStr = this.formatCard(event.playerCard);
+          const oCardStr = this.formatCard(event.opponentCard);
+          const narrative = event.winner === PlayerType.PLAYER
             ? `${pCardStr} assassinated ${oCardStr}!`
-            : `${pCardStr} defeated ${oCardStr}.`;
-        } else if (event.winner === PlayerType.OPPONENT) {
-          narrative = event.specialRule
-            ? `${oCardStr} assassinated ${pCardStr}!`
-            : `${oCardStr} defeated ${pCardStr}.`;
-        } else {
-          narrative = `${pCardStr} tied ${oCardStr}.`;
-        }
+            : `${oCardStr} assassinated ${pCardStr}!`;
 
-        this.addEntry({
-          turnNumber: event.turnNumber,
-          type: 'clash',
-          text: narrative,
-          cards: [event.playerCard, event.opponentCard],
-          badge: event.winner ? (event.winner === PlayerType.PLAYER ? 'victory' : 'defeat') : 'battle'
-        });
-        break;
-      }
-
-      case 'challenge_offered':
-        if (event.defender === PlayerType.OPPONENT) {
           this.addEntry({
             turnNumber: event.turnNumber,
-            type: 'challenge',
-            text: 'Opponent is considering reinforcement...'
+            type: 'clash',
+            eyebrow: `TURN ${event.turnNumber} · SPECIAL FEAT`,
+            text: narrative,
+            cards: [event.playerCard, event.opponentCard],
+            badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat'
           });
         }
         break;
+      }
 
       case 'challenge_accepted':
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'challenge',
-          text: `${event.challenger === PlayerType.PLAYER ? 'You' : 'Opponent'} sent reinforcement ${this.formatCard(event.reinforcementCard)}.`,
+          eyebrow: `TURN ${event.turnNumber} · CHALLENGE`,
+          text: `${event.challenger === PlayerType.PLAYER ? 'You' : 'Opponent'} committed reinforcement ${this.formatCard(event.reinforcementCard)}.`,
           cards: [event.reinforcementCard],
           badge: 'challenge'
         });
@@ -114,9 +91,10 @@ export class StoryBookService {
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'challenge',
+          eyebrow: `TURN ${event.turnNumber} · CONCESSION`,
           text: event.loser === PlayerType.PLAYER
-            ? 'You conceded. Your card went to the Boneyard.'
-            : 'Opponent conceded. Their card went to the Boneyard.',
+            ? 'You conceded the challenge. Your card was lost to the Boneyard.'
+            : 'Opponent conceded the challenge. Card surrendered to the Boneyard.',
           badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat'
         });
         break;
@@ -127,19 +105,20 @@ export class StoryBookService {
         let text = '';
         if (event.challengerWon) {
           text = event.challenger === PlayerType.PLAYER
-            ? `${reinfStr} held against ${origStr}. You saved both cards!`
+            ? `${reinfStr} held against ${origStr}. You successfully defended your position!`
             : `Opponent reinforcement ${reinfStr} defeated ${origStr}.`;
         } else if (event.winner === null) {
-          text = `Reinforcement ${reinfStr} tied ${origStr}. BATTLE!`;
+          text = `Reinforcement ${reinfStr} tied ${origStr}. Battle initiated!`;
         } else {
           text = event.challenger === PlayerType.PLAYER
-            ? `Reinforcement ${reinfStr} was beaten by ${origStr}. Both cards lost.`
+            ? `Reinforcement ${reinfStr} failed against ${origStr}. Both cards lost to the Boneyard.`
             : `Original card ${origStr} held against opponent reinforcement ${reinfStr}.`;
         }
 
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'challenge',
+          eyebrow: `TURN ${event.turnNumber} · RESOLUTION`,
           text,
           cards: [event.reinforcementCard, event.originalWinnerCard],
           badge: event.winner === PlayerType.PLAYER ? 'victory' : (event.winner === PlayerType.OPPONENT ? 'defeat' : 'battle')
@@ -152,8 +131,8 @@ export class StoryBookService {
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'battle_header',
-          eyebrow: `BATTLE · LAYER ${event.layerRound}`,
-          text: 'Only the chosen cards turn over.',
+          eyebrow: `TURN ${event.turnNumber} · BATTLE LAYER ${event.layerRound}`,
+          text: '3 cards dealt face-down for each side. Choose your target blindly.',
           badge: 'battle'
         });
         break;
@@ -161,7 +140,7 @@ export class StoryBookService {
       case 'battle_target_selected': {
         const posStr = event.targetIndex === 0 ? 'left' : (event.targetIndex === 1 ? 'center' : 'right');
         const text = event.selector === PlayerType.PLAYER
-          ? `You selected the opponent's ${posStr} card.`
+          ? `You selected opponent's ${posStr} card.`
           : `Opponent selected your ${posStr} card.`;
         this.addEntry({
           turnNumber: event.turnNumber,
@@ -181,7 +160,7 @@ export class StoryBookService {
         } else if (event.winner === PlayerType.OPPONENT) {
           text = `${oCardStr} defeated ${pCardStr}.`;
         } else {
-          text = `${pCardStr} tied ${oCardStr}. BATTLE CONTINUES.`;
+          text = `${pCardStr} tied ${oCardStr}. Recursive Battle continues!`;
         }
 
         this.addEntry({
@@ -205,6 +184,7 @@ export class StoryBookService {
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'casualty',
+          eyebrow: `BATTLE RESOLVED (DEPTH ${event.layerDepth})`,
           text: `${casualtiesText}${hiddenReturnedText}`,
           cards: event.revealedCasualties,
           badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat'
@@ -216,6 +196,7 @@ export class StoryBookService {
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'quip',
+          eyebrow: event.speaker === PlayerType.PLAYER ? 'YOUR REACTION' : 'OPPONENT REACTION',
           text: `"${event.message}"`,
           actor: event.speaker
         });
@@ -238,19 +219,19 @@ export class StoryBookService {
         let badge: 'victory' | 'defeat' | 'battle' = 'battle';
 
         if (event.outcome === GameOutcome.PLAYER_WIN) {
-          title = 'VICTORY';
+          title = 'WAR WON · VICTORY';
           text = `You won the war in ${event.turns} ${event.turns === 1 ? 'turn' : 'turns'} with ${event.playerCardsRemaining} cards remaining!`;
           if (event.isComeback) {
-            text += ` (Comeback from a ${event.maxDeficitExperienced}-card deficit!)`;
+            text += ` (Overcame a ${event.maxDeficitExperienced}-card deficit!)`;
           }
           badge = 'victory';
         } else if (event.outcome === GameOutcome.OPPONENT_WIN) {
-          title = 'DEFEAT';
-          text = `Opponent won the war in ${event.turns} ${event.turns === 1 ? 'turn' : 'turns'} with ${event.opponentCardsRemaining} cards remaining.`;
+          title = 'WAR LOST · DEFEAT';
+          text = `Opponent conquered after ${event.turns} ${event.turns === 1 ? 'turn' : 'turns'} with ${event.opponentCardsRemaining} cards remaining.`;
           badge = 'defeat';
         } else {
-          title = 'TRUE TIE';
-          text = `The war ended in a mutual attrition tie after ${event.turns} turns.`;
+          title = 'MUTUAL ATTRITION · TIE';
+          text = `The war concluded in an attrition tie after ${event.turns} turns.`;
           badge = 'battle';
         }
 
@@ -263,15 +244,6 @@ export class StoryBookService {
         });
         break;
       }
-
-      case 'game_abandoned':
-        this.addEntry({
-          turnNumber: event.turnNumber,
-          type: 'game_over',
-          title: 'WAR ABANDONED',
-          text: `Game abandoned after ${event.turnsPlayed} turns.`
-        });
-        break;
     }
   }
 

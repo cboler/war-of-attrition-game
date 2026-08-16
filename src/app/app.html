@@ -8,7 +8,7 @@
     <button mat-icon-button routerLink="/classic" routerLinkActive="active" aria-label="Classic game" matTooltip="Classic Game">
       <mat-icon>history</mat-icon>
     </button>
-    <button mat-icon-button routerLink="/settings" routerLinkActive="active" aria-label="Settings" matTooltip="Settings & Statistics">
+    <button mat-icon-button routerLink="/settings" routerLinkActive="active" aria-label="Settings" matTooltip="Settings">
       <mat-icon>settings</mat-icon>
     </button>
   </nav>
@@ -19,6 +19,10 @@
       <span class="provider-indicator" [class.google]="activeProfile().isGoogleAuth"></span>
     </div>
     <span class="profile-name-text">{{ activeProfile().name }}</span>
+  </button>
+
+  <button mat-icon-button (click)="toggleTheme()" [attr.aria-label]="'Toggle ' + (isDarkMode() ? 'light' : 'dark') + ' theme'" matTooltip="Toggle Dark/Light Mode">
+    <mat-icon>{{ isDarkMode() ? 'lightbulb' : 'lightbulb_outline' }}</mat-icon>
   </button>
 </mat-toolbar>
 

@@ -184,34 +184,11 @@
         </mat-tab>
 
         <!-- Advanced Tab -->
-        <mat-tab label="Advanced">
+        <mat-tab label="Reset">
           <div class="tab-content">
             <div class="setting-section">
-              <h3>Import/Export Settings</h3>
-              <p>Save your settings to a file or load settings from a previously saved file.</p>
-              
-              <div class="import-export-actions">
-                <button mat-raised-button (click)="onExportSettings()">
-                  <mat-icon>download</mat-icon>
-                  Export Settings
-                </button>
-                
-                <button mat-raised-button>
-                  <mat-icon>upload</mat-icon>
-                  Import Settings
-                  <input type="file" 
-                         accept=".json" 
-                         (change)="onImportSettings($event)" 
-                         style="position: absolute; left: -9999px;">
-                </button>
-              </div>
-            </div>
-
-            <mat-divider></mat-divider>
-
-            <div class="setting-section">
               <h3>Reset Settings</h3>
-              <p>Reset all settings to their default values. This action cannot be undone.</p>
+              <p>Reset all settings preferences to their default values. This action cannot be undone.</p>
               
               <button mat-raised-button color="warn" (click)="onResetSettings()">
                 <mat-icon>restore</mat-icon>

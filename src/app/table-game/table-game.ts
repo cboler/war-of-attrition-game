@@ -10,6 +10,7 @@ import {
   PresentationState,
   TableCardView
 } from '../services/game-controller.service';
+import { CommonModule } from '@angular/common';
 import { CardComponent } from '../shared/components/card/card.component';
 import { CardTableComponent } from '../shared/components/card-table/card-table.component';
 import { PlayerSeatComponent } from '../shared/components/player-seat/player-seat.component';
@@ -18,6 +19,7 @@ import { StoryBookDrawerComponent } from '../shared/components/story-book-drawer
 @Component({
   selector: 'app-table-game',
   imports: [
+    CommonModule,
     RouterLink,
     MatIconModule,
     CardComponent,

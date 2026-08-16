@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { CardComponent } from '../card/card.component';
 
 @Component({
   selector: 'app-player-seat',
-  imports: [CardComponent],
+  imports: [CommonModule, CardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -26,7 +27,7 @@ import { CardComponent } from '../card/card.component';
 
       <button
         class="deck"
-        [class]="'deck ' + thicknessClass()"
+        [ngClass]="thicknessClass()"
         type="button"
         [class.actionable]="deckInteractive()"
         [disabled]="!deckInteractive()"

@@ -143,7 +143,7 @@
       <!-- Physical Boneyard Representation -->
       <button
         class="boneyard"
-        [class]="'boneyard ' + boneyardThicknessClass()"
+        [ngClass]="boneyardThicknessClass()"
         type="button"
         [class.has-cards]="controller.visibleBoneyardCount() > 0"
         [attr.aria-expanded]="boneyardOpen()"

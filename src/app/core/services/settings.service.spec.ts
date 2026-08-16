@@ -19,6 +19,20 @@ describe('SettingsService', () => {
 
   it('should initialize with default settings', () => {
     expect(service.currentSettings()).toEqual(DEFAULT_SETTINGS);
+    expect(service.theme()).toBe('auto');
+    expect(service.deckHand()).toBe('right');
+  });
+
+  describe('Theme management', () => {
+    it('should update theme to dark', () => {
+      service.setTheme('dark');
+      expect(service.theme()).toBe('dark');
+    });
+
+    it('should update theme to light', () => {
+      service.setTheme('light');
+      expect(service.theme()).toBe('light');
+    });
   });
 
   describe('Handedness management', () => {
@@ -95,49 +109,22 @@ describe('SettingsService', () => {
     });
   });
 
-  describe('Statistics management', () => {
-    it('should update statistics and calculate averages', () => {
-      service.updateStatistics({
-        gamesPlayed: 2,
-        gamesWon: 1,
-        gamesLost: 1,
-        totalTurns: 30,
-        totalPlayTime: 180000
-      });
-
-      const stats = service.statistics();
-      expect(stats.gamesPlayed).toBe(2);
-      expect(stats.averageTurnsPerGame).toBe(15);
-      expect(stats.averageGameDuration).toBe(90000);
-    });
-
-    it('should reset statistics', () => {
-      service.updateStatistics({
-        gamesPlayed: 5,
-        gamesWon: 3
-      });
-
-      service.resetStatistics();
-
-      const stats = service.statistics();
-      expect(stats.gamesPlayed).toBe(0);
-      expect(stats.gamesWon).toBe(0);
-    });
-  });
-
   describe('Settings management', () => {
     it('should update partial settings', () => {
       service.updateSettings({
+        theme: 'dark',
         deckHand: 'left',
         soundEnabled: false
       });
 
+      expect(service.theme()).toBe('dark');
       expect(service.deckHand()).toBe('left');
       expect(service.soundEnabled()).toBe(false);
       expect(service.selectedCardBacking()).toBe(DEFAULT_SETTINGS.selectedCardBacking);
     });
 
     it('should reset all settings', () => {
+      service.setTheme('dark');
       service.setDeckHand('left');
       service.setSoundEnabled(false);
       service.setCardBacking('classic-red');
@@ -146,38 +133,14 @@ describe('SettingsService', () => {
 
       expect(service.currentSettings()).toEqual(DEFAULT_SETTINGS);
     });
-  });
 
-  describe('Import/Export functionality', () => {
-    it('should export settings as JSON string', () => {
-      const exported = service.exportSettings();
-      const parsed = JSON.parse(exported);
-      expect(parsed).toEqual(service.currentSettings());
-    });
-
-    it('should import valid settings', () => {
-      const customSettings = {
-        deckHand: 'left' as const,
-        selectedCardBacking: 'classic-red',
-        soundEnabled: false
-      };
-
-      const result = service.importSettings(JSON.stringify(customSettings));
-
-      expect(result).toBe(true);
-      expect(service.deckHand()).toBe('left');
-      expect(service.selectedCardBacking()).toBe('classic-red');
-      expect(service.soundEnabled()).toBe(false);
-    });
-
-    it('should reject invalid JSON', () => {
-      const result = service.importSettings('invalid json');
-      expect(result).toBe(false);
-    });
-
-    it('should reject non-object data', () => {
-      const result = service.importSettings('"just a string"');
-      expect(result).toBe(false);
+    it('should have export/import and redundant statistics removed from SettingsService', () => {
+      const anyService = service as any;
+      expect(anyService.exportSettings).toBeUndefined();
+      expect(anyService.importSettings).toBeUndefined();
+      expect(anyService.statistics).toBeUndefined();
+      expect(anyService.updateStatistics).toBeUndefined();
+      expect(anyService.resetStatistics).toBeUndefined();
     });
   });
 });

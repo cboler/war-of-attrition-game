@@ -8,7 +8,6 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Inject } from '@angular/core';
@@ -26,28 +25,23 @@ import { AuthService } from '../core/services/auth.service';
     MatTabsModule,
     MatIconModule,
     MatDividerModule,
-    MatDialogModule,
-    MatSnackBarModule,
     RouterLink
   ],
   templateUrl: './settings.html',
   styleUrl: './settings.scss'
 })
 export class Settings {
-  authService = inject(AuthService);
+  readonly authService = inject(AuthService);
+  readonly settingsService = inject(SettingsService);
+  private readonly dialog = inject(MatDialog);
+
   readonly activeProfile = this.authService.activeProfile;
   readonly userStats = this.authService.userStats;
-
-  constructor(
-    public settingsService: SettingsService,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar
-  ) {}
 
   onResetSettings(): void {
     this.showConfirmDialog(
       'Reset Settings',
-      'Are you sure you want to reset all settings to default values? This action cannot be undone.'
+      'Are you sure you want to reset all preferences to default values? This action cannot be undone.'
     ).subscribe(result => {
       if (result) {
         this.settingsService.resetSettings();
@@ -61,38 +55,9 @@ export class Settings {
       'Are you sure you want to reset all game statistics for your active profile? This action cannot be undone.'
     ).subscribe(result => {
       if (result) {
-        this.settingsService.resetStatistics();
         this.authService.resetActiveUserStats();
       }
     });
-  }
-
-  onExportSettings(): void {
-    const settings = this.settingsService.exportSettings();
-    const blob = new Blob([settings], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'war-of-attrition-settings.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  onImportSettings(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        const success = this.settingsService.importSettings(content);
-        if (success) {
-          this.snackBar.open('Settings imported successfully!', 'OK', { duration: 3000 });
-        } else {
-          this.snackBar.open('Failed to import settings. Please check the file format.', 'OK', { duration: 5000 });
-        }
-      };
-      reader.readAsText(file);
-    }
   }
 
   formatDuration(milliseconds: number): string {
@@ -101,7 +66,7 @@ export class Settings {
     return `${minutes}m ${seconds}s`;
   }
 
-  formatLastPlayed(date?: Date): string {
+  formatLastPlayed(date?: Date | string): string {
     if (!date) return 'Never';
     return new Date(date).toLocaleDateString();
   }
