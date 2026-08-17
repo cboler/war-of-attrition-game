@@ -25,6 +25,15 @@ public class MainActivity extends LauncherActivity {
         playGamesBridge.initialize();
     }
 
+    @Override
+    protected Uri getLaunchingUrl() {
+        Uri uri = super.getLaunchingUrl();
+        if (uri == null || uri.toString().contains("example.com")) {
+            return Uri.parse(getString(R.string.launchUrl));
+        }
+        return uri;
+    }
+
     /**
      * JS Interface bridge for direct WebView or CustomTabs postMessage integration
      */
