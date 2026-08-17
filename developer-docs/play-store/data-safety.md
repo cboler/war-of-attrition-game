@@ -61,7 +61,7 @@ Use this factual breakdown to complete the **Data Safety** questionnaire in Goog
 | :--- | :--- | :--- |
 | **Data collection & security** | Yes | Data encrypted in transit via HTTPS |
 | **Account creation** | Yes | Google Sign-in or Local Guest Account |
-| **Deletion request URL** | `https://cboler.github.io/war-of-attrition-game/#/delete-account` | Direct URL for users to request/execute data deletion |
+| **Deletion request URL** | `https://cboler.github.io/war-of-attrition-game/delete-account/` | Direct URL for users to request/execute data deletion |
 | **Target Audience / Age** | Everyone (13+) | Casual strategic card game |
 | **Advertising / Ads** | **No** | App contains zero advertisements |
 | **Financial / Purchase Info** | **No** | App has no payments or real money transactions |

@@ -27,8 +27,8 @@ Play App Signing Certificate SHA-1: <PASTE_PLAY_APP_SIGNING_SHA1>
 Play App Signing Certificate SHA-256: <PASTE_PLAY_APP_SIGNING_SHA256>
 
 Support Email: requiredcheese@gmail.com
-Privacy URL: https://cboler.github.io/war-of-attrition-game/privacy
-Support URL: https://cboler.github.io/war-of-attrition-game/support
-Data Deletion URL: https://cboler.github.io/war-of-attrition-game/delete-account
+Privacy URL: https://cboler.github.io/war-of-attrition-game/privacy/
+Support URL: https://cboler.github.io/war-of-attrition-game/support/
+Data Deletion URL: https://cboler.github.io/war-of-attrition-game/delete-account/
 Internal Testing Join URL: <PASTE_PLAY_INTERNAL_TEST_OPT_IN_LINK>
 ```

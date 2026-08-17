@@ -115,7 +115,7 @@ Follow these actions in order:
 ### 7. Fill Out App Content (Privacy, Data Safety, Target Audience)
 * **WHERE:** Play Console → **Policy and programs** → **App content**
 * **ACTION:**
-  - **Privacy Policy URL:** `https://cboler.github.io/war-of-attrition-game/privacy`
+  - **Privacy Policy URL:** `https://cboler.github.io/war-of-attrition-game/privacy/`
   - **Data Safety:** Complete questionnaire using [`data-safety.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/play-store/data-safety.md).
   - **Target Audience:** 13+ (or Everyone).
   - **Ads:** Select "No, my app does not contain ads".
