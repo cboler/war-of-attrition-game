@@ -17,6 +17,34 @@ def twaManifest = [
     versionName: '1.0.1'
 ]
 
+def resolveVersionCode(defaultCode) {
+    def envVal = System.getenv("APP_VERSION_CODE")
+    if (envVal != null && !envVal.trim().isEmpty()) {
+        try {
+            return Integer.parseInt(envVal.trim())
+        } catch (Exception ignored) {}
+    }
+    def propVal = project.findProperty("versionCode")
+    if (propVal != null && !propVal.toString().trim().isEmpty()) {
+        try {
+            return Integer.parseInt(propVal.toString().trim())
+        } catch (Exception ignored) {}
+    }
+    return defaultCode
+}
+
+def resolveVersionName(defaultName) {
+    def envVal = System.getenv("APP_VERSION_NAME")
+    if (envVal != null && !envVal.trim().isEmpty()) {
+        return envVal.trim()
+    }
+    def propVal = project.findProperty("versionName")
+    if (propVal != null && !propVal.toString().trim().isEmpty()) {
+        return propVal.toString().trim()
+    }
+    return defaultName
+}
+
 android {
     namespace 'com.cboler.warofattrition'
     compileSdk 36
@@ -25,8 +53,8 @@ android {
         applicationId twaManifest.applicationId
         minSdk 24
         targetSdk 36
-        versionCode (System.getenv("APP_VERSION_CODE")?.toInteger() ?: (project.findProperty("versionCode")?.toInteger() ?: twaManifest.versionCode))
-        versionName (System.getenv("APP_VERSION_NAME") ?: (project.findProperty("versionName") ?: twaManifest.versionName))
+        versionCode resolveVersionCode(twaManifest.versionCode)
+        versionName resolveVersionName(twaManifest.versionName)
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
