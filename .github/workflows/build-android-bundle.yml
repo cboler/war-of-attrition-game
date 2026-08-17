@@ -1,0 +1,49 @@
+name: Build Android App Bundle (AAB)
+
+on:
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-aab:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Decode Upload Keystore
+        run: |
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.p12
+          fi
+
+      - name: Grant Execute Permission for Gradle
+        run: chmod +x android/gradlew
+
+      - name: Build Release AAB
+        working-directory: ./android
+        env:
+          WAR_UPLOAD_KEYSTORE_PATH: ${{ github.workspace }}/android/upload-keystore.p12
+          WAR_UPLOAD_KEY_ALIAS: ${{ secrets.WAR_UPLOAD_KEY_ALIAS || 'upload' }}
+          WAR_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.WAR_UPLOAD_KEYSTORE_PASSWORD || 'warofattrition2026' }}
+          WAR_UPLOAD_KEY_PASSWORD: ${{ secrets.WAR_UPLOAD_KEY_PASSWORD || 'warofattrition2026' }}
+        run: ./gradlew bundleRelease --stacktrace
+
+      - name: Upload Release AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14

@@ -57,6 +57,7 @@ android/*.p12
 *.keystore
 *.p12
 *.pem
+*.base64.txt
 signing.properties
 key.properties
 android/signing.properties
