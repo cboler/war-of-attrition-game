@@ -1,0 +1,85 @@
+apply plugin: 'com.android.application'
+
+def twaManifest = [
+    applicationId: 'com.cboler.warofattrition',
+    hostName: 'cboler.github.io',
+    launchUrl: 'https://cboler.github.io/war-of-attrition-game/?twa=1',
+    defaultUrl: 'https://cboler.github.io/war-of-attrition-game/',
+    webManifestUrl: 'https://cboler.github.io/war-of-attrition-game/manifest.webmanifest',
+    name: 'War of Attrition - Card Game',
+    launcherName: 'Attrition',
+    themeColor: '#0d221c',
+    navigationColor: '#0d221c',
+    backgroundColor: '#0d221c',
+    enableNotifications: false,
+    splashScreenFadeOutDuration: 300
+]
+
+android {
+    namespace 'com.cboler.warofattrition'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId twaManifest.applicationId
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        resValue "string", "appName", twaManifest.name
+        resValue "string", "launcherName", twaManifest.launcherName
+        resValue "string", "hostName", twaManifest.hostName
+        resValue "string", "launchUrl", twaManifest.launchUrl
+        resValue "string", "defaultUrl", twaManifest.defaultUrl
+        resValue "string", "webManifestUrl", twaManifest.webManifestUrl
+        resValue "color", "colorPrimary", twaManifest.themeColor
+        resValue "color", "navigationColor", twaManifest.navigationColor
+        resValue "color", "backgroundColor", twaManifest.backgroundColor
+        resValue "integer", "splashScreenFadeOutDuration", twaManifest.splashScreenFadeOutDuration.toString()
+    }
+
+    signingConfigs {
+        release {
+            def keystoreFile = System.getenv("WAR_UPLOAD_KEYSTORE_PATH") ?: project.findProperty("WAR_UPLOAD_KEYSTORE_PATH")
+            if (keystoreFile) {
+                storeFile file(keystoreFile)
+                storePassword System.getenv("WAR_UPLOAD_KEYSTORE_PASSWORD") ?: project.findProperty("WAR_UPLOAD_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("WAR_UPLOAD_KEY_ALIAS") ?: project.findProperty("WAR_UPLOAD_KEY_ALIAS")
+                keyPassword System.getenv("WAR_UPLOAD_KEY_PASSWORD") ?: project.findProperty("WAR_UPLOAD_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
+            def keystoreFile = System.getenv("WAR_UPLOAD_KEYSTORE_PATH") ?: project.findProperty("WAR_UPLOAD_KEYSTORE_PATH")
+            if (keystoreFile) {
+                signingConfig signingConfigs.release
+            }
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.browser:browser:1.8.0'
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+    implementation 'com.google.android.gms:play-services-games-v2:20.1.2'
+    implementation 'com.google.android.gms:play-services-tasks:18.2.0'
+}

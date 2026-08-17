@@ -7,6 +7,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
+import { PlatformAchievementsService } from '../../../core/services/platform-achievements.service';
 import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achievement.model';
 
 @Component({
@@ -208,6 +209,14 @@ import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achiev
         } @else {
           <!-- Achievements Tab -->
           <div class="achievements-tab">
+            @if (showPlayGamesButton()) {
+              <div class="play-games-banner">
+                <button mat-flat-button class="play-games-btn" (click)="openPlayGamesAchievements()">
+                  <mat-icon>sports_esports</mat-icon>
+                  View Google Play Achievements
+                </button>
+              </div>
+            }
             <div class="achievements-grid">
               @for (ach of allAchievements; track ach.id) {
                 <div class="achievement-item" [class.unlocked]="isAchievementUnlocked(ach.id)">
@@ -256,6 +265,7 @@ import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achiev
 })
 export class ProfileDialogComponent implements AfterViewInit {
   private authService = inject(AuthService);
+  private platformAchievements = inject(PlatformAchievementsService);
   private dialogRef = inject(MatDialogRef<ProfileDialogComponent>);
 
   @ViewChild('googleBtnContainer') googleBtnContainer?: ElementRef<HTMLDivElement>;
@@ -269,6 +279,9 @@ export class ProfileDialogComponent implements AfterViewInit {
     this.stats().unlockedAchievements?.length || 0
   );
   readonly totalAchievements = computed(() => ACHIEVEMENTS.length);
+  readonly showPlayGamesButton = computed(() =>
+    this.platformAchievements.isRunningInTwa() || this.platformAchievements.isPlayGamesAvailable()
+  );
 
   isEditingName = false;
   editingName = '';
@@ -281,6 +294,10 @@ export class ProfileDialogComponent implements AfterViewInit {
 
   isAchievementUnlocked(id: string): boolean {
     return (this.stats().unlockedAchievements || []).includes(id);
+  }
+
+  openPlayGamesAchievements(): void {
+    this.platformAchievements.showAchievementsOverlay();
   }
 
   toggleEditName(): void {

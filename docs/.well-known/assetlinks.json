@@ -1,0 +1,19 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.cboler.warofattrition",
+      "sha256_cert_fingerprints": [
+        "E6:4C:7F:6D:AE:84:DE:74:CE:A4:07:B6:32:99:92:55:88:82:F9:A8:85:CA:7A:2D:32:E0:0E:A2:8F:5A:F4:BE"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.use_as_origin"],
+    "target": {
+      "namespace": "web",
+      "site": "https://cboler.github.io"
+    }
+  }
+]

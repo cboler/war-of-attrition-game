@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { ACHIEVEMENTS, AchievementDefinition, UnlockedAchievement } from '../core/models/achievement.model';
 import { GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { AuthService } from '../core/services/auth.service';
+import { PlatformAchievementsService } from '../core/services/platform-achievements.service';
 import { GameEvent, GameEventBusService } from './game-event-bus.service';
 import { SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD } from './game-controller.service';
 
@@ -9,6 +10,7 @@ import { SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD } from './game-controller.servic
 export class AchievementService {
   private readonly eventBus = inject(GameEventBusService);
   private readonly authService = inject(AuthService);
+  private readonly platformAchievements = inject(PlatformAchievementsService);
 
   readonly allAchievements = signal<readonly AchievementDefinition[]>(ACHIEVEMENTS);
   readonly latestUnlock = signal<AchievementDefinition | null>(null);
@@ -17,6 +19,12 @@ export class AchievementService {
 
   constructor() {
     this.eventBus.events$.subscribe(event => this.evaluateEvent(event));
+    
+    // Reconcile existing unlocks with native platform on startup
+    const existing = this.authService.activeProfile().statistics.unlockedAchievements || [];
+    if (existing.length > 0) {
+      this.platformAchievements.reconcileUnlockedAchievements(existing);
+    }
   }
 
   isUnlocked(id: string): boolean {
@@ -31,6 +39,9 @@ export class AchievementService {
 
     // Persist unlock
     this.authService.unlockAchievement(id);
+
+    // Sync with native platform (safe no-op on web)
+    this.platformAchievements.unlockAchievement(id);
 
     // Show toast banner
     this.latestUnlock.set(def);

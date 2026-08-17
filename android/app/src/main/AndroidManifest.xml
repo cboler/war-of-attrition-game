@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.cboler.warofattrition">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/appName"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.WarOfAttrition">
+
+        <meta-data
+            android:name="asset_statements"
+            android:value="@string/asset_statements" />
+
+        <!-- Optional Play Games app ID meta-data if required by Cloud Project configuration -->
+        <meta-data
+            android:name="com.google.android.gms.games.APP_ID"
+            android:value="@string/app_name" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/launcherName"
+            android:theme="@style/Theme.WarOfAttrition"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- TWA Deep Linking Intent Filter -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="cboler.github.io"
+                    android:pathPrefix="/war-of-attrition-game" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

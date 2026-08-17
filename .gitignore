@@ -45,4 +45,21 @@ Thumbs.db
 docs_backup/
 requirements.html
 
-
+# Android & Signing Secrets (NEVER COMMIT)
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/*.jks
+android/*.keystore
+android/*.p12
+*.jks
+*.keystore
+*.p12
+*.pem
+signing.properties
+key.properties
+android/signing.properties
+android/key.properties
+*.mobileprovision
+google-services.json

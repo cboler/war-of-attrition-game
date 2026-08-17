@@ -243,6 +243,43 @@
   }
 }
 
+.achievements-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.play-games-banner {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+
+  .play-games-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.8rem;
+    border-radius: 8px;
+    padding: 6px 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: transform 120ms ease, background 120ms ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
+      transform: translateY(-1px);
+    }
+  }
+}
+
 .achievements-grid {
   display: grid;
   grid-template-columns: 1fr;

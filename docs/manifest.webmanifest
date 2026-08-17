@@ -1,12 +1,14 @@
 {
   "name": "War of Attrition - Card Game",
   "short_name": "War of Attrition",
-  "description": "A two-player head-to-head card game of attrition",
+  "description": "A two-player tactical card game of attrition where power clashes and 2s conquer Aces",
   "display": "standalone",
-  "scope": "./",
-  "start_url": "./",
-  "theme_color": "#1976d2",
-  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "scope": "/war-of-attrition-game/",
+  "start_url": "/war-of-attrition-game/",
+  "theme_color": "#0d221c",
+  "background_color": "#0d221c",
+  "categories": ["games", "card"],
   "icons": [
     {
       "src": "icons/icon-72x72.png",

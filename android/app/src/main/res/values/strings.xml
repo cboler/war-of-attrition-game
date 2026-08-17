@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">War of Attrition</string>
+    <string name="game_view_title">Attrition</string>
+    <string name="asset_statements">[{\\\"relation\\\": [\\\"delegate_permission/common.handle_all_urls\\\"], \\\"target\\\": {\\\"namespace\\\": \\\"web\\\", \\\"site\\\": \\\"https://cboler.github.io\\\"}}]</string>
+</resources>

@@ -1,0 +1,50 @@
+{
+  "packageId": "com.cboler.warofattrition",
+  "host": "cboler.github.io",
+  "name": "War of Attrition - Card Game",
+  "launcherName": "Attrition",
+  "display": "standalone",
+  "themeColor": "#0d221c",
+  "themeColorDark": "#0d221c",
+  "navigationColor": "#0d221c",
+  "navigationColorDark": "#0d221c",
+  "navigationDividerColor": "#00000000",
+  "navigationDividerColorDark": "#00000000",
+  "backgroundColor": "#0d221c",
+  "enableNotifications": false,
+  "startUrl": "/war-of-attrition-game/?twa=1",
+  "iconUrl": "https://cboler.github.io/war-of-attrition-game/icons/icon-512x512.png",
+  "maskableIconUrl": "https://cboler.github.io/war-of-attrition-game/icons/icon-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://cboler.github.io/war-of-attrition-game/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": false
+    },
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playGames": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": false,
+  "isChromeOSOnly": false,
+  "isAndroidXEnabled": true,
+  "minSdkVersion": 24,
+  "targetSdkVersion": 36,
+  "compileSdkVersion": 36
+}
+

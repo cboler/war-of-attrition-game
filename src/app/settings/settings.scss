@@ -88,6 +88,48 @@
     width: 100%;
     max-width: 320px;
   }
+
+  &.danger-zone-section {
+    padding-top: 16px;
+
+    .danger-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ff9b9b;
+
+      mat-icon {
+        color: #ff9b9b;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+
+  &.about-section {
+    padding-top: 16px;
+
+    .about-desc {
+      font-style: italic;
+      color: rgba(247, 240, 225, 0.6);
+    }
+
+    .legal-links-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+
+      a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #e5c175;
+        font-size: 0.8rem;
+      }
+    }
+  }
 }
 
 .toggle-setting {

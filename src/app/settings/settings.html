@@ -80,6 +80,42 @@
                 </mat-slide-toggle>
               </div>
             </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Danger Zone / Reset -->
+            <div class="setting-section danger-zone-section">
+              <h3 class="danger-title">
+                <mat-icon>warning</mat-icon>
+                Reset & Defaults
+              </h3>
+              <p>Reset all configuration preferences (theme, animation speed, audio) back to factory defaults.</p>
+              <button mat-stroked-button color="warn" (click)="onResetSettings()">
+                <mat-icon>restore</mat-icon>
+                Reset All Settings
+              </button>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- About & Distribution Information -->
+            <div class="setting-section about-section">
+              <h3>About War of Attrition</h3>
+              <p class="about-desc">
+                A two-player tactical card game of attrition where power clashes and 2s conquer Aces.
+              </p>
+              <div class="legal-links-row">
+                <a mat-button routerLink="/privacy">
+                  <mat-icon>privacy_tip</mat-icon> Privacy Policy
+                </a>
+                <a mat-button routerLink="/support">
+                  <mat-icon>help_outline</mat-icon> Support & Help
+                </a>
+                <a mat-button routerLink="/delete-account">
+                  <mat-icon>delete_forever</mat-icon> Account & Data Deletion
+                </a>
+              </div>
+            </div>
           </div>
         </mat-tab>
 
@@ -189,21 +225,6 @@
                   Reset Active Profile Stats
                 </button>
               </div>
-            </div>
-          </div>
-        </mat-tab>
-
-        <!-- Advanced Tab -->
-        <mat-tab label="Reset">
-          <div class="tab-content">
-            <div class="setting-section">
-              <h3>Reset Settings</h3>
-              <p>Reset all settings preferences to their default values. This action cannot be undone.</p>
-              
-              <button mat-raised-button color="warn" (click)="onResetSettings()">
-                <mat-icon>restore</mat-icon>
-                Reset All Settings
-              </button>
             </div>
           </div>
         </mat-tab>
