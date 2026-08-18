@@ -1,0 +1,17 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.use_as_origin"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.cboler.warofattrition",
+      "sha256_cert_fingerprints": [
+        "7A:9B:DC:0C:BA:8C:73:83:96:C1:43:55:BB:FF:30:88:2B:CB:E3:E9:42:B9:7D:FA:D7:98:19:78:0B:38:FA:8D",
+        "31:3F:20:92:1B:20:E8:42:C4:62:A9:FA:60:6E:67:DC:AD:DE:26:23:A6:46:0C:3F:4F:A7:85:BC:2F:20:EB:22",
+        "FF:99:D0:29:44:71:1E:58:40:41:D0:DB:CA:C6:B7:20:2C:0B:A5:94:1D:8E:2C:88:AF:22:37:D9:65:E3:F2:1B"
+      ]
+    }
+  }
+]
