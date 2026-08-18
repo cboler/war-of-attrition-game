@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { PlatformAchievementsService } from './platform-achievements.service';
+import { PlatformAchievementsService, VerifiedTwaTransport } from './platform-achievements.service';
 import { TWA_PROTOCOL_VERSION } from '../models/twa-bridge.model';
 
 describe('PlatformAchievementsService', () => {
@@ -22,7 +22,7 @@ describe('PlatformAchievementsService', () => {
   it('should safely no-op on web when calling unlockAchievement, showAchievementsOverlay, or requestPlayGamesSignIn', () => {
     expect(() => {
       service.unlockAchievement('war.assassin');
-      service.incrementAchievement('profile.veteran', 10);
+      service.setAchievementSteps('profile.veteran', 10);
       service.showAchievementsOverlay();
       service.requestPlayGamesSignIn();
     }).not.toThrow();
@@ -34,7 +34,7 @@ describe('PlatformAchievementsService', () => {
     }).not.toThrow();
   });
 
-  it('should transition to ready state when receiving valid PLAY_GAMES_READY postMessage', () => {
+  it('does not trust an ordinary window message as proof of native readiness', () => {
     const readyMessage = new MessageEvent('message', {
       data: JSON.stringify({
         version: TWA_PROTOCOL_VERSION,
@@ -45,21 +45,30 @@ describe('PlatformAchievementsService', () => {
 
     window.dispatchEvent(readyMessage);
 
-    expect(service.isRunningInTwa()).toBe(true);
-    expect(service.isPlayGamesAvailable()).toBe(true);
+    expect(service.isPlayGamesAvailable()).toBe(false);
+    expect(service.isPlayGamesSignedIn()).toBe(false);
   });
 
-  it('should reject malformed or unknown protocol version bridge messages', () => {
-    const invalidVersionMessage = new MessageEvent('message', {
-      data: JSON.stringify({
-        version: 'v999',
-        type: 'PLAY_GAMES_READY'
-      }),
-      origin: window.location.origin
-    });
+  it('uses absolute set-steps after a verified, signed-in transport connects', () => {
+    const sent: string[] = [];
+    let receive: (payload: unknown) => void = () => undefined;
+    const transport: VerifiedTwaTransport = {
+      send: payload => sent.push(payload),
+      subscribe: handler => {
+        receive = handler;
+        return () => undefined;
+      }
+    };
 
-    window.dispatchEvent(invalidVersionMessage);
-    // Should not transition if version is invalid
-    // Note: if previous test changed state, verify it rejects gracefully without crashing
+    service.setAchievementSteps('profile.veteran', 17);
+    service.connectVerifiedTransport(transport);
+    receive({ version: TWA_PROTOCOL_VERSION, type: 'PLAY_GAMES_SIGNED_IN' });
+
+    const messages = sent.map(message => JSON.parse(message) as { type: string; currentSteps?: number });
+    expect(messages.some(message => message.type === 'PLAY_GAMES_INIT')).toBeTrue();
+    expect(messages.some(message =>
+      message.type === 'SET_ACHIEVEMENT_STEPS' && message.currentSteps === 17
+    )).toBeTrue();
+    expect(messages.some(message => message.type === 'INCREMENT_ACHIEVEMENT')).toBeFalse();
   });
 });

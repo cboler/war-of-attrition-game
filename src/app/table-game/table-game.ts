@@ -7,7 +7,8 @@ import { AchievementService } from '../services/achievement.service';
 import {
   GameControllerService,
   PresentationState,
-  TableCardView
+  TableCardView,
+  battleAnnouncementFor
 } from '../services/game-controller.service';
 import { CommonModule } from '@angular/common';
 import { CardComponent } from '../shared/components/card/card.component';
@@ -61,6 +62,10 @@ export class TableGame implements OnInit {
       : null
   );
   protected readonly newestBattleRound = computed(() => this.controller.battleLayers().length);
+  protected readonly battleAnnouncement = computed(() => {
+    const round = this.newestBattleRound();
+    return battleAnnouncementFor(round);
+  });
 
   protected readonly boneyardThicknessClass = computed(() => {
     const count = this.controller.visibleBoneyardCount();
@@ -72,7 +77,7 @@ export class TableGame implements OnInit {
   });
 
   ngOnInit(): void {
-    this.controller.startNewGame();
+    this.controller.ensureGameStarted();
   }
 
   protected draw(): void {
@@ -117,6 +122,10 @@ export class TableGame implements OnInit {
 
   protected isGoingToBoneyard(id: string): boolean {
     return this.controller.cardsMovingToBoneyard().includes(id);
+  }
+
+  protected battleQuakeLevel(level: number): boolean {
+    return this.newestBattleRound() === level && this.settings.autoPlayAnimations();
   }
 
   protected cardGlow(owner: PlayerType): 'green' | 'red' | 'blue' | null {

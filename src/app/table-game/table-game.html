@@ -1,4 +1,12 @@
-<div class="table-page" [class.motion-disabled]="!settings.autoPlayAnimations()" (click)="onTableClick($event)">
+<div
+  class="table-page"
+  [class.motion-disabled]="!settings.autoPlayAnimations()"
+  [class.speed-fast]="settings.animationSpeed() === 'fast'"
+  [class.speed-normal]="settings.animationSpeed() === 'normal'"
+  [class.speed-slow]="settings.animationSpeed() === 'slow'"
+  [class.boneyard-left]="settings.deckHand() === 'left'"
+  [class.boneyard-right]="settings.deckHand() === 'right'"
+  (click)="onTableClick($event)">
   <app-card-table>
     <app-player-seat
       table-seat-top
@@ -23,9 +31,15 @@
         </div>
       }
 
-      <div class="announcement" aria-live="polite" aria-atomic="true">
+      <div
+        class="announcement"
+        [class.battle-quake-2]="battleQuakeLevel(2)"
+        [class.battle-quake-3]="battleQuakeLevel(3)"
+        [class.battle-quake-4]="newestBattleRound() >= 4 && settings.autoPlayAnimations()"
+        aria-live="polite"
+        aria-atomic="true">
         @if (battleActive()) {
-          <span class="eyebrow">BATTLE · LAYER {{ newestBattleRound() }}</span>
+          <span class="eyebrow">{{ battleAnnouncement() }}</span>
         }
         <strong [class.status-only]="opponentThinking()">{{ controller.tableMessage() }}</strong>
       </div>
@@ -43,10 +57,12 @@
                     [class.eligible]="view.eligible"
                     [class.selected]="view.selected"
                     [class.casualty]="view.casualty"
+                    [class.casualty-major]="view.casualtyEmphasis === 'major'"
+                    [class.casualty-face]="view.casualtyEmphasis === 'face'"
                     [class.returning]="isReturning(view.id)"
                     [class.to-boneyard]="isGoingToBoneyard(view.id)"
                     [disabled]="!view.eligible"
-                    [attr.aria-label]="view.eligible ? 'Select opponent Battle card ' + (index + 1) + ' from newest layer' : (view.faceDown ? 'Hidden opponent Battle card' : null)"
+                    [attr.aria-label]="view.eligible ? 'Select opponent Battle card ' + (index + 1) + ' from the newest three' : (view.faceDown ? 'Hidden opponent Battle card' : null)"
                     (click)="chooseTarget(view)">
                     @if (view.eligible) {
                       <span class="target-pointer pointer-down" aria-hidden="true">↓</span>
@@ -108,6 +124,8 @@
                     class="battle-card-shell"
                     [class.selected]="view.selected"
                     [class.casualty]="view.casualty"
+                    [class.casualty-major]="view.casualtyEmphasis === 'major'"
+                    [class.casualty-face]="view.casualtyEmphasis === 'face'"
                     [class.returning]="isReturning(view.id)"
                     [class.to-boneyard]="isGoingToBoneyard(view.id)">
                     <app-card [card]="view.card" [faceDown]="view.faceDown" [glow]="view.selected ? cardGlow(player.PLAYER) : null" />
@@ -212,7 +230,7 @@
               </div>
               @if (summary.deepestBattleLayer > 1) {
                 <div class="stat-pill">
-                  <strong>Layer {{ summary.deepestBattleLayer }}</strong>
+                  <strong>Battle {{ summary.deepestBattleLayer }}</strong>
                   <span>Deepest Battle</span>
                 </div>
               }

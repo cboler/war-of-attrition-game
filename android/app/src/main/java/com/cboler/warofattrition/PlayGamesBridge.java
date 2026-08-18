@@ -1,9 +1,7 @@
 package com.cboler.warofattrition;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.util.Log;
-import androidx.annotation.NonNull;
 import com.google.android.gms.games.AchievementsClient;
 import com.google.android.gms.games.GamesSignInClient;
 import com.google.android.gms.games.PlayGames;
@@ -94,11 +92,11 @@ public class PlayGamesBridge {
                     unlockAchievement(internalId, playGamesId);
                     break;
 
-                case "INCREMENT_ACHIEVEMENT":
+                case "SET_ACHIEVEMENT_STEPS":
                     String incInternalId = obj.optString("internalAchievementId", "");
                     String incPlayGamesId = obj.optString("playGamesAchievementId", "");
                     int steps = obj.optInt("currentSteps", 1);
-                    incrementAchievement(incInternalId, incPlayGamesId, steps);
+                    setAchievementSteps(incInternalId, incPlayGamesId, steps);
                     break;
 
                 case "SHOW_ACHIEVEMENTS":
@@ -133,8 +131,13 @@ public class PlayGamesBridge {
     }
 
     public void unlockAchievement(String internalId, String playGamesId) {
-        if (playGamesId == null || playGamesId.startsWith("CgkI_PLACEHOLDER") || playGamesId.isEmpty()) {
-            Log.d(TAG, "Achievement placeholder ID received for " + internalId + ", skipping native Google Play call.");
+        if (playGamesId == null || playGamesId.isEmpty()) {
+            Log.d(TAG, "Missing achievement ID for " + internalId + ", skipping native Google Play call.");
+            return;
+        }
+
+        if (!isSignedIn) {
+            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "Play Games sign-in required");
             return;
         }
 
@@ -157,8 +160,13 @@ public class PlayGamesBridge {
         }
     }
 
-    public void incrementAchievement(String internalId, String playGamesId, int steps) {
-        if (playGamesId == null || playGamesId.startsWith("CgkI_PLACEHOLDER") || playGamesId.isEmpty()) {
+    public void setAchievementSteps(String internalId, String playGamesId, int steps) {
+        if (playGamesId == null || playGamesId.isEmpty()) {
+            return;
+        }
+
+        if (!isSignedIn) {
+            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "Play Games sign-in required");
             return;
         }
 
@@ -167,21 +175,25 @@ public class PlayGamesBridge {
         }
 
         try {
-            achievementsClient.incrementImmediate(playGamesId, steps).addOnCompleteListener(task -> {
+            achievementsClient.setStepsImmediate(playGamesId, steps).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     sendToWeb("ACHIEVEMENT_SYNCED", internalId, playGamesId, null);
                 } else {
-                    String error = task.getException() != null ? task.getException().getMessage() : "Unknown increment error";
+                    String error = task.getException() != null ? task.getException().getMessage() : "Unknown set-steps error";
                     sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
                 }
             });
         } catch (Exception e) {
-            Log.w(TAG, "Failed to increment achievement: " + e.getMessage());
+            Log.w(TAG, "Failed to set achievement steps: " + e.getMessage());
             sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, e.getMessage());
         }
     }
 
     public void showAchievements() {
+        if (!isSignedIn) {
+            return;
+        }
+
         if (achievementsClient == null) {
             this.achievementsClient = PlayGames.getAchievementsClient(activity);
         }

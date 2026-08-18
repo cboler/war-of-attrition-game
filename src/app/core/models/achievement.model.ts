@@ -14,6 +14,48 @@ export interface UnlockedAchievement {
 
 export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   {
+    id: 'war.first_casualty',
+    name: 'First Casualty',
+    description: 'Witness the first public card fall to the Boneyard.',
+    icon: 'playing_cards',
+    category: 'milestone'
+  },
+  {
+    id: 'war.first_battle',
+    name: 'Baptism by Fire',
+    description: 'Experience your first Battle.',
+    icon: 'swords',
+    category: 'battle'
+  },
+  {
+    id: 'war.first_win',
+    name: 'First Victory',
+    description: 'Win your first resolved game.',
+    icon: 'emoji_events',
+    category: 'milestone'
+  },
+  {
+    id: 'war.first_defeat',
+    name: 'Hard Lesson',
+    description: 'Complete your first resolved defeat.',
+    icon: 'school',
+    category: 'milestone'
+  },
+  {
+    id: 'war.first_rescue',
+    name: 'Rescue Mission',
+    description: 'Rescue a beaten card with reinforcement.',
+    icon: 'health_and_safety',
+    category: 'signature'
+  },
+  {
+    id: 'war.first_battle_win',
+    name: 'Hold the Field',
+    description: 'Win your first Battle.',
+    icon: 'flag',
+    category: 'battle'
+  },
+  {
     id: 'war.assassin',
     name: 'Assassin',
     description: 'Defeat an Ace with a 2.',
@@ -37,23 +79,30 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   {
     id: 'war.battle_layer_3',
     name: 'Down the Rabbit Hole',
-    description: 'Reach Battle Layer 3.',
+    description: 'Reach Battle 3.',
     icon: 'layers',
     category: 'battle'
   },
   {
     id: 'war.battle_layer_4',
     name: 'How Deep Does This Go?',
-    description: 'Reach Battle Layer 4.',
+    description: 'Reach Battle 4.',
     icon: 'filter_drama',
     category: 'battle'
   },
   {
     id: 'war.not_today',
     name: 'Not Today',
-    description: 'Successfully challenge to save a 2.',
+    description: 'Successfully reinforce to save an original 2.',
     icon: 'shield',
     category: 'signature'
+  },
+  {
+    id: 'war.deep_battle_win',
+    name: 'Into the Breach',
+    description: 'Win a Battle at depth 3 or greater.',
+    icon: 'shield',
+    category: 'battle'
   },
   {
     id: 'war.royal_disaster',
@@ -61,6 +110,20 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     description: 'Lose both an Ace and a 2 in the same Battle.',
     icon: 'sentiment_very_dissatisfied',
     category: 'battle'
+  },
+  {
+    id: 'war.no_reinforcements_win',
+    name: 'No Reinforcements Needed',
+    description: 'Win a resolved game without sending reinforcement.',
+    icon: 'front_hand',
+    category: 'signature'
+  },
+  {
+    id: 'war.five_battles_game',
+    name: 'War of Attrition',
+    description: 'Resolve a game containing at least 5 distinct Battles.',
+    icon: 'military_tech',
+    category: 'endurance'
   },
   {
     id: 'war.untouchable',
@@ -72,7 +135,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   {
     id: 'war.marathon',
     name: 'Marathon',
-    description: 'Resolve a game lasting at least 100 turns.',
+    description: 'Resolve a game lasting at least 40 turns.',
     icon: 'timer',
     category: 'endurance'
   },
@@ -82,6 +145,13 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     description: 'Win the war after trailing by at least 15 cards.',
     icon: 'trending_up',
     category: 'signature'
+  },
+  {
+    id: 'profile.campaigner',
+    name: 'Campaigner',
+    description: 'Complete 10 resolved games.',
+    icon: 'route',
+    category: 'milestone'
   },
   {
     id: 'profile.veteran',

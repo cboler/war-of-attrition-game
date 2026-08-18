@@ -105,14 +105,14 @@ export class StoryBookService {
         let text = '';
         if (event.challengerWon) {
           text = event.challenger === PlayerType.PLAYER
-            ? `${reinfStr} held against ${origStr}. You successfully defended your position!`
-            : `Opponent reinforcement ${reinfStr} defeated ${origStr}.`;
+            ? `Card rescued. ${reinfStr} defeated ${origStr}, and both of your cards survive.`
+            : `Opponent rescues their card. ${reinfStr} defeated ${origStr}.`;
         } else if (event.winner === null) {
           text = `Reinforcement ${reinfStr} tied ${origStr}. Battle initiated!`;
         } else {
           text = event.challenger === PlayerType.PLAYER
-            ? `Reinforcement ${reinfStr} failed against ${origStr}. Both cards lost to the Boneyard.`
-            : `Original card ${origStr} held against opponent reinforcement ${reinfStr}.`;
+            ? `${reinfStr} could not rescue the card. Both are now lost.`
+            : `Both opponent cards are now lost. ${origStr} holds.`;
         }
 
         this.addEntry({
@@ -131,7 +131,7 @@ export class StoryBookService {
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'battle_header',
-          eyebrow: `TURN ${event.turnNumber} · BATTLE LAYER ${event.layerRound}`,
+          eyebrow: `TURN ${event.turnNumber} · BATTLE ${event.layerRound}`,
           text: '3 cards dealt face-down for each side. Choose your target blindly.',
           badge: 'battle'
         });
@@ -166,7 +166,7 @@ export class StoryBookService {
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'battle_reveal',
-          eyebrow: `LAYER ${event.layerRound} REVEAL`,
+          eyebrow: `BATTLE ${event.layerRound} REVEAL`,
           text,
           cards: [event.playerChosenCard, event.opponentChosenCard],
           badge: event.winner ? (event.winner === PlayerType.PLAYER ? 'victory' : 'defeat') : 'battle'

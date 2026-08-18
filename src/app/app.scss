@@ -1,8 +1,9 @@
 :host {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow-x: hidden;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
 }
 
 .app-toolbar {
@@ -10,6 +11,8 @@
   top: 0;
   z-index: 1000;
   min-height: 60px;
+  height: 60px;
+  flex: 0 0 60px;
   background: #0d221c !important;
   color: #f7f0e1 !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
@@ -17,6 +20,8 @@
   
   @media (max-width: 599px) {
     min-height: 52px;
+    height: 52px;
+    flex-basis: 52px;
     padding: 0 10px;
   }
 
@@ -231,6 +236,22 @@
         background: #2e7d32;
       }
     }
+
+    .profile-settings-icon {
+      position: absolute;
+      top: -5px;
+      right: -7px;
+      display: grid;
+      place-items: center;
+      width: 15px;
+      height: 15px;
+      border: 1px solid #0d221c;
+      border-radius: 50%;
+      background: #e5c175;
+      color: #173a31;
+      font-size: 10px;
+      line-height: 15px;
+    }
   }
 
   .profile-name-text {
@@ -247,7 +268,14 @@
 
 .app-content {
   flex: 1 1 auto;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: auto;
   position: relative;
   background-color: #0c1815;
+}
+
+.app-content:has(app-table-game) {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
 }

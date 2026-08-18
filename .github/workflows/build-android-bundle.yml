@@ -50,6 +50,7 @@ jobs:
           WAR_UPLOAD_KEY_PASSWORD: ${{ secrets.WAR_UPLOAD_KEY_PASSWORD || 'warofattrition2026' }}
           APP_VERSION_CODE: ${{ inputs.version_code || '' }}
           APP_VERSION_NAME: ${{ inputs.version_name || '' }}
+          PLAY_GAMES_PROJECT_ID: ${{ vars.PLAY_GAMES_PROJECT_ID || '334487063631' }}
         run: ./gradlew bundleRelease --stacktrace
 
       - name: Upload Release AAB Artifact

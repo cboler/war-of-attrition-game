@@ -84,6 +84,32 @@ describe('TurnResolutionService', () => {
     expectConserved();
   });
 
+  it('makes an initial player 2 versus opponent Ace final without opponent consideration', () => {
+    const cards = activeCards();
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(true);
+    const challengeDecision = spyOn(opponentAI, 'shouldChallenge');
+
+    const result = service.resolveTurn(cards.playerCard, cards.opponentCard);
+
+    expect(result.winner).toBe(PlayerType.PLAYER);
+    expect(result.opponentConsidered).toBeFalse();
+    expect(result.opponentChallenge).toBeFalse();
+    expect(challengeDecision).not.toHaveBeenCalled();
+  });
+
+  it('makes an initial player Ace versus opponent 2 final without a human challenge', () => {
+    const cards = activeCards();
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(true);
+
+    const result = service.resolveTurn(cards.playerCard, cards.opponentCard);
+
+    expect(result.winner).toBe(PlayerType.OPPONENT);
+    expect(result.canChallenge).toBeFalse();
+    expect(gameState.currentState.canChallenge).toBeFalse();
+  });
+
   it('does not pre-settle a player loss while the challenge decision is pending', () => {
     const cards = activeCards();
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
@@ -135,10 +161,12 @@ describe('TurnResolutionService', () => {
       expectConserved();
 
       if (outcome === ComparisonResult.PLAYER_WINS) {
+        expect(result.message).toBe('Card rescued. Both cards survive.');
         expect(gameState.playerCardCount()).toBe(26);
         expect(gameState.opponentCardCount()).toBe(25);
         expect(gameState.discardedCardCount()).toBe(1);
       } else if (outcome === ComparisonResult.OPPONENT_WINS) {
+        expect(result.message).toBe('Both are now lost.');
         expect(gameState.playerCardCount()).toBe(24);
         expect(gameState.opponentCardCount()).toBe(26);
         expect(gameState.discardedCardCount()).toBe(2);
@@ -174,10 +202,12 @@ describe('TurnResolutionService', () => {
       expectConserved();
 
       if (outcome === ComparisonResult.OPPONENT_WINS) {
+        expect(result.message).toBe('Opponent rescues their card.');
         expect(gameState.opponentCardCount()).toBe(26);
         expect(gameState.playerCardCount()).toBe(25);
         expect(gameState.discardedCardCount()).toBe(1);
       } else if (outcome === ComparisonResult.PLAYER_WINS) {
+        expect(result.message).toBe('Both opponent cards are now lost. You hold.');
         expect(gameState.opponentCardCount()).toBe(24);
         expect(gameState.playerCardCount()).toBe(26);
         expect(gameState.discardedCardCount()).toBe(2);
@@ -211,6 +241,7 @@ describe('TurnResolutionService', () => {
     expect(result.winner).toBe(PlayerType.PLAYER);
     expect(result.terminalOutcome).toBe(GameOutcome.PLAYER_WIN);
     expect(gameState.currentState.outcome).toBe(GameOutcome.PLAYER_WIN);
+    expect(result.message).toBe('Opponent overrun — they needed 3 cards to continue the Battle, but only had 2.');
   });
 
   it('awards attrition to the opponent with 3 cards when the player has only 2', () => {
@@ -218,18 +249,21 @@ describe('TurnResolutionService', () => {
     expect(result.winner).toBe(PlayerType.OPPONENT);
     expect(result.terminalOutcome).toBe(GameOutcome.OPPONENT_WIN);
     expect(gameState.currentState.outcome).toBe(GameOutcome.OPPONENT_WIN);
+    expect(result.message).toBe('Overrun — you needed 3 cards to continue the Battle, but only had 2.');
   });
 
   it('uses remaining-card count when neither side can continue: player 2, opponent 1', () => {
     const result = resolveTerminalAttrition(2, 1);
     expect(result.winner).toBe(PlayerType.PLAYER);
     expect(result.terminalOutcome).toBe(GameOutcome.PLAYER_WIN);
+    expect(result.message).toBe('Opponent outnumbered — neither side could continue. You had 2 cards remaining to their 1.');
   });
 
   it('uses remaining-card count when neither side can continue: player 1, opponent 2', () => {
     const result = resolveTerminalAttrition(1, 2);
     expect(result.winner).toBe(PlayerType.OPPONENT);
     expect(result.terminalOutcome).toBe(GameOutcome.OPPONENT_WIN);
+    expect(result.message).toBe('Outnumbered — neither side could continue. Opponent had 2 cards remaining to your 1.');
   });
 
   it('ends in a true tie when neither side can continue at 2 cards each', () => {
@@ -239,6 +273,7 @@ describe('TurnResolutionService', () => {
     expect(gameState.currentState.winner).toBeNull();
     expect(gameState.currentState.outcome).toBe(GameOutcome.TIE);
     expect(gameState.currentState.activeTurn).not.toBeNull();
+    expect(result.message).toBe('Neither side could continue. Both had 2 cards remaining. The war ends in a true tie.');
   });
 
   it('ends in a true tie at 0 cards each when both final cards tie', () => {

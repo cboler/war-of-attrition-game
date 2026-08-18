@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ACHIEVEMENTS, AchievementDefinition, UnlockedAchievement } from '../core/models/achievement.model';
+import { ACHIEVEMENTS, AchievementDefinition } from '../core/models/achievement.model';
 import { GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { Rank } from '../core/models/card.model';
 import { AuthService } from '../core/services/auth.service';
 import { PlatformAchievementsService } from '../core/services/platform-achievements.service';
 import { GameEvent, GameEventBusService } from './game-event-bus.service';
@@ -25,6 +26,7 @@ export class AchievementService {
     if (existing.length > 0) {
       this.platformAchievements.reconcileUnlockedAchievements(existing);
     }
+    this.reconcileResolvedGameMilestones();
   }
 
   isUnlocked(id: string): boolean {
@@ -77,35 +79,66 @@ export class AchievementService {
         }
         break;
 
+      case 'cards_sent_to_boneyard':
+        if (event.cards.length > 0) {
+          this.unlock('war.first_casualty', event.turnNumber);
+        }
+        break;
+
       case 'challenge_resolved':
+        if (event.challenger === PlayerType.PLAYER && event.challengerWon) {
+          this.unlock('war.first_rescue', event.turnNumber);
+        }
         // NOT TODAY: Successfully challenge to save a 2
         if (event.challenger === PlayerType.PLAYER && event.challengerWon && event.savedTwo) {
           this.unlock('war.not_today', event.turnNumber);
+        }
+        if (
+          event.winner === PlayerType.PLAYER &&
+          ((event.reinforcementCard.rank === Rank.TWO && event.originalWinnerCard.rank === Rank.ACE) ||
+            (event.originalWinnerCard.rank === Rank.TWO && event.reinforcementCard.rank === Rank.ACE))
+        ) {
+          this.unlock('war.assassin', event.turnNumber);
         }
         break;
 
       case 'battle_layer_added':
       case 'battle_started':
-        // DOWN THE RABBIT HOLE: Reach Battle Layer 3
+        if (event.type === 'battle_started') {
+          this.unlock('war.first_battle', event.turnNumber);
+        }
+        // DOWN THE RABBIT HOLE: Reach Battle 3 (stable ID retains "layer")
         if (event.layerRound >= 3) {
           this.unlock('war.battle_layer_3', event.turnNumber);
         }
-        // HOW DEEP DOES THIS GO?: Reach Battle Layer 4
+        // HOW DEEP DOES THIS GO?: Reach Battle 4 (stable ID retains "layer")
         if (event.layerRound >= 4) {
           this.unlock('war.battle_layer_4', event.turnNumber);
         }
         break;
 
+      case 'battle_cards_revealed':
+        if (event.specialRule && event.winner === PlayerType.PLAYER) {
+          this.unlock('war.assassin', event.turnNumber);
+        }
+        break;
+
       case 'battle_resolved':
         // MASSACRE: Defeat at least 10 opponent cards in one Battle
-        if (event.winner === PlayerType.PLAYER && event.revealedCasualties.length >= 10) {
+        if (event.winner === PlayerType.PLAYER) {
+          this.unlock('war.first_battle_win', event.turnNumber);
+        }
+        if (event.winner === PlayerType.PLAYER && event.layerDepth >= 3) {
+          this.unlock('war.deep_battle_win', event.turnNumber);
+        }
+        if (event.winner === PlayerType.PLAYER && event.totalCardsAtStake >= 10) {
           this.unlock('war.massacre', event.turnNumber);
         }
         // ROYAL DISASTER: Lose both an Ace and a 2 in the same Battle
         if (event.loser === PlayerType.PLAYER && event.lostAceAndTwo) {
           this.unlock('war.royal_disaster', event.turnNumber);
         }
-        // Layer check on resolution as well
+        // Depth check on resolution as well
         if (event.layerDepth >= 3) {
           this.unlock('war.battle_layer_3', event.turnNumber);
         }
@@ -119,6 +152,7 @@ export class AchievementService {
         const totalResolvedGames = stats.gamesPlayed; // updated after resolution
 
         if (event.outcome === GameOutcome.PLAYER_WIN) {
+          this.unlock('war.first_win', event.turns);
           // PYRRHIC VICTORY: Win with exactly 1 card remaining
           if (event.playerCardsRemaining === 1) {
             this.unlock('war.pyrrhic_victory', event.turns);
@@ -131,11 +165,23 @@ export class AchievementService {
           if (event.maxDeficitExperienced >= SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD) {
             this.unlock('war.comeback_15', event.turns);
           }
+          if (event.playerReinforcementsSent === 0) {
+            this.unlock('war.no_reinforcements_win', event.turns);
+          }
+        } else if (event.outcome === GameOutcome.OPPONENT_WIN) {
+          this.unlock('war.first_defeat', event.turns);
         }
 
-        // MARATHON: Resolve a game lasting at least 100 turns
-        if (event.turns >= 100) {
+        if (event.turns >= 40) {
           this.unlock('war.marathon', event.turns);
+        }
+
+        if (event.battlesCount >= 5) {
+          this.unlock('war.five_battles_game', event.turns);
+        }
+
+        if (totalResolvedGames >= 10) {
+          this.unlock('profile.campaigner', event.turns);
         }
 
         // VETERAN: Complete 25 resolved games
@@ -146,8 +192,22 @@ export class AchievementService {
         if (totalResolvedGames >= 100) {
           this.unlock('profile.centurion', event.turns);
         }
+        this.syncIncrementalProgress(totalResolvedGames);
         break;
       }
     }
+  }
+
+  private reconcileResolvedGameMilestones(): void {
+    const resolvedGames = this.authService.activeProfile().statistics.gamesPlayed || 0;
+    if (resolvedGames >= 10) this.unlock('profile.campaigner');
+    if (resolvedGames >= 25) this.unlock('profile.veteran');
+    if (resolvedGames >= 100) this.unlock('profile.centurion');
+    this.syncIncrementalProgress(resolvedGames);
+  }
+
+  private syncIncrementalProgress(resolvedGames: number): void {
+    this.platformAchievements.setAchievementSteps('profile.veteran', resolvedGames);
+    this.platformAchievements.setAchievementSteps('profile.centurion', resolvedGames);
   }
 }

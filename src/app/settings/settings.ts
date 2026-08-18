@@ -12,7 +12,6 @@ import { RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Inject } from '@angular/core';
 import { SettingsService } from '../core/services/settings.service';
-import { AuthService } from '../core/services/auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -31,12 +30,8 @@ import { AuthService } from '../core/services/auth.service';
   styleUrl: './settings.scss'
 })
 export class Settings {
-  readonly authService = inject(AuthService);
   readonly settingsService = inject(SettingsService);
   private readonly dialog = inject(MatDialog);
-
-  readonly activeProfile = this.authService.activeProfile;
-  readonly userStats = this.authService.userStats;
 
   onResetSettings(): void {
     this.showConfirmDialog(
@@ -47,28 +42,6 @@ export class Settings {
         this.settingsService.resetSettings();
       }
     });
-  }
-
-  onResetStatistics(): void {
-    this.showConfirmDialog(
-      'Reset Statistics', 
-      'Are you sure you want to reset all game statistics for your active profile? This action cannot be undone.'
-    ).subscribe(result => {
-      if (result) {
-        this.authService.resetActiveUserStats();
-      }
-    });
-  }
-
-  formatDuration(milliseconds: number): string {
-    const minutes = Math.floor(milliseconds / 60000);
-    const seconds = Math.floor((milliseconds % 60000) / 1000);
-    return `${minutes}m ${seconds}s`;
-  }
-
-  formatLastPlayed(date?: Date | string): string {
-    if (!date) return 'Never';
-    return new Date(date).toLocaleDateString();
   }
 
   private showConfirmDialog(title: string, message: string): Observable<boolean> {

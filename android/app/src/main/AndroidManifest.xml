@@ -17,10 +17,9 @@
             android:name="asset_statements"
             android:value="@string/asset_statements" />
 
-        <!-- Optional Play Games app ID meta-data if required by Cloud Project configuration -->
         <meta-data
             android:name="com.google.android.gms.games.APP_ID"
-            android:value="@string/app_name" />
+            android:value="@string/game_services_project_id" />
 
         <activity
             android:name=".MainActivity"

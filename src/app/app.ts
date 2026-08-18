@@ -1,5 +1,5 @@
 import { Component, signal, inject, effect, HostListener } from '@angular/core';
-import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,8 +14,6 @@ import { ProfileDialogComponent } from './shared/components/profile-dialog/profi
   selector: 'app-root',
   imports: [
     RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
@@ -86,8 +84,10 @@ export class App {
 
   protected openProfileDialog(): void {
     this.dialog.open(ProfileDialogComponent, {
-      width: '640px',
-      maxWidth: '95vw',
+      width: '720px',
+      maxWidth: 'calc(100vw - 20px)',
+      maxHeight: 'calc(100dvh - 20px)',
+      closeOnNavigation: true,
       panelClass: 'glass-dialog-panel'
     });
   }

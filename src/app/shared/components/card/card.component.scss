@@ -190,44 +190,44 @@
 
 // Card Animation States
 .card.animate-slide-in {
-  animation: slide-in-from-deck 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: slide-in-from-deck 0.69s cubic-bezier(0.34, 1.56, 0.64, 1);
   
   &.from-deck {
-    animation: slide-in-from-deck 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: slide-in-from-deck 0.69s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
 
 .card.animate-flip {
-  animation: card-flip 0.5s ease-in-out;
+  animation: card-flip 0.58s ease-in-out;
 }
 
 .card.animate-clash-win {
-  animation: clash-victory 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: clash-victory 0.92s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .card.animate-clash-lose {
-  animation: clash-defeat 0.8s ease-out;
+  animation: clash-defeat 0.92s ease-out;
 }
 
 .card.animate-fall-away {
-  animation: fall-away 1.0s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+  animation: fall-away 1.15s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
 }
 
 // Animation Speed Classes
 .card.animation-speed-slow {
-  &.animate-slide-in { animation-duration: 1.0s; }
-  &.animate-flip { animation-duration: 0.8s; }
-  &.animate-clash-win { animation-duration: 1.2s; }
-  &.animate-clash-lose { animation-duration: 1.2s; }
-  &.animate-fall-away { animation-duration: 1.5s; }
+  &.animate-slide-in { animation-duration: 1.1s; }
+  &.animate-flip { animation-duration: 0.9s; }
+  &.animate-clash-win { animation-duration: 1.35s; }
+  &.animate-clash-lose { animation-duration: 1.35s; }
+  &.animate-fall-away { animation-duration: 1.7s; }
 }
 
 .card.animation-speed-fast {
-  &.animate-slide-in { animation-duration: 0.35s; }
-  &.animate-flip { animation-duration: 0.25s; }
-  &.animate-clash-win { animation-duration: 0.4s; }
-  &.animate-clash-lose { animation-duration: 0.4s; }
-  &.animate-fall-away { animation-duration: 0.5s; }
+  &.animate-slide-in { animation-duration: 0.42s; }
+  &.animate-flip { animation-duration: 0.35s; }
+  &.animate-clash-win { animation-duration: 0.56s; }
+  &.animate-clash-lose { animation-duration: 0.56s; }
+  &.animate-fall-away { animation-duration: 0.7s; }
 }
 
 // Card Animation Keyframes

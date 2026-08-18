@@ -3,7 +3,7 @@ export type TwaMessageType =
   | 'PLAY_GAMES_INIT'
   | 'PLAY_GAMES_SIGN_IN'
   | 'UNLOCK_ACHIEVEMENT'
-  | 'INCREMENT_ACHIEVEMENT'
+  | 'SET_ACHIEVEMENT_STEPS'
   | 'SHOW_ACHIEVEMENTS'
   // Android -> Web
   | 'PLAY_GAMES_READY'

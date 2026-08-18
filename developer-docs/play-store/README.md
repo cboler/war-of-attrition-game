@@ -20,6 +20,8 @@ To build Android APKs and App Bundles (`.aab`) locally:
 
 ## 🚀 Building Android Artifacts
 
+The release-candidate AAB is produced by `.github/workflows/build-android-bundle.yml`. Run it manually or push a `v*` tag; version inputs are optional because Gradle defaults to version code `3` and version name `1.0.2`. The workflow publishes `app-release-aab` as its artifact and passes the configured `PLAY_GAMES_PROJECT_ID` repository variable, falling back to the supplied numeric ID `334487063631`.
+
 ### 1. Build Angular PWA Production Assets
 ```bash
 npm install
@@ -63,6 +65,21 @@ cd android
 
 ---
 
+## Native Play Games bridge status
+
+Local achievements are fully operational and canonical. Native Play synchronization and the native achievements screen are deliberately hidden in this release until an origin-verified bidirectional Custom Tabs channel is installed.
+
+The checked Android Browser Helper `2.5.0` `LauncherActivity` integration does not provide the app with the stable public Custom Tabs session path needed to establish and own that channel. Defining a WebView `JavascriptInterface`, listening to ordinary browser `window.message` events, or trusting `?twa=1` would not make a TWA bridge real. The web service therefore accepts only an explicitly registered verified transport, and `MainActivity` does not register one.
+
+Follow-up work after adopting a released Android Browser Helper API that exposes the session:
+
+1. Request and verify the postMessage channel for `https://cboler.github.io`.
+2. Bind incoming messages to `PlayGamesBridge.handleWebMessage` and native responses back to the same verified channel.
+3. Register that channel with the Angular `VerifiedTwaTransport` adapter.
+4. Validate ready, sign-in, standard unlock, absolute `setSteps`, reconnect reconciliation, and achievements UI on a Play-installed internal-test build.
+
+Until all four steps pass, the local profile remains authoritative and no native control claims availability.
+
 ## 🎯 Step-by-Step Manual Owner Checklist
 
 Follow these actions in order:
@@ -98,12 +115,12 @@ Follow these actions in order:
 * **WHEN:** Initial Play Games setup.
 * **HOW TO VERIFY:** Status changes to "Linked to Cloud Project".
 
-### 5. Create Achievements in Play Console
+### 5. Verify Achievements in Play Console
 * **WHERE:** Play Console → **Play Games Services** → **Setup and management** → **Achievements**
-* **ACTION:** Create all 12 achievements listed in [`achievements-manifest.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/play-store/achievements-manifest.md).
-* **VALUE COMES FROM:** [`developer-docs/play-store/achievements-manifest.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/play-store/achievements-manifest.md).
+* **ACTION:** Verify all 22 achievements listed in [`achievements-manifest.md`](./achievements-manifest.md), including Veteran at 25 incremental steps and Centurion at 100 incremental steps.
+* **VALUE COMES FROM:** [`achievements-manifest.md`](./achievements-manifest.md).
 * **WHEN:** Before publishing Play Games project for testing.
-* **HOW TO VERIFY:** Copy generated `CgkI...` achievement IDs into [`src/app/core/models/play-achievements-map.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/models/play-achievements-map.ts).
+* **HOW TO VERIFY:** Confirm the Play IDs match `src/app/core/models/play-achievements-map.ts` exactly; all 22 supplied IDs are checked in.
 
 ### 6. Publish Digital Asset Links on Root Domain
 * **WHERE:** `https://cboler.github.io/.well-known/assetlinks.json`

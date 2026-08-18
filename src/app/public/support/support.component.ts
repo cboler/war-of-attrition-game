@@ -62,8 +62,9 @@ import { MatExpansionModule } from '@angular/material/expansion';
                   <mat-panel-title>Google Play Games Achievements</mat-panel-title>
                 </mat-expansion-panel-header>
                 <p>
-                  On Android, ensure Google Play Games is installed and updated. When launching the app, allow Play Games to sign in. 
-                  Achievements unlocked locally will automatically reconcile with Google Play Games once connected.
+                  Achievements always unlock and persist in your local commander profile. Native Google Play achievement controls only appear
+                  after the Android host establishes a verified connection and Play Games is signed in. If those controls are absent, native
+                  synchronization is not available in the current host, but your local achievement progress remains safe.
                 </p>
               </mat-expansion-panel>
 

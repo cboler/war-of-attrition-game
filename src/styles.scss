@@ -31,7 +31,8 @@ html {
 }
 
 html, body { 
-  height: 100%; 
+  height: 100%;
+  min-height: 100%;
   overflow-x: hidden; /* Prevent horizontal scrolling globally */
 }
 
@@ -92,10 +93,12 @@ button, .mat-mdc-button, .mat-mdc-raised-button, .mat-mdc-icon-button {
 
 /* Glassmorphism dialog overlay panel */
 .glass-dialog-panel {
+  max-height: calc(100dvh - 20px) !important;
+
   .mat-mdc-dialog-container {
     padding: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
-    overflow: visible !important;
+    overflow: hidden !important;
   }
 }

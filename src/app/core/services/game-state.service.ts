@@ -46,6 +46,7 @@ export class GameStateService {
   readonly opponentCardCount = computed(() => this.opponentDeck().count);
   readonly discardedCardCount = computed(() => this.discardPile().length);
   readonly discardedCards = computed(() => [...this.discardPile()]);
+  readonly hasGame = computed(() => this.gamePhase() !== GamePhase.SETUP);
 
   readonly gameStats = computed<GameStats>(() => ({
     turnNumber: this.turnNumber(),
@@ -71,6 +72,13 @@ export class GameStateService {
   get currentPlayerDeck(): Deck { return this.playerDeck().copy(); }
   get currentOpponentDeck(): Deck { return this.opponentDeck().copy(); }
   get currentDiscardPile(): readonly Card[] { return [...this.discardPile()]; }
+
+  /** Business-level match state; deliberately independent of presentation timing. */
+  hasMeaningfulUnresolvedGame(): boolean {
+    return this.hasGame() &&
+      this.gamePhase() !== GamePhase.GAME_OVER &&
+      this.turnNumber() > 0;
+  }
 
   initializeGame(options: { shuffle?: boolean } = {}): void {
     const nextPlayerDeck = Deck.createRedDeck();

@@ -44,6 +44,19 @@ export interface TableCardView {
   readonly selected: boolean;
   readonly eligible: boolean;
   readonly casualty: boolean;
+  readonly casualtyEmphasis: 'major' | 'face' | null;
+}
+
+export type CasualtyEmphasis = TableCardView['casualtyEmphasis'];
+
+export function casualtyEmphasisFor(card: Card): CasualtyEmphasis {
+  if (card.rank === Rank.ACE || card.rank === Rank.TWO) return 'major';
+  if (card.rank === Rank.KING || card.rank === Rank.QUEEN || card.rank === Rank.JACK) return 'face';
+  return null;
+}
+
+export function battleAnnouncementFor(round: number): string {
+  return `Battle ${round}${'!'.repeat(Math.min(round, 4))}`;
 }
 
 export interface TableBattleLayerView {
@@ -201,12 +214,24 @@ export class GameControllerService {
   get opponentPickedCard(): Card | null { return this.selectedPlayerCard(); }
   get isRevealAll(): boolean { return false; }
 
+  /** Starts the first match only; route/component remounts leave an existing match untouched. */
+  ensureGameStarted(): void {
+    if (!this.gameState.hasGame()) this.replaceGame(false);
+  }
+
+  hasMeaningfulUnresolvedGame(): boolean {
+    return this.gameState.hasMeaningfulUnresolvedGame();
+  }
+
+  /** Explicit player-requested replacement of the current match. */
   startNewGame(): void {
-    // Record abandonment if previous game was in progress and unresolved
+    this.replaceGame(true);
+  }
+
+  private replaceGame(recordAbandonment: boolean): void {
     if (
-      this.phase() !== PresentationState.READY &&
-      this.phase() !== PresentationState.GAME_OVER &&
-      this.turnsPlayed > 0 &&
+      recordAbandonment &&
+      this.hasMeaningfulUnresolvedGame() &&
       !this.abandonmentRecorded
     ) {
       this.authService.recordGameAbandoned();
@@ -402,6 +427,15 @@ export class GameControllerService {
       }
 
       const turn = this.presentedTurn();
+      if (
+        challengerWon &&
+        turn &&
+        this.comparison.isSpecialAceVsTwoRule(reinforcement, turn.opponentCard) &&
+        reinforcement.rank === Rank.TWO
+      ) {
+        this.acesDefeatedByTwo++;
+      }
+
       if (turn) {
         this.eventBus.emit({
           type: 'challenge_resolved',
@@ -510,6 +544,16 @@ export class GameControllerService {
     this.withholdBoneyard(challengeResult);
     this.gameMessage.set(challengeResult.message);
 
+    const activeTurn = this.presentedTurn();
+    if (
+      challengeResult.winner === PlayerType.PLAYER &&
+      activeTurn &&
+      this.comparison.isSpecialAceVsTwoRule(activeTurn.playerCard, reinforcement) &&
+      activeTurn.playerCard.rank === Rank.TWO
+    ) {
+      this.acesDefeatedByTwo++;
+    }
+
     const turn = this.presentedTurn();
     if (turn) {
       this.eventBus.emit({
@@ -538,7 +582,7 @@ export class GameControllerService {
     }
     this.deepestBattleLayer = Math.max(this.deepestBattleLayer, existingLayers + 1);
 
-    this.gameMessage.set(existingLayers === 0 ? 'BATTLE' : `BATTLE - LAYER ${existingLayers + 1}`);
+    this.gameMessage.set(battleAnnouncementFor(existingLayers + 1));
     this.sound.playClash();
     await this.sequencer.pause(470, version);
 
@@ -564,7 +608,7 @@ export class GameControllerService {
     this.sound.playCardDraw();
     await this.sequencer.pause(520, version);
     this.phase.set(PresentationState.PLAYER_TARGET_SELECTION);
-    this.gameMessage.set('SELECT YOUR TARGET');
+    this.gameMessage.set('Choose one of the newest 3 cards.');
     this.sequencer.end(version);
   }
 
@@ -670,6 +714,7 @@ export class GameControllerService {
     const loser = winner === PlayerType.PLAYER ? PlayerType.OPPONENT : PlayerType.PLAYER;
     this.phase.set(PresentationState.CASUALTY_REVEAL);
 
+    const battleDepth = this.presentedTurn()?.battleLayers.length ?? 1;
     const lostAce = result.cardsLost.some(c => c.rank === Rank.ACE);
     const lostTwo = result.cardsLost.some(c => c.rank === Rank.TWO);
     if (loser === PlayerType.PLAYER) {
@@ -695,9 +740,13 @@ export class GameControllerService {
         loser
       });
 
-      const isSignificant = card.rank === Rank.ACE || card.rank === Rank.TWO;
-      const pace = Math.max(220, 500 - index * 36) + (isSignificant ? 200 : 0);
-      await this.sequencer.pause(pace, version);
+      const isMajor = card.rank === Rank.ACE || card.rank === Rank.TWO;
+      const isFace = card.rank === Rank.KING || card.rank === Rank.QUEEN || card.rank === Rank.JACK;
+      const recognitionDwell = Math.max(340, 560 - index * 24) +
+        (isMajor ? 220 : isFace ? 100 : 0);
+      await this.sequencer.pause(recognitionDwell, version);
+      this.movingToBoneyardIds.update(ids => [...ids, card.id]);
+      await this.sequencer.pause(360, version);
     }
 
     // A casualty-specific quip is safe only after every losing card is public.
@@ -717,7 +766,7 @@ export class GameControllerService {
       turnNumber: this.turnsPlayed,
       winner,
       loser,
-      layerDepth: this.deepestBattleLayer || 1,
+      layerDepth: battleDepth,
       revealedCasualties: result.casualtyRevealCards,
       hiddenWinnerCardCount: result.hiddenWinnerCardCount,
       totalCardsAtStake: result.cardsLost.length,
@@ -747,6 +796,11 @@ export class GameControllerService {
     this.gameMessage.set(`${result.cardsLost.length} cards to the Boneyard.`);
     this.sound.playBoneyard();
     await this.sequencer.pause(520, version);
+    this.eventBus.emit({
+      type: 'cards_sent_to_boneyard',
+      turnNumber: this.turnsPlayed,
+      cards: result.cardsLost
+    });
     this.withheldBoneyardIds.set([]);
     this.clearPresentedCards();
     await this.finishTurn(version);
@@ -765,6 +819,11 @@ export class GameControllerService {
     this.phase.set(PresentationState.SEND_LOSER_CARDS_TO_BONEYARD);
     this.sound.playBoneyard();
     await this.sequencer.pause(310, version);
+    this.eventBus.emit({
+      type: 'cards_sent_to_boneyard',
+      turnNumber: this.turnsPlayed,
+      cards: result.cardsLost
+    });
     this.withheldBoneyardIds.set([]);
     this.clearPresentedCards();
     await this.finishTurn(version);
@@ -843,7 +902,9 @@ export class GameControllerService {
       playerCardsRemaining: pCardsRemaining,
       opponentCardsRemaining: oCardsRemaining,
       maxDeficitExperienced: this.maxDeficitExperienced,
-      isComeback
+      isComeback,
+      battlesCount: this.battlesCount,
+      playerReinforcementsSent: this.playerChallengesCount
     });
 
     if (outcome === GameOutcome.TIE) {
@@ -913,7 +974,8 @@ export class GameControllerService {
       faceDown: !isPublic,
       selected: selectedId === card.id,
       eligible,
-      casualty: casualtyIds.has(card.id)
+      casualty: casualtyIds.has(card.id),
+      casualtyEmphasis: casualtyIds.has(card.id) ? casualtyEmphasisFor(card) : null
     };
   }
 
@@ -921,6 +983,6 @@ export class GameControllerService {
     console.error('Game flow error:', error);
     this.sequencer.cancel();
     this.gameMessage.set('The table was reset after an invalid game state.');
-    this.startNewGame();
+    this.replaceGame(false);
   }
 }

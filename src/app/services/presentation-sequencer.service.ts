@@ -74,9 +74,9 @@ export class PresentationSequencerService {
 
   private speedMultiplier(): number {
     switch (this.settings.animationSpeed()) {
-      case 'slow': return 1.35;
-      case 'fast': return 0.55;
-      default: return 1;
+      case 'slow': return 1.5;
+      case 'fast': return 0.7;
+      default: return 1.15;
     }
   }
 }

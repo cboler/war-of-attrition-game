@@ -12,66 +12,38 @@ export interface PlayAchievementMapping {
 }
 
 export const PLAY_ACHIEVEMENT_MAPPINGS: Record<string, PlayAchievementMapping> = {
-  'war.assassin': {
-    internalId: 'war.assassin',
-    playGamesId: 'CgkI_PLACEHOLDER_ASSASSIN',
-    isIncremental: false
-  },
-  'war.pyrrhic_victory': {
-    internalId: 'war.pyrrhic_victory',
-    playGamesId: 'CgkI_PLACEHOLDER_PYRRHIC_VICTORY',
-    isIncremental: false
-  },
-  'war.massacre': {
-    internalId: 'war.massacre',
-    playGamesId: 'CgkI_PLACEHOLDER_MASSACRE',
-    isIncremental: false
-  },
-  'war.battle_layer_3': {
-    internalId: 'war.battle_layer_3',
-    playGamesId: 'CgkI_PLACEHOLDER_BATTLE_LAYER_3',
-    isIncremental: false
-  },
-  'war.battle_layer_4': {
-    internalId: 'war.battle_layer_4',
-    playGamesId: 'CgkI_PLACEHOLDER_BATTLE_LAYER_4',
-    isIncremental: false
-  },
-  'war.not_today': {
-    internalId: 'war.not_today',
-    playGamesId: 'CgkI_PLACEHOLDER_NOT_TODAY',
-    isIncremental: false
-  },
-  'war.royal_disaster': {
-    internalId: 'war.royal_disaster',
-    playGamesId: 'CgkI_PLACEHOLDER_ROYAL_DISASTER',
-    isIncremental: false
-  },
-  'war.untouchable': {
-    internalId: 'war.untouchable',
-    playGamesId: 'CgkI_PLACEHOLDER_UNTOUCHABLE',
-    isIncremental: false
-  },
-  'war.marathon': {
-    internalId: 'war.marathon',
-    playGamesId: 'CgkI_PLACEHOLDER_MARATHON',
-    isIncremental: false
-  },
-  'war.comeback_15': {
-    internalId: 'war.comeback_15',
-    playGamesId: 'CgkI_PLACEHOLDER_COMEBACK_15',
-    isIncremental: false
-  },
-  'profile.veteran': {
-    internalId: 'profile.veteran',
-    playGamesId: 'CgkI_PLACEHOLDER_VETERAN',
-    isIncremental: true,
-    totalSteps: 25
-  },
-  'profile.centurion': {
-    internalId: 'profile.centurion',
-    playGamesId: 'CgkI_PLACEHOLDER_CENTURION',
-    isIncremental: true,
-    totalSteps: 100
-  }
+  'war.first_casualty': standard('war.first_casualty', 'CgkIz5juh94JEAIQDA'),
+  'war.first_battle': standard('war.first_battle', 'CgkIz5juh94JEAIQEQ'),
+  'war.first_win': standard('war.first_win', 'CgkIz5juh94JEAIQEg'),
+  'war.first_defeat': standard('war.first_defeat', 'CgkIz5juh94JEAIQEw'),
+  'war.first_rescue': standard('war.first_rescue', 'CgkIz5juh94JEAIQDQ'),
+  'war.first_battle_win': standard('war.first_battle_win', 'CgkIz5juh94JEAIQCw'),
+  'war.assassin': standard('war.assassin', 'CgkIz5juh94JEAIQAg'),
+  'war.not_today': standard('war.not_today', 'CgkIz5juh94JEAIQBQ'),
+  'war.battle_layer_3': standard('war.battle_layer_3', 'CgkIz5juh94JEAIQBg'),
+  'war.battle_layer_4': standard('war.battle_layer_4', 'CgkIz5juh94JEAIQCA'),
+  'war.deep_battle_win': standard('war.deep_battle_win', 'CgkIz5juh94JEAIQAA'),
+  'war.royal_disaster': standard('war.royal_disaster', 'CgkIz5juh94JEAIQCQ'),
+  'war.massacre': standard('war.massacre', 'CgkIz5juh94JEAIQFA'),
+  'war.no_reinforcements_win': standard('war.no_reinforcements_win', 'CgkIz5juh94JEAIQFQ'),
+  'war.five_battles_game': standard('war.five_battles_game', 'CgkIz5juh94JEAIQBw'),
+  'war.pyrrhic_victory': standard('war.pyrrhic_victory', 'CgkIz5juh94JEAIQBA'),
+  'war.untouchable': standard('war.untouchable', 'CgkIz5juh94JEAIQCg'),
+  'war.comeback_15': standard('war.comeback_15', 'CgkIz5juh94JEAIQDg'),
+  'war.marathon': standard('war.marathon', 'CgkIz5juh94JEAIQDw'),
+  'profile.campaigner': standard('profile.campaigner', 'CgkIz5juh94JEAIQAQ'),
+  'profile.veteran': incremental('profile.veteran', 'CgkIz5juh94JEAIQEA', 25),
+  'profile.centurion': incremental('profile.centurion', 'CgkIz5juh94JEAIQAw', 100)
 };
+
+function standard(internalId: string, playGamesId: string): PlayAchievementMapping {
+  return { internalId, playGamesId, isIncremental: false };
+}
+
+function incremental(
+  internalId: string,
+  playGamesId: string,
+  totalSteps: number
+): PlayAchievementMapping {
+  return { internalId, playGamesId, isIncremental: true, totalSteps };
+}

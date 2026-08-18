@@ -1,11 +1,44 @@
-:host { display: block; min-height: 100%; }
+:host { display: block; height: 100%; min-height: 0; overflow: hidden; }
 
 .table-page {
-  min-height: 100%;
+  --deal-duration: 322ms;
+  --clash-duration: 345ms;
+  --reinforcement-duration: 414ms;
+  --battle-entry-duration: 483ms;
+  --casualty-duration: 437ms;
+  --return-duration: 598ms;
+  --boneyard-duration: 690ms;
+  height: 100%;
+  min-height: 0;
   padding: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: #0c1815;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
+
+.table-page.speed-fast {
+  --deal-duration: 196ms;
+  --clash-duration: 210ms;
+  --reinforcement-duration: 252ms;
+  --battle-entry-duration: 294ms;
+  --casualty-duration: 266ms;
+  --return-duration: 364ms;
+  --boneyard-duration: 420ms;
+}
+
+.table-page.speed-slow {
+  --deal-duration: 420ms;
+  --clash-duration: 450ms;
+  --reinforcement-duration: 540ms;
+  --battle-entry-duration: 630ms;
+  --casualty-duration: 570ms;
+  --return-duration: 780ms;
+  --boneyard-duration: 900ms;
+}
+
+app-card-table { display: block; height: 100%; min-height: 0; }
 
 .playfield { position: relative; height: 100%; min-height: 330px; }
 
@@ -207,6 +240,24 @@
 }
 .eyebrow { color: #ffd54f; font: 700 0.65rem/1 system-ui, sans-serif; letter-spacing: 0.2em; }
 
+.announcement.battle-quake-2 .eyebrow,
+.announcement.battle-quake-3 .eyebrow,
+.announcement.battle-quake-4 .eyebrow {
+  transform-origin: center;
+  animation: battle-quake-subtle 360ms ease-out 1;
+}
+
+.announcement.battle-quake-3 .eyebrow {
+  font-size: 0.68rem;
+  animation-name: battle-quake-deep;
+}
+
+.announcement.battle-quake-4 .eyebrow {
+  font-size: 0.71rem;
+  font-weight: 800;
+  animation-name: battle-quake-deeper;
+}
+
 .stakes {
   position: absolute;
   inset: 52px clamp(100px, 13vw, 190px) 18px clamp(14px, 2vw, 36px);
@@ -232,10 +283,10 @@
 .battle-card-shell { position: relative; width: clamp(84px, 11vw, 136px); aspect-ratio: 2.5 / 3.5; transition: transform 320ms cubic-bezier(.2,.75,.2,1), opacity 260ms ease, filter 260ms ease; }
 .active-card-shell { z-index: 7; transform: rotate(-0.7deg); }
 .player-stake .active-card-shell { transform: rotate(0.8deg); }
-.opponent-stake .active-card-shell.dealing { animation: deal-from-opponent 280ms cubic-bezier(.2,.75,.2,1) both; }
-.player-stake .active-card-shell.dealing { animation: deal-from-player 280ms cubic-bezier(.2,.75,.2,1) both; }
-.opponent-stake .active-card-shell.clashing { animation: clash-from-opponent 300ms ease-out both; }
-.player-stake .active-card-shell.clashing { animation: clash-from-player 300ms ease-out both; }
+.opponent-stake .active-card-shell.dealing { animation: deal-from-opponent var(--deal-duration) cubic-bezier(.2,.75,.2,1) both; }
+.player-stake .active-card-shell.dealing { animation: deal-from-player var(--deal-duration) cubic-bezier(.2,.75,.2,1) both; }
+.opponent-stake .active-card-shell.clashing { animation: clash-from-opponent var(--clash-duration) ease-out both; }
+.player-stake .active-card-shell.clashing { animation: clash-from-player var(--clash-duration) ease-out both; }
 .active-card-shell app-card,
 .battle-card-shell app-card { --card-width: 100%; --card-height: 100%; position: absolute; inset: 0; display: block; }
 
@@ -246,18 +297,20 @@
 .reinforcement { position: absolute; z-index: -1; width: 100%; height: 100%; }
 .opponent-reinforcement { transform: translate(45%, 12%) rotate(7deg); }
 .player-reinforcement { transform: translate(-45%, -12%) rotate(-7deg); }
-.opponent-reinforcement.dealing { animation: reinforce-from-opponent 360ms cubic-bezier(.2,.75,.2,1) both; }
-.player-reinforcement.dealing { animation: reinforce-from-player 360ms cubic-bezier(.2,.75,.2,1) both; }
+.opponent-reinforcement.dealing { animation: reinforce-from-opponent var(--reinforcement-duration) cubic-bezier(.2,.75,.2,1) both; }
+.player-reinforcement.dealing { animation: reinforce-from-player var(--reinforcement-duration) cubic-bezier(.2,.75,.2,1) both; }
 
 .battle-layers { position: relative; z-index: 5; width: min(440px, 80vw); min-height: 94px; }
-.battle-layer { position: absolute; left: 50%; display: flex; gap: clamp(8px, 1.8vw, 18px); transform: translateX(-50%); animation: stake-layer-in 420ms cubic-bezier(.2,.75,.2,1) both; transition: opacity 250ms ease, filter 250ms ease, transform 250ms ease; }
+.battle-layer { position: absolute; left: 50%; display: flex; gap: clamp(8px, 1.8vw, 18px); transform: translateX(-50%); transition: opacity 250ms ease, filter 250ms ease, transform 250ms ease; }
 .opponent-layers .battle-layer {
   left: calc(50% + (var(--layer) - 1) * 4px);
   bottom: calc((var(--layer) - 1) * -16px);
+  animation: battle-from-opponent var(--battle-entry-duration) cubic-bezier(.2,.75,.2,1) both;
 }
 .player-layers .battle-layer {
   left: calc(50% - (var(--layer) - 1) * 4px);
   top: calc((var(--layer) - 1) * -16px);
+  animation: battle-from-player var(--battle-entry-duration) cubic-bezier(.2,.75,.2,1) both;
 }
 .battle-layer.receded { opacity: 0.48; filter: saturate(0.52); transform: translateX(-50%) scale(0.91); }
 .battle-card-shell { width: clamp(70px, 9.5vw, 108px); padding: 0; border: 0; background: transparent; appearance: none; }
@@ -272,7 +325,11 @@
 .battle-card-shell.selected { z-index: 8; transform: scale(1.06); filter: drop-shadow(0 12px 13px rgba(0,0,0,.3)); }
 .opponent-layers .battle-card-shell.selected { transform: translateY(11px) scale(1.06); }
 .player-layers .battle-card-shell.selected { transform: translateY(-11px) scale(1.06); }
-.battle-card-shell.casualty { animation: casualty-flip 380ms ease both; }
+.battle-card-shell.casualty { animation: casualty-flip var(--casualty-duration) ease both; }
+.battle-card-shell.casualty-face { animation-name: casualty-face-flip; }
+.battle-card-shell.casualty-major { z-index: 10; animation-name: casualty-major-flip; }
+.battle-card-shell.casualty-face app-card { filter: drop-shadow(0 0 6px rgba(229, 193, 117, 0.38)); }
+.battle-card-shell.casualty-major app-card { filter: drop-shadow(0 0 9px rgba(255, 213, 79, 0.58)); }
 
 /* Target Selection Pointers */
 .target-pointer {
@@ -396,9 +453,10 @@
   }
 }
 
-.opponent-stake .returning { animation: return-opponent 520ms ease-in both; }
-.player-stake .returning { animation: return-player 520ms ease-in both; }
-.to-boneyard { animation: to-boneyard 600ms ease-in both; }
+.opponent-stake .returning { animation: return-opponent var(--return-duration) ease-in both; }
+.player-stake .returning { animation: return-player var(--return-duration) ease-in both; }
+.boneyard-right .to-boneyard { animation: to-boneyard-right var(--boneyard-duration) ease-in both; }
+.boneyard-left .to-boneyard { animation: to-boneyard-left var(--boneyard-duration) ease-in both; }
 
 /* Physical Boneyard Representation (Sized to match cards/deck) */
 .boneyard {
@@ -639,16 +697,23 @@
 }
 
 @keyframes casualty-flip { 0% { transform: rotateY(90deg); } 100% { transform: rotateY(0); } }
+@keyframes casualty-face-flip { 0% { transform: rotateY(90deg) scale(.96); } 72% { transform: rotateY(0) scale(1.025); } 100% { transform: rotateY(0) scale(1.015); } }
+@keyframes casualty-major-flip { 0% { transform: rotateY(90deg) scale(.94); } 68% { transform: rotateY(0) scale(1.06); } 100% { transform: rotateY(0) translateY(-2px) scale(1.035); } }
 @keyframes deal-from-opponent { from { transform: translateY(-76px) rotate(-7deg) scale(.86); opacity: .25; } }
 @keyframes deal-from-player { from { transform: translateY(76px) rotate(7deg) scale(.86); opacity: .25; } }
 @keyframes clash-from-opponent { 50% { transform: translateY(8px) rotate(1deg) scale(1.03); } }
 @keyframes clash-from-player { 50% { transform: translateY(-8px) rotate(-1deg) scale(1.03); } }
 @keyframes reinforce-from-opponent { from { transform: translate(45%, -65%) rotate(14deg) scale(.86); opacity: .2; } }
 @keyframes reinforce-from-player { from { transform: translate(-45%, 65%) rotate(-14deg) scale(.86); opacity: .2; } }
-@keyframes stake-layer-in { from { opacity: 0; filter: blur(2px); transform: translateX(-50%) scale(.82); } }
+@keyframes battle-from-opponent { from { opacity: 0; filter: blur(2px); transform: translate(-50%, -70px) rotate(-2deg) scale(.82); } }
+@keyframes battle-from-player { from { opacity: 0; filter: blur(2px); transform: translate(-50%, 70px) rotate(2deg) scale(.82); } }
 @keyframes return-opponent { to { transform: translateY(-90px) scale(.72); opacity: 0; } }
 @keyframes return-player { to { transform: translateY(90px) scale(.72); opacity: 0; } }
-@keyframes to-boneyard { to { transform: translate(38vw, 0) rotate(14deg) scale(.45); opacity: .15; } }
+@keyframes to-boneyard-right { to { transform: translate(38vw, 0) rotate(14deg) scale(.45); opacity: .15; } }
+@keyframes to-boneyard-left { to { transform: translate(-38vw, 0) rotate(-14deg) scale(.45); opacity: .15; } }
+@keyframes battle-quake-subtle { 24% { transform: translateX(-1px) rotate(-.12deg); } 48% { transform: translateX(1px) rotate(.1deg); } 72% { transform: translateX(-.5px); } }
+@keyframes battle-quake-deep { 20% { transform: translateX(-1.3px) rotate(-.16deg); } 46% { transform: translateX(1.4px) rotate(.14deg); } 70% { transform: translateX(-.7px); } }
+@keyframes battle-quake-deeper { 18% { transform: translateX(-1.7px) rotate(-.2deg); } 42% { transform: translateX(1.8px) rotate(.18deg); } 68% { transform: translateX(-.9px); } }
 
 .motion-disabled *,
 .motion-disabled *::before,

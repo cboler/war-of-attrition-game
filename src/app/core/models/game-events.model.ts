@@ -160,6 +160,8 @@ export interface GameResolvedEvent extends BaseGameEvent {
   readonly opponentCardsRemaining: number;
   readonly maxDeficitExperienced: number;
   readonly isComeback: boolean;
+  readonly battlesCount: number;
+  readonly playerReinforcementsSent: number;
 }
 
 export interface GameAbandonedEvent extends BaseGameEvent {

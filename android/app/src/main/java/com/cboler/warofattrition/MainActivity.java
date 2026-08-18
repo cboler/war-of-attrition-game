@@ -1,14 +1,7 @@
 package com.cboler.warofattrition;
 
-import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
-import android.webkit.JavascriptInterface;
-import android.webkit.WebView;
-import androidx.browser.customtabs.CustomTabsCallback;
-import androidx.browser.customtabs.CustomTabsClient;
-import androidx.browser.customtabs.CustomTabsSession;
 import com.google.androidbrowserhelper.trusted.LauncherActivity;
 
 /**
@@ -28,27 +21,10 @@ public class MainActivity extends LauncherActivity {
     @Override
     protected Uri getLaunchingUrl() {
         Uri uri = super.getLaunchingUrl();
-        if (uri == null || uri.toString().contains("example.com")) {
+        if (uri == null) {
             return Uri.parse(getString(R.string.launchUrl));
         }
         return uri;
     }
 
-    /**
-     * JS Interface bridge for direct WebView or CustomTabs postMessage integration
-     */
-    public class WebAppInterface {
-        Context context;
-
-        WebAppInterface(Context c) {
-            context = c;
-        }
-
-        @JavascriptInterface
-        public void postMessage(String jsonMessage) {
-            if (playGamesBridge != null) {
-                runOnUiThread(() -> playGamesBridge.handleWebMessage(jsonMessage));
-            }
-        }
-    }
 }

@@ -20,16 +20,13 @@
   </div>
   <span class="toolbar-spacer"></span>
 
-  <button mat-button class="profile-toolbar-btn" (click)="openProfileDialog()" aria-label="User Profile & Career Records" matTooltip="User Profile & Career Records">
+  <button mat-button class="profile-toolbar-btn" (click)="openProfileDialog()" aria-label="Open profile, career records, achievements, and settings" matTooltip="Profile & Settings">
     <div class="avatar-badge">
       <img [src]="activeProfile().avatarUrl" [alt]="activeProfile().name" />
       <span class="provider-indicator" [class.google]="activeProfile().isGoogleAuth"></span>
+      <mat-icon class="profile-settings-icon" aria-hidden="true">settings</mat-icon>
     </div>
     <span class="profile-name-text">{{ activeProfile().name }}</span>
-  </button>
-
-  <button mat-icon-button routerLink="/settings" routerLinkActive="active" aria-label="Settings" matTooltip="Settings">
-    <mat-icon>settings</mat-icon>
   </button>
 </mat-toolbar>
 

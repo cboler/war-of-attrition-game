@@ -61,7 +61,12 @@ export class TurnResolutionService {
           cardsKept: [playerCard, opponentCard]
         });
       }
-      return this.settle(PlayerType.PLAYER, result, 'Your card survives.', true);
+      return this.settle(
+        PlayerType.PLAYER,
+        result,
+        'Your card survives.',
+        canOpponentChallenge
+      );
     }
 
     if (!special && this.gameState.currentPlayerDeck.count > 0) {
@@ -116,11 +121,11 @@ export class TurnResolutionService {
       result,
       challengerWon
         ? challenger === PlayerType.PLAYER
-          ? 'Reinforcement holds. You save both cards.'
-          : 'Opponent reinforcement holds.'
+          ? 'Card rescued. Both cards survive.'
+          : 'Opponent rescues their card.'
         : challenger === PlayerType.PLAYER
-          ? 'Reinforcement falls. Both of your cards are lost.'
-          : 'Opponent reinforcement falls. You hold.'
+          ? 'Both are now lost.'
+          : 'Both opponent cards are now lost. You hold.'
     );
   }
 
@@ -135,7 +140,7 @@ export class TurnResolutionService {
     const comparison = this.comparison.compareCards(selected.playerCard, selected.opponentCard);
     if (comparison === ComparisonResult.TIE) {
       if (!this.gameState.canDealBattleLayer()) {
-        return this.resolveAttrition('Battle ties, but there are not three more cards to stake.');
+        return this.resolveAttrition();
       }
       this.gameState.setPhase(GamePhase.BATTLE);
       return this.result({
@@ -173,7 +178,7 @@ export class TurnResolutionService {
   }
 
   private enterBattle(message: string): TurnResult {
-    if (!this.gameState.canDealBattleLayer()) return this.resolveAttrition(message);
+    if (!this.gameState.canDealBattleLayer()) return this.resolveAttrition();
     this.gameState.setPhase(GamePhase.BATTLE);
     return this.result({
       winner: null,
@@ -184,15 +189,18 @@ export class TurnResolutionService {
     });
   }
 
-  private resolveAttrition(message: string): TurnResult {
+  private resolveAttrition(): TurnResult {
     const turn = this.gameState.currentState.activeTurn;
+    const playerRemaining = this.gameState.playerCardCount();
+    const opponentRemaining = this.gameState.opponentCardCount();
     const outcome = this.gameState.determineAttritionOutcome();
+    const explanation = this.attritionExplanation(playerRemaining, opponentRemaining);
     if (outcome === GameOutcome.TIE) {
       this.gameState.endGame(GameOutcome.TIE);
       return this.result({
         winner: null,
         comparison: ComparisonResult.TIE,
-        message: `${message} Neither side can continue. The war ends in a true tie.`,
+        message: explanation,
         nextPhase: GamePhase.GAME_OVER,
         cardsKept: this.publicInformationOnTable(),
         terminalOutcome: GameOutcome.TIE
@@ -205,7 +213,7 @@ export class TurnResolutionService {
       return this.resultFromPreview(
         preview,
         ComparisonResult.TIE,
-        `${message} ${winner === PlayerType.PLAYER ? 'You win' : 'Opponent wins'} by attrition.`,
+        explanation,
         GamePhase.GAME_OVER,
         outcome
       );
@@ -221,11 +229,30 @@ export class TurnResolutionService {
     return this.result({
       winner,
       comparison: ComparisonResult.TIE,
-      message: `${message} ${winner === PlayerType.PLAYER ? 'You win' : 'Opponent wins'} by attrition.`,
+      message: explanation,
       nextPhase: GamePhase.GAME_OVER,
       cardsLost: losingCards,
       terminalOutcome: outcome
     });
+  }
+
+  private attritionExplanation(playerRemaining: number, opponentRemaining: number): string {
+    const playerCanContinue = playerRemaining >= 3;
+    const opponentCanContinue = opponentRemaining >= 3;
+
+    if (playerCanContinue && !opponentCanContinue) {
+      return `Opponent overrun — they needed 3 cards to continue the Battle, but only had ${opponentRemaining}.`;
+    }
+    if (!playerCanContinue && opponentCanContinue) {
+      return `Overrun — you needed 3 cards to continue the Battle, but only had ${playerRemaining}.`;
+    }
+    if (playerRemaining > opponentRemaining) {
+      return `Opponent outnumbered — neither side could continue. You had ${playerRemaining} cards remaining to their ${opponentRemaining}.`;
+    }
+    if (opponentRemaining > playerRemaining) {
+      return `Outnumbered — neither side could continue. Opponent had ${opponentRemaining} cards remaining to your ${playerRemaining}.`;
+    }
+    return `Neither side could continue. Both had ${playerRemaining} cards remaining. The war ends in a true tie.`;
   }
 
   private settle(

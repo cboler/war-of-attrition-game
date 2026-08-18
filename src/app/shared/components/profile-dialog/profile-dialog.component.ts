@@ -1,14 +1,19 @@
-import { Component, inject, ElementRef, ViewChild, AfterViewInit, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, ElementRef, ViewChild, AfterViewInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { PlatformAchievementsService } from '../../../core/services/platform-achievements.service';
-import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achievement.model';
+import { SettingsService } from '../../../core/services/settings.service';
+import { ACHIEVEMENTS } from '../../../core/models/achievement.model';
 
 @Component({
   selector: 'app-profile-dialog',
@@ -20,7 +25,11 @@ import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achiev
     MatButtonModule,
     MatIconModule,
     MatDividerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    RouterLink
   ],
   template: `
     <div class="profile-dialog-container">
@@ -68,6 +77,14 @@ import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achiev
           (click)="activeTab.set('achievements')">
           <mat-icon>emoji_events</mat-icon>
           <span>Achievements ({{ unlockedCount() }}/{{ totalAchievements() }})</span>
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab() === 'settings'"
+          (click)="activeTab.set('settings')">
+          <mat-icon>settings</mat-icon>
+          <span>Settings</span>
         </button>
       </div>
 
@@ -145,7 +162,7 @@ import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achiev
                 <div class="stat-card">
                   <div class="stat-icon"><mat-icon>layers</mat-icon></div>
                   <div class="stat-data">
-                    <span class="stat-value">Layer {{ stats().deepestRecursiveBattle || 1 }}</span>
+                    <span class="stat-value">Battle {{ stats().deepestRecursiveBattle || 1 }}</span>
                     <span class="stat-label">Deepest Battle</span>
                   </div>
                 </div>
@@ -184,7 +201,7 @@ import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achiev
                   <div class="stat-icon"><mat-icon>shield</mat-icon></div>
                   <div class="stat-data">
                     <span class="stat-value">{{ stats().twosSavedByChallenge || 0 }}</span>
-                    <span class="stat-label">2s Saved by Challenge</span>
+                    <span class="stat-label">2s Saved by Reinforcement</span>
                   </div>
                 </div>
 
@@ -206,7 +223,7 @@ import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achiev
               </div>
             </div>
           </div>
-        } @else {
+        } @else if (activeTab() === 'achievements') {
           <!-- Achievements Tab -->
           <div class="achievements-tab">
             @if (showPlayGamesButton()) {
@@ -233,6 +250,79 @@ import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achiev
                 </div>
               }
             </div>
+          </div>
+        } @else {
+          <div class="settings-tab">
+            <section class="settings-section" aria-labelledby="appearance-settings-title">
+              <h4 id="appearance-settings-title" class="section-subtitle">Appearance & Controls</h4>
+              <div class="settings-fields">
+                <mat-form-field appearance="outline">
+                  <mat-label>Theme</mat-label>
+                  <mat-select [value]="settings.theme()" (selectionChange)="settings.setTheme($event.value)">
+                    <mat-option value="dark">Dark</mat-option>
+                    <mat-option value="light">Light</mat-option>
+                    <mat-option value="auto">System</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Deck Hand</mat-label>
+                  <mat-select [value]="settings.deckHand()" (selectionChange)="settings.setDeckHand($event.value)">
+                    <mat-option value="right">Right-handed</mat-option>
+                    <mat-option value="left">Left-handed</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Animation Speed</mat-label>
+                  <mat-select [value]="settings.animationSpeed()" (selectionChange)="settings.setAnimationSpeed($event.value)">
+                    <mat-option value="slow">Slow</mat-option>
+                    <mat-option value="normal">Normal</mat-option>
+                    <mat-option value="fast">Fast</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="settings-toggles">
+                <mat-slide-toggle [checked]="settings.soundEnabled()" (change)="settings.setSoundEnabled($event.checked)">Sound</mat-slide-toggle>
+                <mat-slide-toggle [checked]="settings.autoPlayAnimations()" (change)="settings.setAutoPlayAnimations($event.checked)">Animations</mat-slide-toggle>
+                <mat-slide-toggle [checked]="settings.showTurnCounter()" (change)="settings.setShowTurnCounter($event.checked)">Turn counter</mat-slide-toggle>
+                <mat-slide-toggle [checked]="settings.showCardDetails()" (change)="settings.setShowCardDetails($event.checked)">Card details</mat-slide-toggle>
+              </div>
+            </section>
+
+            <section class="settings-section" aria-labelledby="card-backing-title">
+              <h4 id="card-backing-title" class="section-subtitle">Card Backing</h4>
+              <div class="backing-options">
+                @for (option of settings.cardBackingOptions(); track option.id) {
+                  <button
+                    type="button"
+                    class="backing-option"
+                    [class.selected]="settings.selectedCardBacking() === option.id"
+                    [attr.aria-pressed]="settings.selectedCardBacking() === option.id"
+                    (click)="settings.setCardBacking(option.id)">
+                    <span class="backing-preview" [style]="option.preview" aria-hidden="true"></span>
+                    <span>{{ option.name }}</span>
+                    @if (settings.selectedCardBacking() === option.id) {
+                      <mat-icon>check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+            </section>
+
+            <section class="settings-section settings-footer" aria-labelledby="about-title">
+              <div>
+                <h4 id="about-title" class="section-subtitle">About & Data</h4>
+                <p>War of Attrition · Version 1.0.2</p>
+              </div>
+              <nav class="profile-links" aria-label="Support and legal links">
+                <a mat-button mat-dialog-close routerLink="/privacy"><mat-icon>privacy_tip</mat-icon>Privacy</a>
+                <a mat-button mat-dialog-close routerLink="/support"><mat-icon>help_outline</mat-icon>Support</a>
+                <a mat-button mat-dialog-close routerLink="/delete-account"><mat-icon>delete_forever</mat-icon>Delete data</a>
+              </nav>
+              <button mat-stroked-button class="reset-settings-btn" (click)="resetSettings()">
+                <mat-icon>restore</mat-icon>Reset preferences
+              </button>
+            </section>
           </div>
         }
 
@@ -261,26 +351,28 @@ import { ACHIEVEMENTS, AchievementDefinition } from '../../../core/models/achiev
       </div>
     </div>
   `,
-  styleUrls: ['./profile-dialog.component.scss']
+  styleUrls: ['./profile-dialog.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProfileDialogComponent implements AfterViewInit {
   private authService = inject(AuthService);
   private platformAchievements = inject(PlatformAchievementsService);
-  private dialogRef = inject(MatDialogRef<ProfileDialogComponent>);
+  readonly settings = inject(SettingsService);
 
   @ViewChild('googleBtnContainer') googleBtnContainer?: ElementRef<HTMLDivElement>;
 
   readonly profile = this.authService.activeProfile;
   readonly stats = this.authService.userStats;
   readonly allAchievements = ACHIEVEMENTS;
-  readonly activeTab = signal<'stats' | 'achievements'>('stats');
+  readonly activeTab = signal<'stats' | 'achievements' | 'settings'>('stats');
 
   readonly unlockedCount = computed(() =>
     this.stats().unlockedAchievements?.length || 0
   );
   readonly totalAchievements = computed(() => ACHIEVEMENTS.length);
   readonly showPlayGamesButton = computed(() =>
-    this.platformAchievements.isRunningInTwa() || this.platformAchievements.isPlayGamesAvailable()
+    this.platformAchievements.isPlayGamesAvailable() &&
+    this.platformAchievements.isPlayGamesSignedIn()
   );
 
   isEditingName = false;
@@ -331,6 +423,12 @@ export class ProfileDialogComponent implements AfterViewInit {
   resetStats(): void {
     if (confirm('Are you sure you want to reset your statistics and career records?')) {
       this.authService.resetActiveUserStats();
+    }
+  }
+
+  resetSettings(): void {
+    if (confirm('Reset all preferences to their defaults?')) {
+      this.settings.resetSettings();
     }
   }
 

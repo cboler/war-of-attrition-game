@@ -5,6 +5,8 @@ import { AuthService } from '../core/services/auth.service';
 import { Card, Rank, Suit } from '../core/models/card.model';
 import { GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { ComparisonResult } from '../core/services/card-comparison.service';
+import { ACHIEVEMENTS } from '../core/models/achievement.model';
+import { PLAY_ACHIEVEMENT_MAPPINGS } from '../core/models/play-achievements-map';
 
 describe('AchievementService', () => {
   let service: AchievementService;
@@ -146,7 +148,9 @@ describe('AchievementService', () => {
       playerCardsRemaining: 1,
       opponentCardsRemaining: 0,
       maxDeficitExperienced: 0,
-      isComeback: false
+      isComeback: false,
+      battlesCount: 0,
+      playerReinforcementsSent: 0
     });
 
     expect(service.isUnlocked('war.pyrrhic_victory')).toBe(true);
@@ -161,7 +165,9 @@ describe('AchievementService', () => {
       playerCardsRemaining: 24,
       opponentCardsRemaining: 0,
       maxDeficitExperienced: 0,
-      isComeback: false
+      isComeback: false,
+      battlesCount: 0,
+      playerReinforcementsSent: 0
     });
 
     expect(service.isUnlocked('war.untouchable')).toBe(true);
@@ -179,7 +185,9 @@ describe('AchievementService', () => {
       playerCardsRemaining: 15,
       opponentCardsRemaining: 0,
       maxDeficitExperienced: 14,
-      isComeback: true
+      isComeback: true,
+      battlesCount: 0,
+      playerReinforcementsSent: 0
     });
     expect(service.isUnlocked('war.comeback_15')).toBe(false);
 
@@ -192,26 +200,171 @@ describe('AchievementService', () => {
       playerCardsRemaining: 16,
       opponentCardsRemaining: 0,
       maxDeficitExperienced: 15,
-      isComeback: true
+      isComeback: true,
+      battlesCount: 0,
+      playerReinforcementsSent: 0
     });
 
     expect(service.isUnlocked('war.comeback_15')).toBe(true);
   });
 
-  it('should unlock war.marathon on games with >= 100 turns', () => {
+  it('should unlock war.marathon on games with >= 40 turns', () => {
     expect(service.isUnlocked('war.marathon')).toBe(false);
 
     eventBus.emit({
       type: 'game_resolved',
-      turnNumber: 102,
+      turnNumber: 40,
       outcome: GameOutcome.PLAYER_WIN,
-      turns: 102,
+      turns: 40,
       playerCardsRemaining: 10,
       opponentCardsRemaining: 0,
       maxDeficitExperienced: 0,
-      isComeback: false
+      isComeback: false,
+      battlesCount: 0,
+      playerReinforcementsSent: 0
     });
 
     expect(service.isUnlocked('war.marathon')).toBe(true);
+  });
+
+  it('defines and maps all 22 canonical achievements exactly once', () => {
+    const exactPlayIds: Readonly<Record<string, string>> = {
+      'war.first_casualty': 'CgkIz5juh94JEAIQDA',
+      'war.first_battle': 'CgkIz5juh94JEAIQEQ',
+      'war.first_win': 'CgkIz5juh94JEAIQEg',
+      'war.first_defeat': 'CgkIz5juh94JEAIQEw',
+      'war.first_rescue': 'CgkIz5juh94JEAIQDQ',
+      'war.first_battle_win': 'CgkIz5juh94JEAIQCw',
+      'war.assassin': 'CgkIz5juh94JEAIQAg',
+      'war.not_today': 'CgkIz5juh94JEAIQBQ',
+      'war.battle_layer_3': 'CgkIz5juh94JEAIQBg',
+      'war.battle_layer_4': 'CgkIz5juh94JEAIQCA',
+      'war.deep_battle_win': 'CgkIz5juh94JEAIQAA',
+      'war.royal_disaster': 'CgkIz5juh94JEAIQCQ',
+      'war.massacre': 'CgkIz5juh94JEAIQFA',
+      'war.no_reinforcements_win': 'CgkIz5juh94JEAIQFQ',
+      'war.five_battles_game': 'CgkIz5juh94JEAIQBw',
+      'war.pyrrhic_victory': 'CgkIz5juh94JEAIQBA',
+      'war.untouchable': 'CgkIz5juh94JEAIQCg',
+      'war.comeback_15': 'CgkIz5juh94JEAIQDg',
+      'war.marathon': 'CgkIz5juh94JEAIQDw',
+      'profile.campaigner': 'CgkIz5juh94JEAIQAQ',
+      'profile.veteran': 'CgkIz5juh94JEAIQEA',
+      'profile.centurion': 'CgkIz5juh94JEAIQAw'
+    };
+    const ids = ACHIEVEMENTS.map(achievement => achievement.id);
+    expect(ids.length).toBe(22);
+    expect(new Set(ids).size).toBe(22);
+    expect(Object.keys(PLAY_ACHIEVEMENT_MAPPINGS).sort()).toEqual([...ids].sort());
+    expect(Object.fromEntries(Object.entries(PLAY_ACHIEVEMENT_MAPPINGS)
+      .map(([id, mapping]) => [id, mapping.playGamesId]))).toEqual(exactPlayIds);
+    expect(PLAY_ACHIEVEMENT_MAPPINGS['profile.veteran'].totalSteps).toBe(25);
+    expect(PLAY_ACHIEVEMENT_MAPPINGS['profile.centurion'].totalSteps).toBe(100);
+    expect(PLAY_ACHIEVEMENT_MAPPINGS['profile.campaigner'].isIncremental).toBeFalse();
+  });
+
+  it('unlocks the first casualty from any real Boneyard loss', () => {
+    eventBus.emit({
+      type: 'cards_sent_to_boneyard',
+      turnNumber: 1,
+      cards: [cardAce]
+    });
+    expect(service.isUnlocked('war.first_casualty')).toBeTrue();
+  });
+
+  it('unlocks first Battle, first Battle win, and deep Battle win from typed Battle events', () => {
+    eventBus.emit({ type: 'battle_started', turnNumber: 2, layerRound: 1 });
+    expect(service.isUnlocked('war.first_battle')).toBeTrue();
+
+    eventBus.emit({
+      type: 'battle_resolved',
+      turnNumber: 2,
+      winner: PlayerType.PLAYER,
+      loser: PlayerType.OPPONENT,
+      layerDepth: 3,
+      revealedCasualties: [cardAce],
+      hiddenWinnerCardCount: 2,
+      totalCardsAtStake: 4,
+      lostAce: true,
+      lostTwo: false,
+      lostAceAndTwo: false
+    });
+    expect(service.isUnlocked('war.first_battle_win')).toBeTrue();
+    expect(service.isUnlocked('war.deep_battle_win')).toBeTrue();
+  });
+
+  it('unlocks first rescue from a successful player reinforcement', () => {
+    eventBus.emit({
+      type: 'challenge_resolved',
+      turnNumber: 3,
+      challenger: PlayerType.PLAYER,
+      reinforcementCard: cardAce,
+      originalWinnerCard: cardTwo,
+      comparison: ComparisonResult.PLAYER_WINS,
+      winner: PlayerType.PLAYER,
+      challengerWon: true,
+      message: 'Card rescued.',
+      savedTwo: false
+    });
+    expect(service.isUnlocked('war.first_rescue')).toBeTrue();
+  });
+
+  it('distinguishes resolved wins and defeats from abandonment', () => {
+    eventBus.emit({ type: 'game_abandoned', turnNumber: 1, turnsPlayed: 1 });
+    expect(service.isUnlocked('war.first_defeat')).toBeFalse();
+
+    eventBus.emit({
+      type: 'game_resolved',
+      turnNumber: 8,
+      outcome: GameOutcome.OPPONENT_WIN,
+      turns: 8,
+      playerCardsRemaining: 0,
+      opponentCardsRemaining: 8,
+      maxDeficitExperienced: 4,
+      isComeback: false,
+      battlesCount: 0,
+      playerReinforcementsSent: 0
+    });
+    expect(service.isUnlocked('war.first_defeat')).toBeTrue();
+    expect(service.isUnlocked('war.first_win')).toBeFalse();
+  });
+
+  it('unlocks first win, no-reinforcement win, and a five-Battle game literally', () => {
+    eventBus.emit({
+      type: 'game_resolved',
+      turnNumber: 20,
+      outcome: GameOutcome.PLAYER_WIN,
+      turns: 20,
+      playerCardsRemaining: 10,
+      opponentCardsRemaining: 0,
+      maxDeficitExperienced: 0,
+      isComeback: false,
+      battlesCount: 5,
+      playerReinforcementsSent: 0
+    });
+    expect(service.isUnlocked('war.first_win')).toBeTrue();
+    expect(service.isUnlocked('war.no_reinforcements_win')).toBeTrue();
+    expect(service.isUnlocked('war.five_battles_game')).toBeTrue();
+  });
+
+  it('unlocks Campaigner, Veteran, and Centurion from cumulative resolved games', () => {
+    for (let game = 0; game < 100; game++) {
+      authService.recordGameResult({ outcome: 'tie', turns: 1, durationMs: 1000 });
+    }
+    eventBus.emit({
+      type: 'game_resolved',
+      turnNumber: 1,
+      outcome: GameOutcome.TIE,
+      turns: 1,
+      playerCardsRemaining: 1,
+      opponentCardsRemaining: 1,
+      maxDeficitExperienced: 0,
+      isComeback: false,
+      battlesCount: 0,
+      playerReinforcementsSent: 0
+    });
+    expect(service.isUnlocked('profile.campaigner')).toBeTrue();
+    expect(service.isUnlocked('profile.veteran')).toBeTrue();
+    expect(service.isUnlocked('profile.centurion')).toBeTrue();
   });
 });

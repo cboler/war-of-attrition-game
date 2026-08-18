@@ -111,6 +111,37 @@ describe('StoryBookService', () => {
     expect(service.entries()[3].text).toContain('lost 1 cards to the Boneyard');
   });
 
+  it('uses rescue/loss language for challenge results', () => {
+    eventBus.emit({
+      type: 'challenge_resolved',
+      turnNumber: 4,
+      challenger: PlayerType.PLAYER,
+      reinforcementCard: cardTwo,
+      originalWinnerCard: cardAce,
+      comparison: ComparisonResult.PLAYER_WINS,
+      winner: PlayerType.PLAYER,
+      challengerWon: true,
+      message: 'Card rescued. Both cards survive.',
+      savedTwo: false
+    });
+    expect(service.entries().at(-1)?.text).toContain('Card rescued.');
+    expect(service.entries().at(-1)?.text).toContain('both of your cards survive');
+
+    eventBus.emit({
+      type: 'challenge_resolved',
+      turnNumber: 5,
+      challenger: PlayerType.PLAYER,
+      reinforcementCard: cardEight,
+      originalWinnerCard: cardKing,
+      comparison: ComparisonResult.OPPONENT_WINS,
+      winner: PlayerType.OPPONENT,
+      challengerWon: false,
+      message: 'Both are now lost.',
+      savedTwo: false
+    });
+    expect(service.entries().at(-1)?.text).toContain('Both are now lost.');
+  });
+
   it('should record game resolution and clear on clear()', () => {
     eventBus.emit({
       type: 'game_resolved',
@@ -120,7 +151,9 @@ describe('StoryBookService', () => {
       playerCardsRemaining: 26,
       opponentCardsRemaining: 0,
       maxDeficitExperienced: 0,
-      isComeback: false
+      isComeback: false,
+      battlesCount: 0,
+      playerReinforcementsSent: 0
     });
 
     expect(service.entries().length).toBe(1);

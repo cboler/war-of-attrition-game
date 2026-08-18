@@ -1,131 +1,65 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
+import { PLAY_ACHIEVEMENT_MAPPINGS } from '../models/play-achievements-map';
 import { TwaMessagePayload, TWA_PROTOCOL_VERSION } from '../models/twa-bridge.model';
-import { PLAY_ACHIEVEMENT_MAPPINGS, PlayAchievementMapping } from '../models/play-achievements-map';
 
-@Injectable({
-  providedIn: 'root'
-})
+/** A transport may only be registered after a real, origin-verified native channel exists. */
+export interface VerifiedTwaTransport {
+  send(payload: string): void;
+  subscribe(handler: (payload: unknown) => void): () => void;
+}
+
+@Injectable({ providedIn: 'root' })
 export class PlatformAchievementsService {
-  private readonly isAndroidTwaSignal = signal<boolean>(false);
-  private readonly isPlayGamesReadySignal = signal<boolean>(false);
-  private readonly isPlayGamesSignedInSignal = signal<boolean>(false);
-  private readonly pendingSyncQueue = signal<string[]>([]);
-  private readonly allowedOrigins = new Set<string>([
-    'https://cboler.github.io',
-    'http://localhost:4200',
-    'http://127.0.0.1:4200'
-  ]);
+  private readonly isAndroidTwaSignal = signal(false);
+  private readonly channelEstablishedSignal = signal(false);
+  private readonly isPlayGamesReadySignal = signal(false);
+  private readonly isPlayGamesSignedInSignal = signal(false);
+  private readonly pendingUnlocks = signal<readonly string[]>([]);
+  private readonly pendingProgress = signal<Readonly<Record<string, number>>>({});
 
-  readonly isPlayGamesAvailable = computed(() => this.isPlayGamesReadySignal());
-  readonly isPlayGamesSignedIn = computed(() => this.isPlayGamesSignedInSignal());
+  private transport: VerifiedTwaTransport | null = null;
+  private unsubscribeTransport: (() => void) | null = null;
+
   readonly isRunningInTwa = computed(() => this.isAndroidTwaSignal());
+  readonly isPlayGamesAvailable = computed(() =>
+    this.channelEstablishedSignal() && this.isPlayGamesReadySignal()
+  );
+  readonly isPlayGamesSignedIn = computed(() =>
+    this.isPlayGamesAvailable() && this.isPlayGamesSignedInSignal()
+  );
 
   constructor() {
-    this.detectEnvironmentAndSetupBridge();
-  }
-
-  private detectEnvironmentAndSetupBridge(): void {
-    if (typeof window === 'undefined') return;
-
-    // Check TWA indication via URL parameter or standalone context
-    const urlParams = new URLSearchParams(window.location.search);
-    const twaFlag = urlParams.get('twa') === '1';
-    const hasAndroidBridge = typeof (window as any).AndroidPlayGamesBridge !== 'undefined';
-
-    if (twaFlag || hasAndroidBridge) {
-      this.isAndroidTwaSignal.set(true);
-    }
-
-    // Listen for postMessage from Android Custom Tabs host
-    window.addEventListener('message', (event: MessageEvent) => {
-      this.handleIncomingMessage(event);
-    });
-
-    // Request Play Games initialization from host if in TWA
-    if (this.isAndroidTwaSignal()) {
-      this.sendTwaMessage({
-        version: TWA_PROTOCOL_VERSION,
-        type: 'PLAY_GAMES_INIT'
-      });
-    }
-  }
-
-  private handleIncomingMessage(event: MessageEvent): void {
-    // Validate origin if origin is provided (allow local/same origin or github.io)
-    if (event.origin && !this.allowedOrigins.has(event.origin) && event.origin !== window.location.origin) {
-      // In TWA Custom Tabs postMessage channel, origin can be empty string or target origin
-      if (event.origin !== '') {
-        console.warn('Rejected postMessage from unauthorized origin:', event.origin);
-        return;
-      }
-    }
-
-    let payload: TwaMessagePayload;
-    if (typeof event.data === 'string') {
-      try {
-        payload = JSON.parse(event.data);
-      } catch {
-        return; // Malformed JSON - fail closed
-      }
-    } else if (typeof event.data === 'object' && event.data !== null) {
-      payload = event.data;
-    } else {
-      return;
-    }
-
-    // Validate protocol version
-    if (payload.version !== TWA_PROTOCOL_VERSION) {
-      console.warn('Rejected bridge message with invalid protocol version:', payload.version);
-      return;
-    }
-
-    switch (payload.type) {
-      case 'PLAY_GAMES_READY':
-        this.isAndroidTwaSignal.set(true);
-        this.isPlayGamesReadySignal.set(true);
-        this.flushPendingSyncQueue();
-        break;
-
-      case 'PLAY_GAMES_SIGNED_IN':
-        this.isAndroidTwaSignal.set(true);
-        this.isPlayGamesReadySignal.set(true);
-        this.isPlayGamesSignedInSignal.set(true);
-        this.flushPendingSyncQueue();
-        break;
-
-      case 'PLAY_GAMES_UNAVAILABLE':
-        this.isPlayGamesReadySignal.set(false);
-        this.isPlayGamesSignedInSignal.set(false);
-        break;
-
-      case 'ACHIEVEMENT_SYNCED':
-        if (payload.internalAchievementId) {
-          this.removeFromPendingQueue(payload.internalAchievementId);
-        }
-        break;
-
-      case 'ACHIEVEMENT_SYNC_FAILED':
-        console.warn('Achievement sync failed on Android host:', payload.error);
-        break;
+    if (typeof window !== 'undefined') {
+      // Informational only. A query parameter is never treated as native readiness.
+      this.isAndroidTwaSignal.set(new URLSearchParams(window.location.search).get('twa') === '1');
     }
   }
 
   /**
-   * Unlock an achievement via Google Play Games if mapped and running in TWA
+   * Hook for a future Android Browser Helper postMessage integration. The current
+   * TWA host does not register one, so native controls and sync remain safely off.
    */
+  connectVerifiedTransport(transport: VerifiedTwaTransport): void {
+    this.unsubscribeTransport?.();
+    this.transport = transport;
+    this.channelEstablishedSignal.set(true);
+    this.isAndroidTwaSignal.set(true);
+    this.unsubscribeTransport = transport.subscribe(payload => this.handleIncomingPayload(payload));
+    this.send({ version: TWA_PROTOCOL_VERSION, type: 'PLAY_GAMES_INIT' });
+  }
+
   unlockAchievement(internalId: string): void {
     const mapping = PLAY_ACHIEVEMENT_MAPPINGS[internalId];
-    if (!mapping) {
-      // Unmapped achievement is safely ignored on native platform
+    if (!mapping) return;
+    if (mapping.isIncremental) {
+      this.setAchievementSteps(internalId, mapping.totalSteps ?? 0);
       return;
     }
-
-    if (!this.isPlayGamesReadySignal()) {
-      this.addToPendingQueue(internalId);
+    if (!this.canUsePlayGames()) {
+      this.queueUnlock(internalId);
       return;
     }
-
-    this.sendTwaMessage({
+    this.send({
       version: TWA_PROTOCOL_VERSION,
       type: 'UNLOCK_ACHIEVEMENT',
       internalAchievementId: internalId,
@@ -133,20 +67,21 @@ export class PlatformAchievementsService {
     });
   }
 
-  /**
-   * Update progress for an incremental achievement
-   */
-  incrementAchievement(internalId: string, currentSteps: number): void {
+  /** Sets absolute progress; it never sends a cumulative value as an increment/delta. */
+  setAchievementSteps(internalId: string, completedSteps: number): void {
     const mapping = PLAY_ACHIEVEMENT_MAPPINGS[internalId];
-    if (!mapping || !mapping.isIncremental) return;
-
-    if (!this.isPlayGamesReadySignal()) {
+    if (!mapping?.isIncremental || !mapping.totalSteps) return;
+    const currentSteps = Math.max(0, Math.min(Math.floor(completedSteps), mapping.totalSteps));
+    if (!this.canUsePlayGames()) {
+      this.pendingProgress.update(progress => ({
+        ...progress,
+        [internalId]: Math.max(progress[internalId] ?? 0, currentSteps)
+      }));
       return;
     }
-
-    this.sendTwaMessage({
+    this.send({
       version: TWA_PROTOCOL_VERSION,
-      type: 'INCREMENT_ACHIEVEMENT',
+      type: 'SET_ACHIEVEMENT_STEPS',
       internalAchievementId: internalId,
       playGamesAchievementId: mapping.playGamesId,
       currentSteps,
@@ -154,72 +89,84 @@ export class PlatformAchievementsService {
     });
   }
 
-  /**
-   * Request native Google Play Games Achievements UI overlay
-   */
   showAchievementsOverlay(): void {
-    if (!this.isPlayGamesReadySignal()) return;
-
-    this.sendTwaMessage({
-      version: TWA_PROTOCOL_VERSION,
-      type: 'SHOW_ACHIEVEMENTS'
-    });
+    if (!this.canUsePlayGames()) return;
+    this.send({ version: TWA_PROTOCOL_VERSION, type: 'SHOW_ACHIEVEMENTS' });
   }
 
-  /**
-   * Trigger Play Games sign-in flow
-   */
   requestPlayGamesSignIn(): void {
-    if (!this.isAndroidTwaSignal()) return;
-
-    this.sendTwaMessage({
-      version: TWA_PROTOCOL_VERSION,
-      type: 'PLAY_GAMES_SIGN_IN'
-    });
+    if (!this.channelEstablishedSignal() || !this.isPlayGamesReadySignal()) return;
+    this.send({ version: TWA_PROTOCOL_VERSION, type: 'PLAY_GAMES_SIGN_IN' });
   }
 
-  /**
-   * Reconcile any previously unlocked internal achievements with Play Games
-   */
   reconcileUnlockedAchievements(unlockedIds: readonly string[]): void {
-    if (!this.isPlayGamesReadySignal()) {
-      unlockedIds.forEach(id => this.addToPendingQueue(id));
-      return;
-    }
-
     unlockedIds.forEach(id => this.unlockAchievement(id));
   }
 
-  private sendTwaMessage(payload: TwaMessagePayload): void {
+  private canUsePlayGames(): boolean {
+    return this.isPlayGamesAvailable() && this.isPlayGamesSignedIn();
+  }
+
+  private handleIncomingPayload(data: unknown): void {
+    let payload: TwaMessagePayload;
     try {
-      // 1. If native JavaScript Interface exists on Android WebView
-      if (typeof (window as any).AndroidPlayGamesBridge?.postMessage === 'function') {
-        (window as any).AndroidPlayGamesBridge.postMessage(JSON.stringify(payload));
-        return;
-      }
+      payload = typeof data === 'string'
+        ? JSON.parse(data) as TwaMessagePayload
+        : data as TwaMessagePayload;
+    } catch {
+      return;
+    }
+    if (!payload || payload.version !== TWA_PROTOCOL_VERSION) return;
 
-      // 2. Standard TWA / Custom Tabs postMessage channel
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage(JSON.stringify(payload), '*');
-      }
-    } catch (e) {
-      console.warn('Failed to dispatch bridge message to Android host:', e);
+    switch (payload.type) {
+      case 'PLAY_GAMES_READY':
+        this.isPlayGamesReadySignal.set(true);
+        this.isPlayGamesSignedInSignal.set(false);
+        break;
+      case 'PLAY_GAMES_SIGNED_IN':
+        this.isPlayGamesReadySignal.set(true);
+        this.isPlayGamesSignedInSignal.set(true);
+        this.flushPendingSync();
+        break;
+      case 'PLAY_GAMES_UNAVAILABLE':
+        this.isPlayGamesReadySignal.set(false);
+        this.isPlayGamesSignedInSignal.set(false);
+        break;
+      case 'ACHIEVEMENT_SYNCED':
+        if (payload.internalAchievementId) {
+          this.pendingUnlocks.update(ids => ids.filter(id => id !== payload.internalAchievementId));
+        }
+        break;
+      case 'ACHIEVEMENT_SYNC_FAILED':
+        console.warn('Achievement sync failed on Android host:', payload.error);
+        break;
     }
   }
 
-  private addToPendingQueue(id: string): void {
-    if (!this.pendingSyncQueue().includes(id)) {
-      this.pendingSyncQueue.update(queue => [...queue, id]);
+  private queueUnlock(id: string): void {
+    if (!this.pendingUnlocks().includes(id)) {
+      this.pendingUnlocks.update(ids => [...ids, id]);
     }
   }
 
-  private removeFromPendingQueue(id: string): void {
-    this.pendingSyncQueue.update(queue => queue.filter(item => item !== id));
+  private flushPendingSync(): void {
+    const unlocks = [...this.pendingUnlocks()];
+    const progress = { ...this.pendingProgress() };
+    this.pendingUnlocks.set([]);
+    this.pendingProgress.set({});
+    unlocks.forEach(id => this.unlockAchievement(id));
+    Object.entries(progress).forEach(([id, steps]) => this.setAchievementSteps(id, steps));
   }
 
-  private flushPendingSyncQueue(): void {
-    const queue = [...this.pendingSyncQueue()];
-    this.pendingSyncQueue.set([]);
-    queue.forEach(id => this.unlockAchievement(id));
+  private send(payload: TwaMessagePayload): void {
+    if (!this.transport || !this.channelEstablishedSignal()) return;
+    try {
+      this.transport.send(JSON.stringify(payload));
+    } catch (error) {
+      console.warn('Verified TWA transport failed:', error);
+      this.channelEstablishedSignal.set(false);
+      this.isPlayGamesReadySignal.set(false);
+      this.isPlayGamesSignedInSignal.set(false);
+    }
   }
 }

@@ -1,7 +1,8 @@
 .profile-dialog-container {
   padding: 0;
-  max-width: 640px;
-  max-height: 88vh;
+  width: 720px;
+  max-width: 100%;
+  max-height: calc(100dvh - 20px);
   background: #0d221c;
   color: #f7f0e1;
   border-radius: 16px;
@@ -130,6 +131,7 @@
   background: rgba(6, 18, 14, 0.9);
   padding: 4px 16px;
   gap: 8px;
+  overflow-x: auto;
 
   .tab-btn {
     display: inline-flex;
@@ -143,6 +145,7 @@
     font: 600 0.78rem/1 system-ui, sans-serif;
     letter-spacing: 0.04em;
     cursor: pointer;
+    white-space: nowrap;
     transition: color 160ms ease, border-color 160ms ease;
 
     mat-icon {
@@ -164,8 +167,104 @@
 
 .dialog-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 18px 24px;
+}
+
+.settings-tab,
+.settings-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-tab { gap: 20px; }
+
+.settings-section {
+  gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(228, 191, 114, 0.14);
+
+  &:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+}
+
+.settings-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+
+  mat-form-field { min-width: 0; }
+}
+
+.settings-toggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.backing-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 8px;
+}
+
+.backing-option {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 7px 9px;
+  border: 1px solid rgba(228, 191, 114, 0.16);
+  border-radius: 8px;
+  background: rgba(18, 44, 37, 0.6);
+  color: #f7f0e1;
+  text-align: left;
+  cursor: pointer;
+
+  &.selected {
+    border-color: #e5c175;
+    background: rgba(50, 61, 39, 0.72);
+  }
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    color: #e5c175;
+    font-size: 18px;
+  }
+}
+
+.backing-preview {
+  width: 30px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.settings-footer p {
+  margin: 0;
+  color: rgba(247, 240, 225, 0.65);
+  font-size: 0.78rem;
+}
+
+.profile-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  a { color: #e5c175; }
+}
+
+.reset-settings-btn {
+  align-self: flex-start;
+  color: #ffb4ab;
+  border-color: rgba(255, 180, 171, 0.4);
 }
 
 .section-subtitle {
@@ -386,4 +485,24 @@
       color: #ff9b9b;
     }
   }
+}
+
+@media (max-width: 680px) {
+  .profile-dialog-container {
+    max-height: calc(100dvh - 10px);
+    border-radius: 12px;
+  }
+
+  .dialog-header { padding: 14px; }
+
+  .dialog-tabs {
+    padding-inline: 6px;
+
+    .tab-btn { padding-inline: 10px; }
+  }
+
+  .dialog-body { padding: 14px; }
+
+  .settings-fields,
+  .settings-toggles { grid-template-columns: 1fr; }
 }

@@ -63,6 +63,23 @@ describe('GameStateService card ledger', () => {
     expectConserved();
   });
 
+  it('publishes both selected Battle cards in the same state transition', () => {
+    service.startTurn();
+    service.setPhase(GamePhase.BATTLE);
+    const battle = service.dealBattleLayer()!;
+    const playerChoice = battle.playerCards[1];
+    const opponentChoice = battle.opponentCards[2];
+
+    expect(service.currentState.activeTurn?.publicCardIds).not.toContain(playerChoice.id);
+    expect(service.currentState.activeTurn?.publicCardIds).not.toContain(opponentChoice.id);
+
+    service.selectNewestBattleTargets(opponentChoice.id, playerChoice.id);
+
+    const publicIds = service.currentState.activeTurn?.publicCardIds ?? [];
+    expect(publicIds).toContain(playerChoice.id);
+    expect(publicIds).toContain(opponentChoice.id);
+  });
+
   it('will not create a recursive layer before the current one has resolved', () => {
     service.startTurn();
     service.setPhase(GamePhase.BATTLE);
