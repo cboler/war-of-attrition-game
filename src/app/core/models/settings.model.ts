@@ -77,6 +77,7 @@ export interface AppSettings {
   animationSpeed: 'slow' | 'normal' | 'fast';
   soundEnabled: boolean;
   showTurnCounter: boolean;
+  tutorialEnabled: boolean;
 
   // Advanced settings
   confirmChallenges: boolean;
@@ -131,6 +132,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   animationSpeed: 'normal',
   soundEnabled: true,
   showTurnCounter: true,
+  tutorialEnabled: true,
   confirmChallenges: false,
   autoPlayAnimations: true,
   showCardDetails: true

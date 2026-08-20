@@ -1,0 +1,28 @@
+@if (tutorialService.activePrompt(); as prompt) {
+  <div class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+    <div class="tutorial-backdrop" (click)="onAcknowledge()"></div>
+
+    <div class="tutorial-callout" [ngClass]="'step-' + prompt.step">
+      <div class="callout-header">
+        <span class="callout-eyebrow">{{ prompt.eyebrow }}</span>
+        <h3 id="tutorial-title" class="callout-title">{{ prompt.title }}</h3>
+      </div>
+
+      <div class="callout-body">
+        <p class="callout-message">{{ prompt.message }}</p>
+      </div>
+
+      <div class="callout-actions">
+        @if (prompt.canSkip) {
+          <button type="button" class="btn-skip" (click)="onSkip()" aria-label="Skip remaining tutorial tips">
+            Skip Tutorial
+          </button>
+        }
+        <button #actionBtn type="button" class="btn-action" (click)="onAcknowledge()" aria-label="Acknowledge and continue">
+          <span>{{ prompt.actionText || 'Continue' }}</span>
+          <mat-icon class="btn-icon">arrow_forward</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+}

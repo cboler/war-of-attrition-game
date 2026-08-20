@@ -1,0 +1,176 @@
+:host {
+  display: contents;
+}
+
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.tutorial-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 14, 11, 0.65);
+  backdrop-filter: blur(4px);
+  animation: backdrop-fade 240ms ease-out;
+}
+
+.tutorial-callout {
+  position: relative;
+  z-index: 10;
+  width: min(440px, calc(100vw - 32px));
+  max-width: 440px;
+  padding: clamp(16px, 4vw, 24px);
+  border-radius: 16px;
+  background: rgba(13, 34, 28, 0.98);
+  border: 1.5px solid #ffd54f;
+  color: #f7f0e1;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.75),
+    0 0 24px rgba(255, 213, 79, 0.22);
+  animation: callout-enter 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+
+  .callout-header {
+    margin-bottom: 10px;
+
+    .callout-eyebrow {
+      display: inline-block;
+      color: #ffd54f;
+      font: 700 0.65rem/1 system-ui, sans-serif;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .callout-title {
+      margin: 6px 0 0;
+      color: #fff9ee;
+      font: 600 clamp(1.1rem, 3.5vw, 1.35rem)/1.2 Georgia, serif;
+    }
+  }
+
+  .callout-body {
+    margin-bottom: 20px;
+
+    .callout-message {
+      margin: 0;
+      color: rgba(247, 240, 225, 0.88);
+      font-size: clamp(0.82rem, 2.5vw, 0.92rem);
+      line-height: 1.45;
+    }
+  }
+
+  .callout-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    .btn-skip {
+      background: transparent;
+      border: none;
+      color: rgba(247, 240, 225, 0.5);
+      font: 600 0.76rem/1 system-ui, sans-serif;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 6px;
+      transition: color 0.15s ease, background 0.15s ease;
+
+      &:hover {
+        color: #ff9b9b;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      &:focus-visible {
+        outline: 2px solid #ffd54f;
+        outline-offset: 2px;
+      }
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: 999px;
+      border: 1px solid #ffd54f;
+      background: #ffd54f;
+      color: #0c1815;
+      font: 700 0.8rem/1 system-ui, sans-serif;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      margin-left: auto;
+      box-shadow: 0 4px 12px rgba(255, 213, 79, 0.3);
+      transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+      .btn-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        transition: transform 0.15s ease;
+      }
+
+      &:hover {
+        background: #ffe082;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(255, 213, 79, 0.45);
+
+        .btn-icon {
+          transform: translateX(2px);
+        }
+      }
+
+      &:active {
+        transform: translateY(1px);
+      }
+
+      &:focus-visible {
+        outline: 2px solid #ffffff;
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  // Positioning adjustments for specific steps to highlight key live elements
+  &.step-first_turn {
+    margin-top: auto;
+    margin-bottom: clamp(60px, 12vh, 120px);
+  }
+
+  &.step-first_reinforcement {
+    margin-top: auto;
+    margin-bottom: clamp(80px, 16vh, 150px);
+  }
+
+  &.step-first_bonyeard {
+    margin-right: auto;
+    margin-left: clamp(20px, 5vw, 60px);
+  }
+}
+
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes callout-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-backdrop { animation: none; }
+  .tutorial-callout { animation: none; }
+}

@@ -22,6 +22,6 @@ describe('SupportComponent', () => {
     expect(component).toBeTruthy();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('mat-card-title')?.textContent).toContain('Player Support');
-    expect(compiled.textContent).toContain('lacyvan1@gmail.com');
+    expect(compiled.textContent).toContain('requiredcheese@gmail.com');
   });
 });

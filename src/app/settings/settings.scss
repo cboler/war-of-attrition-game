@@ -89,6 +89,19 @@
     max-width: 320px;
   }
 
+  &.current-match-section {
+    background: rgba(255, 213, 79, 0.08);
+    border: 1px solid rgba(255, 213, 79, 0.35);
+    border-radius: 12px;
+    padding: 16px;
+
+    .match-actions-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+  }
+
   &.danger-zone-section {
     padding-top: 16px;
 

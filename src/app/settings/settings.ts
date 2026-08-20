@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -8,14 +9,18 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Inject } from '@angular/core';
 import { SettingsService } from '../core/services/settings.service';
+import { GameControllerService } from '../services/game-controller.service';
+import { TutorialService } from '../services/tutorial.service';
 
 @Component({
   selector: 'app-settings',
+  standalone: true,
   imports: [
+    CommonModule,
     MatCardModule, 
     MatButtonModule, 
     MatSlideToggleModule,
@@ -31,7 +36,41 @@ import { SettingsService } from '../core/services/settings.service';
 })
 export class Settings {
   readonly settingsService = inject(SettingsService);
+  private readonly gameController = inject(GameControllerService);
+  private readonly tutorialService = inject(TutorialService);
   private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
+
+  readonly hasActiveMatch = computed(() => this.gameController.hasMeaningfulUnresolvedGame());
+
+  onRestartMatch(): void {
+    this.showConfirmDialog(
+      'Restart Match',
+      'Are you sure you want to restart the current match? This will clear the table and deal a fresh game.'
+    ).subscribe(result => {
+      if (result) {
+        this.gameController.startNewGame();
+        this.router.navigate(['/']);
+      }
+    });
+  }
+
+  onAbandonMatch(): void {
+    this.showConfirmDialog(
+      'Abandon Match',
+      'Are you sure you want to abandon the current match? This will be recorded as an abandonment in your career records.'
+    ).subscribe(result => {
+      if (result) {
+        this.gameController.startNewGame();
+        this.router.navigate(['/']);
+      }
+    });
+  }
+
+  onResetTutorial(): void {
+    this.tutorialService.resetTutorialProgress();
+    alert('Tutorial progress has been reset. You will see contextual gameplay tips on your next match.');
+  }
 
   onResetSettings(): void {
     this.showConfirmDialog(
@@ -55,6 +94,7 @@ export class Settings {
 
 @Component({
   selector: 'app-confirm-dialog',
+  standalone: true,
   imports: [MatDialogModule, MatButtonModule],
   template: `
     <h2 mat-dialog-title>{{ data.title }}</h2>

@@ -78,6 +78,8 @@ android {
         resValue "color", "backgroundColor", twaManifest.backgroundColor
         resValue "integer", "splashScreenFadeOutDuration", twaManifest.splashScreenFadeOutDuration.toString()
         resValue "string", "game_services_project_id", resolvePlayGamesProjectId()
+        resValue "string", "admob_app_id", "ca-app-pub-3940256099942544~3347511713"
+        resValue "string", "admob_banner_ad_unit_id", "ca-app-pub-3940256099942544/6300978111"
     }
 
     signingConfigs {
@@ -122,4 +124,5 @@ dependencies {
     implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
     implementation 'com.google.android.gms:play-services-games-v2:20.1.2'
     implementation 'com.google.android.gms:play-services-tasks:18.2.0'
+    implementation 'com.google.android.gms:play-services-ads:23.6.0'
 }

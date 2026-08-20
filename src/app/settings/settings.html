@@ -13,6 +13,29 @@
         <!-- General Settings Tab -->
         <mat-tab label="General">
           <div class="tab-content">
+            <!-- Contextual Current Match Section -->
+            @if (hasActiveMatch()) {
+              <div class="setting-section current-match-section">
+                <h3>
+                  <mat-icon>casino</mat-icon>
+                  Current Game
+                </h3>
+                <p>A match is currently active on the table.</p>
+                <div class="match-actions-buttons">
+                  <button mat-raised-button color="primary" (click)="onRestartMatch()">
+                    <mat-icon>refresh</mat-icon>
+                    Restart Match
+                  </button>
+                  <button mat-stroked-button color="warn" (click)="onAbandonMatch()">
+                    <mat-icon>flag</mat-icon>
+                    Abandon Match
+                  </button>
+                </div>
+              </div>
+
+              <mat-divider></mat-divider>
+            }
+
             <!-- Ergonomics & Appearance -->
             <div class="setting-section">
               <h3>Appearance & Controls</h3>
@@ -79,6 +102,23 @@
                   Show Card Details
                 </mat-slide-toggle>
               </div>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Tutorial Guidance -->
+            <div class="setting-section">
+              <h3>Tutorial Guidance</h3>
+              <div class="toggle-setting">
+                <mat-slide-toggle [checked]="settingsService.tutorialEnabled()"
+                                 (change)="settingsService.setTutorialEnabled($event.checked)">
+                  Show Tutorial Guidance
+                </mat-slide-toggle>
+              </div>
+              <button mat-stroked-button color="accent" (click)="onResetTutorial()" style="margin-top: 8px;">
+                <mat-icon>school</mat-icon>
+                Reset Tutorial Progress
+              </button>
             </div>
 
             <mat-divider></mat-divider>

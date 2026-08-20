@@ -10,6 +10,10 @@ export const routes: Routes = [
     loadComponent: () => import('./settings/settings').then(m => m.Settings)
   },
   {
+    path: 'tutorial-harness',
+    loadComponent: () => import('./shared/components/tutorial-harness/tutorial-harness.component').then(m => m.TutorialHarnessComponent)
+  },
+  {
     path: 'privacy',
     loadComponent: () => import('./public/privacy/privacy.component').then(m => m.PrivacyComponent)
   },

@@ -1,20 +1,22 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { PlayerType } from '../core/models/game-state.model';
 import { GameStateService } from '../core/services/game-state.service';
 import { SettingsService } from '../core/services/settings.service';
 import { AchievementService } from '../services/achievement.service';
+import { TutorialService } from '../services/tutorial.service';
 import {
   GameControllerService,
   PresentationState,
   TableCardView,
   battleAnnouncementFor
 } from '../services/game-controller.service';
-import { CommonModule } from '@angular/common';
 import { CardComponent } from '../shared/components/card/card.component';
 import { CardTableComponent } from '../shared/components/card-table/card-table.component';
 import { PlayerSeatComponent } from '../shared/components/player-seat/player-seat.component';
 import { StoryBookDrawerComponent } from '../shared/components/story-book-drawer/story-book-drawer.component';
+import { TutorialOverlayComponent } from '../shared/components/tutorial-overlay/tutorial-overlay.component';
 
 @Component({
   selector: 'app-table-game',
@@ -24,7 +26,8 @@ import { StoryBookDrawerComponent } from '../shared/components/story-book-drawer
     CardComponent,
     CardTableComponent,
     PlayerSeatComponent,
-    StoryBookDrawerComponent
+    StoryBookDrawerComponent,
+    TutorialOverlayComponent
   ],
   templateUrl: './table-game.html',
   styleUrl: './table-game.scss',
@@ -35,6 +38,7 @@ export class TableGame implements OnInit {
   protected readonly gameState = inject(GameStateService);
   protected readonly settings = inject(SettingsService);
   protected readonly achievements = inject(AchievementService);
+  protected readonly tutorial = inject(TutorialService);
   protected readonly state = PresentationState;
   protected readonly player = PlayerType;
   protected readonly boneyardOpen = signal(false);
@@ -98,7 +102,7 @@ export class TableGame implements OnInit {
 
   protected onTableClick(event: MouseEvent): void {
     const element = event.target as HTMLElement | null;
-    if (element?.closest('button, a, details, summary, .achievement-toast, .story-book-drawer, .boneyard-drawer')) return;
+    if (element?.closest('button, a, details, summary, .achievement-toast, .story-book-drawer, .boneyard-drawer, .tutorial-overlay')) return;
     this.advancePresentation();
   }
 

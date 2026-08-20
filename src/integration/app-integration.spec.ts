@@ -107,25 +107,19 @@ describe('App Integration Tests', () => {
       expect(settings.deckHand()).toBe('left');
     });
 
-    it('should open and close restart game callout when clicking ATTRITION title', () => {
-      expect(fixture.nativeElement.querySelector('.restart-callout')).toBeNull();
+    it('should render clean title link and open profile dialog on button click', () => {
+      const titleLink = fixture.nativeElement.querySelector('.app-title-link');
+      expect(titleLink).toBeTruthy();
+      expect(titleLink.textContent).toContain('ATTRITION');
 
-      const titleBtn = fixture.nativeElement.querySelector('.app-title-btn');
-      expect(titleBtn).toBeTruthy();
-
-      titleBtn.click();
+      const profileBtn = fixture.nativeElement.querySelector('.profile-toolbar-btn');
+      expect(profileBtn).toBeTruthy();
+      profileBtn.click();
       fixture.detectChanges();
 
-      const callout = fixture.nativeElement.querySelector('.restart-callout');
-      expect(callout).toBeTruthy();
-      expect(callout.textContent).toContain('Start New Game?');
-
-      const cancelBtn = callout.querySelector('.callout-btn.secondary');
-      cancelBtn.click();
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('.restart-callout')).toBeNull();
+      const dialog = TestBed.inject(MatDialog);
+      expect(dialog.openDialogs.length).toBe(1);
+      dialog.closeAll();
     });
   });
 });
-

@@ -35,8 +35,8 @@ import { MatExpansionModule } from '@angular/material/expansion';
             <h3>Direct Developer Support</h3>
             <p>Need help or encountering an issue? Reach out directly to the project team:</p>
             <div class="contact-methods">
-              <a mat-stroked-button color="primary" href="mailto:lacyvan1@gmail.com?subject=War%20of%20Attrition%20Support">
-                <mat-icon>email</mat-icon> lacyvan1&#64;gmail.com
+              <a mat-stroked-button color="primary" href="mailto:requiredcheese@gmail.com?subject=War%20of%20Attrition%20Support">
+                <mat-icon>email</mat-icon> requiredcheese&#64;gmail.com
               </a>
               <a mat-stroked-button href="https://github.com/cboler/war-of-attrition-game/issues" target="_blank" rel="noopener">
                 <mat-icon>bug_report</mat-icon> GitHub Issue Tracker
@@ -128,4 +128,4 @@ import { MatExpansionModule } from '@angular/material/expansion';
   `,
   styleUrls: ['./legal-pages.scss']
 })
-export class SupportComponent {}
+export class SupportComponent { }

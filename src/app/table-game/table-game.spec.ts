@@ -181,10 +181,10 @@ describe('TableGame presentation', () => {
     expect(casualtyEmphasisFor(card(Rank.SEVEN))).toBeNull();
   });
 
-  it('opens and closes the Story Book drawer using semantic selector', () => {
+  it('opens and closes the Field Manual drawer using semantic selector', () => {
     expect(fixture.nativeElement.querySelector('app-story-book-drawer')).toBeNull();
 
-    const storyBtn = fixture.nativeElement.querySelector('button[aria-label="Open Story Book Journal"]') as HTMLButtonElement;
+    const storyBtn = fixture.nativeElement.querySelector('button[aria-label="Open Field Manual"]') as HTMLButtonElement;
     expect(storyBtn).toBeTruthy();
     storyBtn.click();
     fixture.detectChanges();

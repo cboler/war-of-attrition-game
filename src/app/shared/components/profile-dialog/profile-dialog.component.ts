@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, ElementRef, ViewChild, AfterViewInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
@@ -13,6 +13,8 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { PlatformAchievementsService } from '../../../core/services/platform-achievements.service';
 import { SettingsService } from '../../../core/services/settings.service';
+import { GameControllerService } from '../../../services/game-controller.service';
+import { TutorialService } from '../../../services/tutorial.service';
 import { ACHIEVEMENTS } from '../../../core/models/achievement.model';
 
 @Component({
@@ -226,6 +228,16 @@ import { ACHIEVEMENTS } from '../../../core/models/achievement.model';
         } @else if (activeTab() === 'achievements') {
           <!-- Achievements Tab -->
           <div class="achievements-tab">
+            <div class="achievements-summary-card">
+              <div class="summary-header">
+                <span class="summary-title">Battle Honors</span>
+                <span class="summary-count">{{ unlockedCount() }} of {{ totalAchievements() }} ({{ unlockedPercentage() }}%)</span>
+              </div>
+              <div class="progress-track" role="progressbar" [attr.aria-valuenow]="unlockedPercentage()" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-fill" [style.width.%]="unlockedPercentage()"></div>
+              </div>
+            </div>
+
             @if (showPlayGamesButton()) {
               <div class="play-games-banner">
                 <button mat-flat-button class="play-games-btn" (click)="openPlayGamesAchievements()">
@@ -234,6 +246,7 @@ import { ACHIEVEMENTS } from '../../../core/models/achievement.model';
                 </button>
               </div>
             }
+
             <div class="achievements-grid">
               @for (ach of allAchievements; track ach.id) {
                 <div class="achievement-item" [class.unlocked]="isAchievementUnlocked(ach.id)">
@@ -253,6 +266,24 @@ import { ACHIEVEMENTS } from '../../../core/models/achievement.model';
           </div>
         } @else {
           <div class="settings-tab">
+            <!-- Contextual Current Match Section -->
+            @if (hasActiveMatch()) {
+              <section class="settings-section match-actions-section" aria-labelledby="current-match-title">
+                <h4 id="current-match-title" class="section-subtitle">Current Game</h4>
+                <p class="match-section-desc">A game is currently active on the table.</p>
+                <div class="match-actions-grid">
+                  <button mat-flat-button class="restart-match-btn" (click)="onRestartMatch()">
+                    <mat-icon>refresh</mat-icon>
+                    <span>Restart Match</span>
+                  </button>
+                  <button mat-stroked-button color="warn" class="abandon-match-btn" (click)="onAbandonMatch()">
+                    <mat-icon>flag</mat-icon>
+                    <span>Abandon Match</span>
+                  </button>
+                </div>
+              </section>
+            }
+
             <section class="settings-section" aria-labelledby="appearance-settings-title">
               <h4 id="appearance-settings-title" class="section-subtitle">Appearance & Controls</h4>
               <div class="settings-fields">
@@ -287,6 +318,19 @@ import { ACHIEVEMENTS } from '../../../core/models/achievement.model';
                 <mat-slide-toggle [checked]="settings.showTurnCounter()" (change)="settings.setShowTurnCounter($event.checked)">Turn counter</mat-slide-toggle>
                 <mat-slide-toggle [checked]="settings.showCardDetails()" (change)="settings.setShowCardDetails($event.checked)">Card details</mat-slide-toggle>
               </div>
+            </section>
+
+            <!-- Tutorial Guidance Section -->
+            <section class="settings-section" aria-labelledby="tutorial-guidance-title">
+              <h4 id="tutorial-guidance-title" class="section-subtitle">Tutorial Guidance</h4>
+              <div class="settings-toggles">
+                <mat-slide-toggle [checked]="settings.tutorialEnabled()" (change)="settings.setTutorialEnabled($event.checked)">
+                  Show Tutorial Guidance
+                </mat-slide-toggle>
+              </div>
+              <button mat-stroked-button class="reset-tutorial-btn" (click)="onResetTutorial()">
+                <mat-icon>school</mat-icon> Reset Tutorial Progress
+              </button>
             </section>
 
             <section class="settings-section" aria-labelledby="card-backing-title">
@@ -357,6 +401,9 @@ import { ACHIEVEMENTS } from '../../../core/models/achievement.model';
 export class ProfileDialogComponent implements AfterViewInit {
   private authService = inject(AuthService);
   private platformAchievements = inject(PlatformAchievementsService);
+  private gameController = inject(GameControllerService);
+  private tutorial = inject(TutorialService);
+  private dialogRef = inject(MatDialogRef<ProfileDialogComponent>);
   readonly settings = inject(SettingsService);
 
   @ViewChild('googleBtnContainer') googleBtnContainer?: ElementRef<HTMLDivElement>;
@@ -370,6 +417,12 @@ export class ProfileDialogComponent implements AfterViewInit {
     this.stats().unlockedAchievements?.length || 0
   );
   readonly totalAchievements = computed(() => ACHIEVEMENTS.length);
+  readonly unlockedPercentage = computed(() =>
+    Math.round((this.unlockedCount() / Math.max(1, this.totalAchievements())) * 100)
+  );
+
+  readonly hasActiveMatch = computed(() => this.gameController.hasMeaningfulUnresolvedGame());
+
   readonly showPlayGamesButton = computed(() =>
     this.platformAchievements.isPlayGamesAvailable() &&
     this.platformAchievements.isPlayGamesSignedIn()
@@ -418,6 +471,25 @@ export class ProfileDialogComponent implements AfterViewInit {
 
   signOut(): void {
     this.authService.signOut();
+  }
+
+  onRestartMatch(): void {
+    if (confirm('Restart current match? This will clear the table and deal a fresh game.')) {
+      this.gameController.startNewGame();
+      this.dialogRef.close();
+    }
+  }
+
+  onAbandonMatch(): void {
+    if (confirm('Abandon current match? This match will be recorded as an abandonment in your career records.')) {
+      this.gameController.startNewGame();
+      this.dialogRef.close();
+    }
+  }
+
+  onResetTutorial(): void {
+    this.tutorial.resetTutorialProgress();
+    alert('Tutorial progress has been reset. You will see contextual gameplay tips on your next match.');
   }
 
   resetStats(): void {

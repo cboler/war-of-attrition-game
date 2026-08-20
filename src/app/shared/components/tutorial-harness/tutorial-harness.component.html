@@ -1,0 +1,162 @@
+<div class="harness-container">
+  <header class="harness-header">
+    <div class="header-title">
+      <h2>Tutorial Dev Harness</h2>
+      <span>Inspect and refine tutorial states across viewports independently of random gameplay</span>
+    </div>
+
+    <div class="header-actions">
+      <button mat-stroked-button color="warn" (click)="resetTutorial()">
+        <mat-icon>restore</mat-icon> Reset Progress
+      </button>
+      <a mat-raised-button color="primary" routerLink="/">
+        <mat-icon>arrow_back</mat-icon> Back to Game
+      </a>
+    </div>
+  </header>
+
+  <div class="harness-controls">
+    <div class="control-group">
+      <span class="control-label">Tutorial State:</span>
+      <div class="step-buttons">
+        <button
+          type="button"
+          class="step-btn"
+          [class.active]="activeStep() === tutorialStep.FIRST_TURN"
+          (click)="selectStep(tutorialStep.FIRST_TURN)">
+          1. First Turn
+        </button>
+        <button
+          type="button"
+          class="step-btn"
+          [class.active]="activeStep() === tutorialStep.FIRST_COMPARISON"
+          (click)="selectStep(tutorialStep.FIRST_COMPARISON)">
+          2. First Comparison
+        </button>
+        <button
+          type="button"
+          class="step-btn"
+          [class.active]="activeStep() === tutorialStep.FIRST_BONEYARD"
+          (click)="selectStep(tutorialStep.FIRST_BONEYARD)">
+          3. Boneyard
+        </button>
+        <button
+          type="button"
+          class="step-btn"
+          [class.active]="activeStep() === tutorialStep.FIRST_BATTLE"
+          (click)="selectStep(tutorialStep.FIRST_BATTLE)">
+          4. First Battle
+        </button>
+        <button
+          type="button"
+          class="step-btn"
+          [class.active]="activeStep() === tutorialStep.FIRST_REINFORCEMENT"
+          (click)="selectStep(tutorialStep.FIRST_REINFORCEMENT)">
+          5. Reinforcement
+        </button>
+        <button
+          type="button"
+          class="step-btn"
+          [class.active]="activeStep() === tutorialStep.FIRST_BATTLE_RESOLUTION"
+          (click)="selectStep(tutorialStep.FIRST_BATTLE_RESOLUTION)">
+          6. Battle Resolution
+        </button>
+        <button
+          type="button"
+          class="step-btn"
+          [class.active]="activeStep() === tutorialStep.FIRST_GAME_CONCLUSION"
+          (click)="selectStep(tutorialStep.FIRST_GAME_CONCLUSION)">
+          7. Game Conclusion
+        </button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <span class="control-label">Viewport Simulator:</span>
+      <div class="viewport-toggle">
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.active]="viewportMode() === 'mobile'"
+          (click)="setViewport('mobile')">
+          Mobile (390 x 844)
+        </button>
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.active]="viewportMode() === 'compact'"
+          (click)="setViewport('compact')">
+          Compact (360 x 740)
+        </button>
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.active]="viewportMode() === 'responsive'"
+          (click)="setViewport('responsive')">
+          Full Width
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main class="harness-stage">
+    <div class="stage-frame" [ngClass]="'frame-' + viewportMode()">
+      <div class="mock-table-view">
+        <!-- Mock Opponent Seat -->
+        <div class="mock-seat seat-top">
+          <div class="mock-identity">
+            <strong>Opponent</strong>
+            <span>26 cards</span>
+          </div>
+          <div class="mock-deck">
+            <app-card [card]="null" [faceDown]="true" />
+            <span class="mock-deck-count">26</span>
+          </div>
+        </div>
+
+        <!-- Mock Center Playfield -->
+        <div class="mock-playfield">
+          <div class="mock-announcement">
+            <span class="mock-eyebrow">WAR OF ATTRITION</span>
+            <strong>Tactical Clash</strong>
+          </div>
+
+          <div class="mock-stakes">
+            <div class="mock-card-shell opponent">
+              <app-card [card]="sampleOpponentCard" [faceDown]="false" glow="green" />
+            </div>
+            <div class="mock-clash-divider">VS</div>
+            <div class="mock-card-shell player">
+              <app-card [card]="samplePlayerCard" [faceDown]="false" glow="red" />
+            </div>
+          </div>
+
+          <!-- Mock Hub -->
+          <div class="mock-hub">
+            <div class="mock-hub-btn">Field Manual</div>
+            <div class="mock-boneyard">
+              <div class="mock-boneyard-icon">☠</div>
+              <strong>Boneyard</strong>
+              <small>0 lost</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mock Player Seat -->
+        <div class="mock-seat seat-bottom">
+          <div class="mock-identity">
+            <strong>You</strong>
+            <span>26 cards</span>
+          </div>
+          <div class="mock-deck actionable">
+            <app-card [card]="null" [faceDown]="true" />
+            <span class="mock-deck-count">26</span>
+          </div>
+        </div>
+
+        <!-- Live Tutorial Overlay -->
+        <app-tutorial-overlay (acknowledged)="selectStep(activeStep())" />
+      </div>
+    </div>
+  </main>
+</div>

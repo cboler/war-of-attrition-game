@@ -1,22 +1,8 @@
 <mat-toolbar color="primary" class="app-toolbar">
-  <div class="app-title-wrapper" (click)="$event.stopPropagation()">
-    <button type="button" class="app-title-btn" (click)="toggleRestartConfirm($event)" aria-haspopup="dialog" [attr.aria-expanded]="showRestartConfirm()" aria-label="Game title, click to restart game">
+  <div class="app-title-wrapper">
+    <a routerLink="/" class="app-title-link" aria-label="War of Attrition Home">
       <span class="app-title-text">{{ title() }}</span>
-      <mat-icon class="restart-hint-icon">restart_alt</mat-icon>
-    </button>
-
-    @if (showRestartConfirm()) {
-      <div class="restart-callout" role="dialog" aria-modal="true" aria-label="Restart Game Confirmation">
-        <div class="callout-header">
-          <strong>Start New Game?</strong>
-        </div>
-        <p class="callout-desc">Reset the table and begin a fresh match.</p>
-        <div class="callout-actions">
-          <button type="button" class="callout-btn secondary" (click)="cancelRestart()">Cancel</button>
-          <button type="button" class="callout-btn primary" (click)="confirmRestart()">New Game</button>
-        </div>
-      </div>
-    }
+    </a>
   </div>
   <span class="toolbar-spacer"></span>
 
@@ -33,4 +19,3 @@
 <main class="app-content">
   <router-outlet />
 </main>
-

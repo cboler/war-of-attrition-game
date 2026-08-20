@@ -140,7 +140,7 @@
         </div>
       </section>
 
-      <!-- Colocated Story Book & Boneyard Utility Hub -->
+      <!-- Colocated Field Manual & Boneyard Utility Hub -->
       <aside
         class="table-utility-hub"
         [class.hub-left]="settings.deckHand() === 'left'"
@@ -151,13 +151,13 @@
           type="button"
           class="story-turn-btn"
           (click)="toggleStoryBook()"
-          aria-label="Open Story Book Journal"
-          title="Story Book Journal">
-          <mat-icon>auto_stories</mat-icon>
+          aria-label="Open Field Manual"
+          title="Field Manual">
+          <mat-icon>menu_book</mat-icon>
           @if (settings.showTurnCounter()) {
             <span class="story-turn-label">Turn {{ gameState.gameStats().turnNumber }}</span>
           } @else {
-            <span class="story-turn-label">Story</span>
+            <span class="story-turn-label">Manual</span>
           }
         </button>
 
@@ -251,8 +251,8 @@
 
           <div class="game-over-actions">
             <button type="button" class="game-over-btn secondary" (click)="toggleStoryBook()">
-              <mat-icon>auto_stories</mat-icon>
-              <span>Story Book</span>
+              <mat-icon>menu_book</mat-icon>
+              <span>Field Manual</span>
             </button>
             <button type="button" class="game-over-btn primary" (click)="restart()">
               <mat-icon>refresh</mat-icon>
@@ -275,8 +275,11 @@
       (deckActivated)="draw()" />
   </app-card-table>
 
-  <!-- Story Book Drawer -->
+  <!-- Field Manual Drawer -->
   @if (storyBookOpen()) {
     <app-story-book-drawer (closed)="toggleStoryBook()" />
   }
+
+  <!-- Contextual Tutorial Overlay -->
+  <app-tutorial-overlay />
 </div>

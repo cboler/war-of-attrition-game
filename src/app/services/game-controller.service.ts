@@ -11,6 +11,8 @@ import { PresentationSequencerService } from './presentation-sequencer.service';
 import { TableReaction, TableReactionService } from './table-reaction.service';
 import { GameEventBusService } from './game-event-bus.service';
 import { StoryBookService } from './story-book.service';
+import { TutorialService } from './tutorial.service';
+import { TutorialStep } from '../core/models/tutorial.model';
 
 export const MODEST_COMEBACK_DEFICIT_THRESHOLD = 3;
 export const SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD = 15;
@@ -94,6 +96,7 @@ export class GameControllerService {
   private readonly comparison = inject(CardComparisonService);
   private readonly authService = inject(AuthService);
   private readonly storyBook = inject(StoryBookService);
+  private readonly tutorial = inject(TutorialService);
 
   private readonly gameMessage = signal('Your deck is ready.');
   private readonly phase = signal(PresentationState.READY);
@@ -216,7 +219,11 @@ export class GameControllerService {
 
   /** Starts the first match only; route/component remounts leave an existing match untouched. */
   ensureGameStarted(): void {
-    if (!this.gameState.hasGame()) this.replaceGame(false);
+    if (!this.gameState.hasGame()) {
+      this.replaceGame(false);
+    } else if (this.turnsPlayed === 0 && this.phase() === PresentationState.READY) {
+      this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
+    }
   }
 
   hasMeaningfulUnresolvedGame(): boolean {
@@ -247,6 +254,7 @@ export class GameControllerService {
     this.gameState.initializeGame();
     this.phase.set(PresentationState.READY);
     this.gameMessage.set('Your deck is ready.');
+    this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
     this.presentedTurn.set(null);
     this.revealedCasualtyIds.set([]);
     this.movingToBoneyardIds.set([]);
@@ -364,6 +372,7 @@ export class GameControllerService {
         message: result.message
       });
 
+      this.tutorial.triggerStep(TutorialStep.FIRST_COMPARISON);
       await this.sequencer.pause(430, version);
       await this.continueFromResult(result, version);
     } catch (error) {
@@ -472,6 +481,7 @@ export class GameControllerService {
         turnNumber: this.turnsPlayed,
         defender: PlayerType.PLAYER
       });
+      this.tutorial.triggerStep(TutorialStep.FIRST_REINFORCEMENT);
       this.sequencer.end(version);
       return;
     }
@@ -579,6 +589,7 @@ export class GameControllerService {
     const existingLayers = this.gameState.currentState.activeTurn?.battleLayers.length ?? 0;
     if (existingLayers === 0) {
       this.battlesCount++;
+      this.tutorial.triggerStep(TutorialStep.FIRST_BATTLE);
     }
     this.deepestBattleLayer = Math.max(this.deepestBattleLayer, existingLayers + 1);
 
@@ -795,7 +806,11 @@ export class GameControllerService {
     this.phase.set(PresentationState.SEND_LOSER_CARDS_TO_BONEYARD);
     this.gameMessage.set(`${result.cardsLost.length} cards to the Boneyard.`);
     this.sound.playBoneyard();
+    if (result.cardsLost.length > 0) {
+      this.tutorial.triggerStep(TutorialStep.FIRST_BONEYARD);
+    }
     await this.sequencer.pause(520, version);
+    this.tutorial.triggerStep(TutorialStep.FIRST_BATTLE_RESOLUTION);
     this.eventBus.emit({
       type: 'cards_sent_to_boneyard',
       turnNumber: this.turnsPlayed,
@@ -818,6 +833,9 @@ export class GameControllerService {
     this.movingToBoneyardIds.set(result.cardsLost.map(card => card.id));
     this.phase.set(PresentationState.SEND_LOSER_CARDS_TO_BONEYARD);
     this.sound.playBoneyard();
+    if (result.cardsLost.length > 0) {
+      this.tutorial.triggerStep(TutorialStep.FIRST_BONEYARD);
+    }
     await this.sequencer.pause(310, version);
     this.eventBus.emit({
       type: 'cards_sent_to_boneyard',
@@ -916,6 +934,7 @@ export class GameControllerService {
       this.gameMessage.set('Opponent wins the war.');
       this.sound.playDefeat();
     }
+    this.tutorial.triggerStep(TutorialStep.FIRST_GAME_CONCLUSION);
   }
 
   private async playTerminalTie(result: TurnResult, version: number): Promise<void> {

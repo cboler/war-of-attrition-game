@@ -23,6 +23,7 @@ export class SettingsService {
   readonly animationSpeed = computed(() => this.currentSettings().animationSpeed);
   readonly soundEnabled = computed(() => this.currentSettings().soundEnabled);
   readonly showTurnCounter = computed(() => this.currentSettings().showTurnCounter);
+  readonly tutorialEnabled = computed(() => this.currentSettings().tutorialEnabled ?? true);
   readonly confirmChallenges = computed(() => this.currentSettings().confirmChallenges);
   readonly autoPlayAnimations = computed(() => this.currentSettings().autoPlayAnimations);
   readonly showCardDetails = computed(() => this.currentSettings().showCardDetails);
@@ -77,6 +78,10 @@ export class SettingsService {
 
   setShowTurnCounter(show: boolean): void {
     this.updateSettings({ showTurnCounter: show });
+  }
+
+  setTutorialEnabled(enabled: boolean): void {
+    this.updateSettings({ tutorialEnabled: enabled });
   }
 
   setConfirmChallenges(confirm: boolean): void {

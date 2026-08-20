@@ -1,5 +1,5 @@
-import { Component, signal, inject, effect, HostListener } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Component, signal, inject, effect } from '@angular/core';
+import { RouterOutlet, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,13 +7,14 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from './core/services/auth.service';
 import { SettingsService } from './core/services/settings.service';
-import { GameControllerService } from './services/game-controller.service';
 import { ProfileDialogComponent } from './shared/components/profile-dialog/profile-dialog.component';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [
     RouterOutlet,
+    RouterLink,
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
@@ -26,12 +27,9 @@ import { ProfileDialogComponent } from './shared/components/profile-dialog/profi
 export class App {
   private authService = inject(AuthService);
   private settingsService = inject(SettingsService);
-  private gameController = inject(GameControllerService);
-  private router = inject(Router);
   private dialog = inject(MatDialog);
 
   protected readonly title = signal('ATTRITION');
-  protected readonly showRestartConfirm = signal(false);
   readonly activeProfile = this.authService.activeProfile;
 
   constructor() {
@@ -51,37 +49,6 @@ export class App {
     }
   }
 
-  protected toggleRestartConfirm(event: MouseEvent): void {
-    event.stopPropagation();
-    this.showRestartConfirm.update(open => !open);
-  }
-
-  protected cancelRestart(): void {
-    this.showRestartConfirm.set(false);
-  }
-
-  protected confirmRestart(): void {
-    this.showRestartConfirm.set(false);
-    this.gameController.startNewGame();
-    if (this.router.url !== '/') {
-      this.router.navigate(['/']);
-    }
-  }
-
-  @HostListener('document:click')
-  protected onDocumentClick(): void {
-    if (this.showRestartConfirm()) {
-      this.showRestartConfirm.set(false);
-    }
-  }
-
-  @HostListener('document:keydown.escape')
-  protected onEscape(): void {
-    if (this.showRestartConfirm()) {
-      this.showRestartConfirm.set(false);
-    }
-  }
-
   protected openProfileDialog(): void {
     this.dialog.open(ProfileDialogComponent, {
       width: '720px',
@@ -92,4 +59,3 @@ export class App {
     });
   }
 }
-

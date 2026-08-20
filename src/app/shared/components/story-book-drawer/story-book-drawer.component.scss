@@ -20,7 +20,7 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
-  width: min(440px, 92vw);
+  width: min(460px, 94vw);
   height: 100%;
   box-sizing: border-box;
   background: #0d221c;
@@ -72,6 +72,51 @@
     &:focus-visible {
       outline: 2px solid #e5c175;
       outline-offset: 2px;
+    }
+  }
+}
+
+.drawer-tabs {
+  display: flex;
+  background: rgba(4, 14, 11, 0.8);
+  border-bottom: 1px solid rgba(228, 191, 114, 0.15);
+  padding: 6px 12px 0;
+  gap: 8px;
+
+  .tab-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(247, 240, 225, 0.6);
+    font: 600 0.78rem/1 system-ui, sans-serif;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      color: #fff;
+    }
+
+    &.active {
+      color: #ffd54f;
+      border-bottom-color: #ffd54f;
+      font-weight: 700;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #ffd54f;
+      outline-offset: -2px;
     }
   }
 }
@@ -253,6 +298,57 @@
     --card-height: 53px;
     display: block;
     aspect-ratio: 2.5 / 3.5;
+  }
+}
+
+.rules-reference {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  .rule-card {
+    display: flex;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(18, 44, 37, 0.65);
+    border: 1px solid rgba(228, 191, 114, 0.15);
+
+    .rule-icon {
+      mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+        color: #ffd54f;
+      }
+    }
+
+    .rule-body {
+      flex: 1;
+
+      h3 {
+        margin: 0 0 6px;
+        font: 600 0.95rem/1.2 Georgia, serif;
+        color: #fff9ee;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        color: rgba(247, 240, 225, 0.85);
+
+        strong {
+          color: #ffd54f;
+        }
+
+        em {
+          color: #81d4fa;
+          font-style: normal;
+          font-weight: 600;
+        }
+      }
+    }
   }
 }
 

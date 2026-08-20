@@ -192,6 +192,51 @@
   }
 }
 
+.match-actions-section {
+  background: rgba(255, 213, 79, 0.06);
+  border: 1px solid rgba(255, 213, 79, 0.3);
+  border-radius: 12px;
+  padding: 14px;
+
+  .match-section-desc {
+    margin: 0 0 6px;
+    font-size: 0.76rem;
+    color: rgba(247, 240, 225, 0.75);
+  }
+
+  .match-actions-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    .restart-match-btn {
+      background: #ffd54f;
+      color: #0c1815;
+      font-weight: 700;
+
+      &:hover {
+        background: #ffe082;
+      }
+    }
+
+    .abandon-match-btn {
+      color: #ff9b9b;
+      border-color: rgba(255, 155, 155, 0.4);
+
+      &:hover {
+        background: rgba(255, 155, 155, 0.1);
+      }
+    }
+  }
+}
+
+.reset-tutorial-btn {
+  align-self: flex-start;
+  color: #ffd54f;
+  border-color: rgba(255, 213, 79, 0.3);
+  margin-top: 4px;
+}
+
 .settings-fields {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -348,6 +393,46 @@
   gap: 12px;
 }
 
+.achievements-summary-card {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(18, 44, 37, 0.8);
+  border: 1px solid rgba(228, 191, 114, 0.25);
+
+  .summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .summary-title {
+      font: 700 0.72rem/1 system-ui, sans-serif;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #ffd54f;
+    }
+
+    .summary-count {
+      font: 600 0.82rem/1 Georgia, serif;
+      color: #fff9ee;
+    }
+  }
+
+  .progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ffd54f, #79d799);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+  }
+}
+
 .play-games-banner {
   display: flex;
   justify-content: flex-end;
@@ -475,6 +560,11 @@
     color: #1e293b;
     font-weight: 600;
     font-size: 0.8rem;
+  }
+
+  .signout-btn {
+    color: #ff9b9b;
+    border-color: rgba(255, 155, 155, 0.35);
   }
 
   .reset-stats-btn {

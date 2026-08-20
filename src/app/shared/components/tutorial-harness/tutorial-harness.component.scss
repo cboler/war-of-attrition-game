@@ -1,0 +1,281 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #081612;
+  color: #f7f0e1;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.harness-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.harness-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #0d221c;
+  border-bottom: 1px solid rgba(228, 191, 114, 0.2);
+
+  .header-title {
+    h2 {
+      margin: 0;
+      font: 600 1.25rem/1.2 Georgia, serif;
+      color: #ffd54f;
+    }
+
+    span {
+      font-size: 0.78rem;
+      color: rgba(247, 240, 225, 0.65);
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+  }
+}
+
+.harness-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: rgba(13, 34, 28, 0.85);
+  border-bottom: 1px solid rgba(228, 191, 114, 0.12);
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .control-label {
+    font: 700 0.72rem/1 system-ui, sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffd54f;
+  }
+
+  .step-buttons,
+  .viewport-toggle {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .step-btn,
+  .toggle-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(228, 191, 114, 0.25);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(247, 240, 225, 0.85);
+    font: 600 0.75rem/1 system-ui, sans-serif;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: #ffd54f;
+      color: #fff;
+    }
+
+    &.active {
+      background: #ffd54f;
+      border-color: #ffd54f;
+      color: #0c1815;
+      font-weight: 700;
+    }
+  }
+}
+
+.harness-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #040c0a;
+}
+
+.stage-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 2px solid rgba(228, 191, 114, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  background: #0c1815;
+  transition: all 0.25s ease;
+
+  &.frame-mobile {
+    width: 390px;
+    height: 844px;
+  }
+
+  &.frame-compact {
+    width: 360px;
+    height: 740px;
+  }
+
+  &.frame-responsive {
+    width: 100%;
+    max-width: 900px;
+    height: 780px;
+  }
+}
+
+.mock-table-view {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 100px 1fr 100px;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255, 255, 255, 0.035), transparent 38%),
+    #153f34;
+}
+
+.mock-seat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+
+  .mock-identity {
+    strong {
+      display: block;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+    span {
+      font-size: 0.75rem;
+      color: rgba(247, 240, 225, 0.7);
+    }
+  }
+
+  .mock-deck {
+    position: relative;
+    width: 74px;
+    aspect-ratio: 2.5 / 3.5;
+
+    &.actionable {
+      outline: 2px solid #ffd54f;
+      border-radius: 8px;
+      animation: deck-pulse 1.8s infinite ease-in-out;
+    }
+
+    .mock-deck-count {
+      position: absolute;
+      right: -6px;
+      bottom: -6px;
+      z-index: 5;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #123026;
+      border: 1.5px solid #fff;
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font: 700 0.75rem/1 system-ui;
+    }
+  }
+}
+
+.mock-playfield {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+
+  .mock-announcement {
+    text-align: center;
+    margin-bottom: 20px;
+
+    .mock-eyebrow {
+      display: block;
+      color: #ffd54f;
+      font: 700 0.65rem/1 system-ui;
+      letter-spacing: 0.16em;
+    }
+
+    strong {
+      font: 600 1.1rem/1.2 Georgia, serif;
+      color: #fff9ee;
+    }
+  }
+
+  .mock-stakes {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+
+    .mock-card-shell {
+      width: 80px;
+    }
+
+    .mock-clash-divider {
+      font: 800 0.7rem/1 system-ui;
+      color: #ffd54f;
+      letter-spacing: 0.1em;
+    }
+  }
+
+  .mock-hub {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+
+    .mock-hub-btn {
+      padding: 6px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(228, 191, 114, 0.3);
+      background: rgba(8, 28, 22, 0.85);
+      font-size: 0.7rem;
+      color: #ffd54f;
+    }
+
+    .mock-boneyard {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px dashed rgba(255, 255, 255, 0.25);
+      width: 68px;
+
+      .mock-boneyard-icon {
+        font-size: 1.2rem;
+      }
+
+      strong {
+        font-size: 0.75rem;
+      }
+
+      small {
+        font-size: 0.65rem;
+        color: #ffd54f;
+      }
+    }
+  }
+}
+
+@keyframes deck-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 213, 79, 0); }
+  50% { box-shadow: 0 0 16px rgba(255, 213, 79, 0.8); }
+}

@@ -38,4 +38,4 @@ Experience the tension of attrition combat where every draw counts.
 * **Privacy Policy:** https://cboler.github.io/war-of-attrition-game/privacy/
 * **Player Support:** https://cboler.github.io/war-of-attrition-game/support/
 * **Data Deletion:** https://cboler.github.io/war-of-attrition-game/delete-account/
-* **Support Contact:** lacyvan1@gmail.com
+* **Support Contact:** requiredcheese@gmail.com

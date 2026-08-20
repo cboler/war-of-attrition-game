@@ -20,11 +20,11 @@ describe('StoryBookDrawerComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create and display empty state when no entries exist', () => {
+  it('should create and display empty state when no entries exist in mission log', () => {
     expect(component).toBeTruthy();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.empty-state')).toBeTruthy();
-    expect(compiled.querySelector('.empty-state p')?.textContent).toContain('The story has just begun');
+    expect(compiled.querySelector('.empty-state p')?.textContent).toContain('The mission log is clean');
   });
 
   it('should render curated timeline entries when added', () => {
@@ -40,6 +40,19 @@ describe('StoryBookDrawerComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelectorAll('.story-node').length).toBe(1);
     expect(compiled.querySelector('.node-text')?.textContent).toContain('2♥ assassinated A♠');
+  });
+
+  it('should switch to Rules of Engagement tab and render rule cards', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const rulesTabBtn = compiled.querySelector('#tab-rules') as HTMLButtonElement;
+    expect(rulesTabBtn).toBeTruthy();
+
+    rulesTabBtn.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('#panel-rules')).toBeTruthy();
+    const ruleCards = compiled.querySelectorAll('.rule-card');
+    expect(ruleCards.length).toBeGreaterThanOrEqual(5);
   });
 
   it('should emit closed event on escape key', () => {
@@ -82,12 +95,10 @@ describe('StoryBookDrawerComponent', () => {
     launcherBtn.focus();
     expect(document.activeElement).toBe(launcherBtn);
 
-    // Re-create component to test previousActiveElement capture
     const testFixture = TestBed.createComponent(StoryBookDrawerComponent);
     testFixture.detectChanges();
     tick();
 
-    // Destroy component -> focus restored
     testFixture.destroy();
     expect(document.activeElement).toBe(launcherBtn);
     document.body.removeChild(launcherBtn);
