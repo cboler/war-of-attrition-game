@@ -1,27 +1,77 @@
 name: Build Android App Bundle (AAB)
 
 on:
-  workflow_dispatch:
-    inputs:
-      version_code:
-        description: 'Override Android Version Code (optional)'
-        required: false
-        type: string
-      version_name:
-        description: 'Override Android Version Name (optional)'
-        required: false
-        type: string
+  release:
+    types: [published]
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: 'Override Android Version Code (optional integer, e.g. 4)'
+        required: false
+        type: string
+      version_name:
+        description: 'Override Android Version Name (optional string, e.g. 4.0.0)'
+        required: false
+        type: string
 
 jobs:
   build-aab:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Determine Android Version Code and Name
+        id: versioning
+        run: |
+          # 1. Determine Version Name
+          if [ -n "${{ inputs.version_name }}" ]; then
+            RAW_NAME="${{ inputs.version_name }}"
+          elif [ -n "${{ github.event.release.tag_name }}" ]; then
+            RAW_NAME="${{ github.event.release.tag_name }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            RAW_NAME="${{ github.ref_name }}"
+          else
+            RAW_NAME="4.0.0"
+          fi
+
+          # Strip leading 'v' or 'V'
+          CLEAN_VER=$(echo "$RAW_NAME" | sed 's/^[vV]//')
+
+          # If purely a major number like "4", expand to "4.0.0"
+          if [[ "$CLEAN_VER" =~ ^[0-9]+$ ]]; then
+            FINAL_NAME="${CLEAN_VER}.0.0"
+            MAJOR_NUM="$CLEAN_VER"
+          elif [[ "$CLEAN_VER" =~ ^([0-9]+) ]]; then
+            FINAL_NAME="$CLEAN_VER"
+            MAJOR_NUM="${BASH_REMATCH[1]}"
+          else
+            FINAL_NAME="4.0.0"
+            MAJOR_NUM="4"
+          fi
+
+          # 2. Determine Version Code (Integer)
+          if [ -n "${{ inputs.version_code }}" ]; then
+            FINAL_CODE="${{ inputs.version_code }}"
+          else
+            # Translate release major version into Android integer version code (e.g. v4 -> 4)
+            FINAL_CODE="$MAJOR_NUM"
+          fi
+
+          echo "=========================================="
+          echo "Resolved Android Version Code: $FINAL_CODE"
+          echo "Resolved Android Version Name: $FINAL_NAME"
+          echo "=========================================="
+
+          echo "version_code=$FINAL_CODE" >> $GITHUB_OUTPUT
+          echo "version_name=$FINAL_NAME" >> $GITHUB_OUTPUT
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -48,8 +98,8 @@ jobs:
           WAR_UPLOAD_KEY_ALIAS: ${{ secrets.WAR_UPLOAD_KEY_ALIAS || 'upload' }}
           WAR_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.WAR_UPLOAD_KEYSTORE_PASSWORD || 'warofattrition2026' }}
           WAR_UPLOAD_KEY_PASSWORD: ${{ secrets.WAR_UPLOAD_KEY_PASSWORD || 'warofattrition2026' }}
-          APP_VERSION_CODE: ${{ inputs.version_code || '' }}
-          APP_VERSION_NAME: ${{ inputs.version_name || '' }}
+          APP_VERSION_CODE: ${{ steps.versioning.outputs.version_code }}
+          APP_VERSION_NAME: ${{ steps.versioning.outputs.version_name }}
           PLAY_GAMES_PROJECT_ID: ${{ vars.PLAY_GAMES_PROJECT_ID || '334487063631' }}
         run: ./gradlew bundleRelease --stacktrace
 
@@ -59,3 +109,9 @@ jobs:
           name: app-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
+
+      - name: Attach AAB to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/bundle/release/app-release.aab
