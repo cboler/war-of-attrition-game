@@ -16,6 +16,8 @@ export class TutorialService {
 
   private readonly progress = signal<TutorialProgress>(this.loadProgress());
   private readonly activePromptSignal = signal<TutorialPrompt | null>(null);
+  private readonly tourIndex = signal<number>(0);
+  private readonly TOUR_TOTAL_STEPS = 4;
 
   readonly currentProgress = this.progress.asReadonly();
   readonly activePrompt = this.activePromptSignal.asReadonly();
@@ -28,51 +30,100 @@ export class TutorialService {
     });
   }
 
+  private pendingResolver: (() => void) | null = null;
+
   /**
    * Trigger a contextual tutorial step if tutorial guidance is enabled and this step hasn't been seen yet.
-   * Returns true if the prompt is displayed (pausing gameplay), false otherwise.
+   * Pauses the game sequence until the user explicitly interacts (acknowledges, dismisses, or skips).
+   * Returns a Promise resolving to true if a prompt was shown and acknowledged, or false if bypassed.
    */
-  triggerStep(step: TutorialStep): boolean {
-    if (!this.isTutorialEnabled()) {
+  async triggerStep(step: TutorialStep): Promise<boolean> {
+    if (!this.isTutorialEnabled() || this.hasSeenStep(step)) {
       return false;
     }
 
-    if (this.hasSeenStep(step)) {
-      return false;
+    let prompt: TutorialPrompt | null = null;
+    if (step === TutorialStep.FIRST_TURN) {
+      this.tourIndex.set(0);
+      prompt = this.getTourPrompt(0);
+    } else {
+      prompt = this.getPromptForStep(step);
     }
 
-    const prompt = this.getPromptForStep(step);
     if (!prompt) {
       return false;
     }
 
+    if (this.pendingResolver) {
+      this.pendingResolver();
+      this.pendingResolver = null;
+    }
+
     this.activePromptSignal.set(prompt);
-    return true;
+
+    return new Promise<boolean>((resolve) => {
+      this.pendingResolver = () => {
+        resolve(true);
+      };
+    });
   }
 
   /**
    * Directly present a step prompt (e.g. from the tutorial test harness).
    */
   forceStep(step: TutorialStep): void {
-    const prompt = this.getPromptForStep(step);
+    if (this.pendingResolver) {
+      this.pendingResolver();
+      this.pendingResolver = null;
+    }
+    const prompt = step === TutorialStep.FIRST_TURN ? this.getTourPrompt(0) : this.getPromptForStep(step);
     if (prompt) {
       this.activePromptSignal.set(prompt);
     }
   }
 
   /**
-   * Acknowledge/dismiss current prompt and mark step as seen.
+   * Acknowledge/dismiss current prompt or advance to next tour step.
    */
   acknowledgePrompt(): void {
     const current = this.activePromptSignal();
-    if (current) {
+    if (!current) return;
+
+    if (current.step === TutorialStep.FIRST_TURN && this.tourIndex() < this.TOUR_TOTAL_STEPS - 1) {
+      this.tourIndex.update(i => i + 1);
+      this.activePromptSignal.set(this.getTourPrompt(this.tourIndex()));
+      return;
+    }
+
+    if (current.step === TutorialStep.FIRST_TURN) {
+      this.markStepSeen(TutorialStep.FIRST_TURN);
+      this.markStepSeen(TutorialStep.FIRST_BONEYARD);
+      this.tourIndex.set(0);
+    } else {
       this.markStepSeen(current.step);
-      this.activePromptSignal.set(null);
+    }
+
+    this.activePromptSignal.set(null);
+    if (this.pendingResolver) {
+      const resolve = this.pendingResolver;
+      this.pendingResolver = null;
+      resolve();
     }
   }
 
   /**
-   * Dismiss prompt without marking all steps seen, or skip tutorial for current game.
+   * Navigate back to previous tour step.
+   */
+  prevTourStep(): void {
+    const current = this.activePromptSignal();
+    if (current?.step === TutorialStep.FIRST_TURN && this.tourIndex() > 0) {
+      this.tourIndex.update(i => i - 1);
+      this.activePromptSignal.set(this.getTourPrompt(this.tourIndex()));
+    }
+  }
+
+  /**
+   * Dismiss prompt without marking all steps seen, or skip tutorial for current game, and resume game.
    */
   dismissPrompt(): void {
     const current = this.activePromptSignal();
@@ -80,18 +131,31 @@ export class TutorialService {
       this.markStepSeen(current.step);
       this.activePromptSignal.set(null);
     }
+    if (this.pendingResolver) {
+      const resolve = this.pendingResolver;
+      this.pendingResolver = null;
+      resolve();
+    }
   }
 
   /**
-   * Skip remaining tutorial guidance by disabling tutorial in settings.
+   * Skip remaining tutorial guidance by disabling tutorial in settings and resume game.
    */
   skipTutorial(): void {
     const current = this.activePromptSignal();
     if (current) {
       this.markStepSeen(current.step);
+      if (current.step === TutorialStep.FIRST_TURN) {
+        this.markStepSeen(TutorialStep.FIRST_BONEYARD);
+      }
     }
     this.activePromptSignal.set(null);
     this.settingsService.setTutorialEnabled(false);
+    if (this.pendingResolver) {
+      const resolve = this.pendingResolver;
+      this.pendingResolver = null;
+      resolve();
+    }
   }
 
   /**
@@ -100,6 +164,12 @@ export class TutorialService {
   resetTutorialProgress(): void {
     this.progress.set({ ...DEFAULT_TUTORIAL_PROGRESS });
     this.activePromptSignal.set(null);
+    this.tourIndex.set(0);
+    if (this.pendingResolver) {
+      const resolve = this.pendingResolver;
+      this.pendingResolver = null;
+      resolve();
+    }
   }
 
   hasSeenStep(step: TutorialStep): boolean {
@@ -107,6 +177,7 @@ export class TutorialService {
     switch (step) {
       case TutorialStep.FIRST_TURN: return p.firstTurn;
       case TutorialStep.FIRST_COMPARISON: return p.firstComparison;
+      case TutorialStep.ACE_ASSASSINATION: return p.aceAssassination;
       case TutorialStep.FIRST_BONEYARD: return p.firstBoneyard;
       case TutorialStep.FIRST_BATTLE: return p.firstBattle;
       case TutorialStep.FIRST_REINFORCEMENT: return p.firstReinforcement;
@@ -120,6 +191,7 @@ export class TutorialService {
       switch (step) {
         case TutorialStep.FIRST_TURN: return { ...curr, firstTurn: true };
         case TutorialStep.FIRST_COMPARISON: return { ...curr, firstComparison: true };
+        case TutorialStep.ACE_ASSASSINATION: return { ...curr, aceAssassination: true };
         case TutorialStep.FIRST_BONEYARD: return { ...curr, firstBoneyard: true };
         case TutorialStep.FIRST_BATTLE: return { ...curr, firstBattle: true };
         case TutorialStep.FIRST_REINFORCEMENT: return { ...curr, firstReinforcement: true };
@@ -129,25 +201,86 @@ export class TutorialService {
     });
   }
 
+  private getTourPrompt(index: number): TutorialPrompt {
+    switch (index) {
+      case 0:
+        return {
+          step: TutorialStep.FIRST_TURN,
+          eyebrow: 'TABLE ORIENTATION (1/4)',
+          title: 'Welcome Commander',
+          message: 'Your objective is total attrition: exhaust the enemy army while defending your own troops. Here is a quick tactical briefing.',
+          highlightSelector: '.playfield',
+          actionText: 'Next: Enemy Vanguard →',
+          canSkip: true,
+          tourStepIndex: 0,
+          tourTotalSteps: this.TOUR_TOTAL_STEPS,
+          hasPrev: false
+        };
+      case 1:
+        return {
+          step: TutorialStep.FIRST_TURN,
+          eyebrow: 'TABLE ORIENTATION (2/4)',
+          title: 'Enemy Vanguard',
+          message: 'The opponent’s army is stationed at the top. Their remaining deck count and active stakes in frontline battles are tracked here in their command zone.',
+          highlightSelector: '.seat.is-top',
+          actionText: 'Next: Your Command Deck →',
+          canSkip: true,
+          tourStepIndex: 1,
+          tourTotalSteps: this.TOUR_TOTAL_STEPS,
+          hasPrev: true
+        };
+      case 2:
+        return {
+          step: TutorialStep.FIRST_TURN,
+          eyebrow: 'TABLE ORIENTATION (3/4)',
+          title: 'Your Command Deck',
+          message: 'Your command deck is stationed at the bottom. Tap your deck each round to deploy your front-line card into battle.',
+          highlightSelector: '.seat.is-bottom .deck',
+          actionText: 'Next: The Boneyard →',
+          canSkip: true,
+          tourStepIndex: 2,
+          tourTotalSteps: this.TOUR_TOTAL_STEPS,
+          hasPrev: true
+        };
+      case 3:
+      default:
+        return {
+          step: TutorialStep.FIRST_TURN,
+          eyebrow: 'TABLE ORIENTATION (4/4)',
+          title: 'The Boneyard & Field Manual',
+          message: 'Defeated troops and lost challenges are permanently banished to the Boneyard on the table side. Tap the Field Manual icon anytime to review full rules and mission history.',
+          highlightSelector: '.table-utility-hub',
+          actionText: 'Commence Battle ⚔️',
+          canSkip: true,
+          tourStepIndex: 3,
+          tourTotalSteps: this.TOUR_TOTAL_STEPS,
+          hasPrev: true
+        };
+    }
+  }
+
   private getPromptForStep(step: TutorialStep): TutorialPrompt | null {
     switch (step) {
       case TutorialStep.FIRST_TURN:
-        return {
-          step,
-          eyebrow: 'FIELD ORIENTATION',
-          title: 'Welcome Commander',
-          message: 'Your objective is attrition: conquer the enemy army. Tap your deck at the bottom of the table to deal your card into the frontline clash.',
-          highlightSelector: '.seat.is-bottom .deck',
-          actionText: 'Got It',
-          canSkip: true
-        };
+        return this.getTourPrompt(this.tourIndex());
 
       case TutorialStep.FIRST_COMPARISON:
         return {
           step,
           eyebrow: 'CLASH MECHANICS',
-          title: 'Power & Assassination',
-          message: 'Revealed cards compare ranks. Higher rank takes the round! Key tactical rule: 2 conquers an Ace. The victor claims all cards currently at stake.',
+          title: 'Power & Hierarchy',
+          message: 'Revealed cards compare ranks. Higher rank takes the round and claims all cards currently at stake unless challenged.',
+          highlightSelector: '.playfield .stakes',
+          actionText: 'Understood',
+          canSkip: true
+        };
+
+      case TutorialStep.ACE_ASSASSINATION:
+        return {
+          step,
+          eyebrow: 'SPECIAL TACTICAL RULE',
+          title: 'Assassination: 2 Conquers Ace',
+          message: 'A 2 slays an Ace! When an Ace is assassinated by a 2, the victory is decisive — no reinforcement or challenge is permitted. The defeated Ace falls immediately.',
           highlightSelector: '.playfield .stakes',
           actionText: 'Understood',
           canSkip: true
@@ -169,7 +302,7 @@ export class TutorialService {
           step,
           eyebrow: 'CRITICAL ENGAGEMENT',
           title: 'A Tie Triggers Battle!',
-          message: 'Equal ranks deadlock and trigger Battle! Both sides commit 3 cards face-down. Choose one of the enemy’s 3 cards blindly to decide the fate of all cards at stake.',
+          message: 'Equal ranks deadlock and trigger Battle! Both sides commit 3 cards face-down. Choose one of the enemy’s 3 cards to be your opponent’s champion as they will choose yours. The champions clash to decide all cards at stake.',
           highlightSelector: '.playfield .stakes',
           actionText: 'Prepare for Battle',
           canSkip: true
@@ -180,7 +313,7 @@ export class TutorialService {
           step,
           eyebrow: 'TACTICAL REINFORCEMENT',
           title: 'Challenge Opportunity',
-          message: 'You lost the clash, but can commit 1 reinforcement card. If your reinforcement beats their winner, both of your cards are saved! But if it loses or ties, both cards perish in the Boneyard.',
+          message: 'You lost the clash, but can commit 1 reinforcement card. If your reinforcement beats their card, both of yours are saved! If it ties, it triggers Battle where you still have a chance to win. But if it loses, both of your cards are lost to the Boneyard.',
           highlightSelector: '.decision-callout',
           actionText: 'I Understand the Risk',
           canSkip: true
@@ -191,7 +324,7 @@ export class TutorialService {
           step,
           eyebrow: 'BATTLE RESOLUTION',
           title: 'Casualties & Spoils',
-          message: 'The revealed Battle cards settle the engagement. The victor claims all cards at stake and returns their surviving troops face-down. The loser’s casualties travel to the Boneyard.',
+          message: 'The revealed Battle champions settle the engagement. The victor claims all cards at stake, returning surviving troops face-down. The loser’s casualties travel to the Boneyard.',
           highlightSelector: '.playfield .stakes',
           actionText: 'Continue War',
           canSkip: true

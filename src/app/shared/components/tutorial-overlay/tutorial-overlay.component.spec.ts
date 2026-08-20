@@ -40,7 +40,7 @@ describe('TutorialOverlayComponent', () => {
   });
 
   it('should acknowledge prompt when action button is clicked', () => {
-    tutorialService.forceStep(TutorialStep.FIRST_TURN);
+    tutorialService.forceStep(TutorialStep.FIRST_COMPARISON);
     fixture.detectChanges();
 
     spyOn(component.acknowledged, 'emit');

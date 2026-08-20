@@ -2,9 +2,14 @@
   <div class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
     <div class="tutorial-backdrop" (click)="onAcknowledge()"></div>
 
-    <div class="tutorial-callout" [ngClass]="'step-' + prompt.step">
+    <div class="tutorial-callout" [ngClass]="['step-' + prompt.step, prompt.tourStepIndex !== undefined ? 'tour-step-' + prompt.tourStepIndex : '']">
       <div class="callout-header">
-        <span class="callout-eyebrow">{{ prompt.eyebrow }}</span>
+        <div class="callout-eyebrow-row">
+          <span class="callout-eyebrow">{{ prompt.eyebrow }}</span>
+          @if (prompt.tourTotalSteps && prompt.tourTotalSteps > 1) {
+            <span class="tour-indicator">{{ (prompt.tourStepIndex || 0) + 1 }} / {{ prompt.tourTotalSteps }}</span>
+          }
+        </div>
         <h3 id="tutorial-title" class="callout-title">{{ prompt.title }}</h3>
       </div>
 
@@ -13,11 +18,19 @@
       </div>
 
       <div class="callout-actions">
-        @if (prompt.canSkip) {
-          <button type="button" class="btn-skip" (click)="onSkip()" aria-label="Skip remaining tutorial tips">
-            Skip Tutorial
-          </button>
-        }
+        <div class="actions-left">
+          @if (prompt.hasPrev) {
+            <button type="button" class="btn-prev" (click)="onPrev()" aria-label="Previous step">
+              <mat-icon class="btn-prev-icon">arrow_back</mat-icon>
+              <span>Back</span>
+            </button>
+          }
+          @if (prompt.canSkip) {
+            <button type="button" class="btn-skip" (click)="onSkip()" aria-label="Skip remaining tutorial guidance">
+              Skip Tour
+            </button>
+          }
+        </div>
         <button #actionBtn type="button" class="btn-action" (click)="onAcknowledge()" aria-label="Acknowledge and continue">
           <span>{{ prompt.actionText || 'Continue' }}</span>
           <mat-icon class="btn-icon">arrow_forward</mat-icon>

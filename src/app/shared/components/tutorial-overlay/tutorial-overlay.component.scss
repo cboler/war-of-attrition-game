@@ -39,12 +39,28 @@
   .callout-header {
     margin-bottom: 10px;
 
-    .callout-eyebrow {
-      display: inline-block;
-      color: #ffd54f;
-      font: 700 0.65rem/1 system-ui, sans-serif;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
+    .callout-eyebrow-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+
+      .callout-eyebrow {
+        color: #ffd54f;
+        font: 700 0.65rem/1 system-ui, sans-serif;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .tour-indicator {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: rgba(255, 213, 79, 0.15);
+        color: #ffd54f;
+        font: 700 0.65rem/1 monospace;
+        letter-spacing: 0.04em;
+      }
     }
 
     .callout-title {
@@ -71,6 +87,37 @@
     justify-content: space-between;
     gap: 12px;
 
+    .actions-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-prev {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(247, 240, 225, 0.85);
+      font: 600 0.76rem/1 system-ui, sans-serif;
+      padding: 7px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      .btn-prev-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+    }
+
     .btn-skip {
       background: transparent;
       border: none;
@@ -78,7 +125,7 @@
       font: 600 0.76rem/1 system-ui, sans-serif;
       letter-spacing: 0.04em;
       cursor: pointer;
-      padding: 8px 12px;
+      padding: 8px 10px;
       border-radius: 6px;
       transition: color 0.15s ease, background 0.15s ease;
 
@@ -137,20 +184,25 @@
     }
   }
 
-  // Positioning adjustments for specific steps to highlight key live elements
-  &.step-first_turn {
+  // Tour and step positioning
+  &.tour-step-1 {
+    margin-bottom: auto;
+    margin-top: clamp(60px, 12vh, 120px);
+  }
+
+  &.tour-step-2 {
     margin-top: auto;
     margin-bottom: clamp(60px, 12vh, 120px);
+  }
+
+  &.tour-step-3 {
+    margin-right: auto;
+    margin-left: clamp(20px, 5vw, 60px);
   }
 
   &.step-first_reinforcement {
     margin-top: auto;
     margin-bottom: clamp(80px, 16vh, 150px);
-  }
-
-  &.step-first_bonyeard {
-    margin-right: auto;
-    margin-left: clamp(20px, 5vw, 60px);
   }
 }
 

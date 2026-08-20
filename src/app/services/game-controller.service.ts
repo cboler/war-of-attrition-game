@@ -254,7 +254,7 @@ export class GameControllerService {
     this.gameState.initializeGame();
     this.phase.set(PresentationState.READY);
     this.gameMessage.set('Your deck is ready.');
-    this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
+    void this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
     this.presentedTurn.set(null);
     this.revealedCasualtyIds.set([]);
     this.movingToBoneyardIds.set([]);
@@ -372,7 +372,11 @@ export class GameControllerService {
         message: result.message
       });
 
-      this.tutorial.triggerStep(TutorialStep.FIRST_COMPARISON);
+      if (specialRule) {
+        await this.tutorial.triggerStep(TutorialStep.ACE_ASSASSINATION);
+      } else {
+        await this.tutorial.triggerStep(TutorialStep.FIRST_COMPARISON);
+      }
       await this.sequencer.pause(430, version);
       await this.continueFromResult(result, version);
     } catch (error) {
@@ -481,7 +485,7 @@ export class GameControllerService {
         turnNumber: this.turnsPlayed,
         defender: PlayerType.PLAYER
       });
-      this.tutorial.triggerStep(TutorialStep.FIRST_REINFORCEMENT);
+      await this.tutorial.triggerStep(TutorialStep.FIRST_REINFORCEMENT);
       this.sequencer.end(version);
       return;
     }
@@ -589,7 +593,7 @@ export class GameControllerService {
     const existingLayers = this.gameState.currentState.activeTurn?.battleLayers.length ?? 0;
     if (existingLayers === 0) {
       this.battlesCount++;
-      this.tutorial.triggerStep(TutorialStep.FIRST_BATTLE);
+      await this.tutorial.triggerStep(TutorialStep.FIRST_BATTLE);
     }
     this.deepestBattleLayer = Math.max(this.deepestBattleLayer, existingLayers + 1);
 
@@ -619,7 +623,7 @@ export class GameControllerService {
     this.sound.playCardDraw();
     await this.sequencer.pause(520, version);
     this.phase.set(PresentationState.PLAYER_TARGET_SELECTION);
-    this.gameMessage.set('Choose one of the newest 3 cards.');
+    this.gameMessage.set("Choose one of the newest 3 cards to be your opponent's champion as they will choose yours.");
     this.sequencer.end(version);
   }
 
@@ -806,11 +810,8 @@ export class GameControllerService {
     this.phase.set(PresentationState.SEND_LOSER_CARDS_TO_BONEYARD);
     this.gameMessage.set(`${result.cardsLost.length} cards to the Boneyard.`);
     this.sound.playBoneyard();
-    if (result.cardsLost.length > 0) {
-      this.tutorial.triggerStep(TutorialStep.FIRST_BONEYARD);
-    }
+    await this.tutorial.triggerStep(TutorialStep.FIRST_BATTLE_RESOLUTION);
     await this.sequencer.pause(520, version);
-    this.tutorial.triggerStep(TutorialStep.FIRST_BATTLE_RESOLUTION);
     this.eventBus.emit({
       type: 'cards_sent_to_boneyard',
       turnNumber: this.turnsPlayed,
@@ -833,9 +834,6 @@ export class GameControllerService {
     this.movingToBoneyardIds.set(result.cardsLost.map(card => card.id));
     this.phase.set(PresentationState.SEND_LOSER_CARDS_TO_BONEYARD);
     this.sound.playBoneyard();
-    if (result.cardsLost.length > 0) {
-      this.tutorial.triggerStep(TutorialStep.FIRST_BONEYARD);
-    }
     await this.sequencer.pause(310, version);
     this.eventBus.emit({
       type: 'cards_sent_to_boneyard',
@@ -934,7 +932,7 @@ export class GameControllerService {
       this.gameMessage.set('Opponent wins the war.');
       this.sound.playDefeat();
     }
-    this.tutorial.triggerStep(TutorialStep.FIRST_GAME_CONCLUSION);
+    void this.tutorial.triggerStep(TutorialStep.FIRST_GAME_CONCLUSION);
   }
 
   private async playTerminalTie(result: TurnResult, version: number): Promise<void> {

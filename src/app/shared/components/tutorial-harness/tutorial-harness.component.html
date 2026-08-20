@@ -24,49 +24,56 @@
           class="step-btn"
           [class.active]="activeStep() === tutorialStep.FIRST_TURN"
           (click)="selectStep(tutorialStep.FIRST_TURN)">
-          1. First Turn
+          1. UI Orientation Tour
         </button>
         <button
           type="button"
           class="step-btn"
           [class.active]="activeStep() === tutorialStep.FIRST_COMPARISON"
           (click)="selectStep(tutorialStep.FIRST_COMPARISON)">
-          2. First Comparison
+          2. Comparison
+        </button>
+        <button
+          type="button"
+          class="step-btn"
+          [class.active]="activeStep() === tutorialStep.ACE_ASSASSINATION"
+          (click)="selectStep(tutorialStep.ACE_ASSASSINATION)">
+          3. 2 vs Ace Assassination
         </button>
         <button
           type="button"
           class="step-btn"
           [class.active]="activeStep() === tutorialStep.FIRST_BONEYARD"
           (click)="selectStep(tutorialStep.FIRST_BONEYARD)">
-          3. Boneyard
+          4. Boneyard
         </button>
         <button
           type="button"
           class="step-btn"
           [class.active]="activeStep() === tutorialStep.FIRST_BATTLE"
           (click)="selectStep(tutorialStep.FIRST_BATTLE)">
-          4. First Battle
+          5. First Battle
         </button>
         <button
           type="button"
           class="step-btn"
           [class.active]="activeStep() === tutorialStep.FIRST_REINFORCEMENT"
           (click)="selectStep(tutorialStep.FIRST_REINFORCEMENT)">
-          5. Reinforcement
+          6. Reinforcement
         </button>
         <button
           type="button"
           class="step-btn"
           [class.active]="activeStep() === tutorialStep.FIRST_BATTLE_RESOLUTION"
           (click)="selectStep(tutorialStep.FIRST_BATTLE_RESOLUTION)">
-          6. Battle Resolution
+          7. Battle Resolution
         </button>
         <button
           type="button"
           class="step-btn"
           [class.active]="activeStep() === tutorialStep.FIRST_GAME_CONCLUSION"
           (click)="selectStep(tutorialStep.FIRST_GAME_CONCLUSION)">
-          7. Game Conclusion
+          8. Game Conclusion
         </button>
       </div>
     </div>

@@ -12,6 +12,7 @@
 }
 
 .dialog-header {
+  flex-shrink: 0;
   padding: 20px 24px;
   display: flex;
   justify-content: space-between;
@@ -127,31 +128,39 @@
 }
 
 .dialog-tabs {
+  flex-shrink: 0;
   display: flex;
-  background: rgba(6, 18, 14, 0.9);
-  padding: 4px 16px;
+  background: rgba(6, 18, 14, 0.95);
+  padding: 0 16px;
   gap: 8px;
   overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid rgba(228, 191, 114, 0.15);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   .tab-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 10px 16px;
+    gap: 7px;
+    min-height: 48px;
+    padding: 12px 16px;
     border: none;
-    border-bottom: 2px solid transparent;
+    border-bottom: 3px solid transparent;
     background: transparent;
-    color: rgba(247, 240, 225, 0.65);
-    font: 600 0.78rem/1 system-ui, sans-serif;
+    color: rgba(247, 240, 225, 0.7);
+    font: 600 0.8rem/1.2 system-ui, sans-serif;
     letter-spacing: 0.04em;
     cursor: pointer;
     white-space: nowrap;
     transition: color 160ms ease, border-color 160ms ease;
 
     mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
 
     &:hover {
@@ -159,10 +168,15 @@
     }
 
     &.active {
-      color: #e5c175;
-      border-bottom-color: #e5c175;
+      color: #ffd54f;
+      border-bottom-color: #ffd54f;
     }
   }
+}
+
+mat-divider {
+  flex-shrink: 0;
+  border-top-color: rgba(228, 191, 114, 0.15);
 }
 
 .dialog-body {

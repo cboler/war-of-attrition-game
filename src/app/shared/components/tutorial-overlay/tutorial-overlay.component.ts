@@ -30,7 +30,6 @@ export class TutorialOverlayComponent implements AfterViewInit {
   skipped = output<void>();
 
   ngAfterViewInit(): void {
-    // Focus the primary action button for accessibility
     setTimeout(() => {
       this.actionBtn?.nativeElement?.focus();
     }, 100);
@@ -39,6 +38,10 @@ export class TutorialOverlayComponent implements AfterViewInit {
   protected onAcknowledge(): void {
     this.tutorialService.acknowledgePrompt();
     this.acknowledged.emit();
+  }
+
+  protected onPrev(): void {
+    this.tutorialService.prevTourStep();
   }
 
   protected onSkip(): void {
@@ -51,6 +54,9 @@ export class TutorialOverlayComponent implements AfterViewInit {
     if (event.key === 'Escape') {
       event.preventDefault();
       this.onAcknowledge();
+    } else if (event.key === 'ArrowLeft' && this.tutorialService.activePrompt()?.hasPrev) {
+      event.preventDefault();
+      this.onPrev();
     }
   }
 }

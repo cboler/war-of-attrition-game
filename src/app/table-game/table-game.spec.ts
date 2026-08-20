@@ -34,6 +34,7 @@ describe('TableGame presentation', () => {
     settings = TestBed.inject(SettingsService);
     settings.setAutoPlayAnimations(false);
     settings.setSoundEnabled(false);
+    settings.setTutorialEnabled(false);
     controller = TestBed.inject(GameControllerService);
     comparison = TestBed.inject(CardComparisonService);
     achievements = TestBed.inject(AchievementService);

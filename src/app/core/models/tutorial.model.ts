@@ -1,6 +1,7 @@
 export enum TutorialStep {
   FIRST_TURN = 'first_turn',
   FIRST_COMPARISON = 'first_comparison',
+  ACE_ASSASSINATION = 'ace_assassination',
   FIRST_BONEYARD = 'first_boneyard',
   FIRST_BATTLE = 'first_battle',
   FIRST_REINFORCEMENT = 'first_reinforcement',
@@ -11,6 +12,7 @@ export enum TutorialStep {
 export interface TutorialProgress {
   firstTurn: boolean;
   firstComparison: boolean;
+  aceAssassination: boolean;
   firstBoneyard: boolean;
   firstBattle: boolean;
   firstReinforcement: boolean;
@@ -21,6 +23,7 @@ export interface TutorialProgress {
 export const DEFAULT_TUTORIAL_PROGRESS: TutorialProgress = {
   firstTurn: false,
   firstComparison: false,
+  aceAssassination: false,
   firstBoneyard: false,
   firstBattle: false,
   firstReinforcement: false,
@@ -36,4 +39,8 @@ export interface TutorialPrompt {
   highlightSelector?: string;
   actionText?: string;
   canSkip?: boolean;
+  tourStepIndex?: number;
+  tourTotalSteps?: number;
+  hasPrev?: boolean;
 }
+

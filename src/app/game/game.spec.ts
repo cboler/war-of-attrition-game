@@ -50,6 +50,7 @@ describe('GameComponent', () => {
     const settings = TestBed.inject(SettingsService);
     settings.setAutoPlayAnimations(false);
     settings.setSoundEnabled(false);
+    settings.setTutorialEnabled(false);
     
     spyOn(cardComparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
     spyOn(opponentAI, 'shouldChallenge').and.returnValue(true);
