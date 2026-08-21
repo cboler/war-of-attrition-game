@@ -1,6 +1,6 @@
 import { fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
 import { SettingsService } from '../core/services/settings.service';
-import { PresentationSequencerService } from './presentation-sequencer.service';
+import { PresentationSequenceCancelled, PresentationSequencerService } from './presentation-sequencer.service';
 
 describe('PresentationSequencerService', () => {
   let service: PresentationSequencerService;
@@ -52,5 +52,17 @@ describe('PresentationSequencerService', () => {
     flushMicrotasks();
     expect(completed).toBeTrue();
     tick(1000);
+  }));
+
+  it('cancels an obsolete wait instead of allowing its callback to continue', fakeAsync(() => {
+    const version = service.begin();
+    let cancelled = false;
+    void service.pause(1000, version).catch(error => cancelled = error instanceof PresentationSequenceCancelled);
+
+    service.cancel();
+    flushMicrotasks();
+
+    expect(cancelled).toBeTrue();
+    expect(service.waiting()).toBeFalse();
   }));
 });

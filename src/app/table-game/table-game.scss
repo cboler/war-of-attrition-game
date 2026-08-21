@@ -1,4 +1,9 @@
-:host { display: block; height: 100%; min-height: 0; overflow: hidden; }
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
 
 .table-page {
   --deal-duration: 322ms;
@@ -38,9 +43,17 @@
   --boneyard-duration: 900ms;
 }
 
-app-card-table { display: block; height: 100%; min-height: 0; }
+app-card-table {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
 
-.playfield { position: relative; height: 100%; min-height: 330px; }
+.playfield {
+  position: relative;
+  height: 100%;
+  min-height: 330px;
+}
 
 /* Achievement Toast Notification Banner */
 .achievement-toast {
@@ -58,7 +71,9 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   border: 1px solid #ffd54f;
   border-radius: 10px;
   background: rgba(43, 31, 10, 0.96);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 15px rgba(255, 213, 79, 0.25);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.55),
+    0 0 15px rgba(255, 213, 79, 0.25);
   color: #fff9ee;
   cursor: pointer;
   animation: toast-drop 320ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -79,13 +94,17 @@ app-card-table { display: block; height: 100%; min-height: 0; }
 
     .toast-eyebrow {
       color: #ffd54f;
-      font: 700 0.58rem/1 system-ui, sans-serif;
+      font:
+        700 0.58rem/1 system-ui,
+        sans-serif;
       letter-spacing: 0.16em;
     }
 
     .toast-title {
       margin-top: 2px;
-      font: 600 0.88rem/1.2 Georgia, serif;
+      font:
+        600 0.88rem/1.2 Georgia,
+        serif;
       color: #fff;
       white-space: nowrap;
       overflow: hidden;
@@ -162,7 +181,9 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   background: rgba(8, 28, 22, 0.78);
   backdrop-filter: blur(8px);
   color: #f7f0e1;
-  font: 600 0.76rem/1 system-ui, sans-serif;
+  font:
+    600 0.76rem/1 system-ui,
+    sans-serif;
   letter-spacing: 0.03em;
   cursor: pointer;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
@@ -173,7 +194,9 @@ app-card-table { display: block; height: 100%; min-height: 0; }
     width: 18px;
     height: 18px;
     color: #e5c175;
-    transition: transform 0.2s ease, color 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      color 0.2s ease;
   }
 
   .story-turn-label {
@@ -228,7 +251,12 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   left: calc(50% + clamp(16px, 2.5vw, 42px));
 }
 
-.announcement strong { color: rgba(255, 249, 235, 0.92); font: 500 clamp(0.85rem, 1.5vw, 1.05rem)/1.25 Georgia, serif; }
+.announcement strong {
+  color: rgba(255, 249, 235, 0.92);
+  font:
+    500 clamp(0.85rem, 1.5vw, 1.05rem)/1.25 Georgia,
+    serif;
+}
 .announcement strong.status-only {
   position: absolute;
   width: 1px;
@@ -238,7 +266,13 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
 }
-.eyebrow { color: #ffd54f; font: 700 0.65rem/1 system-ui, sans-serif; letter-spacing: 0.2em; }
+.eyebrow {
+  color: #ffd54f;
+  font:
+    700 0.65rem/1 system-ui,
+    sans-serif;
+  letter-spacing: 0.2em;
+}
 
 .announcement.battle-quake-2 .eyebrow,
 .announcement.battle-quake-3 .eyebrow,
@@ -275,61 +309,205 @@ app-card-table { display: block; height: 100%; min-height: 0; }
 .hand-left .stakes {
   inset: 52px clamp(14px, 2vw, 36px) 18px clamp(100px, 13vw, 190px);
 }
-.side-stake { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; min-height: clamp(140px, 20vh, 190px); }
-.opponent-stake { align-self: end; flex-direction: column; }
-.player-stake { align-self: start; flex-direction: column; }
+.side-stake {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: clamp(140px, 20vh, 190px);
+}
+.opponent-stake {
+  align-self: end;
+  flex-direction: column;
+}
+.player-stake {
+  align-self: start;
+  flex-direction: column;
+}
 
 .active-card-shell,
-.battle-card-shell { position: relative; width: clamp(84px, 11vw, 136px); aspect-ratio: 2.5 / 3.5; transition: transform 320ms cubic-bezier(.2,.75,.2,1), opacity 260ms ease, filter 260ms ease; }
-.active-card-shell { z-index: 7; transform: rotate(-0.7deg); }
-.player-stake .active-card-shell { transform: rotate(0.8deg); }
-.opponent-stake .active-card-shell.dealing { animation: deal-from-opponent var(--deal-duration) cubic-bezier(.2,.75,.2,1) both; }
-.player-stake .active-card-shell.dealing { animation: deal-from-player var(--deal-duration) cubic-bezier(.2,.75,.2,1) both; }
-.opponent-stake .active-card-shell.clashing { animation: clash-from-opponent var(--clash-duration) ease-out both; }
-.player-stake .active-card-shell.clashing { animation: clash-from-player var(--clash-duration) ease-out both; }
+.battle-card-shell {
+  position: relative;
+  width: clamp(84px, 11vw, 136px);
+  aspect-ratio: 2.5 / 3.5;
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.75, 0.2, 1),
+    opacity 260ms ease,
+    filter 260ms ease;
+}
+.active-card-shell {
+  z-index: 7;
+  transform: rotate(-0.7deg);
+}
+.player-stake .active-card-shell {
+  transform: rotate(0.8deg);
+}
+.opponent-stake .active-card-shell.dealing {
+  animation: deal-from-opponent var(--deal-duration) cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+.player-stake .active-card-shell.dealing {
+  animation: deal-from-player var(--deal-duration) cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+.opponent-stake .active-card-shell.clashing {
+  animation: clash-from-opponent var(--clash-duration) ease-out both;
+}
+.player-stake .active-card-shell.clashing {
+  animation: clash-from-player var(--clash-duration) ease-out both;
+}
 .active-card-shell app-card,
-.battle-card-shell app-card { --card-width: 100%; --card-height: 100%; position: absolute; inset: 0; display: block; }
+.battle-card-shell app-card {
+  --card-width: 100%;
+  --card-height: 100%;
+  position: absolute;
+  inset: 0;
+  display: block;
+}
 
-.clash-mark { display: grid; width: 48px; height: 20px; place-items: center; opacity: 0.45; }
-.clash-mark span { width: 34px; height: 1px; background: linear-gradient(90deg, transparent, #e9d19d, transparent); }
-.in-battle .clash-mark span { width: 9px; height: 9px; border: 1px solid #dfb865; border-radius: 50%; background: transparent; box-shadow: 0 0 0 5px rgba(223, 184, 101, 0.08); }
+.clash-mark {
+  display: grid;
+  width: 48px;
+  height: 20px;
+  place-items: center;
+  opacity: 0.45;
+}
+.clash-mark span {
+  width: 34px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e9d19d, transparent);
+}
+.in-battle .clash-mark span {
+  width: 9px;
+  height: 9px;
+  border: 1px solid #dfb865;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 5px rgba(223, 184, 101, 0.08);
+}
 
-.reinforcement { position: absolute; z-index: -1; width: 100%; height: 100%; }
-.opponent-reinforcement { transform: translate(45%, 12%) rotate(7deg); }
-.player-reinforcement { transform: translate(-45%, -12%) rotate(-7deg); }
-.opponent-reinforcement.dealing { animation: reinforce-from-opponent var(--reinforcement-duration) cubic-bezier(.2,.75,.2,1) both; }
-.player-reinforcement.dealing { animation: reinforce-from-player var(--reinforcement-duration) cubic-bezier(.2,.75,.2,1) both; }
+.reinforcement {
+  position: absolute;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+.opponent-reinforcement {
+  transform: translate(45%, 12%) rotate(7deg);
+}
+.player-reinforcement {
+  transform: translate(-45%, -12%) rotate(-7deg);
+}
+.opponent-reinforcement.dealing {
+  animation: reinforce-from-opponent var(--reinforcement-duration) cubic-bezier(0.2, 0.75, 0.2, 1)
+    both;
+}
+.player-reinforcement.dealing {
+  animation: reinforce-from-player var(--reinforcement-duration) cubic-bezier(0.2, 0.75, 0.2, 1)
+    both;
+}
 
-.battle-layers { position: relative; z-index: 5; width: min(440px, 80vw); min-height: 94px; }
-.battle-layer { position: absolute; left: 50%; display: flex; gap: clamp(8px, 1.8vw, 18px); transform: translateX(-50%); transition: opacity 250ms ease, filter 250ms ease, transform 250ms ease; }
+.battle-layers {
+  position: relative;
+  z-index: 5;
+  width: min(440px, 80vw);
+  min-height: 94px;
+}
+.battle-layer {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  gap: clamp(8px, 1.8vw, 18px);
+  transform: translateX(-50%);
+  transition:
+    opacity 250ms ease,
+    filter 250ms ease,
+    transform 250ms ease;
+}
 .opponent-layers .battle-layer {
   left: calc(50% + (var(--layer) - 1) * 4px);
   bottom: calc((var(--layer) - 1) * -16px);
-  animation: battle-from-opponent var(--battle-entry-duration) cubic-bezier(.2,.75,.2,1) both;
+  animation: battle-from-opponent var(--battle-entry-duration) cubic-bezier(0.2, 0.75, 0.2, 1) both;
 }
 .player-layers .battle-layer {
   left: calc(50% - (var(--layer) - 1) * 4px);
   top: calc((var(--layer) - 1) * -16px);
-  animation: battle-from-player var(--battle-entry-duration) cubic-bezier(.2,.75,.2,1) both;
+  animation: battle-from-player var(--battle-entry-duration) cubic-bezier(0.2, 0.75, 0.2, 1) both;
 }
-.battle-layer.receded { opacity: 0.48; filter: saturate(0.52); transform: translateX(-50%) scale(0.91); }
-.battle-card-shell { width: clamp(70px, 9.5vw, 108px); padding: 0; border: 0; background: transparent; appearance: none; }
-.battle-card-shell:nth-child(1) { rotate: -2deg; }
-.battle-card-shell:nth-child(2) { translate: 0 -3px; }
-.battle-card-shell:nth-child(3) { rotate: 2deg; }
-.battle-card-shell:disabled { color: inherit; }
-.battle-card-shell.eligible { cursor: pointer; }
+.battle-layer.receded {
+  opacity: 0.48;
+  filter: saturate(0.52);
+  transform: translateX(-50%) scale(0.91);
+}
+.battle-card-shell {
+  width: clamp(70px, 9.5vw, 108px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  appearance: none;
+}
+.battle-card-shell:nth-child(1) {
+  rotate: -2deg;
+}
+.battle-card-shell:nth-child(2) {
+  translate: 0 -3px;
+}
+.battle-card-shell:nth-child(3) {
+  rotate: 2deg;
+}
+.battle-card-shell:disabled {
+  color: inherit;
+}
+.battle-card-shell.eligible {
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
 .battle-card-shell.eligible:hover,
-.battle-card-shell.eligible:focus-visible { z-index: 9; transform: translateY(-9px); outline: none; filter: drop-shadow(0 10px 12px rgba(0,0,0,.28)); }
-.battle-card-shell.eligible:focus-visible::after { content: ''; position: absolute; inset: -5px; border: 2px solid #f1ca7c; border-radius: 8px; }
-.battle-card-shell.selected { z-index: 8; transform: scale(1.06); filter: drop-shadow(0 12px 13px rgba(0,0,0,.3)); }
-.opponent-layers .battle-card-shell.selected { transform: translateY(11px) scale(1.06); }
-.player-layers .battle-card-shell.selected { transform: translateY(-11px) scale(1.06); }
-.battle-card-shell.casualty { animation: casualty-flip var(--casualty-duration) ease both; }
-.battle-card-shell.casualty-face { animation-name: casualty-face-flip; }
-.battle-card-shell.casualty-major { z-index: 10; animation-name: casualty-major-flip; }
-.battle-card-shell.casualty-face app-card { filter: drop-shadow(0 0 6px rgba(229, 193, 117, 0.38)); }
-.battle-card-shell.casualty-major app-card { filter: drop-shadow(0 0 9px rgba(255, 213, 79, 0.58)); }
+.battle-card-shell.eligible:focus-visible {
+  z-index: 9;
+  transform: translateY(-9px);
+  outline: none;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.28));
+}
+.battle-card-shell.eligible:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 2px solid #f1ca7c;
+  border-radius: 8px;
+}
+.battle-card-shell.selected {
+  z-index: 8;
+  transform: scale(1.06);
+  filter: drop-shadow(0 12px 13px rgba(0, 0, 0, 0.3));
+}
+.opponent-layers .battle-card-shell.selected {
+  transform: translateY(11px) scale(1.06);
+}
+.player-layers .battle-card-shell.selected {
+  transform: translateY(-11px) scale(1.06);
+}
+.battle-card-shell.casualty {
+  animation: casualty-flip var(--casualty-duration) ease both;
+}
+.battle-card-shell.casualty-face {
+  animation-name: casualty-face-flip;
+}
+.battle-card-shell.casualty-major {
+  z-index: 10;
+  animation-name: casualty-major-flip;
+}
+.battle-card-shell.casualty-face app-card {
+  filter: drop-shadow(0 0 6px rgba(229, 193, 117, 0.38));
+}
+.battle-card-shell.casualty-major app-card {
+  filter: drop-shadow(0 0 9px rgba(255, 213, 79, 0.58));
+}
+.active-card-shell.casualty,
+.reinforcement.casualty {
+  animation: casualty-flip var(--casualty-duration) ease both;
+}
 
 /* Target Selection Pointers */
 .target-pointer {
@@ -337,8 +515,10 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   left: 50%;
   transform: translateX(-50%);
   color: #f2d28d;
-  font: 700 1.45rem/1 system-ui, sans-serif;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,.6));
+  font:
+    700 1.45rem/1 system-ui,
+    sans-serif;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
   pointer-events: none;
 }
 
@@ -353,10 +533,20 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   top: auto;
   animation: pointer-bob-up 800ms ease-in-out infinite;
 }
-.opponent-pointer { color: #e0d8c7; }
+.opponent-pointer {
+  color: #e0d8c7;
+}
 
-@keyframes pointer-bob-down { 50% { transform: translate(-50%, -4px); } }
-@keyframes pointer-bob-up { 50% { transform: translate(-50%, 4px); } }
+@keyframes pointer-bob-down {
+  50% {
+    transform: translate(-50%, -4px);
+  }
+}
+@keyframes pointer-bob-up {
+  50% {
+    transform: translate(-50%, 4px);
+  }
+}
 
 /* Spatial Rules: Callouts */
 .decision-callout {
@@ -369,7 +559,9 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   color: #282014;
   background: #f4ebd6;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-  font: 0.76rem/1.25 system-ui, sans-serif;
+  font:
+    0.76rem/1.25 system-ui,
+    sans-serif;
 }
 
 /* Opponent callout: strictly ABOVE opponent card, pointing DOWN */
@@ -413,13 +605,26 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   border-top: 1px solid rgba(235, 211, 163, 0.45);
 }
 
-.decision-callout strong { display: block; margin-bottom: 10px; font: 600 0.85rem/1.2 Georgia, serif; text-align: center; color: #1c2e26; }
-.callout-actions { display: flex; gap: 8px; }
+.decision-callout strong {
+  display: block;
+  margin-bottom: 10px;
+  font:
+    600 0.85rem/1.2 Georgia,
+    serif;
+  text-align: center;
+  color: #1c2e26;
+}
+.callout-actions {
+  display: flex;
+  gap: 8px;
+}
 .callout-btn {
   flex: 1;
   padding: 8px 10px;
   border-radius: 6px;
-  font: 700 0.68rem/1 system-ui, sans-serif;
+  font:
+    700 0.68rem/1 system-ui,
+    sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
@@ -453,10 +658,18 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   }
 }
 
-.opponent-stake .returning { animation: return-opponent var(--return-duration) ease-in both; }
-.player-stake .returning { animation: return-player var(--return-duration) ease-in both; }
-.boneyard-right .to-boneyard { animation: to-boneyard-right var(--boneyard-duration) ease-in both; }
-.boneyard-left .to-boneyard { animation: to-boneyard-left var(--boneyard-duration) ease-in both; }
+.opponent-stake .returning {
+  animation: return-opponent var(--return-duration) ease-in both;
+}
+.player-stake .returning {
+  animation: return-player var(--return-duration) ease-in both;
+}
+.boneyard-right .to-boneyard {
+  animation: to-boneyard-right var(--boneyard-duration) ease-in both;
+}
+.boneyard-left .to-boneyard {
+  animation: to-boneyard-left var(--boneyard-duration) ease-in both;
+}
 
 /* Physical Boneyard Representation (Sized to match cards/deck) */
 .boneyard {
@@ -480,25 +693,73 @@ app-card-table { display: block; height: 100%; min-height: 0; }
     transform: translateY(-2px);
   }
 }
-.boneyard:focus-visible { outline: 2px solid #ffd54f; outline-offset: 3px; }
-.boneyard strong { margin-top: 5px; font: 600 clamp(0.76rem, 1vw, 0.9rem)/1 Georgia, serif; letter-spacing: 0.04em; }
-.boneyard small { font-size: clamp(0.66rem, 0.85vw, 0.76rem); color: #ffd54f; font-weight: 600; }
+.boneyard:focus-visible {
+  outline: 2px solid #ffd54f;
+  outline-offset: 3px;
+}
+.boneyard strong {
+  margin-top: 5px;
+  font:
+    600 clamp(0.76rem, 1vw, 0.9rem)/1 Georgia,
+    serif;
+  letter-spacing: 0.04em;
+}
+.boneyard small {
+  font-size: clamp(0.66rem, 0.85vw, 0.76rem);
+  color: #ffd54f;
+  font-weight: 600;
+}
 
 .pile {
   position: relative;
   display: block;
   width: 100%;
   aspect-ratio: 2.5 / 3.5;
-  border: 1.5px dashed rgba(255,255,255,.25);
+  border: 1.5px dashed rgba(255, 255, 255, 0.25);
   border-radius: 8px;
 }
 
-.fan-base-one    { position: absolute; inset: 0; border: 1px solid rgba(238,226,201,.35); border-radius: 8px; background: #ece5d7; transform: rotate(-7deg) translate(-3px, 2px); }
-.fan-base-two    { position: absolute; inset: 0; border: 1px solid rgba(238,226,201,.35); border-radius: 8px; background: #e0d7c5; transform: rotate(8deg) translate(3px, -2px); }
-.fan-extra-one   { position: absolute; inset: 0; border: 1px solid rgba(238,226,201,.3); border-radius: 8px; background: #d7ceba; transform: rotate(-14deg) translate(-5px, 3px); }
-.fan-extra-two   { position: absolute; inset: 0; border: 1px solid rgba(238,226,201,.3); border-radius: 8px; background: #cfc5b0; transform: rotate(15deg) translate(5px, 2px); }
+.fan-base-one {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(238, 226, 201, 0.35);
+  border-radius: 8px;
+  background: #ece5d7;
+  transform: rotate(-7deg) translate(-3px, 2px);
+}
+.fan-base-two {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(238, 226, 201, 0.35);
+  border-radius: 8px;
+  background: #e0d7c5;
+  transform: rotate(8deg) translate(3px, -2px);
+}
+.fan-extra-one {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(238, 226, 201, 0.3);
+  border-radius: 8px;
+  background: #d7ceba;
+  transform: rotate(-14deg) translate(-5px, 3px);
+}
+.fan-extra-two {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(238, 226, 201, 0.3);
+  border-radius: 8px;
+  background: #cfc5b0;
+  transform: rotate(15deg) translate(5px, 2px);
+}
 
-.pile app-card { --card-width: 100%; --card-height: 100%; position: absolute; inset: 0; display: block; transform: rotate(2deg); }
+.pile app-card {
+  --card-width: 100%;
+  --card-height: 100%;
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform: rotate(2deg);
+}
 
 .boneyard-drawer {
   position: absolute;
@@ -513,16 +774,53 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   color: #f4ead7;
   background: rgba(9, 28, 23, 0.98);
   backdrop-filter: blur(12px);
-  box-shadow: -18px 0 50px rgba(0,0,0,.6);
+  box-shadow: -18px 0 50px rgba(0, 0, 0, 0.6);
 }
-.boneyard-drawer header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.boneyard-drawer header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
 .boneyard-drawer header span,
-.boneyard-drawer header strong { display: block; }
-.boneyard-drawer header span { color: #ffd54f; font-size: .64rem; letter-spacing: .16em; font-weight: 700; }
-.boneyard-drawer header strong { margin-top: 4px; font: 500 1.1rem/1.2 Georgia, serif; }
-.boneyard-drawer header button { width: 34px; height: 34px; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; color: inherit; background: transparent; font-size: 1.3rem; cursor: pointer; display: grid; place-items: center; }
-.boneyard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 10px; }
-.boneyard-grid app-card { --card-width: 100%; --card-height: auto; display: block; aspect-ratio: 2.5 / 3.5; }
+.boneyard-drawer header strong {
+  display: block;
+}
+.boneyard-drawer header span {
+  color: #ffd54f;
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+}
+.boneyard-drawer header strong {
+  margin-top: 4px;
+  font:
+    500 1.1rem/1.2 Georgia,
+    serif;
+}
+.boneyard-drawer header button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.boneyard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 10px;
+}
+.boneyard-grid app-card {
+  --card-width: 100%;
+  --card-height: auto;
+  display: block;
+  aspect-ratio: 2.5 / 3.5;
+}
 
 .advance-pill {
   position: absolute;
@@ -538,7 +836,9 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   color: #ffd54f;
   background: rgba(8, 28, 22, 0.8);
   backdrop-filter: blur(8px);
-  font: 600 0.74rem/1 system-ui, sans-serif;
+  font:
+    600 0.74rem/1 system-ui,
+    sans-serif;
   letter-spacing: 0.03em;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
@@ -587,8 +887,20 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   animation: game-over-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.game-over-eyebrow { color: #ffd54f; font: 700 0.66rem/1 system-ui, sans-serif; letter-spacing: 0.2em; }
-.game-over h2 { margin: 8px 0 16px; font: 600 1.75rem/1.1 Georgia, serif; color: #fff; }
+.game-over-eyebrow {
+  color: #ffd54f;
+  font:
+    700 0.66rem/1 system-ui,
+    sans-serif;
+  letter-spacing: 0.2em;
+}
+.game-over h2 {
+  margin: 8px 0 16px;
+  font:
+    600 1.75rem/1.1 Georgia,
+    serif;
+  color: #fff;
+}
 
 .game-over-stats {
   display: flex;
@@ -609,7 +921,9 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   min-width: 72px;
 
   strong {
-    font: 700 0.96rem/1.1 Georgia, serif;
+    font:
+      700 0.96rem/1.1 Georgia,
+      serif;
     color: #fff9ee;
   }
 
@@ -643,7 +957,9 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   gap: 8px;
   padding: 10px 20px;
   border-radius: 999px;
-  font: 650 0.8rem/1 system-ui, sans-serif;
+  font:
+    650 0.8rem/1 system-ui,
+    sans-serif;
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -696,56 +1012,235 @@ app-card-table { display: block; height: 100%; min-height: 0; }
   }
 }
 
-@keyframes casualty-flip { 0% { transform: rotateY(90deg); } 100% { transform: rotateY(0); } }
-@keyframes casualty-face-flip { 0% { transform: rotateY(90deg) scale(.96); } 72% { transform: rotateY(0) scale(1.025); } 100% { transform: rotateY(0) scale(1.015); } }
-@keyframes casualty-major-flip { 0% { transform: rotateY(90deg) scale(.94); } 68% { transform: rotateY(0) scale(1.06); } 100% { transform: rotateY(0) translateY(-2px) scale(1.035); } }
-@keyframes deal-from-opponent { from { transform: translateY(-76px) rotate(-7deg) scale(.86); opacity: .25; } }
-@keyframes deal-from-player { from { transform: translateY(76px) rotate(7deg) scale(.86); opacity: .25; } }
-@keyframes clash-from-opponent { 50% { transform: translateY(8px) rotate(1deg) scale(1.03); } }
-@keyframes clash-from-player { 50% { transform: translateY(-8px) rotate(-1deg) scale(1.03); } }
-@keyframes reinforce-from-opponent { from { transform: translate(45%, -65%) rotate(14deg) scale(.86); opacity: .2; } }
-@keyframes reinforce-from-player { from { transform: translate(-45%, 65%) rotate(-14deg) scale(.86); opacity: .2; } }
-@keyframes battle-from-opponent { from { opacity: 0; filter: blur(2px); transform: translate(-50%, -70px) rotate(-2deg) scale(.82); } }
-@keyframes battle-from-player { from { opacity: 0; filter: blur(2px); transform: translate(-50%, 70px) rotate(2deg) scale(.82); } }
-@keyframes return-opponent { to { transform: translateY(-90px) scale(.72); opacity: 0; } }
-@keyframes return-player { to { transform: translateY(90px) scale(.72); opacity: 0; } }
-@keyframes to-boneyard-right { to { transform: translate(38vw, 0) rotate(14deg) scale(.45); opacity: .15; } }
-@keyframes to-boneyard-left { to { transform: translate(-38vw, 0) rotate(-14deg) scale(.45); opacity: .15; } }
-@keyframes battle-quake-subtle { 24% { transform: translateX(-1px) rotate(-.12deg); } 48% { transform: translateX(1px) rotate(.1deg); } 72% { transform: translateX(-.5px); } }
-@keyframes battle-quake-deep { 20% { transform: translateX(-1.3px) rotate(-.16deg); } 46% { transform: translateX(1.4px) rotate(.14deg); } 70% { transform: translateX(-.7px); } }
-@keyframes battle-quake-deeper { 18% { transform: translateX(-1.7px) rotate(-.2deg); } 42% { transform: translateX(1.8px) rotate(.18deg); } 68% { transform: translateX(-.9px); } }
+@keyframes casualty-flip {
+  0% {
+    transform: rotateY(90deg);
+  }
+  100% {
+    transform: rotateY(0);
+  }
+}
+@keyframes casualty-face-flip {
+  0% {
+    transform: rotateY(90deg) scale(0.96);
+  }
+  72% {
+    transform: rotateY(0) scale(1.025);
+  }
+  100% {
+    transform: rotateY(0) scale(1.015);
+  }
+}
+@keyframes casualty-major-flip {
+  0% {
+    transform: rotateY(90deg) scale(0.94);
+  }
+  68% {
+    transform: rotateY(0) scale(1.06);
+  }
+  100% {
+    transform: rotateY(0) translateY(-2px) scale(1.035);
+  }
+}
+@keyframes deal-from-opponent {
+  from {
+    transform: translateY(-76px) rotate(-7deg) scale(0.86);
+    opacity: 0.25;
+  }
+}
+@keyframes deal-from-player {
+  from {
+    transform: translateY(76px) rotate(7deg) scale(0.86);
+    opacity: 0.25;
+  }
+}
+@keyframes clash-from-opponent {
+  50% {
+    transform: translateY(8px) rotate(1deg) scale(1.03);
+  }
+}
+@keyframes clash-from-player {
+  50% {
+    transform: translateY(-8px) rotate(-1deg) scale(1.03);
+  }
+}
+@keyframes reinforce-from-opponent {
+  from {
+    transform: translate(45%, -65%) rotate(14deg) scale(0.86);
+    opacity: 0.2;
+  }
+}
+@keyframes reinforce-from-player {
+  from {
+    transform: translate(-45%, 65%) rotate(-14deg) scale(0.86);
+    opacity: 0.2;
+  }
+}
+@keyframes battle-from-opponent {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translate(-50%, -70px) rotate(-2deg) scale(0.82);
+  }
+}
+@keyframes battle-from-player {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translate(-50%, 70px) rotate(2deg) scale(0.82);
+  }
+}
+@keyframes return-opponent {
+  to {
+    transform: translateY(-90px) scale(0.72);
+    opacity: 0;
+  }
+}
+@keyframes return-player {
+  to {
+    transform: translateY(90px) scale(0.72);
+    opacity: 0;
+  }
+}
+@keyframes to-boneyard-right {
+  to {
+    transform: translate(38vw, 0) rotate(14deg) scale(0.45);
+    opacity: 0.15;
+  }
+}
+@keyframes to-boneyard-left {
+  to {
+    transform: translate(-38vw, 0) rotate(-14deg) scale(0.45);
+    opacity: 0.15;
+  }
+}
+@keyframes battle-quake-subtle {
+  24% {
+    transform: translateX(-1px) rotate(-0.12deg);
+  }
+  48% {
+    transform: translateX(1px) rotate(0.1deg);
+  }
+  72% {
+    transform: translateX(-0.5px);
+  }
+}
+@keyframes battle-quake-deep {
+  20% {
+    transform: translateX(-1.3px) rotate(-0.16deg);
+  }
+  46% {
+    transform: translateX(1.4px) rotate(0.14deg);
+  }
+  70% {
+    transform: translateX(-0.7px);
+  }
+}
+@keyframes battle-quake-deeper {
+  18% {
+    transform: translateX(-1.7px) rotate(-0.2deg);
+  }
+  42% {
+    transform: translateX(1.8px) rotate(0.18deg);
+  }
+  68% {
+    transform: translateX(-0.9px);
+  }
+}
 
 .motion-disabled *,
 .motion-disabled *::before,
-.motion-disabled *::after { animation: none !important; transition: none !important; }
+.motion-disabled *::after {
+  animation: none !important;
+  transition: none !important;
+}
 
 @media (max-width: 820px) {
-  .stakes { inset-inline: 28px 72px; }
-  .announcement { max-width: 52vw; }
-  .decision-callout { min-width: 170px; }
+  .stakes {
+    inset-inline: 28px 72px;
+  }
+  .announcement {
+    max-width: 52vw;
+  }
+  .decision-callout {
+    min-width: 170px;
+  }
 }
 
 @media (max-width: 620px) {
-  .table-page { padding: 0; }
-  .table-utility-hub { gap: 6px; }
-  .table-utility-hub.hub-right { right: 2px; }
-  .table-utility-hub.hub-left { left: 2px; }
-  .story-turn-btn { height: 32px; padding: 0 10px 0 8px; font-size: 0.7rem; mat-icon { font-size: 16px; width: 16px; height: 16px; } }
-  .announcement { top: 12px; max-width: 74vw; }
-  .hand-right .announcement { left: calc(50% - 24px); }
-  .hand-left .announcement { left: calc(50% + 24px); }
-  .stakes { inset: 52px 76px 16px 2px; grid-template-rows: 1fr 18px 1fr; }
-  .hand-right .stakes { inset: 52px 76px 16px 2px; }
-  .hand-left .stakes { inset: 52px 2px 16px 76px; }
-  .side-stake { min-height: 120px; }
-  .battle-layers { width: 270px; }
-  .battle-layer { gap: 6px; }
-  .active-card-shell { width: 80px; }
-  .battle-card-shell { width: 66px; }
-  .boneyard { width: 64px; }
-  .advance-pill { left: 6px; bottom: 6px; padding: 6px 12px; font-size: 0.68rem; }
+  .table-page {
+    padding: 0;
+  }
+  .table-utility-hub {
+    gap: 6px;
+  }
+  .table-utility-hub.hub-right {
+    right: 2px;
+  }
+  .table-utility-hub.hub-left {
+    left: 2px;
+  }
+  .story-turn-btn {
+    height: 32px;
+    padding: 0 10px 0 8px;
+    font-size: 0.7rem;
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+  .announcement {
+    top: 12px;
+    max-width: 74vw;
+  }
+  .hand-right .announcement {
+    left: calc(50% - 24px);
+  }
+  .hand-left .announcement {
+    left: calc(50% + 24px);
+  }
+  .stakes {
+    inset: 52px 76px 16px 2px;
+    grid-template-rows: 1fr 18px 1fr;
+  }
+  .hand-right .stakes {
+    inset: 52px 76px 16px 2px;
+  }
+  .hand-left .stakes {
+    inset: 52px 2px 16px 76px;
+  }
+  .side-stake {
+    min-height: 120px;
+  }
+  .battle-layers {
+    width: 270px;
+  }
+  .battle-layer {
+    gap: 6px;
+  }
+  .active-card-shell {
+    width: 80px;
+  }
+  .battle-card-shell {
+    width: 66px;
+  }
+  .boneyard {
+    width: 64px;
+  }
+  .advance-pill {
+    left: 6px;
+    bottom: 6px;
+    padding: 6px 12px;
+    font-size: 0.68rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
 }

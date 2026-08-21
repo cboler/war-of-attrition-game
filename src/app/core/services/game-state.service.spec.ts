@@ -92,8 +92,8 @@ describe('GameStateService card ledger', () => {
 
   it('settles only owned cards: winner returns home and loser enters the Boneyard', () => {
     service.startTurn();
-    const preview = service.settleActiveTurn(PlayerType.PLAYER);
-    expect(preview.losingCards.length).toBe(1);
+    const outcome = service.settleActiveTurn(PlayerType.PLAYER);
+    expect(outcome.casualties.length).toBe(1);
     expect(service.playerCardCount()).toBe(26);
     expect(service.opponentCardCount()).toBe(25);
     expect(service.discardedCardCount()).toBe(1);
@@ -101,17 +101,23 @@ describe('GameStateService card ledger', () => {
     expectConserved();
   });
 
-  it('keeps hidden winner cards out of the public Battle settlement preview', () => {
+  it('captures every battle casualty in one settlement outcome', () => {
     service.startTurn();
     service.setPhase(GamePhase.BATTLE);
     const layer = service.dealBattleLayer()!;
     service.selectNewestBattleTargets(layer.opponentCards[0].id, layer.playerCards[0].id);
 
-    const preview = service.previewBattleSettlement(PlayerType.PLAYER);
-    expect(preview.hiddenWinnerCardCount).toBe(2);
-    expect(preview.publicWinnerCards.map(card => card.id)).not.toContain(layer.playerCards[1].id);
-    expect(preview.casualtyRevealCards.map(card => card.id)).toContain(layer.opponentCards[1].id);
-    expect(preview.casualtyRevealCards.length).toBe(2);
+    const outcome = service.previewBattleSettlement(PlayerType.PLAYER);
+    const activeTurn = service.currentState.activeTurn!;
+    expect(outcome.hiddenWinnerCards.length).toBe(2);
+    expect(outcome.publicWinnerCards.map(card => card.id)).not.toContain(layer.playerCards[1].id);
+    expect(outcome.casualties.map(card => card.id)).toEqual([
+      activeTurn.opponentCard.id,
+      ...layer.opponentCards.map(card => card.id)
+    ]);
+    expect(outcome.casualties).toContain(outcome.selectedOpponentChampion!);
+    expect(outcome.casualties.length).toBe(4);
+    expect(outcome.finalBoneyardCount).toBe(outcome.boneyardCountBeforeSettlement + 4);
     expectConserved();
   });
 

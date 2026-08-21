@@ -1,11 +1,20 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { SettingsService } from '../core/services/settings.service';
 
+/** A cancelled presentation is expected when a new game replaces an old one. */
+export class PresentationSequenceCancelled extends Error {
+  constructor() {
+    super('Presentation sequence cancelled');
+    this.name = 'PresentationSequenceCancelled';
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class PresentationSequencerService {
   private readonly settings = inject(SettingsService);
   private timer: ReturnType<typeof setTimeout> | null = null;
   private resume: (() => void) | null = null;
+  private abort: (() => void) | null = null;
   private sequenceVersion = 0;
   private lastAdvanceAt = 0;
   private fastForward = false;
@@ -20,11 +29,12 @@ export class PresentationSequencerService {
   }
 
   async pause(milliseconds: number, version = this.sequenceVersion): Promise<void> {
-    if (version !== this.sequenceVersion || this.shouldCollapseTiming() || this.fastForward) return;
+    if (version !== this.sequenceVersion) throw new PresentationSequenceCancelled();
+    if (this.shouldCollapseTiming() || this.fastForward) return;
     const duration = Math.max(0, milliseconds * this.speedMultiplier());
     if (duration === 0) return;
 
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve, reject) => {
       let finished = false;
       const finish = () => {
         if (finished) return;
@@ -32,11 +42,23 @@ export class PresentationSequencerService {
         if (this.timer) clearTimeout(this.timer);
         this.timer = null;
         this.resume = null;
+        this.abort = null;
         this.waiting.set(false);
         resolve();
       };
+      const cancel = () => {
+        if (finished) return;
+        finished = true;
+        if (this.timer) clearTimeout(this.timer);
+        this.timer = null;
+        this.resume = null;
+        this.abort = null;
+        this.waiting.set(false);
+        reject(new PresentationSequenceCancelled());
+      };
       this.waiting.set(true);
       this.resume = finish;
+      this.abort = cancel;
       this.timer = setTimeout(finish, duration);
     });
   }
@@ -52,7 +74,8 @@ export class PresentationSequencerService {
 
   cancel(): void {
     this.sequenceVersion += 1;
-    this.resume?.();
+    this.abort?.();
+    this.abort = null;
     this.resume = null;
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
@@ -67,16 +90,21 @@ export class PresentationSequencerService {
 
   private shouldCollapseTiming(): boolean {
     if (!this.settings.autoPlayAnimations()) return true;
-    return typeof window !== 'undefined' &&
+    return (
+      typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
   }
 
   private speedMultiplier(): number {
     switch (this.settings.animationSpeed()) {
-      case 'slow': return 1.5;
-      case 'fast': return 0.7;
-      default: return 1.15;
+      case 'slow':
+        return 1.5;
+      case 'fast':
+        return 0.7;
+      default:
+        return 1.15;
     }
   }
 }

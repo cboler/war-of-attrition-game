@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Card } from '../core/models/card.model';
 import { GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { GameEvent, GameEventBusService } from './game-event-bus.service';
+import { battleCasualtySummary, hiddenCardsReturn } from './table-copy';
 
 export type StoryBookEntryType =
   | 'clash'
@@ -37,7 +38,7 @@ export class StoryBookService {
   readonly hasEntries = computed(() => this.entries().length > 0);
 
   constructor() {
-    this.eventBus.events$.subscribe(event => this.handleGameEvent(event));
+    this.eventBus.events$.subscribe((event) => this.handleGameEvent(event));
   }
 
   clear(): void {
@@ -48,9 +49,9 @@ export class StoryBookService {
   addEntry(entry: Omit<StoryBookEntry, 'id'>): void {
     const newEntry: StoryBookEntry = {
       ...entry,
-      id: `story-entry-${++this.entryCounter}`
+      id: `story-entry-${++this.entryCounter}`,
     };
-    this.entriesSignal.update(current => [...current, newEntry]);
+    this.entriesSignal.update((current) => [...current, newEntry]);
   }
 
   private handleGameEvent(event: GameEvent): void {
@@ -60,9 +61,10 @@ export class StoryBookService {
         if (event.specialRule) {
           const pCardStr = this.formatCard(event.playerCard);
           const oCardStr = this.formatCard(event.opponentCard);
-          const narrative = event.winner === PlayerType.PLAYER
-            ? `${pCardStr} assassinated ${oCardStr}!`
-            : `${oCardStr} assassinated ${pCardStr}!`;
+          const narrative =
+            event.winner === PlayerType.PLAYER
+              ? `${pCardStr} assassinated ${oCardStr}!`
+              : `${oCardStr} assassinated ${pCardStr}!`;
 
           this.addEntry({
             turnNumber: event.turnNumber,
@@ -70,7 +72,7 @@ export class StoryBookService {
             eyebrow: `TURN ${event.turnNumber} · SPECIAL FEAT`,
             text: narrative,
             cards: [event.playerCard, event.opponentCard],
-            badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat'
+            badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat',
           });
         }
         break;
@@ -83,7 +85,7 @@ export class StoryBookService {
           eyebrow: `TURN ${event.turnNumber} · CHALLENGE`,
           text: `${event.challenger === PlayerType.PLAYER ? 'You' : 'Opponent'} committed reinforcement ${this.formatCard(event.reinforcementCard)}.`,
           cards: [event.reinforcementCard],
-          badge: 'challenge'
+          badge: 'challenge',
         });
         break;
 
@@ -92,10 +94,11 @@ export class StoryBookService {
           turnNumber: event.turnNumber,
           type: 'challenge',
           eyebrow: `TURN ${event.turnNumber} · CONCESSION`,
-          text: event.loser === PlayerType.PLAYER
-            ? 'You conceded the challenge. Your card was lost to the Boneyard.'
-            : 'Opponent conceded the challenge. Card surrendered to the Boneyard.',
-          badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat'
+          text:
+            event.loser === PlayerType.PLAYER
+              ? 'You conceded the challenge. Your card was lost to the Boneyard.'
+              : 'Opponent conceded the challenge. Card surrendered to the Boneyard.',
+          badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat',
         });
         break;
 
@@ -104,15 +107,17 @@ export class StoryBookService {
         const origStr = this.formatCard(event.originalWinnerCard);
         let text = '';
         if (event.challengerWon) {
-          text = event.challenger === PlayerType.PLAYER
-            ? `Card rescued. ${reinfStr} defeated ${origStr}, and both of your cards survive.`
-            : `Opponent rescues their card. ${reinfStr} defeated ${origStr}.`;
+          text =
+            event.challenger === PlayerType.PLAYER
+              ? `Card rescued. ${reinfStr} defeated ${origStr}, and both of your cards survive.`
+              : `Opponent rescues their card. ${reinfStr} defeated ${origStr}.`;
         } else if (event.winner === null) {
           text = `Reinforcement ${reinfStr} tied ${origStr}. Battle initiated!`;
         } else {
-          text = event.challenger === PlayerType.PLAYER
-            ? `${reinfStr} could not rescue the card. Both are now lost.`
-            : `Both opponent cards are now lost. ${origStr} holds.`;
+          text =
+            event.challenger === PlayerType.PLAYER
+              ? `${reinfStr} could not rescue the card. Both are now lost.`
+              : `Both opponent cards are now lost. ${origStr} holds.`;
         }
 
         this.addEntry({
@@ -121,7 +126,12 @@ export class StoryBookService {
           eyebrow: `TURN ${event.turnNumber} · RESOLUTION`,
           text,
           cards: [event.reinforcementCard, event.originalWinnerCard],
-          badge: event.winner === PlayerType.PLAYER ? 'victory' : (event.winner === PlayerType.OPPONENT ? 'defeat' : 'battle')
+          badge:
+            event.winner === PlayerType.PLAYER
+              ? 'victory'
+              : event.winner === PlayerType.OPPONENT
+                ? 'defeat'
+                : 'battle',
         });
         break;
       }
@@ -133,20 +143,22 @@ export class StoryBookService {
           type: 'battle_header',
           eyebrow: `TURN ${event.turnNumber} · BATTLE ${event.layerRound}`,
           text: '3 cards dealt face-down for each side. Choose your target blindly.',
-          badge: 'battle'
+          badge: 'battle',
         });
         break;
 
       case 'battle_target_selected': {
-        const posStr = event.targetIndex === 0 ? 'left' : (event.targetIndex === 1 ? 'center' : 'right');
-        const text = event.selector === PlayerType.PLAYER
-          ? `You selected opponent's ${posStr} card.`
-          : `Opponent selected your ${posStr} card.`;
+        const posStr =
+          event.targetIndex === 0 ? 'left' : event.targetIndex === 1 ? 'center' : 'right';
+        const text =
+          event.selector === PlayerType.PLAYER
+            ? `You selected opponent's ${posStr} card.`
+            : `Opponent selected your ${posStr} card.`;
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'battle_selection',
           text,
-          actor: event.selector
+          actor: event.selector,
         });
         break;
       }
@@ -169,25 +181,30 @@ export class StoryBookService {
           eyebrow: `BATTLE ${event.layerRound} REVEAL`,
           text,
           cards: [event.playerChosenCard, event.opponentChosenCard],
-          badge: event.winner ? (event.winner === PlayerType.PLAYER ? 'victory' : 'defeat') : 'battle'
+          badge: event.winner
+            ? event.winner === PlayerType.PLAYER
+              ? 'victory'
+              : 'defeat'
+            : 'battle',
         });
         break;
       }
 
       case 'battle_resolved': {
-        const loserName = event.loser === PlayerType.PLAYER ? 'You' : 'Opponent';
-        const casualtiesText = `${loserName} lost ${event.revealedCasualties.length} cards to the Boneyard.`;
-        const hiddenReturnedText = event.hiddenWinnerCardCount > 0
-          ? ` (${event.hiddenWinnerCardCount} hidden winner cards returned face-down)`
-          : '';
+        const { outcome } = event;
+        const casualtiesText = battleCasualtySummary(outcome.loser, outcome.casualties.length);
+        const hiddenReturnedText =
+          outcome.hiddenWinnerCards.length > 0
+            ? ` (${hiddenCardsReturn(outcome.hiddenWinnerCards.length)})`
+            : '';
 
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'casualty',
-          eyebrow: `BATTLE RESOLVED (DEPTH ${event.layerDepth})`,
+          eyebrow: `BATTLE RESOLVED (DEPTH ${outcome.battleDepth})`,
           text: `${casualtiesText}${hiddenReturnedText}`,
-          cards: event.revealedCasualties,
-          badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat'
+          cards: outcome.casualties,
+          badge: outcome.winner === PlayerType.PLAYER ? 'victory' : 'defeat',
         });
         break;
       }
@@ -198,7 +215,7 @@ export class StoryBookService {
           type: 'quip',
           eyebrow: event.speaker === PlayerType.PLAYER ? 'YOUR REACTION' : 'OPPONENT REACTION',
           text: `"${event.message}"`,
-          actor: event.speaker
+          actor: event.speaker,
         });
         break;
 
@@ -209,7 +226,7 @@ export class StoryBookService {
           eyebrow: 'ACHIEVEMENT UNLOCKED',
           title: event.name,
           text: event.description,
-          badge: 'achievement'
+          badge: 'achievement',
         });
         break;
 
@@ -240,7 +257,7 @@ export class StoryBookService {
           type: 'game_over',
           title,
           text,
-          badge
+          badge,
         });
         break;
       }
@@ -254,11 +271,16 @@ export class StoryBookService {
 
   private suitSymbol(suit: string): string {
     switch (suit) {
-      case 'hearts': return '♥';
-      case 'diamonds': return '♦';
-      case 'clubs': return '♣';
-      case 'spades': return '♠';
-      default: return '';
+      case 'hearts':
+        return '♥';
+      case 'diamonds':
+        return '♦';
+      case 'clubs':
+        return '♣';
+      case 'spades':
+        return '♠';
+      default:
+        return '';
     }
   }
 }

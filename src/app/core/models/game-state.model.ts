@@ -5,19 +5,19 @@ export enum GamePhase {
   NORMAL = 'normal',
   CHALLENGE = 'challenge',
   BATTLE = 'battle',
-  GAME_OVER = 'game_over'
+  GAME_OVER = 'game_over',
 }
 
 export enum PlayerType {
   PLAYER = 'player',
-  OPPONENT = 'opponent'
+  OPPONENT = 'opponent',
 }
 
 /** A terminal result. Unlike `winner`, this represents a true tie explicitly. */
 export enum GameOutcome {
   PLAYER_WIN = 'player_win',
   OPPONENT_WIN = 'opponent_win',
-  TIE = 'tie'
+  TIE = 'tie',
 }
 
 export interface GameStats {
@@ -38,6 +38,33 @@ export interface BattleLayer {
   readonly opponentCards: readonly Card[];
   readonly selectedPlayerCardId: string | null;
   readonly selectedOpponentCardId: string | null;
+}
+
+/**
+ * The immutable account of a decisive Battle, captured before its presentation
+ * starts.  Every consumer of Battle settlement (the Boneyard, animations,
+ * the Field Manual, and achievements) must use this one account rather than
+ * rebuilding a partial collection from the current UI.
+ */
+export interface BattleOutcome {
+  readonly winner: PlayerType;
+  readonly loser: PlayerType;
+  readonly battleDepth: number;
+  readonly layers: readonly BattleLayer[];
+  readonly playerCardsAtStake: readonly Card[];
+  readonly opponentCardsAtStake: readonly Card[];
+  readonly winningCards: readonly Card[];
+  readonly casualties: readonly Card[];
+  readonly publicWinnerCards: readonly Card[];
+  readonly hiddenWinnerCards: readonly Card[];
+  readonly selectedPlayerChampion: Card | null;
+  readonly selectedOpponentChampion: Card | null;
+  readonly playerDeckCountBeforeSettlement: number;
+  readonly opponentDeckCountBeforeSettlement: number;
+  readonly boneyardCountBeforeSettlement: number;
+  readonly finalPlayerDeckCount: number;
+  readonly finalOpponentDeckCount: number;
+  readonly finalBoneyardCount: number;
 }
 
 export interface ActiveTurn {

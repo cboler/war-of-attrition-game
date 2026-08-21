@@ -17,10 +17,13 @@ export class AchievementService {
   readonly latestUnlock = signal<AchievementDefinition | null>(null);
 
   private toastTimeout: ReturnType<typeof setTimeout> | null = null;
+  private battlePresentationActive = false;
+  private readonly deferredBattleToasts: AchievementDefinition[] = [];
+  private readonly toastQueue: AchievementDefinition[] = [];
 
   constructor() {
-    this.eventBus.events$.subscribe(event => this.evaluateEvent(event));
-    
+    this.eventBus.events$.subscribe((event) => this.evaluateEvent(event));
+
     // Reconcile existing unlocks with native platform on startup
     const existing = this.authService.activeProfile().statistics.unlockedAchievements || [];
     if (existing.length > 0) {
@@ -36,7 +39,7 @@ export class AchievementService {
 
   unlock(id: string, turnNumber = 0): boolean {
     if (this.isUnlocked(id)) return false;
-    const def = ACHIEVEMENTS.find(a => a.id === id);
+    const def = ACHIEVEMENTS.find((a) => a.id === id);
     if (!def) return false;
 
     // Persist unlock
@@ -45,12 +48,13 @@ export class AchievementService {
     // Sync with native platform (safe no-op on web)
     this.platformAchievements.unlockAchievement(id);
 
-    // Show toast banner
-    this.latestUnlock.set(def);
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toastTimeout = setTimeout(() => {
-      this.latestUnlock.set(null);
-    }, 4500);
+    // Battle choices must never compete with achievement banners. Persist and
+    // sync immediately, but wait to notify until the table is stable.
+    if (this.battlePresentationActive) {
+      this.deferredBattleToasts.push(def);
+    } else {
+      this.enqueueToast(def);
+    }
 
     // Publish event for Story Book
     this.eventBus.emit({
@@ -59,7 +63,7 @@ export class AchievementService {
       achievementId: def.id,
       name: def.name,
       description: def.description,
-      icon: def.icon
+      icon: def.icon,
     });
 
     return true;
@@ -68,6 +72,7 @@ export class AchievementService {
   dismissToast(): void {
     if (this.toastTimeout) clearTimeout(this.toastTimeout);
     this.latestUnlock.set(null);
+    this.showNextToast();
   }
 
   private evaluateEvent(event: GameEvent): void {
@@ -95,8 +100,10 @@ export class AchievementService {
         }
         if (
           event.winner === PlayerType.PLAYER &&
-          ((event.reinforcementCard.rank === Rank.TWO && event.originalWinnerCard.rank === Rank.ACE) ||
-            (event.originalWinnerCard.rank === Rank.TWO && event.reinforcementCard.rank === Rank.ACE))
+          ((event.reinforcementCard.rank === Rank.TWO &&
+            event.originalWinnerCard.rank === Rank.ACE) ||
+            (event.originalWinnerCard.rank === Rank.TWO &&
+              event.reinforcementCard.rank === Rank.ACE))
         ) {
           this.unlock('war.assassin', event.turnNumber);
         }
@@ -104,6 +111,7 @@ export class AchievementService {
 
       case 'battle_layer_added':
       case 'battle_started':
+        this.battlePresentationActive = true;
         if (event.type === 'battle_started') {
           this.unlock('war.first_battle', event.turnNumber);
         }
@@ -124,26 +132,39 @@ export class AchievementService {
         break;
 
       case 'battle_resolved':
+        const outcome = event.outcome;
         // MASSACRE: Defeat at least 10 opponent cards in one Battle
-        if (event.winner === PlayerType.PLAYER) {
+        if (outcome.winner === PlayerType.PLAYER) {
           this.unlock('war.first_battle_win', event.turnNumber);
         }
-        if (event.winner === PlayerType.PLAYER && event.layerDepth >= 3) {
+        if (outcome.winner === PlayerType.PLAYER && outcome.battleDepth >= 3) {
           this.unlock('war.deep_battle_win', event.turnNumber);
         }
-        if (event.winner === PlayerType.PLAYER && event.totalCardsAtStake >= 10) {
+        if (outcome.winner === PlayerType.PLAYER && outcome.casualties.length >= 10) {
           this.unlock('war.massacre', event.turnNumber);
         }
         // ROYAL DISASTER: Lose both an Ace and a 2 in the same Battle
-        if (event.loser === PlayerType.PLAYER && event.lostAceAndTwo) {
+        if (
+          outcome.loser === PlayerType.PLAYER &&
+          outcome.casualties.some((card) => card.rank === Rank.ACE) &&
+          outcome.casualties.some((card) => card.rank === Rank.TWO)
+        ) {
           this.unlock('war.royal_disaster', event.turnNumber);
         }
         // Depth check on resolution as well
-        if (event.layerDepth >= 3) {
+        if (outcome.battleDepth >= 3) {
           this.unlock('war.battle_layer_3', event.turnNumber);
         }
-        if (event.layerDepth >= 4) {
+        if (outcome.battleDepth >= 4) {
           this.unlock('war.battle_layer_4', event.turnNumber);
+        }
+        break;
+
+      case 'battle_presentation_complete':
+        this.battlePresentationActive = false;
+        while (this.deferredBattleToasts.length > 0) {
+          const achievement = this.deferredBattleToasts.shift();
+          if (achievement) this.enqueueToast(achievement);
         }
         break;
 
@@ -209,5 +230,22 @@ export class AchievementService {
   private syncIncrementalProgress(resolvedGames: number): void {
     this.platformAchievements.setAchievementSteps('profile.veteran', resolvedGames);
     this.platformAchievements.setAchievementSteps('profile.centurion', resolvedGames);
+  }
+
+  private enqueueToast(definition: AchievementDefinition): void {
+    this.toastQueue.push(definition);
+    this.showNextToast();
+  }
+
+  private showNextToast(): void {
+    if (this.latestUnlock() || this.toastQueue.length === 0) return;
+    const next = this.toastQueue.shift();
+    if (!next) return;
+    this.latestUnlock.set(next);
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => {
+      this.latestUnlock.set(null);
+      this.showNextToast();
+    }, 4500);
   }
 }

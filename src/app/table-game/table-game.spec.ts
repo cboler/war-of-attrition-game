@@ -12,9 +12,10 @@ import {
   GameControllerService,
   PresentationState,
   battleAnnouncementFor,
-  casualtyEmphasisFor
+  casualtyEmphasisFor,
 } from '../services/game-controller.service';
 import { Card, Rank, Suit } from '../core/models/card.model';
+import { PlayerType } from '../core/models/game-state.model';
 import { TableGame } from './table-game';
 
 describe('TableGame presentation', () => {
@@ -29,7 +30,7 @@ describe('TableGame presentation', () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [TableGame],
-      providers: [provideRouter([])]
+      providers: [provideRouter([])],
     }).compileComponents();
     settings = TestBed.inject(SettingsService);
     settings.setAutoPlayAnimations(false);
@@ -55,16 +56,18 @@ describe('TableGame presentation', () => {
     controller.playerDrawCard();
     flushMicrotasks();
     const before = gameState.currentState;
-    const playerDeckBefore = gameState.currentPlayerDeck.toArray().map(card => card.id);
-    const opponentDeckBefore = gameState.currentOpponentDeck.toArray().map(card => card.id);
+    const playerDeckBefore = gameState.currentPlayerDeck.toArray().map((card) => card.id);
+    const opponentDeckBefore = gameState.currentOpponentDeck.toArray().map((card) => card.id);
 
     fixture.destroy();
     fixture = TestBed.createComponent(TableGame);
     fixture.detectChanges();
 
     expect(gameState.currentState).toEqual(before);
-    expect(gameState.currentPlayerDeck.toArray().map(card => card.id)).toEqual(playerDeckBefore);
-    expect(gameState.currentOpponentDeck.toArray().map(card => card.id)).toEqual(opponentDeckBefore);
+    expect(gameState.currentPlayerDeck.toArray().map((card) => card.id)).toEqual(playerDeckBefore);
+    expect(gameState.currentOpponentDeck.toArray().map((card) => card.id)).toEqual(
+      opponentDeckBefore,
+    );
   }));
 
   it('records one abandonment only for an explicit restart after meaningful play', fakeAsync(() => {
@@ -115,12 +118,12 @@ describe('TableGame presentation', () => {
     const compareSpy = spyOn(comparison, 'compareCards');
     spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(true);
     const opponentDecision = spyOn(opponentAI, 'shouldChallenge');
-    eventBus.events$.subscribe(event => events.push(event));
+    eventBus.events$.subscribe((event) => events.push(event));
 
     compareSpy.and.returnValue(ComparisonResult.PLAYER_WINS);
     controller.playerDrawCard();
     flushMicrotasks();
-    expect(events.some(event => event.type === 'challenge_offered')).toBeFalse();
+    expect(events.some((event) => event.type === 'challenge_offered')).toBeFalse();
     expect(opponentDecision).not.toHaveBeenCalled();
 
     controller.startNewGame();
@@ -129,11 +132,13 @@ describe('TableGame presentation', () => {
     controller.playerDrawCard();
     flushMicrotasks();
     expect(controller.canChooseChallenge()).toBeFalse();
-    expect(events.some(event => event.type === 'challenge_offered')).toBeFalse();
+    expect(events.some((event) => event.type === 'challenge_offered')).toBeFalse();
   }));
 
   it('uses the player deck as the primary ready-state action', () => {
-    const deck = fixture.nativeElement.querySelector('app-player-seat[table-seat-bottom] button.deck');
+    const deck = fixture.nativeElement.querySelector(
+      'app-player-seat[table-seat-bottom] button.deck',
+    );
     expect(controller.presentationState()).toBe(PresentationState.READY);
     expect(deck).toBeTruthy();
     expect(deck.disabled).toBeFalse();
@@ -141,7 +146,9 @@ describe('TableGame presentation', () => {
   });
 
   it('binds handedness correctly to the player seat', () => {
-    const seatElem = fixture.nativeElement.querySelector('app-player-seat[table-seat-bottom] .seat');
+    const seatElem = fixture.nativeElement.querySelector(
+      'app-player-seat[table-seat-bottom] .seat',
+    );
     const table = fixture.nativeElement.querySelector('.table-page');
     expect(seatElem.classList.contains('deck-left')).toBeFalse();
     expect(table.classList.contains('boneyard-right')).toBeTrue();
@@ -168,7 +175,7 @@ describe('TableGame presentation', () => {
       rank,
       suit: Suit.HEARTS,
       value: 7,
-      isRed: true
+      isRed: true,
     });
 
     expect(battleAnnouncementFor(1)).toBe('Battle 1!');
@@ -185,7 +192,9 @@ describe('TableGame presentation', () => {
   it('opens and closes the Field Manual drawer using semantic selector', () => {
     expect(fixture.nativeElement.querySelector('app-story-book-drawer')).toBeNull();
 
-    const storyBtn = fixture.nativeElement.querySelector('button[aria-label="Open Field Manual"]') as HTMLButtonElement;
+    const storyBtn = fixture.nativeElement.querySelector(
+      'button[aria-label="Open Field Manual"]',
+    ) as HTMLButtonElement;
     expect(storyBtn).toBeTruthy();
     storyBtn.click();
     fixture.detectChanges();
@@ -198,7 +207,7 @@ describe('TableGame presentation', () => {
       turnNumber: 1,
       type: 'clash',
       text: 'Sample event',
-      badge: 'victory'
+      badge: 'victory',
     });
     expect(storyBook.hasEntries()).toBeTrue();
 
@@ -220,11 +229,14 @@ describe('TableGame presentation', () => {
 
     expect(controller.presentationState()).toBe(PresentationState.PLAYER_TARGET_SELECTION);
     const firstLayer = controller.battleLayers()[0];
-    expect(firstLayer.opponentCards.every(view => view.eligible)).toBeTrue();
-    expect(firstLayer.opponentCards.every(view => view.card === null && view.faceDown)).toBeTrue();
-    expect(firstLayer.playerCards.every(view => !view.eligible && view.card === null)).toBeTrue();
-    expect(fixture.nativeElement.querySelector('.announcement .eyebrow').textContent.trim())
-      .toBe('Battle 1!');
+    expect(firstLayer.opponentCards.every((view) => view.eligible)).toBeTrue();
+    expect(
+      firstLayer.opponentCards.every((view) => view.card === null && view.faceDown),
+    ).toBeTrue();
+    expect(firstLayer.playerCards.every((view) => !view.eligible && view.card === null)).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.announcement .eyebrow').textContent.trim()).toBe(
+      'Battle 1!',
+    );
 
     controller.selectBattleCard(firstLayer.opponentCards[0].id);
     flushMicrotasks();
@@ -234,15 +246,83 @@ describe('TableGame presentation', () => {
     expect(controller.battleLayers().length).toBe(2);
     const [oldLayer, newestLayer] = controller.battleLayers();
     expect(oldLayer.receded).toBeTrue();
-    expect(oldLayer.opponentCards.every(view => !view.eligible)).toBeTrue();
-    expect(newestLayer.opponentCards.every(view => view.eligible)).toBeTrue();
-    expect(oldLayer.opponentCards.filter(view => !view.selected).every(view => view.card === null)).toBeTrue();
-    expect(oldLayer.playerCards.filter(view => !view.selected).every(view => view.card === null)).toBeTrue();
+    expect(oldLayer.opponentCards.every((view) => !view.eligible)).toBeTrue();
+    expect(newestLayer.opponentCards.every((view) => view.eligible)).toBeTrue();
+    expect(
+      oldLayer.opponentCards.filter((view) => !view.selected).every((view) => view.card === null),
+    ).toBeTrue();
+    expect(
+      oldLayer.playerCards.filter((view) => !view.selected).every((view) => view.card === null),
+    ).toBeTrue();
     const announcement = fixture.nativeElement.querySelector('.announcement');
     expect(announcement.querySelector('.eyebrow').textContent.trim()).toBe('Battle 2!!');
     expect(announcement.classList.contains('battle-quake-2')).toBeFalse();
     expect(announcement.textContent).not.toContain('😰');
     compareSpy.and.callThrough();
+  }));
+
+  it('presents all four depth-one casualties from one authoritative outcome', fakeAsync(() => {
+    const events: GameEvent[] = [];
+    const eventBus = TestBed.inject(GameEventBusService);
+    const compareSpy = spyOn(comparison, 'compareCards');
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    eventBus.events$.subscribe((event) => events.push(event));
+    compareSpy.and.returnValues(ComparisonResult.TIE, ComparisonResult.PLAYER_WINS);
+
+    controller.playerDrawCard();
+    flushMicrotasks();
+    const trigger = controller.activeOpponentCard()!;
+    const layer = controller.battleLayers()[0];
+    const chosenChampion = layer.opponentCards[1];
+
+    controller.selectBattleCard(chosenChampion.id);
+    flushMicrotasks();
+    fixture.detectChanges();
+
+    const casualties = events.filter(
+      (event): event is Extract<GameEvent, { type: 'casualty_revealed' }> =>
+        event.type === 'casualty_revealed',
+    );
+    expect(casualties.map((event) => event.casualtyIndex)).toEqual([1, 2, 3, 4]);
+    expect(casualties.every((event) => event.totalCasualties === 4)).toBeTrue();
+    expect(casualties.map((event) => event.card.id)).toContain(trigger.id);
+    expect(casualties.map((event) => event.card.id)).toContain(chosenChampion.id);
+    expect(new Set(casualties.map((event) => event.card.id)).size).toBe(4);
+    expect(controller.visibleBoneyardCount()).toBe(4);
+
+    const manual = storyBook.entries().find((entry) => entry.type === 'casualty');
+    expect(manual?.cards?.length).toBe(4);
+    expect(manual?.cards?.map((card) => card.id)).toEqual(casualties.map((event) => event.card.id));
+  }));
+
+  it('accepts only one champion selection and ignores obsolete work after a new game', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    const events: GameEvent[] = [];
+    const eventBus = TestBed.inject(GameEventBusService);
+    eventBus.events$.subscribe((event) => events.push(event));
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.TIE);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+
+    controller.playerDrawCard();
+    tick(3000);
+    const layer = controller.battleLayers()[0];
+    expect(achievements.latestUnlock()).toBeNull();
+    controller.selectBattleCard(layer.opponentCards[0].id);
+    controller.selectBattleCard(layer.opponentCards[1].id);
+    expect(
+      events.filter(
+        (event) => event.type === 'battle_target_selected' && event.selector === PlayerType.PLAYER,
+      ).length,
+    ).toBe(1);
+
+    controller.startNewGame();
+    expect(achievements.latestUnlock()?.id).toBe('war.first_battle');
+    tick(5000);
+    flushMicrotasks();
+
+    expect(controller.presentationState()).toBe(PresentationState.READY);
+    expect(TestBed.inject(GameStateService).playerCardCount()).toBe(26);
+    expect(TestBed.inject(GameStateService).discardedCardCount()).toBe(0);
   }));
 
   it('keeps a settled ordinary casualty out of the visible Boneyard until it arrives', fakeAsync(() => {
@@ -260,11 +340,15 @@ describe('TableGame presentation', () => {
 
     expect(gameState.discardedCardCount()).toBe(1);
     expect(controller.visibleBoneyardCount()).toBe(0);
-    expect(fixture.nativeElement.querySelector('.boneyard small').textContent.trim()).toBe('0 lost');
+    expect(fixture.nativeElement.querySelector('.boneyard small').textContent.trim()).toBe(
+      '0 lost',
+    );
 
     tick(3000);
     fixture.detectChanges();
     expect(controller.visibleBoneyardCount()).toBe(1);
-    expect(fixture.nativeElement.querySelector('.boneyard small').textContent.trim()).toBe('1 lost');
+    expect(fixture.nativeElement.querySelector('.boneyard small').textContent.trim()).toBe(
+      '1 lost',
+    );
   }));
 });

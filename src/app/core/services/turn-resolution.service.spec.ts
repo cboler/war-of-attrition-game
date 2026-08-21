@@ -319,21 +319,25 @@ describe('TurnResolutionService', () => {
     const result = service.resolveBattleSelection(layer.opponentCards[0].id, layer.playerCards[0].id);
 
     expect(result.pendingBattleSettlement).toBeTrue();
-    expect(result.casualtyRevealCards.length).toBe(2);
-    expect(result.hiddenWinnerCardCount).toBe(2);
+    expect(result.battleOutcome?.casualties.length).toBe(4);
+    expect(result.battleOutcome?.hiddenWinnerCards.length).toBe(2);
+    expect(result.battleOutcome?.casualties).toContain(cards.opponentCard);
+    expect(result.battleOutcome?.casualties).toContain(layer.opponentCards[0]);
+    expect(result.battleOutcome?.casualties).toContain(layer.opponentCards[1]);
+    expect(result.battleOutcome?.casualties).toContain(layer.opponentCards[2]);
     expect(result.cardsKept).not.toContain(layer.playerCards[1]);
     expect(gameState.discardedCardCount()).toBe(0);
     expect(gameState.currentState.activeTurn).not.toBeNull();
     expectConserved();
 
-    service.finalizeBattle(PlayerType.PLAYER);
+    service.finalizeBattle(result.battleOutcome!);
     expect(gameState.discardedCardCount()).toBe(4);
     expect(gameState.playerCardCount()).toBe(26);
     expect(gameState.opponentCardCount()).toBe(22);
     expectConserved();
   });
 
-  it('accumulates recursive Battle stakes and reveals every hidden loser casualty only', () => {
+  it('accumulates recursive Battle stakes without omitting public casualties', () => {
     const cards = activeCards();
     const compareSpy = spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.TIE);
     service.resolveTurn(cards.playerCard, cards.opponentCard);
@@ -346,13 +350,14 @@ describe('TurnResolutionService', () => {
     const result = service.resolveBattleSelection(second.opponentCards[0].id, second.playerCards[0].id);
 
     expect(result.cardsLost.length).toBe(7);
-    expect(result.casualtyRevealCards.length).toBe(4);
-    expect(result.hiddenWinnerCardCount).toBe(4);
+    expect(result.battleOutcome?.casualties.length).toBe(7);
+    expect(result.battleOutcome?.hiddenWinnerCards.length).toBe(4);
+    expect(new Set(result.battleOutcome?.casualties.map(card => card.id)).size).toBe(7);
     expect(gameState.currentState.activeTurn?.battleLayers.length).toBe(2);
     expect(gameState.discardedCardCount()).toBe(0);
     expectConserved();
 
-    service.finalizeBattle(PlayerType.PLAYER);
+    service.finalizeBattle(result.battleOutcome!);
     expect(gameState.discardedCardCount()).toBe(7);
     expect(gameState.playerCardCount()).toBe(26);
     expect(gameState.opponentCardCount()).toBe(19);
@@ -401,12 +406,12 @@ describe('TurnResolutionService', () => {
     expect(result.nextPhase).toBe(GamePhase.GAME_OVER);
     expect(result.pendingBattleSettlement).toBeTrue();
     expect(result.winner).toBe(PlayerType.OPPONENT);
-    expect(result.casualtyRevealCards.length).toBe(2);
+    expect(result.battleOutcome?.casualties.length).toBe(4);
     expect(gameState.discardedCardCount()).toBe(22);
     expect(gameState.currentState.activeTurn).not.toBeNull();
     expectConserved();
 
-    service.finalizeBattle(PlayerType.OPPONENT, true);
+    service.finalizeBattle(result.battleOutcome!, true);
     expect(gameState.currentPhase).toBe(GamePhase.GAME_OVER);
     expect(gameState.discardedCardCount()).toBe(26);
     expectConserved();

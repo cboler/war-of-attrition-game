@@ -1,5 +1,5 @@
 import { Card } from './card.model';
-import { GameOutcome, PlayerType } from './game-state.model';
+import { BattleOutcome, GameOutcome, PlayerType } from './game-state.model';
 import { ComparisonResult } from '../services/card-comparison.service';
 
 export type GameEventType =
@@ -16,6 +16,7 @@ export type GameEventType =
   | 'battle_continues'
   | 'casualty_revealed'
   | 'battle_resolved'
+  | 'battle_presentation_complete'
   | 'cards_returned'
   | 'cards_sent_to_boneyard'
   | 'quip_spoken'
@@ -115,15 +116,12 @@ export interface CasualtyRevealedEvent extends BaseGameEvent {
 
 export interface BattleResolvedEvent extends BaseGameEvent {
   readonly type: 'battle_resolved';
-  readonly winner: PlayerType;
-  readonly loser: PlayerType;
-  readonly layerDepth: number;
-  readonly revealedCasualties: readonly Card[];
-  readonly hiddenWinnerCardCount: number;
-  readonly totalCardsAtStake: number;
-  readonly lostAce: boolean;
-  readonly lostTwo: boolean;
-  readonly lostAceAndTwo: boolean;
+  readonly outcome: BattleOutcome;
+}
+
+/** Emitted only once a Battle's ordered presentation has released control. */
+export interface BattlePresentationCompleteEvent extends BaseGameEvent {
+  readonly type: 'battle_presentation_complete';
 }
 
 export interface CardsReturnedEvent extends BaseGameEvent {
@@ -183,6 +181,7 @@ export type GameEvent =
   | BattleContinuesEvent
   | CasualtyRevealedEvent
   | BattleResolvedEvent
+  | BattlePresentationCompleteEvent
   | CardsReturnedEvent
   | CardsSentToBoneyardEvent
   | QuipSpokenEvent

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { StoryBookService } from './story-book.service';
 import { GameEventBusService } from './game-event-bus.service';
 import { Card, Rank, Suit } from '../core/models/card.model';
-import { GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { BattleOutcome, GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { ComparisonResult } from '../core/services/card-comparison.service';
 
 describe('StoryBookService', () => {
@@ -12,11 +12,40 @@ describe('StoryBookService', () => {
   const cardAce: Card = { id: 'c1', suit: Suit.HEARTS, rank: Rank.ACE, value: 14, isRed: true };
   const cardTwo: Card = { id: 'c2', suit: Suit.SPADES, rank: Rank.TWO, value: 2, isRed: false };
   const cardKing: Card = { id: 'c3', suit: Suit.CLUBS, rank: Rank.KING, value: 13, isRed: false };
-  const cardEight: Card = { id: 'c4', suit: Suit.DIAMONDS, rank: Rank.EIGHT, value: 8, isRed: true };
+  const cardEight: Card = {
+    id: 'c4',
+    suit: Suit.DIAMONDS,
+    rank: Rank.EIGHT,
+    value: 8,
+    isRed: true,
+  };
+
+  function battleOutcome(casualties: readonly Card[]): BattleOutcome {
+    return {
+      winner: PlayerType.PLAYER,
+      loser: PlayerType.OPPONENT,
+      battleDepth: 1,
+      layers: [],
+      playerCardsAtStake: [],
+      opponentCardsAtStake: casualties,
+      winningCards: [],
+      casualties,
+      publicWinnerCards: [],
+      hiddenWinnerCards: [],
+      selectedPlayerChampion: null,
+      selectedOpponentChampion: null,
+      playerDeckCountBeforeSettlement: 10,
+      opponentDeckCountBeforeSettlement: 10,
+      boneyardCountBeforeSettlement: 0,
+      finalPlayerDeckCount: 10,
+      finalOpponentDeckCount: 10,
+      finalBoneyardCount: casualties.length,
+    };
+  }
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [StoryBookService, GameEventBusService]
+      providers: [StoryBookService, GameEventBusService],
     });
     service = TestBed.inject(StoryBookService);
     eventBus = TestBed.inject(GameEventBusService);
@@ -37,7 +66,7 @@ describe('StoryBookService', () => {
       comparison: ComparisonResult.PLAYER_WINS,
       winner: PlayerType.PLAYER,
       specialRule: false,
-      message: 'K♣ defeated 8♦.'
+      message: 'K♣ defeated 8♦.',
     });
 
     // Should NOT create an entry for mundane clash
@@ -53,7 +82,7 @@ describe('StoryBookService', () => {
       comparison: ComparisonResult.PLAYER_WINS,
       winner: PlayerType.PLAYER,
       specialRule: true,
-      message: '2♠ assassinated A♥!'
+      message: '2♠ assassinated A♥!',
     });
 
     expect(service.entries().length).toBe(1);
@@ -66,7 +95,7 @@ describe('StoryBookService', () => {
     eventBus.emit({
       type: 'battle_started',
       turnNumber: 3,
-      layerRound: 1
+      layerRound: 1,
     });
 
     eventBus.emit({
@@ -74,7 +103,7 @@ describe('StoryBookService', () => {
       turnNumber: 3,
       layerRound: 1,
       selector: PlayerType.PLAYER,
-      targetIndex: 0
+      targetIndex: 0,
     });
 
     eventBus.emit({
@@ -86,21 +115,13 @@ describe('StoryBookService', () => {
       comparison: ComparisonResult.PLAYER_WINS,
       winner: PlayerType.PLAYER,
       specialRule: false,
-      message: 'K♣ defeated 8♦.'
+      message: 'K♣ defeated 8♦.',
     });
 
     eventBus.emit({
       type: 'battle_resolved',
       turnNumber: 3,
-      winner: PlayerType.PLAYER,
-      loser: PlayerType.OPPONENT,
-      layerDepth: 1,
-      revealedCasualties: [cardEight],
-      hiddenWinnerCardCount: 2,
-      totalCardsAtStake: 4,
-      lostAce: false,
-      lostTwo: false,
-      lostAceAndTwo: false
+      outcome: battleOutcome([cardEight]),
     });
 
     expect(service.entries().length).toBe(4);
@@ -108,7 +129,7 @@ describe('StoryBookService', () => {
     expect(service.entries()[1].type).toBe('battle_selection');
     expect(service.entries()[2].type).toBe('battle_reveal');
     expect(service.entries()[3].type).toBe('casualty');
-    expect(service.entries()[3].text).toContain('lost 1 cards to the Boneyard');
+    expect(service.entries()[3].text).toContain("foe's card falls to the Boneyard");
   });
 
   it('uses rescue/loss language for challenge results', () => {
@@ -122,7 +143,7 @@ describe('StoryBookService', () => {
       winner: PlayerType.PLAYER,
       challengerWon: true,
       message: 'Card rescued. Both cards survive.',
-      savedTwo: false
+      savedTwo: false,
     });
     expect(service.entries().at(-1)?.text).toContain('Card rescued.');
     expect(service.entries().at(-1)?.text).toContain('both of your cards survive');
@@ -137,7 +158,7 @@ describe('StoryBookService', () => {
       winner: PlayerType.OPPONENT,
       challengerWon: false,
       message: 'Both are now lost.',
-      savedTwo: false
+      savedTwo: false,
     });
     expect(service.entries().at(-1)?.text).toContain('Both are now lost.');
   });
@@ -153,7 +174,7 @@ describe('StoryBookService', () => {
       maxDeficitExperienced: 0,
       isComeback: false,
       battlesCount: 0,
-      playerReinforcementsSent: 0
+      playerReinforcementsSent: 0,
     });
 
     expect(service.entries().length).toBe(1);
