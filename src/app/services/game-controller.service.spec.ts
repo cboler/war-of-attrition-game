@@ -283,4 +283,111 @@ describe('GameControllerService presentation integration', () => {
     expect(recordWar).not.toHaveBeenCalled();
     expect(progression.currentCampaign().wars.length).toBe(1);
   });
+
+  it('primes Ace vs 8 as neutral/ready and resolves Ace as winner with remainder 6 and 8 as defeated at zero', () => {
+    const aceCard = { id: 'ace-card-p', rank: Rank.ACE, suit: 'spades', value: 14 } as any;
+    const eightCard = { id: 'eight-card-o', rank: Rank.EIGHT, suit: 'hearts', value: 8 } as any;
+
+    const internal = controller as unknown as {
+      primeComparison(p: any, o: any): void;
+      resolveComparison(p: any, o: any, r: ComparisonResult, s: boolean): void;
+    };
+
+    // Pre-resolution: both are primed neutral/ready
+    internal.primeComparison(aceCard, eightCard);
+    let pres = controller.comparisonPresentation();
+    expect(pres).not.toBeNull();
+    expect(pres?.resolved).toBeFalse();
+    expect(pres?.player.cardId).toBe('ace-card-p');
+    expect(pres?.player.state).toBe('ready');
+    expect(pres?.player.current).toBe(14);
+    expect(pres?.opponent.cardId).toBe('eight-card-o');
+    expect(pres?.opponent.state).toBe('ready');
+    expect(pres?.opponent.current).toBe(8);
+
+    // Post-resolution: Ace wins with remainder 6 (14 - 8), damage -8; 8 defeated at 0, damage -14
+    internal.resolveComparison(aceCard, eightCard, ComparisonResult.PLAYER_WINS, false);
+    pres = controller.comparisonPresentation();
+    expect(pres?.resolved).toBeTrue();
+    expect(pres?.player.cardId).toBe('ace-card-p');
+    expect(pres?.player.state).toBe('winner');
+    expect(pres?.player.current).toBe(6);
+    expect(pres?.player.damage).toBe(-8);
+    expect(pres?.opponent.cardId).toBe('eight-card-o');
+    expect(pres?.opponent.state).toBe('defeated');
+    expect(pres?.opponent.current).toBe(0);
+    expect(pres?.opponent.damage).toBe(-14);
+
+    expect(controller.comparisonStrengthFor('ace-card-p')?.state).toBe('winner');
+    expect(controller.comparisonStrengthFor('eight-card-o')?.state).toBe('defeated');
+  });
+
+  it('primes 8 vs Ace as neutral/ready and resolves Ace as opponent winner with remainder 6 and 8 as player defeated', () => {
+    const eightCard = { id: 'eight-card-p', rank: Rank.EIGHT, suit: 'diamonds', value: 8 } as any;
+    const aceCard = { id: 'ace-card-o', rank: Rank.ACE, suit: 'clubs', value: 14 } as any;
+
+    const internal = controller as unknown as {
+      primeComparison(p: any, o: any): void;
+      resolveComparison(p: any, o: any, r: ComparisonResult, s: boolean): void;
+    };
+
+    // Pre-resolution
+    internal.primeComparison(eightCard, aceCard);
+    let pres = controller.comparisonPresentation();
+    expect(pres?.resolved).toBeFalse();
+    expect(pres?.player.state).toBe('ready');
+    expect(pres?.player.current).toBe(8);
+    expect(pres?.opponent.state).toBe('ready');
+    expect(pres?.opponent.current).toBe(14);
+
+    // Post-resolution: Opponent Ace wins with remainder 6, damage -8; Player 8 defeated at 0, damage -14
+    internal.resolveComparison(eightCard, aceCard, ComparisonResult.OPPONENT_WINS, false);
+    pres = controller.comparisonPresentation();
+    expect(pres?.resolved).toBeTrue();
+    expect(pres?.player.cardId).toBe('eight-card-p');
+    expect(pres?.player.state).toBe('defeated');
+    expect(pres?.player.current).toBe(0);
+    expect(pres?.player.damage).toBe(-14);
+    expect(pres?.opponent.cardId).toBe('ace-card-o');
+    expect(pres?.opponent.state).toBe('winner');
+    expect(pres?.opponent.current).toBe(6);
+    expect(pres?.opponent.damage).toBe(-8);
+
+    expect(controller.comparisonStrengthFor('eight-card-p')?.state).toBe('defeated');
+    expect(controller.comparisonStrengthFor('ace-card-o')?.state).toBe('winner');
+  });
+
+  it('primes and resolves 2 vs Ace special rule with winner 2 retaining power 2 and specialOverride true', () => {
+    const twoCard = { id: 'two-card-p', rank: Rank.TWO, suit: 'spades', value: 2 } as any;
+    const aceCard = { id: 'ace-card-o', rank: Rank.ACE, suit: 'hearts', value: 14 } as any;
+
+    const internal = controller as unknown as {
+      primeComparison(p: any, o: any): void;
+      resolveComparison(p: any, o: any, r: ComparisonResult, s: boolean): void;
+    };
+
+    // Pre-resolution
+    internal.primeComparison(twoCard, aceCard);
+    let pres = controller.comparisonPresentation();
+    expect(pres?.resolved).toBeFalse();
+    expect(pres?.player.state).toBe('ready');
+    expect(pres?.player.current).toBe(2);
+    expect(pres?.opponent.state).toBe('ready');
+    expect(pres?.opponent.current).toBe(14);
+
+    // Post-resolution: 2 wins with full power 2 (categorical override), damage 0; Ace defeated at 0, damage -14
+    internal.resolveComparison(twoCard, aceCard, ComparisonResult.PLAYER_WINS, true);
+    pres = controller.comparisonPresentation();
+    expect(pres?.resolved).toBeTrue();
+    expect(pres?.player.cardId).toBe('two-card-p');
+    expect(pres?.player.state).toBe('winner');
+    expect(pres?.player.current).toBe(2);
+    expect(pres?.player.damage).toBe(0);
+    expect(pres?.player.specialOverride).toBeTrue();
+    expect(pres?.opponent.cardId).toBe('ace-card-o');
+    expect(pres?.opponent.state).toBe('defeated');
+    expect(pres?.opponent.current).toBe(0);
+    expect(pres?.opponent.damage).toBe(-14);
+    expect(pres?.opponent.specialOverride).toBeTrue();
+  });
 });

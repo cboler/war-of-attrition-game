@@ -1,11 +1,5 @@
 @use '@angular/material' as mat;
 
-@property --comparison-strength {
-  syntax: '<integer>';
-  inherits: false;
-  initial-value: 0;
-}
-
 // Import Material Icons
 @import 'material-icons/iconfont/material-icons.css';
 

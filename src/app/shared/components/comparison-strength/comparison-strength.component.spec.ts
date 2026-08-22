@@ -12,28 +12,153 @@ describe('ComparisonStrengthComponent', () => {
     settingsService = TestBed.inject(SettingsService);
   });
 
-  it('presents a resolved losing value as zero with an accessible outcome', () => {
+  it('renders authoritative current value in DOM text for ready state without denominator', () => {
     fixture.componentRef.setInput('view', {
-      cardId: 'loser',
-      base: 10,
-      current: 0,
-      damage: -12,
-      state: 'defeated',
+      cardId: 'card-ready-7',
+      base: 7,
+      current: 7,
+      damage: 0,
+      state: 'ready',
       specialOverride: false,
     });
     fixture.detectChanges();
 
     const presentation = fixture.nativeElement.querySelector('.comparison-strength');
-    expect(presentation.classList).toContain('is-defeated');
-    expect(presentation.getAttribute('aria-label')).toContain('Comparison power 10; defeated at zero');
-    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('0');
-    expect(fixture.nativeElement.querySelector('.damage-number').textContent.trim()).toBe('-12');
+    expect(presentation.classList).toContain('is-ready');
+    expect(presentation.getAttribute('aria-label')).toContain('Comparison power 7; ready at 7');
+    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('7');
     expect(fixture.nativeElement.querySelector('.strength-base')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.damage-number')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.special-rule')).toBeNull();
   });
 
-  it('labels the categorical 2-defeats-Ace override without changing the base value in accessibility', () => {
+  it('presents normal mode 7 vs 2 winner remainder 5 and loser 0 directly in DOM text', () => {
+    // Winner 7 vs 2
     fixture.componentRef.setInput('view', {
-      cardId: 'ace',
+      cardId: 'winner-7',
+      base: 7,
+      current: 5,
+      damage: -2,
+      state: 'winner',
+      specialOverride: false,
+    });
+    fixture.detectChanges();
+
+    const winnerPresentation = fixture.nativeElement.querySelector('.comparison-strength');
+    expect(winnerPresentation.classList).toContain('is-winner');
+    expect(winnerPresentation.getAttribute('aria-label')).toContain('Comparison power 7; winner with 5 remaining');
+    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('5');
+    expect(fixture.nativeElement.querySelector('.damage-number').textContent.trim()).toBe('-2');
+
+    // Loser 2 vs 7
+    fixture.componentRef.setInput('view', {
+      cardId: 'loser-2',
+      base: 2,
+      current: 0,
+      damage: -7,
+      state: 'defeated',
+      specialOverride: false,
+    });
+    fixture.detectChanges();
+
+    const loserPresentation = fixture.nativeElement.querySelector('.comparison-strength');
+    expect(loserPresentation.classList).toContain('is-defeated');
+    expect(loserPresentation.getAttribute('aria-label')).toContain('Comparison power 2; defeated at zero');
+    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('0');
+    expect(fixture.nativeElement.querySelector('.damage-number').textContent.trim()).toBe('-7');
+  });
+
+  it('presents normal mode Ace vs 8 winner remainder 6 and loser 0 directly in DOM text', () => {
+    // Winner Ace (base 14) vs 8
+    fixture.componentRef.setInput('view', {
+      cardId: 'ace-winner',
+      base: 14,
+      current: 6,
+      damage: -8,
+      state: 'winner',
+      specialOverride: false,
+    });
+    fixture.detectChanges();
+
+    const acePresentation = fixture.nativeElement.querySelector('.comparison-strength');
+    expect(acePresentation.classList).toContain('is-winner');
+    expect(acePresentation.getAttribute('aria-label')).toContain('Comparison power 14; winner with 6 remaining');
+    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('6');
+    expect(fixture.nativeElement.querySelector('.damage-number').textContent.trim()).toBe('-8');
+
+    // Loser 8 vs Ace
+    fixture.componentRef.setInput('view', {
+      cardId: 'eight-loser',
+      base: 8,
+      current: 0,
+      damage: -14,
+      state: 'defeated',
+      specialOverride: false,
+    });
+    fixture.detectChanges();
+
+    const eightPresentation = fixture.nativeElement.querySelector('.comparison-strength');
+    expect(eightPresentation.classList).toContain('is-defeated');
+    expect(eightPresentation.getAttribute('aria-label')).toContain('Comparison power 8; defeated at zero');
+    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('0');
+    expect(fixture.nativeElement.querySelector('.damage-number').textContent.trim()).toBe('-14');
+  });
+
+  it('presents normal mode King vs Queen winner remainder 1 and loser 0', () => {
+    // King (13) vs Queen (12)
+    fixture.componentRef.setInput('view', {
+      cardId: 'king-winner',
+      base: 13,
+      current: 1,
+      damage: -12,
+      state: 'winner',
+      specialOverride: false,
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.comparison-strength').classList).toContain('is-winner');
+    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('1');
+    expect(fixture.nativeElement.querySelector('.damage-number').textContent.trim()).toBe('-12');
+
+    // Queen loser
+    fixture.componentRef.setInput('view', {
+      cardId: 'queen-loser',
+      base: 12,
+      current: 0,
+      damage: -13,
+      state: 'defeated',
+      specialOverride: false,
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.comparison-strength').classList).toContain('is-defeated');
+    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('0');
+    expect(fixture.nativeElement.querySelector('.damage-number').textContent.trim()).toBe('-13');
+  });
+
+  it('presents 2 defeats Ace special override correctly with winner power 2 and losing Ace power 0', () => {
+    // Winner 2
+    fixture.componentRef.setInput('view', {
+      cardId: 'two-assassin',
+      base: 2,
+      current: 2,
+      damage: 0,
+      state: 'winner',
+      specialOverride: true,
+    });
+    fixture.detectChanges();
+
+    const twoPres = fixture.nativeElement.querySelector('.comparison-strength');
+    expect(twoPres.classList).toContain('is-winner');
+    expect(twoPres.classList).toContain('is-special');
+    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('2');
+    expect(fixture.nativeElement.querySelector('.special-rule').textContent.trim()).toBe('2 defeats Ace');
+    expect(twoPres.getAttribute('aria-label')).toContain('special rule: 2 defeats Ace');
+    expect(twoPres.getAttribute('aria-label')).toContain('winner with 2 remaining');
+
+    // Defeated Ace
+    fixture.componentRef.setInput('view', {
+      cardId: 'ace-assassinated',
       base: 14,
       current: 0,
       damage: -14,
@@ -42,14 +167,14 @@ describe('ComparisonStrengthComponent', () => {
     });
     fixture.detectChanges();
 
+    const acePres = fixture.nativeElement.querySelector('.comparison-strength');
+    expect(acePres.classList).toContain('is-defeated');
+    expect(acePres.classList).toContain('is-special');
     expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('0');
+    expect(fixture.nativeElement.querySelector('.damage-number').textContent.trim()).toBe('-14');
     expect(fixture.nativeElement.querySelector('.special-rule').textContent.trim()).toBe('2 defeats Ace');
-    expect(fixture.nativeElement.querySelector('[role="status"]').getAttribute('aria-label')).toContain(
-      'special rule: 2 defeats Ace',
-    );
-    expect(fixture.nativeElement.querySelector('[role="status"]').getAttribute('aria-label')).toContain(
-      'Comparison power 14; defeated at zero',
-    );
+    expect(acePres.getAttribute('aria-label')).toContain('special rule: 2 defeats Ace');
+    expect(acePres.getAttribute('aria-label')).toContain('Comparison power 14; defeated at zero');
   });
 
   it('presents a winning Ace with its non-zero remainder statically when animations are disabled', () => {
@@ -72,7 +197,7 @@ describe('ComparisonStrengthComponent', () => {
     expect(presentation.getAttribute('aria-label')).toContain('Comparison power 14; winner with 6 remaining');
   });
 
-  it('presents a winning 6 vs 2 with temporary remainder 4 and does not finish at zero', () => {
+  it('presents a winning 6 vs 2 with temporary remainder 4 and does not finish at zero when animations disabled', () => {
     settingsService.setAutoPlayAnimations(false);
     fixture.componentRef.setInput('view', {
       cardId: 'six-winner',
@@ -91,19 +216,26 @@ describe('ComparisonStrengthComponent', () => {
     expect(presentation.getAttribute('aria-label')).toContain('Comparison power 6; winner with 4 remaining');
   });
 
-  it('renders authoritative current value in DOM text for ready state without denominator', () => {
+  it('renders .strength-value-text visibly in normal motion mode without pseudo-element counter dependency', () => {
+    settingsService.setAutoPlayAnimations(true);
     fixture.componentRef.setInput('view', {
-      cardId: 'card-ready',
-      base: 10,
-      current: 10,
+      cardId: 'normal-card-7',
+      base: 7,
+      current: 7,
       damage: 0,
       state: 'ready',
       specialOverride: false,
     });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.strength-value-text').textContent.trim()).toBe('10');
-    expect(fixture.nativeElement.querySelector('.strength-base')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.damage-number')).toBeNull();
+    const textEl = fixture.nativeElement.querySelector('.strength-value-text') as HTMLElement;
+    expect(textEl).not.toBeNull();
+    expect(textEl.textContent?.trim()).toBe('7');
+    const computedDisplay = window.getComputedStyle(textEl).display;
+    expect(computedDisplay).not.toBe('none');
+
+    const valueEl = fixture.nativeElement.querySelector('.strength-value') as HTMLElement;
+    const afterPseudo = window.getComputedStyle(valueEl, '::after');
+    expect(afterPseudo.content === 'none' || afterPseudo.content === '""' || afterPseudo.content === '').toBeTrue();
   });
 });

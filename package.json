@@ -1,6 +1,6 @@
 {
   "name": "war-of-attrition-game",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

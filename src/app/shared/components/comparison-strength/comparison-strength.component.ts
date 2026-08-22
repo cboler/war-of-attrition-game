@@ -23,7 +23,6 @@ export interface ComparisonStrengthView {
       [class.is-tie]="view().state === 'tie'"
       [class.is-special]="view().specialOverride"
       [class.motion-disabled]="!settings.autoPlayAnimations()"
-      [style.--comparison-strength]="view().current"
       [attr.aria-label]="accessibleSummary()"
       role="status"
     >
