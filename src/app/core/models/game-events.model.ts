@@ -1,8 +1,16 @@
 import { Card } from './card.model';
-import { BattleOutcome, GameOutcome, PlayerType } from './game-state.model';
-import { ComparisonResult } from '../services/card-comparison.service';
+import {
+  BattleSelectionOutcome,
+  ComparisonResult,
+  DeckColor,
+  GameOutcome,
+  GamePhase,
+  PlayerType,
+  SettlementAttribution,
+} from './game-state.model';
 
 export type GameEventType =
+  | 'war_started'
   | 'turn_started'
   | 'clash_resolved'
   | 'challenge_offered'
@@ -19,6 +27,7 @@ export type GameEventType =
   | 'battle_presentation_complete'
   | 'cards_returned'
   | 'cards_sent_to_boneyard'
+  | 'settlement_resolved'
   | 'quip_spoken'
   | 'achievement_unlocked'
   | 'game_resolved'
@@ -27,6 +36,12 @@ export type GameEventType =
 export interface BaseGameEvent {
   readonly type: GameEventType;
   readonly turnNumber: number;
+}
+
+/** Public, stable ownership assignment for one newly initialized War. */
+export interface WarStartedEvent extends BaseGameEvent {
+  readonly type: 'war_started';
+  readonly playerDeckColor: DeckColor;
 }
 
 export interface TurnStartedEvent extends BaseGameEvent {
@@ -71,6 +86,8 @@ export interface ChallengeResolvedEvent extends BaseGameEvent {
   readonly challengerWon: boolean;
   readonly message: string;
   readonly savedTwo: boolean; // challenger's initial beaten card was a 2 and saved
+  /** Explicit original card avoids reconstructing challenge causality from presentation state. */
+  readonly originalBeatenCard: Card;
 }
 
 export interface BattleStartedEvent extends BaseGameEvent {
@@ -99,6 +116,8 @@ export interface BattleCardsRevealedEvent extends BaseGameEvent {
   readonly winner: PlayerType | null;
   readonly specialRule: boolean;
   readonly message: string;
+  /** Canonical selection record; compatibility fields above only mirror this object. */
+  readonly selection: BattleSelectionOutcome;
 }
 
 export interface BattleContinuesEvent extends BaseGameEvent {
@@ -112,11 +131,37 @@ export interface CasualtyRevealedEvent extends BaseGameEvent {
   readonly casualtyIndex: number;
   readonly totalCasualties: number;
   readonly loser: PlayerType;
+  /** Public causal context used for card-story analysis without hidden state. */
+  readonly source?: SettlementAttribution['source'];
+  readonly decisiveCard?: Card;
+}
+
+/**
+ * Public account of a resolved Battle. Internal BattleOutcome values also
+ * contain every face-down layer and hidden winner identity, so they must never
+ * cross the game-event boundary.
+ */
+export interface PublicBattleResolution {
+  readonly winner: PlayerType;
+  readonly loser: PlayerType;
+  readonly battleDepth: number;
+  readonly selection: BattleSelectionOutcome | null;
+  readonly selectedPlayerChampion: Card | null;
+  readonly selectedOpponentChampion: Card | null;
+  readonly casualties: readonly Card[];
+  readonly casualtyIds: readonly string[];
+  readonly hiddenWinnerCount: number;
+  readonly publicWinnerCount: number;
+  readonly playerCardsAtStakeCount: number;
+  readonly opponentCardsAtStakeCount: number;
+  readonly finalPlayerDeckCount: number;
+  readonly finalOpponentDeckCount: number;
+  readonly finalBoneyardCount: number;
 }
 
 export interface BattleResolvedEvent extends BaseGameEvent {
   readonly type: 'battle_resolved';
-  readonly outcome: BattleOutcome;
+  readonly outcome: PublicBattleResolution;
 }
 
 /** Emitted only once a Battle's ordered presentation has released control. */
@@ -136,10 +181,23 @@ export interface CardsSentToBoneyardEvent extends BaseGameEvent {
   readonly cards: readonly Card[];
 }
 
+export interface SettlementResolvedEvent extends BaseGameEvent {
+  readonly type: 'settlement_resolved';
+  readonly attribution: SettlementAttribution;
+}
+
+export type TableReactionCategory =
+  | 'special_clash'
+  | 'narrow_clash'
+  | 'rescue'
+  | 'failed_rescue'
+  | 'battle';
+
 export interface QuipSpokenEvent extends BaseGameEvent {
   readonly type: 'quip_spoken';
   readonly speaker: PlayerType;
   readonly message: string;
+  readonly category?: TableReactionCategory;
 }
 
 export interface AchievementUnlockedEvent extends BaseGameEvent {
@@ -160,14 +218,49 @@ export interface GameResolvedEvent extends BaseGameEvent {
   readonly isComeback: boolean;
   readonly battlesCount: number;
   readonly playerReinforcementsSent: number;
+  readonly playerDeckColor?: DeckColor;
 }
+
+export type ExplicitAbandonmentDecision =
+  | 'draw'
+  | 'challenge'
+  | 'concede'
+  | 'battle_target'
+  | 'continue'
+  | 'restart'
+  | 'abandon';
+
+export type RecentGameEventCategory =
+  | 'clash'
+  | 'challenge'
+  | 'battle'
+  | 'settlement'
+  | 'presentation';
 
 export interface GameAbandonedEvent extends BaseGameEvent {
   readonly type: 'game_abandoned';
   readonly turnsPlayed: number;
+  readonly playerDeckCount: number;
+  readonly opponentDeckCount: number;
+  readonly playerCardsAtStakeCount: number;
+  readonly opponentCardsAtStakeCount: number;
+  /** Opponent deck count minus player deck count; positive means the player trails. */
+  readonly playerCardDeficit: number;
+  readonly gamePhase: GamePhase;
+  readonly battleDepth: number;
+  readonly currentBattleWinStreak?: number;
+  readonly currentBattleLossStreak?: number;
+  readonly presentationPhase?: string;
+  readonly animationSpeed?: 'slow' | 'normal' | 'fast';
+  readonly lastDecision?: ExplicitAbandonmentDecision;
+  readonly recentEventCategory?: RecentGameEventCategory;
+  readonly recentReactionCategory?: TableReactionCategory;
+  /** The explicit destructive control used; separate from last gameplay decision. */
+  readonly abandonmentAction?: 'restart' | 'abandon';
 }
 
 export type GameEvent =
+  | WarStartedEvent
   | TurnStartedEvent
   | ClashResolvedEvent
   | ChallengeOfferedEvent
@@ -184,6 +277,7 @@ export type GameEvent =
   | BattlePresentationCompleteEvent
   | CardsReturnedEvent
   | CardsSentToBoneyardEvent
+  | SettlementResolvedEvent
   | QuipSpokenEvent
   | AchievementUnlockedEvent
   | GameResolvedEvent

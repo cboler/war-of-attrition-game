@@ -1,0 +1,195 @@
+<div class="drawer-backdrop" (click)="closeDrawer()" aria-hidden="true"></div>
+<aside
+  #drawerContainer
+  class="story-book-drawer"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="field-manual-title">
+  <header class="drawer-header">
+    <div class="title-group">
+      <div class="eyebrow">TACTICAL INTELLIGENCE</div>
+      <h2 id="field-manual-title">Field Manual</h2>
+    </div>
+    <button
+      #closeBtn
+      type="button"
+      class="close-button"
+      aria-label="Close Field Manual"
+      (click)="closeDrawer()">
+      <mat-icon aria-hidden="true">close</mat-icon>
+    </button>
+  </header>
+
+  <nav class="drawer-tabs" role="tablist" aria-label="Field Manual sections">
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.active]="activeTab() === 'chronicle'"
+      [attr.aria-selected]="activeTab() === 'chronicle'"
+      [attr.tabindex]="activeTab() === 'chronicle' ? 0 : -1"
+      aria-controls="panel-chronicle"
+      id="tab-chronicle"
+      (click)="selectTab('chronicle')"
+      (keydown)="handleTabKeyDown($event, 'chronicle')">
+      <mat-icon aria-hidden="true">history_edu</mat-icon>
+      <span>Chronicle</span>
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.active]="activeTab() === 'rules'"
+      [attr.aria-selected]="activeTab() === 'rules'"
+      [attr.tabindex]="activeTab() === 'rules' ? 0 : -1"
+      aria-controls="panel-rules"
+      id="tab-rules"
+      (click)="selectTab('rules')"
+      (keydown)="handleTabKeyDown($event, 'rules')">
+      <mat-icon aria-hidden="true">gavel</mat-icon>
+      <span>Rules of Engagement</span>
+    </button>
+    @if (referenceCard()) {
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.active]="activeTab() === 'reference'"
+        [attr.aria-selected]="activeTab() === 'reference'"
+        [attr.tabindex]="activeTab() === 'reference' ? 0 : -1"
+        aria-controls="panel-reference"
+        id="tab-reference"
+        (click)="selectTab('reference')"
+        (keydown)="handleTabKeyDown($event, 'reference')">
+        <mat-icon aria-hidden="true">style</mat-icon>
+        <span>Card Reference</span>
+      </button>
+    }
+  </nav>
+
+  <div class="drawer-content">
+    @if (activeTab() === 'chronicle') {
+      <div id="panel-chronicle" role="tabpanel" aria-labelledby="tab-chronicle">
+        @if (storyBook.entries().length === 0) {
+          <div class="empty-state">
+            <mat-icon class="empty-icon" aria-hidden="true">menu_book</mat-icon>
+            <p>The Chronicle is ready.</p>
+            <small>Meaningful clashes, Battles, challenges, and casualties will be recorded here as you play.</small>
+          </div>
+        } @else {
+          <div class="timeline">
+            @for (entry of storyBook.entries(); track entry.id) {
+              <article
+                [class]="'story-node type-' + entry.type"
+                [class.has-badge]="!!entry.badge">
+                @if (entry.eyebrow) {
+                  <span class="node-eyebrow">{{ entry.eyebrow }}</span>
+                }
+
+                @if (entry.title) {
+                  <h3 class="node-title">{{ entry.title }}</h3>
+                }
+
+                <div class="node-body">
+                  <p class="node-text">{{ entry.text }}</p>
+
+                  @if (entry.cards && entry.cards.length > 0 && entry.type === 'casualty') {
+                    <div class="casualties-strip" aria-label="Revealed casualty cards">
+                      @for (card of entry.cards; track card.id) {
+                        <app-card [card]="card" [faceDown]="false" />
+                      }
+                    </div>
+                  }
+                </div>
+
+                @if (entry.badge) {
+                  <span [class]="'node-badge badge-' + entry.badge" aria-hidden="true">
+                    @switch (entry.badge) {
+                      @case ('victory') { <mat-icon>shield</mat-icon> }
+                      @case ('defeat') { <mat-icon>heart_broken</mat-icon> }
+                      @case ('battle') { <mat-icon>swords</mat-icon> }
+                      @case ('achievement') { <mat-icon>emoji_events</mat-icon> }
+                      @case ('challenge') { <mat-icon>flag</mat-icon> }
+                    }
+                  </span>
+                }
+              </article>
+            }
+          </div>
+        }
+      </div>
+    } @else if (activeTab() === 'rules') {
+      <div id="panel-rules" role="tabpanel" aria-labelledby="tab-rules" class="rules-reference">
+        @if (activeDemo(); as demo) {
+          <app-rule-demo [rule]="demo" (closed)="closeRuleDemo()" />
+        } @else {
+          <p class="rules-intro">Choose any rule to run a short, isolated demonstration. Drills never affect the active War.</p>
+          @for (rule of rules; track rule.id) {
+            <button
+              type="button"
+              class="rule-card"
+              [attr.data-rule-demo-id]="rule.id"
+              [attr.aria-label]="'Demonstrate ' + rule.title"
+              (click)="openRuleDemo(rule.id)">
+              <span class="rule-icon"><mat-icon aria-hidden="true">{{ rule.icon }}</mat-icon></span>
+              <span class="rule-body">
+                <strong>{{ rule.title }}</strong>
+                <span>{{ rule.description }}</span>
+              </span>
+              <span class="demo-affordance" aria-hidden="true">
+                <mat-icon>play_circle</mat-icon>
+                Demo
+              </span>
+            </button>
+          }
+        }
+      </div>
+    } @else {
+      @if (referenceCard(); as card) {
+        <article id="panel-reference" role="tabpanel" aria-labelledby="tab-reference" class="card-reference">
+        <div class="reference-heading">
+          <span class="reference-eyebrow">BONEYARD CASUALTY</span>
+          <h3>{{ cardName(card) }}</h3>
+          <p>Exact casualty record <code>{{ card.id }}</code></p>
+        </div>
+
+        <div class="reference-card-row">
+          <app-card [card]="card" [faceDown]="false" />
+          <dl>
+            <div>
+              <dt>Base value</dt>
+              <dd>{{ card.value }}</dd>
+            </div>
+            <div>
+              <dt>Rank</dt>
+              <dd>{{ card.rank }}</dd>
+            </div>
+            <div>
+              <dt>Suit</dt>
+              <dd>{{ card.suit }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="reference-guidance">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          <div>
+            <strong>{{ rankGuidance(card) }}</strong>
+            <p>Suits identify cards but never affect comparison or break equal-rank ties.</p>
+          </div>
+        </div>
+
+        <button type="button" class="show-rule-btn" (click)="selectTab('rules')">
+          <mat-icon aria-hidden="true">play_circle</mat-icon>
+          Explore rule demonstrations
+        </button>
+        </article>
+      }
+    }
+  </div>
+
+  <footer class="drawer-footer">
+    <span>Field Manual · Permanent Reference</span>
+    <button type="button" class="done-btn" (click)="closeDrawer()">Back to Table</button>
+  </footer>
+</aside>

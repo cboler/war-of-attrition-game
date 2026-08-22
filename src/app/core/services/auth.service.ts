@@ -1,10 +1,17 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { UserProfile, DEFAULT_GUEST_PROFILE } from '../models/user-profile.model';
+import {
+  UserProfile,
+  DEFAULT_GUEST_PROFILE,
+  createDefaultGuestProfile
+} from '../models/user-profile.model';
 import { GameStatistics, DEFAULT_STATISTICS } from '../models/settings.model';
 import { environment } from '../../../environments/environment';
-
-const STORAGE_KEY_ACTIVE_PROFILE = 'war-of-attrition-active-profile-id';
-const STORAGE_KEY_PROFILES = 'war-of-attrition-profiles';
+import {
+  CampaignProgression,
+  DEFAULT_CARD_BACKING_ID,
+  normalizeCampaignProgression
+} from '../models/progression.model';
+import { APP_LOCAL_STORAGE_KEYS } from '../models/app-storage.model';
 
 @Injectable({
   providedIn: 'root'
@@ -138,26 +145,33 @@ export class AuthService {
 
   private initializeProfiles(): void {
     try {
-      const savedProfilesJson = localStorage.getItem(STORAGE_KEY_PROFILES);
+      const legacySelectedCardBacking = this.readLegacySelectedCardBacking();
+      const savedProfilesJson = localStorage.getItem(APP_LOCAL_STORAGE_KEYS.profiles);
       let profiles: UserProfile[] = [];
 
       if (savedProfilesJson) {
         const parsed = JSON.parse(savedProfilesJson);
         if (Array.isArray(parsed)) {
-          profiles = parsed.map(p => ({
-            ...p,
-            statistics: { ...DEFAULT_STATISTICS, ...(p.statistics || {}) }
-          }));
+          profiles = parsed
+            .filter(p => p && typeof p === 'object' && typeof p.id === 'string')
+            .map(p => ({
+              ...p,
+              statistics: { ...DEFAULT_STATISTICS, ...(p.statistics || {}) },
+              progression: normalizeCampaignProgression(
+                p.progression,
+                p.progression ? DEFAULT_CARD_BACKING_ID : legacySelectedCardBacking
+              )
+            }));
         }
       }
 
       if (!profiles || profiles.length === 0) {
-        profiles = [{ ...DEFAULT_GUEST_PROFILE, statistics: { ...DEFAULT_STATISTICS } }];
+        profiles = [createDefaultGuestProfile(legacySelectedCardBacking)];
       }
 
       this.profilesSignal.set(profiles);
 
-      const savedActiveId = localStorage.getItem(STORAGE_KEY_ACTIVE_PROFILE);
+      const savedActiveId = localStorage.getItem(APP_LOCAL_STORAGE_KEYS.activeProfileId);
       if (savedActiveId && profiles.some(p => p.id === savedActiveId)) {
         this.activeProfileIdSignal.set(savedActiveId);
       } else {
@@ -165,17 +179,30 @@ export class AuthService {
       }
     } catch (e) {
       console.warn('Failed to load user profiles from localStorage:', e);
-      this.profilesSignal.set([{ ...DEFAULT_GUEST_PROFILE }]);
+      this.profilesSignal.set([createDefaultGuestProfile()]);
       this.activeProfileIdSignal.set('guest-player');
     }
   }
 
   private persistProfiles(): void {
     try {
-      localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(this.profilesSignal()));
-      localStorage.setItem(STORAGE_KEY_ACTIVE_PROFILE, this.activeProfileIdSignal());
+      localStorage.setItem(APP_LOCAL_STORAGE_KEYS.profiles, JSON.stringify(this.profilesSignal()));
+      localStorage.setItem(APP_LOCAL_STORAGE_KEYS.activeProfileId, this.activeProfileIdSignal());
     } catch (e) {
       console.error('Failed to save user profiles to localStorage:', e);
+    }
+  }
+
+  private readLegacySelectedCardBacking(): string {
+    try {
+      const stored = localStorage.getItem(APP_LOCAL_STORAGE_KEYS.settings);
+      if (!stored) return DEFAULT_CARD_BACKING_ID;
+      const parsed = JSON.parse(stored) as { selectedCardBacking?: unknown };
+      return typeof parsed.selectedCardBacking === 'string'
+        ? parsed.selectedCardBacking
+        : DEFAULT_CARD_BACKING_ID;
+    } catch {
+      return DEFAULT_CARD_BACKING_ID;
     }
   }
 
@@ -220,6 +247,7 @@ export class AuthService {
         provider: 'google',
         isGoogleAuth: true,
         statistics: { ...DEFAULT_STATISTICS },
+        progression: normalizeCampaignProgression(undefined, this.readLegacySelectedCardBacking()),
         createdAt: now,
         lastLoginAt: now
       };
@@ -243,11 +271,39 @@ export class AuthService {
     if (guest) {
       this.activeProfileIdSignal.set(guest.id);
     } else {
-      const newGuest = { ...DEFAULT_GUEST_PROFILE };
+      const newGuest = createDefaultGuestProfile(this.readLegacySelectedCardBacking());
       this.profilesSignal.set([newGuest, ...profiles]);
       this.activeProfileIdSignal.set(newGuest.id);
     }
     this.persistProfiles();
+  }
+
+  /**
+   * Replace all local identities with one pristine guest. Unlike signOut(),
+   * this clears the in-memory profile collection before it is persisted, so a
+   * deleted Google-linked profile cannot be written back after storage cleanup.
+   */
+  deleteAllLocalProfilesAndCreateFreshGuest(): UserProfile {
+    const freshGuest = createDefaultGuestProfile();
+    this.profilesSignal.set([freshGuest]);
+    this.activeProfileIdSignal.set(freshGuest.id);
+    this.persistProfiles();
+    return freshGuest;
+  }
+
+  /** Controlled persistence seam for profile-scoped Campaign/cosmetic state. */
+  updateActiveProfileProgression(
+    updater: (current: CampaignProgression) => CampaignProgression
+  ): CampaignProgression {
+    const currentProfile = this.activeProfile();
+    const current = normalizeCampaignProgression(currentProfile.progression);
+    const progression = normalizeCampaignProgression(updater(current));
+    const updatedProfile: UserProfile = { ...currentProfile, progression };
+    this.profilesSignal.update(profiles =>
+      profiles.map(profile => profile.id === updatedProfile.id ? updatedProfile : profile)
+    );
+    this.persistProfiles();
+    return progression;
   }
 
   /**
@@ -268,6 +324,8 @@ export class AuthService {
     playerChallengesWon?: number;
     acesDefeatedByTwo?: number;
     twosSavedByChallenge?: number;
+    acesRescuedByChallenge?: number;
+    acesRescuingTwos?: number;
     acesLostInBattles?: number;
     aceAndTwoLostInSameBattle?: number;
     maxDeficitExperienced?: number;
@@ -319,6 +377,10 @@ export class AuthService {
     // Memorable events
     const newAcesDefeatedByTwo = (oldStats.acesDefeatedByTwo || 0) + (params.acesDefeatedByTwo || 0);
     const newTwosSaved = (oldStats.twosSavedByChallenge || 0) + (params.twosSavedByChallenge || 0);
+    const newAcesRescued = (oldStats.acesRescuedByChallenge || 0) +
+      (params.acesRescuedByChallenge || 0);
+    const newAcesRescuingTwos = (oldStats.acesRescuingTwos || 0) +
+      (params.acesRescuingTwos || 0);
     const newAcesLost = (oldStats.acesLostInBattles || 0) + (params.acesLostInBattles || 0);
     const newAceAndTwoLost = (oldStats.aceAndTwoLostInSameBattle || 0) + (params.aceAndTwoLostInSameBattle || 0);
 
@@ -368,6 +430,8 @@ export class AuthService {
       mostSuccessfulChallengesInGame: newMostSuccessfulChallengesInGame,
       acesDefeatedByTwo: newAcesDefeatedByTwo,
       twosSavedByChallenge: newTwosSaved,
+      acesRescuedByChallenge: newAcesRescued,
+      acesRescuingTwos: newAcesRescuingTwos,
       acesLostInBattles: newAcesLost,
       aceAndTwoLostInSameBattle: newAceAndTwoLost,
       highestCardsRemainingAtVictory: newHighestRemaining,
@@ -388,6 +452,38 @@ export class AuthService {
     this.persistProfiles();
 
     return updatedStats;
+  }
+
+  /** Persist a bounded, typed patch to resettable player-facing career data. */
+  updateStatistics(updates: Partial<GameStatistics>): GameStatistics {
+    const currentProfile = this.activeProfile();
+    const oldStats = { ...DEFAULT_STATISTICS, ...(currentProfile.statistics || {}) };
+    const updatedStats: GameStatistics = {
+      ...oldStats,
+      ...updates,
+      juggernautCardIds: updates.juggernautCardIds
+        ? [...new Set(updates.juggernautCardIds.filter(id => typeof id === 'string'))].slice(-52)
+        : oldStats.juggernautCardIds
+    };
+    const updatedProfile: UserProfile = { ...currentProfile, statistics: updatedStats };
+    this.profilesSignal.update(profiles =>
+      profiles.map(profile => profile.id === updatedProfile.id ? updatedProfile : profile)
+    );
+    this.persistProfiles();
+    return updatedStats;
+  }
+
+  /** Purpose-built adapter consumed by AchievementService across War boundaries. */
+  recordAchievementProgress(progress: Pick<
+    GameStatistics,
+    | 'currentBattleWinStreak'
+    | 'bestBattleWinStreak'
+    | 'currentBattleLossStreak'
+    | 'bestBattleLossStreak'
+    | 'juggernautOccurrences'
+    | 'juggernautCardIds'
+  >): GameStatistics {
+    return this.updateStatistics(progress);
   }
 
   /**

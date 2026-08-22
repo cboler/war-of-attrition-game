@@ -2,13 +2,16 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CardComponent } from './card.component';
 import { Card, CardImpl, Suit, Rank } from '../../../core/models/card.model';
 import { SettingsService } from '../../../core/services/settings.service';
+import { CampaignProgressionService } from '../../../core/services/campaign-progression.service';
 
 describe('CardComponent', () => {
   let component: CardComponent;
   let fixture: ComponentFixture<CardComponent>;
   let settingsService: SettingsService;
+  let progression: CampaignProgressionService;
 
   beforeEach(async () => {
+    localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [CardComponent]
     }).compileComponents();
@@ -16,10 +19,14 @@ describe('CardComponent', () => {
     fixture = TestBed.createComponent(CardComponent);
     component = fixture.componentInstance;
     settingsService = TestBed.inject(SettingsService);
+    progression = TestBed.inject(CampaignProgressionService);
     settingsService.setAutoPlayAnimations(true);
   });
 
-  afterEach(() => settingsService.resetSettings());
+  afterEach(() => {
+    settingsService.resetSettings();
+    localStorage.clear();
+  });
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -274,6 +281,7 @@ describe('CardComponent', () => {
       expect(initialPattern).toContain('#1565c0'); // Classic blue pattern
 
       // Change to red backing
+      progression.unlockCardBacking('classic-red', 'achievement');
       settingsService.setCardBacking('classic-red');
       fixture.detectChanges();
 
@@ -296,6 +304,7 @@ describe('CardComponent', () => {
       const backingOptions = settingsService.cardBackingOptions();
       
       for (const option of backingOptions) {
+        progression.unlockCardBacking(option.id, 'achievement');
         settingsService.setCardBacking(option.id);
         fixture.detectChanges();
         

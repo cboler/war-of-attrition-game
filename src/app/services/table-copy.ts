@@ -6,6 +6,8 @@ export function battleTargetInstruction(): string {
 }
 
 export function casualtyProgress(index: number, total: number): string {
+  if (total <= 1) return 'Casualty revealed.';
+  if (index >= total) return `${total} casualties revealed.`;
   return `Casualty ${index} of ${total}`;
 }
 

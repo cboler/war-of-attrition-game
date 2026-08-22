@@ -1,11 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Card, Rank } from '../models/card.model';
+import { ComparisonResult } from '../models/game-state.model';
 
-export enum ComparisonResult {
-  PLAYER_WINS = 'player_wins',
-  OPPONENT_WINS = 'opponent_wins',
-  TIE = 'tie'
-}
+export { ComparisonResult } from '../models/game-state.model';
 
 @Injectable({
   providedIn: 'root'

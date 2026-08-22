@@ -1,0 +1,89 @@
+<section
+  class="rule-demo"
+  [class.motion-disabled]="motionDisabled()"
+  role="region"
+  [attr.aria-labelledby]="'rule-demo-title-' + rule()">
+  <header class="demo-header">
+    <div>
+      <span class="demo-eyebrow">DETERMINISTIC DRILL</span>
+      <h3 #demoHeading [id]="'rule-demo-title-' + rule()" tabindex="-1">{{ demo().title }}</h3>
+      <p>{{ demo().summary }}</p>
+    </div>
+    <button type="button" class="demo-close" aria-label="Close rule demonstration" (click)="close()">
+      <mat-icon aria-hidden="true">close</mat-icon>
+    </button>
+  </header>
+
+  <div class="demo-scene" [class.special-scene]="frame().special">
+    @if (frame().playerDeckCount !== undefined || frame().opponentDeckCount !== undefined) {
+      <div class="deck-readout" aria-label="Demonstration deck counts">
+        <span>Your deck <strong>{{ frame().playerDeckCount ?? '—' }}</strong></span>
+        <span>Opponent deck <strong>{{ frame().opponentDeckCount ?? '—' }}</strong></span>
+      </div>
+    }
+
+    <div class="comparison-row">
+      <div class="demo-card-slot">
+        <span class="side-label">Your card</span>
+        @if (frame().supportingCard) {
+          <div
+            class="supporting-card"
+            [class.inactive]="frame().supportingCardInactive"
+            [attr.aria-label]="frame().supportingCardInactive ? 'Original card inactive and not compared' : 'Original card rescued'">
+            <app-card [card]="frame().supportingCard ?? null" [faceDown]="false" />
+            <span>{{ frame().supportingCardInactive ? 'Inactive · not compared' : 'Rescued' }}</span>
+          </div>
+        }
+        <app-card
+          [card]="frame().leftCard"
+          [faceDown]="frame().leftFaceDown ?? false"
+          [glow]="frame().leftGlow ?? null" />
+        @if (frame().leftStrength !== undefined && frame().leftStrength !== null) {
+          <span class="strength-value" [class.zero]="frame().leftStrength === 0">
+            Strength {{ frame().leftStrength }}
+          </span>
+        }
+      </div>
+
+      <span class="versus" aria-hidden="true">VS</span>
+
+      <div class="demo-card-slot" [class.in-boneyard]="frame().rightInBoneyard">
+        <span class="side-label">Opponent card</span>
+        <app-card
+          [card]="frame().rightCard"
+          [faceDown]="frame().rightFaceDown ?? false"
+          [glow]="frame().rightGlow ?? null" />
+        @if (frame().rightStrength !== undefined && frame().rightStrength !== null) {
+          <span class="strength-value" [class.zero]="frame().rightStrength === 0">
+            Strength {{ frame().rightStrength }}
+          </span>
+        }
+        @if (frame().rightInBoneyard) {
+          <span class="boneyard-label">Boneyard</span>
+        }
+      </div>
+    </div>
+
+    @if (frame().special) {
+      <strong class="special-rule">Special rule · 2 defeats Ace</strong>
+    }
+  </div>
+
+  <div class="demo-narration" role="status" aria-live="polite" aria-atomic="true">
+    <span>{{ frame().cue }}</span>
+    <p>{{ frame().narration }}</p>
+  </div>
+
+  <footer class="demo-controls">
+    <span class="step-label">{{ stepLabel() }}</span>
+    <div>
+      <button type="button" class="text-control" (click)="replay()">
+        <mat-icon aria-hidden="true">replay</mat-icon>
+        Replay
+      </button>
+      <button type="button" class="skip-control" [disabled]="isFinalFrame()" (click)="skip()">
+        Skip to result
+      </button>
+    </div>
+  </footer>
+</section>

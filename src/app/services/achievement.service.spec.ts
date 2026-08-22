@@ -2,8 +2,15 @@ import { TestBed } from '@angular/core/testing';
 import { AchievementService } from './achievement.service';
 import { GameEventBusService } from './game-event-bus.service';
 import { AuthService } from '../core/services/auth.service';
-import { Card, Rank, Suit } from '../core/models/card.model';
-import { BattleOutcome, GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { Card, CardImpl, Rank, Suit } from '../core/models/card.model';
+import {
+  DeckColor,
+  GameOutcome,
+  GamePhase,
+  PlayerType,
+  SettlementAttribution,
+} from '../core/models/game-state.model';
+import { PublicBattleResolution } from '../core/models/game-events.model';
 import { ComparisonResult } from '../core/services/card-comparison.service';
 import { ACHIEVEMENTS } from '../core/models/achievement.model';
 import { PLAY_ACHIEVEMENT_MAPPINGS } from '../core/models/play-achievements-map';
@@ -20,28 +27,44 @@ describe('AchievementService', () => {
     winner: PlayerType,
     casualties: readonly Card[],
     battleDepth = 1,
-  ): BattleOutcome {
+  ): PublicBattleResolution {
     const loser = winner === PlayerType.PLAYER ? PlayerType.OPPONENT : PlayerType.PLAYER;
     return {
       winner,
       loser,
       battleDepth,
-      layers: [],
-      playerCardsAtStake: loser === PlayerType.PLAYER ? casualties : [],
-      opponentCardsAtStake: loser === PlayerType.OPPONENT ? casualties : [],
-      winningCards: [],
-      casualties,
-      publicWinnerCards: [],
-      hiddenWinnerCards: [],
+      selection: null,
       selectedPlayerChampion: null,
       selectedOpponentChampion: null,
-      playerDeckCountBeforeSettlement: 10,
-      opponentDeckCountBeforeSettlement: 10,
-      boneyardCountBeforeSettlement: 0,
+      casualties,
+      casualtyIds: casualties.map((card) => card.id),
+      hiddenWinnerCount: 0,
+      publicWinnerCount: 0,
+      playerCardsAtStakeCount: loser === PlayerType.PLAYER ? casualties.length : 0,
+      opponentCardsAtStakeCount: loser === PlayerType.OPPONENT ? casualties.length : 0,
       finalPlayerDeckCount: 10,
       finalOpponentDeckCount: 10,
       finalBoneyardCount: casualties.length,
     };
+  }
+
+  function emitPlayerSettlement(
+    decisiveCard: Card,
+    casualties: readonly Card[],
+    source: SettlementAttribution['source'] = 'clash',
+  ): void {
+    eventBus.emit({
+      type: 'settlement_resolved',
+      turnNumber: 1,
+      attribution: {
+        source,
+        winner: PlayerType.PLAYER,
+        loser: PlayerType.OPPONENT,
+        decisiveCard,
+        casualties,
+        battleDepth: source === 'battle' ? 1 : 0,
+      },
+    });
   }
 
   beforeEach(() => {
@@ -76,6 +99,32 @@ describe('AchievementService', () => {
     expect(service.latestUnlock()?.id).toBe('war.assassin');
   });
 
+  it('uses the authoritative Battle selection for Assassin, not compatibility mirrors', () => {
+    eventBus.emit({
+      type: 'battle_cards_revealed',
+      turnNumber: 2,
+      layerRound: 99,
+      playerChosenCard: cardAce,
+      opponentChosenCard: cardTwo,
+      comparison: ComparisonResult.OPPONENT_WINS,
+      winner: PlayerType.OPPONENT,
+      specialRule: false,
+      message: 'Authoritative selection wins.',
+      selection: {
+        layerRound: 1,
+        playerCard: cardTwo,
+        opponentCard: cardAce,
+        playerCardId: cardTwo.id,
+        opponentCardId: cardAce.id,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        specialRule: true,
+      },
+    });
+
+    expect(service.isUnlocked('war.assassin')).toBeTrue();
+  });
+
   it('should unlock war.not_today when saving a 2 via challenge', () => {
     expect(service.isUnlocked('war.not_today')).toBe(false);
 
@@ -83,6 +132,7 @@ describe('AchievementService', () => {
       type: 'challenge_resolved',
       turnNumber: 3,
       challenger: PlayerType.PLAYER,
+      originalBeatenCard: cardTwo,
       reinforcementCard: cardAce,
       originalWinnerCard: cardAce,
       comparison: ComparisonResult.PLAYER_WINS,
@@ -145,6 +195,169 @@ describe('AchievementService', () => {
     });
 
     expect(service.isUnlocked('war.royal_disaster')).toBe(true);
+  });
+
+  it('credits Battle bulk casualties to the one physical champion for Juggernaut', () => {
+    const champion = new CardImpl(Suit.HEARTS, Rank.ACE);
+    const casualties = [
+      new CardImpl(Suit.CLUBS, Rank.KING),
+      new CardImpl(Suit.CLUBS, Rank.QUEEN),
+      new CardImpl(Suit.CLUBS, Rank.JACK),
+    ];
+    eventBus.emit({ type: 'war_started', turnNumber: 0, playerDeckColor: DeckColor.RED });
+
+    emitPlayerSettlement(champion, casualties, 'battle');
+
+    expect(service.isUnlocked('war.juggernaut')).toBeTrue();
+    expect(service.achievementProgress().juggernautOccurrences).toBe(1);
+    expect(service.achievementProgress().juggernautCardIds).toEqual([champion.id]);
+  });
+
+  it('tracks Juggernaut casualties by physical card id instead of combining equal ranks', () => {
+    const heartsQueen = new CardImpl(Suit.HEARTS, Rank.QUEEN);
+    const diamondsQueen = new CardImpl(Suit.DIAMONDS, Rank.QUEEN);
+    const casualties = [
+      new CardImpl(Suit.CLUBS, Rank.FOUR),
+      new CardImpl(Suit.CLUBS, Rank.FIVE),
+      new CardImpl(Suit.CLUBS, Rank.SIX),
+      new CardImpl(Suit.CLUBS, Rank.SEVEN),
+      new CardImpl(Suit.CLUBS, Rank.EIGHT),
+    ];
+    eventBus.emit({ type: 'war_started', turnNumber: 0, playerDeckColor: DeckColor.RED });
+
+    emitPlayerSettlement(heartsQueen, casualties.slice(0, 2));
+    emitPlayerSettlement(diamondsQueen, casualties.slice(2, 4));
+    expect(service.isUnlocked('war.juggernaut')).toBeFalse();
+
+    emitPlayerSettlement(heartsQueen, [casualties[4]]);
+    expect(service.isUnlocked('war.juggernaut')).toBeTrue();
+    expect(service.achievementProgress().juggernautCardIds).toEqual([heartsQueen.id]);
+  });
+
+  it('keeps Battle streaks across War boundaries and resets only on the opposite result', () => {
+    for (let win = 1; win <= 3; win++) {
+      eventBus.emit({
+        type: 'battle_resolved',
+        turnNumber: win,
+        outcome: battleOutcome(PlayerType.PLAYER, [cardAce]),
+      });
+    }
+    eventBus.emit({ type: 'war_started', turnNumber: 0, playerDeckColor: DeckColor.BLACK });
+    for (let win = 4; win <= 5; win++) {
+      eventBus.emit({
+        type: 'battle_resolved',
+        turnNumber: win,
+        outcome: battleOutcome(PlayerType.PLAYER, [cardAce]),
+      });
+    }
+
+    expect(service.isUnlocked('war.expert_strategist')).toBeTrue();
+    expect(service.achievementProgress().currentBattleWinStreak).toBe(5);
+    expect(service.achievementProgress().bestBattleWinStreak).toBe(5);
+
+    for (let loss = 1; loss <= 5; loss++) {
+      eventBus.emit({
+        type: 'battle_resolved',
+        turnNumber: 5 + loss,
+        outcome: battleOutcome(PlayerType.OPPONENT, [cardTwo]),
+      });
+    }
+    expect(service.isUnlocked('war.poor_strategy')).toBeTrue();
+    expect(service.achievementProgress().currentBattleWinStreak).toBe(0);
+    expect(service.achievementProgress().currentBattleLossStreak).toBe(5);
+    expect(service.achievementProgress().bestBattleLossStreak).toBe(5);
+  });
+
+  it('rehydrates cleared achievement progress when Career Records reset on the same profile', () => {
+    eventBus.emit({
+      type: 'battle_resolved',
+      turnNumber: 1,
+      outcome: battleOutcome(PlayerType.PLAYER, [cardAce]),
+    });
+    eventBus.emit({
+      type: 'battle_resolved',
+      turnNumber: 2,
+      outcome: battleOutcome(PlayerType.PLAYER, [cardAce]),
+    });
+    expect(service.achievementProgress().currentBattleWinStreak).toBe(2);
+    expect(authService.userStats().currentBattleWinStreak).toBe(2);
+
+    authService.resetActiveUserStats();
+    TestBed.flushEffects();
+
+    expect(service.achievementProgress().currentBattleWinStreak).toBe(0);
+    expect(service.achievementProgress().bestBattleWinStreak).toBe(0);
+    expect(service.achievementProgress().juggernautOccurrences).toBe(0);
+    expect(service.achievementProgress().juggernautCardIds).toEqual([]);
+
+    eventBus.emit({
+      type: 'battle_resolved',
+      turnNumber: 3,
+      outcome: battleOutcome(PlayerType.PLAYER, [cardAce]),
+    });
+    expect(service.achievementProgress().currentBattleWinStreak).toBe(1);
+  });
+
+  it('unlocks Grave Intelligence from public Boneyard knowledge for a red player deck', () => {
+    const heartsTwo = new CardImpl(Suit.HEARTS, Rank.TWO);
+    const diamondsTwo = new CardImpl(Suit.DIAMONDS, Rank.TWO);
+    eventBus.emit({ type: 'war_started', turnNumber: 0, playerDeckColor: DeckColor.RED });
+
+    eventBus.emit({ type: 'cards_sent_to_boneyard', turnNumber: 1, cards: [heartsTwo] });
+    expect(service.isUnlocked('war.grave_intelligence')).toBeFalse();
+    eventBus.emit({ type: 'cards_sent_to_boneyard', turnNumber: 2, cards: [diamondsTwo] });
+
+    expect(service.isUnlocked('war.grave_intelligence')).toBeTrue();
+  });
+
+  it('does not unlock Grave Intelligence after a public opposing Ace casualty', () => {
+    eventBus.emit({ type: 'war_started', turnNumber: 0, playerDeckColor: DeckColor.BLACK });
+    eventBus.emit({
+      type: 'cards_sent_to_boneyard',
+      turnNumber: 1,
+      cards: [
+        new CardImpl(Suit.CLUBS, Rank.TWO),
+        new CardImpl(Suit.HEARTS, Rank.ACE),
+        new CardImpl(Suit.SPADES, Rank.TWO),
+      ],
+    });
+
+    expect(service.isUnlocked('war.grave_intelligence')).toBeFalse();
+  });
+
+  it('requires an Ace reinforcement to successfully rescue the original 2 for Cavalry', () => {
+    const originalTwo = new CardImpl(Suit.HEARTS, Rank.TWO);
+    const opposingKing = new CardImpl(Suit.CLUBS, Rank.KING);
+    eventBus.emit({
+      type: 'challenge_resolved',
+      turnNumber: 1,
+      challenger: PlayerType.PLAYER,
+      originalBeatenCard: originalTwo,
+      reinforcementCard: new CardImpl(Suit.DIAMONDS, Rank.ACE),
+      originalWinnerCard: opposingKing,
+      comparison: ComparisonResult.OPPONENT_WINS,
+      winner: PlayerType.OPPONENT,
+      challengerWon: false,
+      message: 'Both are now lost.',
+      savedTwo: false,
+    });
+    expect(service.isUnlocked('war.cavalry_came')).toBeFalse();
+
+    eventBus.emit({
+      type: 'challenge_resolved',
+      turnNumber: 2,
+      challenger: PlayerType.PLAYER,
+      originalBeatenCard: originalTwo,
+      reinforcementCard: new CardImpl(Suit.DIAMONDS, Rank.ACE),
+      originalWinnerCard: opposingKing,
+      comparison: ComparisonResult.PLAYER_WINS,
+      winner: PlayerType.PLAYER,
+      challengerWon: true,
+      message: 'Card rescued.',
+      savedTwo: true,
+    });
+
+    expect(service.isUnlocked('war.cavalry_came')).toBeTrue();
   });
 
   it('queues Battle achievements until the presentation completes', () => {
@@ -231,14 +444,29 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('war.comeback_15')).toBe(true);
   });
 
-  it('should unlock war.marathon on games with >= 40 turns', () => {
+  it('unlocks war.marathon at 42 turns, not 41', () => {
     expect(service.isUnlocked('war.marathon')).toBe(false);
 
     eventBus.emit({
       type: 'game_resolved',
-      turnNumber: 40,
+      turnNumber: 41,
       outcome: GameOutcome.PLAYER_WIN,
-      turns: 40,
+      turns: 41,
+      playerCardsRemaining: 10,
+      opponentCardsRemaining: 0,
+      maxDeficitExperienced: 0,
+      isComeback: false,
+      battlesCount: 0,
+      playerReinforcementsSent: 0,
+    });
+
+    expect(service.isUnlocked('war.marathon')).toBe(false);
+
+    eventBus.emit({
+      type: 'game_resolved',
+      turnNumber: 42,
+      outcome: GameOutcome.PLAYER_WIN,
+      turns: 42,
       playerCardsRemaining: 10,
       opponentCardsRemaining: 0,
       maxDeficitExperienced: 0,
@@ -250,7 +478,7 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('war.marathon')).toBe(true);
   });
 
-  it('defines and maps all 22 canonical achievements exactly once', () => {
+  it('defines and maps all 27 canonical achievements exactly once', () => {
     const exactPlayIds: Readonly<Record<string, string>> = {
       'war.first_casualty': 'CgkIz5juh94JEAIQDA',
       'war.first_battle': 'CgkIz5juh94JEAIQEQ',
@@ -265,6 +493,11 @@ describe('AchievementService', () => {
       'war.deep_battle_win': 'CgkIz5juh94JEAIQAA',
       'war.royal_disaster': 'CgkIz5juh94JEAIQCQ',
       'war.massacre': 'CgkIz5juh94JEAIQFA',
+      'war.juggernaut': 'CgkIz5juh94JEAIQGA',
+      'war.expert_strategist': 'CgkIz5juh94JEAIQGg',
+      'war.poor_strategy': 'CgkIz5juh94JEAIQGw',
+      'war.grave_intelligence': 'CgkIz5juh94JEAIQGQ',
+      'war.cavalry_came': 'CgkIz5juh94JEAIQFw',
       'war.no_reinforcements_win': 'CgkIz5juh94JEAIQFQ',
       'war.five_battles_game': 'CgkIz5juh94JEAIQBw',
       'war.pyrrhic_victory': 'CgkIz5juh94JEAIQBA',
@@ -276,8 +509,8 @@ describe('AchievementService', () => {
       'profile.centurion': 'CgkIz5juh94JEAIQAw',
     };
     const ids = ACHIEVEMENTS.map((achievement) => achievement.id);
-    expect(ids.length).toBe(22);
-    expect(new Set(ids).size).toBe(22);
+    expect(ids.length).toBe(27);
+    expect(new Set(ids).size).toBe(27);
     expect(Object.keys(PLAY_ACHIEVEMENT_MAPPINGS).sort()).toEqual([...ids].sort());
     expect(
       Object.fromEntries(
@@ -287,6 +520,10 @@ describe('AchievementService', () => {
     expect(PLAY_ACHIEVEMENT_MAPPINGS['profile.veteran'].totalSteps).toBe(25);
     expect(PLAY_ACHIEVEMENT_MAPPINGS['profile.centurion'].totalSteps).toBe(100);
     expect(PLAY_ACHIEVEMENT_MAPPINGS['profile.campaigner'].isIncremental).toBeFalse();
+    expect(ACHIEVEMENTS.find((achievement) => achievement.id === 'profile.campaigner')?.name)
+      .toBe('War Tested');
+    expect(ACHIEVEMENTS.find((achievement) => achievement.id === 'war.marathon')?.description)
+      .toContain('42 turns');
   });
 
   it('unlocks the first casualty from any real Boneyard loss', () => {
@@ -316,6 +553,7 @@ describe('AchievementService', () => {
       type: 'challenge_resolved',
       turnNumber: 3,
       challenger: PlayerType.PLAYER,
+      originalBeatenCard: cardAce,
       reinforcementCard: cardAce,
       originalWinnerCard: cardTwo,
       comparison: ComparisonResult.PLAYER_WINS,
@@ -328,7 +566,18 @@ describe('AchievementService', () => {
   });
 
   it('distinguishes resolved wins and defeats from abandonment', () => {
-    eventBus.emit({ type: 'game_abandoned', turnNumber: 1, turnsPlayed: 1 });
+    eventBus.emit({
+      type: 'game_abandoned',
+      turnNumber: 1,
+      turnsPlayed: 1,
+      playerDeckCount: 25,
+      opponentDeckCount: 25,
+      playerCardsAtStakeCount: 1,
+      opponentCardsAtStakeCount: 1,
+      playerCardDeficit: 0,
+      gamePhase: GamePhase.NORMAL,
+      battleDepth: 0,
+    });
     expect(service.isUnlocked('war.first_defeat')).toBeFalse();
 
     eventBus.emit({

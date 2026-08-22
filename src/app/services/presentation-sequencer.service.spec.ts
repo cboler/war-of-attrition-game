@@ -23,22 +23,38 @@ describe('PresentationSequencerService', () => {
     expect(service.waiting()).toBeTrue();
 
     expect(service.advance()).toBeTrue();
+    tick(16);
     flushMicrotasks();
     expect(completed).toBeTrue();
     expect(service.waiting()).toBeFalse();
   }));
 
-  it('fast-forwards later beats after rapid repeated advance input', fakeAsync(() => {
+  it('advances only the current beat and never collapses later gameplay presentation', fakeAsync(() => {
     const version = service.begin();
     void service.pause(1000, version);
     service.advance();
+    tick(16);
     flushMicrotasks();
 
     let completed = false;
     void service.pause(1000, version).then(() => completed = true);
-    service.advance();
-    flushMicrotasks();
+    expect(completed).toBeFalse();
+    expect(service.waiting()).toBeTrue();
+
+    tick(1149);
+    expect(completed).toBeFalse();
+    tick(1);
+    expect(completed).toBeTrue();
+  }));
+
+  it('ignores an extra advance when no visual beat is waiting', fakeAsync(() => {
+    const version = service.begin();
+    let completed = false;
     void service.pause(1000, version).then(() => completed = true);
+
+    expect(service.advance()).toBeTrue();
+    expect(service.advance()).toBeFalse();
+    tick(16);
     flushMicrotasks();
 
     expect(completed).toBeTrue();
@@ -52,6 +68,19 @@ describe('PresentationSequencerService', () => {
     flushMicrotasks();
     expect(completed).toBeTrue();
     tick(1000);
+  }));
+
+  it('can retain a skippable static result long enough to read when motion is disabled', fakeAsync(() => {
+    settings.setAutoPlayAnimations(false);
+    const version = service.begin();
+    let completed = false;
+    void service.pause(1000, version, 600).then(() => completed = true);
+
+    expect(service.waiting()).toBeTrue();
+    tick(599);
+    expect(completed).toBeFalse();
+    tick(1);
+    expect(completed).toBeTrue();
   }));
 
   it('cancels an obsolete wait instead of allowing its callback to continue', fakeAsync(() => {

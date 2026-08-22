@@ -91,6 +91,18 @@
   background: #123026;
   font: 700 clamp(0.72rem, 0.9vw, 0.82rem)/1 system-ui, sans-serif;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  transform-origin: center;
+}
+
+.urgency-5 .deck-count { border-color: rgba(255, 213, 79, 0.72); }
+.urgency-4 .deck-count { border-color: #ffd54f; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), 0 0 8px rgba(255, 213, 79, 0.2); }
+.urgency-3 .deck-count { border-color: #ffbd48; background: #553813; }
+.urgency-2 .deck-count { border-color: #ff9c46; background: #683014; font-size: 0.9rem; }
+.urgency-1 .deck-count {
+  border-color: #ff795f;
+  background: #79231d;
+  font-size: 0.98rem;
+  animation: final-count-heartbeat 1.65s ease-in-out infinite;
 }
 
 .seat.deck-left .deck-count {
@@ -99,10 +111,48 @@
 }
 
 .deck.actionable { cursor: pointer; animation: deck-breathe 1.9s ease-in-out infinite; }
+.deck[class*='urgency-'] { animation: deck-quiver var(--quiver-time, 5.4s) ease-in-out infinite; }
+.deck.actionable[class*='urgency-'] {
+  animation: deck-breathe 1.9s ease-in-out infinite, deck-quiver var(--quiver-time, 5.4s) ease-in-out infinite;
+}
+.deck.urgency-4 { --quiver-time: 4.7s; }
+.deck.urgency-3 { --quiver-time: 4s; }
+.deck.urgency-2 { --quiver-time: 3.4s; }
+.deck.urgency-1 { --quiver-time: 2.8s; }
 .deck.actionable:hover { transform: translateY(-4px) rotate(-1deg); }
 .deck.actionable:focus-visible { outline: 3px solid #ffd54f; outline-offset: 5px; }
 .deck:disabled { color: inherit; }
 .empty-deck { position: absolute; inset: 0; border: 1.5px dashed rgba(255, 255, 255, 0.3); border-radius: 8px; }
+
+.deck-count.defeat-pop {
+  color: #fff;
+  border-color: #ff795f;
+  background: #8b211b;
+  animation: final-count-pop 300ms ease-in both;
+}
+
+.pop-fragments {
+  position: absolute;
+  inset: 50%;
+  pointer-events: none;
+}
+
+.pop-fragments i {
+  --fragment-x: 23px;
+  --fragment-y: 0;
+  position: absolute;
+  width: 4px;
+  height: 7px;
+  border-radius: 1px;
+  background: #ffd54f;
+  animation: count-fragment 300ms ease-out both;
+}
+
+.pop-fragments i:nth-child(2) { --fragment-x: 12px; --fragment-y: 21px; background: #ff826b; }
+.pop-fragments i:nth-child(3) { --fragment-x: -12px; --fragment-y: 21px; }
+.pop-fragments i:nth-child(4) { --fragment-x: -23px; --fragment-y: 0; background: #ff826b; }
+.pop-fragments i:nth-child(5) { --fragment-x: -12px; --fragment-y: -21px; }
+.pop-fragments i:nth-child(6) { --fragment-x: 12px; --fragment-y: -21px; background: #ff826b; }
 
 .quip {
   position: absolute;
@@ -128,6 +178,34 @@
   50% { filter: drop-shadow(0 0 12px rgba(255, 213, 79, 0.7)); }
 }
 
+@keyframes deck-quiver {
+  0%, 82%, 88%, 94%, 100% { transform: translateX(0) rotate(0); }
+  84% { transform: translateX(-1px) rotate(-0.45deg); }
+  86% { transform: translateX(1px) rotate(0.45deg); }
+  90% { transform: translateX(-0.75px) rotate(-0.35deg); }
+  92% { transform: translateX(0.75px) rotate(0.35deg); }
+}
+
+@keyframes final-count-heartbeat {
+  0%, 72%, 100% { transform: scale(1); }
+  78% { transform: scale(1.11); }
+  84% { transform: scale(1.02); }
+  89% { transform: scale(1.08); }
+}
+
+@keyframes final-count-pop {
+  0% { opacity: 1; transform: scale(1); }
+  48% { opacity: 1; transform: scale(1.55); }
+  70% { opacity: 1; transform: scale(1.35); }
+  100% { opacity: 0; transform: scale(0.12); }
+}
+
+@keyframes count-fragment {
+  0%, 52% { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  58% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--fragment-x), var(--fragment-y)) rotate(80deg); }
+}
+
 @media (max-width: 620px) {
   .seat { justify-content: space-between; padding-inline: 14px; }
   .identity { min-width: 0; }
@@ -136,4 +214,15 @@
 
 @media (prefers-reduced-motion: reduce) {
   .deck.actionable { animation: none; box-shadow: 0 0 0 3px rgba(255, 213, 79, 0.6); }
+  .deck[class*='urgency-'],
+  .urgency-1 .deck-count,
+  .deck-count.defeat-pop,
+  .pop-fragments i { animation: none; }
+  .deck-count.defeat-pop { opacity: 0; }
 }
+
+.motion-disabled .deck,
+.motion-disabled .deck-count,
+.motion-disabled .pop-fragments i { animation: none; }
+
+.motion-disabled .deck-count.defeat-pop { opacity: 0; }

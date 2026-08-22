@@ -77,6 +77,41 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     category: 'battle'
   },
   {
+    id: 'war.juggernaut',
+    name: 'Juggernaut',
+    description: 'Have one Ace, King, Queen, or Jack personally defeat at least 3 enemy cards in a single War.',
+    icon: 'local_fire_department',
+    category: 'signature'
+  },
+  {
+    id: 'war.expert_strategist',
+    name: 'Expert Strategist',
+    description: 'Win 5 resolved Battles consecutively.',
+    icon: 'psychology',
+    category: 'battle'
+  },
+  {
+    id: 'war.poor_strategy',
+    name: 'Poor Strategy',
+    description: 'Lose 5 resolved Battles consecutively.',
+    icon: 'wrong_location',
+    category: 'battle'
+  },
+  {
+    id: 'war.grave_intelligence',
+    name: 'Grave Intelligence',
+    description: 'Lose both of your 2s while both enemy Aces remain at large.',
+    icon: 'visibility',
+    category: 'signature'
+  },
+  {
+    id: 'war.cavalry_came',
+    name: 'The Cavalry Came',
+    description: 'Successfully rescue a 2 by drawing an Ace as reinforcement.',
+    icon: 'shield',
+    category: 'signature'
+  },
+  {
     id: 'war.battle_layer_3',
     name: 'Down the Rabbit Hole',
     description: 'Reach Battle 3.',
@@ -135,7 +170,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   {
     id: 'war.marathon',
     name: 'Marathon',
-    description: 'Resolve a game lasting at least 40 turns.',
+    description: 'Resolve a game lasting at least 42 turns.',
     icon: 'timer',
     category: 'endurance'
   },
@@ -148,8 +183,8 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   },
   {
     id: 'profile.campaigner',
-    name: 'Campaigner',
-    description: 'Complete 10 resolved games.',
+    name: 'War Tested',
+    description: 'Complete 10 resolved Wars.',
     icon: 'route',
     category: 'milestone'
   },

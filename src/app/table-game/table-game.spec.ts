@@ -46,6 +46,30 @@ describe('TableGame presentation', () => {
 
   afterEach(() => settings.resetSettings());
 
+  function continuePastReadableHold(): void {
+    flushMicrotasks();
+    expect(controller.presentationCanAdvance()).toBeTrue();
+    expect(controller.advancePresentation()).toBeTrue();
+    tick(16);
+    flushMicrotasks();
+    fixture.detectChanges();
+  }
+
+  it('does not turn one button tap into a second table-level Continue', () => {
+    const advance = spyOn(controller, 'advancePresentation').and.returnValue(true);
+    const onTableClick = (
+      fixture.componentInstance as unknown as { onTableClick(event: MouseEvent): void }
+    ).onTableClick.bind(fixture.componentInstance);
+    const button = document.createElement('button');
+    const felt = document.createElement('div');
+
+    onTableClick({ target: button } as unknown as MouseEvent);
+    expect(advance).not.toHaveBeenCalled();
+
+    onTableClick({ target: felt } as unknown as MouseEvent);
+    expect(advance).toHaveBeenCalledTimes(1);
+  });
+
   it('preserves the exact unresolved match across a component remount', fakeAsync(() => {
     const gameState = TestBed.inject(GameStateService);
     const opponentAI = TestBed.inject(OpponentAIService);
@@ -178,9 +202,9 @@ describe('TableGame presentation', () => {
       isRed: true,
     });
 
-    expect(battleAnnouncementFor(1)).toBe('Battle 1!');
-    expect(battleAnnouncementFor(2)).toBe('Battle 2!!');
-    expect(battleAnnouncementFor(7)).toBe('Battle 7!!!!');
+    expect(battleAnnouncementFor(1)).toBe('Battle');
+    expect(battleAnnouncementFor(2)).toBe('Battle: Depth 2');
+    expect(battleAnnouncementFor(7)).toBe('Battle: Depth 7');
     expect(casualtyEmphasisFor(card(Rank.ACE))).toBe('major');
     expect(casualtyEmphasisFor(card(Rank.TWO))).toBe('major');
     expect(casualtyEmphasisFor(card(Rank.KING))).toBe('face');
@@ -224,8 +248,7 @@ describe('TableGame presentation', () => {
     spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
 
     controller.playerDrawCard();
-    flushMicrotasks();
-    fixture.detectChanges();
+    continuePastReadableHold();
 
     expect(controller.presentationState()).toBe(PresentationState.PLAYER_TARGET_SELECTION);
     const firstLayer = controller.battleLayers()[0];
@@ -235,12 +258,11 @@ describe('TableGame presentation', () => {
     ).toBeTrue();
     expect(firstLayer.playerCards.every((view) => !view.eligible && view.card === null)).toBeTrue();
     expect(fixture.nativeElement.querySelector('.announcement .eyebrow').textContent.trim()).toBe(
-      'Battle 1!',
+      'Battle',
     );
 
     controller.selectBattleCard(firstLayer.opponentCards[0].id);
-    flushMicrotasks();
-    fixture.detectChanges();
+    continuePastReadableHold();
 
     expect(controller.presentationState()).toBe(PresentationState.PLAYER_TARGET_SELECTION);
     expect(controller.battleLayers().length).toBe(2);
@@ -255,27 +277,32 @@ describe('TableGame presentation', () => {
       oldLayer.playerCards.filter((view) => !view.selected).every((view) => view.card === null),
     ).toBeTrue();
     const announcement = fixture.nativeElement.querySelector('.announcement');
-    expect(announcement.querySelector('.eyebrow').textContent.trim()).toBe('Battle 2!!');
+    expect(announcement.querySelector('.eyebrow').textContent.trim()).toBe('Battle: Depth 2');
     expect(announcement.classList.contains('battle-quake-2')).toBeFalse();
     expect(announcement.textContent).not.toContain('😰');
     compareSpy.and.callThrough();
   }));
 
-  it('presents all four depth-one casualties from one authoritative outcome', fakeAsync(() => {
+  it('publishes casualties without leaking hidden Battle winner identities', fakeAsync(() => {
     const events: GameEvent[] = [];
     const eventBus = TestBed.inject(GameEventBusService);
+    const gameState = TestBed.inject(GameStateService);
     const compareSpy = spyOn(comparison, 'compareCards');
     spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
     eventBus.events$.subscribe((event) => events.push(event));
     compareSpy.and.returnValues(ComparisonResult.TIE, ComparisonResult.PLAYER_WINS);
 
     controller.playerDrawCard();
+    tick(650);
     flushMicrotasks();
     const trigger = controller.activeOpponentCard()!;
     const layer = controller.battleLayers()[0];
+    const internalPlayerLayerIds = gameState.currentState.activeTurn!.battleLayers[0].playerCards
+      .map((card) => card.id);
     const chosenChampion = layer.opponentCards[1];
 
     controller.selectBattleCard(chosenChampion.id);
+    tick(650);
     flushMicrotasks();
     fixture.detectChanges();
 
@@ -289,6 +316,26 @@ describe('TableGame presentation', () => {
     expect(casualties.map((event) => event.card.id)).toContain(chosenChampion.id);
     expect(new Set(casualties.map((event) => event.card.id)).size).toBe(4);
     expect(controller.visibleBoneyardCount()).toBe(4);
+
+    const battleResolved = events.find(
+      (event): event is Extract<GameEvent, { type: 'battle_resolved' }> =>
+        event.type === 'battle_resolved',
+    );
+    expect(battleResolved).toBeDefined();
+    const publicOutcome = battleResolved!.outcome;
+    const hiddenWinnerIds = internalPlayerLayerIds.filter(
+      (id) => id !== publicOutcome.selection?.playerCardId,
+    );
+    expect(publicOutcome.hiddenWinnerCount).toBe(hiddenWinnerIds.length);
+    expect(publicOutcome.casualtyIds).toEqual(casualties.map((event) => event.card.id));
+    const serializedPublicEvent = JSON.stringify(battleResolved);
+    hiddenWinnerIds.forEach((id) => {
+      expect(serializedPublicEvent).not.toContain(`"${id}"`);
+    });
+    expect((publicOutcome as unknown as { hiddenWinnerCards?: unknown }).hiddenWinnerCards)
+      .toBeUndefined();
+    expect((publicOutcome as unknown as { layers?: unknown }).layers).toBeUndefined();
+    expect((publicOutcome as unknown as { winningCards?: unknown }).winningCards).toBeUndefined();
 
     const manual = storyBook.entries().find((entry) => entry.type === 'casualty');
     expect(manual?.cards?.length).toBe(4);
@@ -350,5 +397,45 @@ describe('TableGame presentation', () => {
     expect(fixture.nativeElement.querySelector('.boneyard small').textContent.trim()).toBe(
       '1 lost',
     );
+  }));
+
+  it('opens an exact Boneyard casualty reference without mutating the War', fakeAsync(() => {
+    const gameState = TestBed.inject(GameStateService);
+    const opponentAI = TestBed.inject(OpponentAIService);
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+
+    controller.playerDrawCard();
+    continuePastReadableHold();
+    expect(controller.visibleBoneyardCount()).toBe(1);
+    const before = {
+      player: gameState.currentPlayerDeck.toArray().map((card) => card.id),
+      opponent: gameState.currentOpponentDeck.toArray().map((card) => card.id),
+      boneyard: controller.visibleBoneyardCards().map((card) => card.id),
+      turn: gameState.currentStats.turnNumber,
+    };
+
+    (fixture.nativeElement.querySelector('.boneyard') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const referenceButton = fixture.nativeElement.querySelector(
+      '.boneyard-card-reference',
+    ) as HTMLButtonElement;
+    referenceButton.focus();
+    referenceButton.click();
+    fixture.detectChanges();
+    tick();
+
+    const reference = fixture.nativeElement.querySelector('.card-reference');
+    expect(reference).toBeTruthy();
+    expect(reference.textContent).toContain(before.boneyard[0]);
+    expect(gameState.currentPlayerDeck.toArray().map((card) => card.id)).toEqual(before.player);
+    expect(gameState.currentOpponentDeck.toArray().map((card) => card.id)).toEqual(before.opponent);
+    expect(controller.visibleBoneyardCards().map((card) => card.id)).toEqual(before.boneyard);
+    expect(gameState.currentStats.turnNumber).toBe(before.turn);
+
+    (fixture.nativeElement.querySelector('button[aria-label="Close Field Manual"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(referenceButton);
   }));
 });

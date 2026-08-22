@@ -29,6 +29,7 @@
     position: relative;
     display: inline-flex;
     align-items: center;
+    order: 0;
   }
 
   .app-title-link {
@@ -38,7 +39,7 @@
     padding: 6px 10px;
     margin: -6px -10px;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: background 200ms ease;
 
     .app-title-text {
       color: #e5c175;
@@ -77,6 +78,7 @@
 }
 
 .toolbar-spacer {
+  order: 1;
   flex: 1 1 auto;
 }
 
@@ -89,15 +91,18 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(228, 191, 114, 0.2);
   margin-right: 6px;
-  transition: all 0.2s ease;
+  order: 2;
+  min-width: 0;
+  transition: background 200ms ease, border-color 200ms ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.14);
     border-color: #e5c175;
   }
 
-  .avatar-badge {
-    position: relative;
+  .profile-avatar {
+    display: block;
+    flex: 0 0 28px;
     width: 28px;
     height: 28px;
 
@@ -107,37 +112,6 @@
       border-radius: 50%;
       object-fit: cover;
       border: 1.5px solid #e5c175;
-    }
-
-    .provider-indicator {
-      position: absolute;
-      bottom: -1px;
-      right: -1px;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #94a3b8;
-      border: 1px solid #0d221c;
-
-      &.google {
-        background: #2e7d32;
-      }
-    }
-
-    .profile-settings-icon {
-      position: absolute;
-      top: -5px;
-      right: -7px;
-      display: grid;
-      place-items: center;
-      width: 15px;
-      height: 15px;
-      border: 1px solid #0d221c;
-      border-radius: 50%;
-      background: #e5c175;
-      color: #173a31;
-      font-size: 10px;
-      line-height: 15px;
     }
   }
 
@@ -150,6 +124,39 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 599px) {
+  .profile-toolbar-btn {
+    max-width: min(46vw, 156px);
+    margin-right: 0;
+    padding-inline: 5px 10px;
+
+    .profile-name-text {
+      max-width: 92px;
+    }
+  }
+
+  .app-toolbar.profile-hand-left {
+    .profile-toolbar-btn {
+      order: 0;
+      margin-right: 8px;
+    }
+
+    .toolbar-spacer {
+      order: 1;
+    }
+
+    .app-title-wrapper {
+      order: 2;
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .profile-toolbar-btn .profile-name-text {
+    max-width: 72px;
   }
 }
 

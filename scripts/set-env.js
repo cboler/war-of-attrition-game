@@ -2,16 +2,27 @@ const fs = require('fs');
 const path = require('path');
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+const ga4MeasurementId = process.env.GA4_MEASUREMENT_ID || '';
+const appVersion = process.env.APP_VERSION || process.env.npm_package_version || '0.0.0';
+const rulesetVersion = process.env.RULESET_VERSION || '2026.08.1';
+
+const stringLiteral = value => JSON.stringify(String(value));
 
 const envConfigFile = `export const environment = {
   production: true,
-  googleClientId: '${googleClientId}'
+  googleClientId: ${stringLiteral(googleClientId)},
+  ga4MeasurementId: ${stringLiteral(ga4MeasurementId)},
+  appVersion: ${stringLiteral(appVersion)},
+  rulesetVersion: ${stringLiteral(rulesetVersion)}
 };
 `;
 
 const devEnvConfigFile = `export const environment = {
   production: false,
-  googleClientId: '${googleClientId}'
+  googleClientId: ${stringLiteral(googleClientId)},
+  ga4MeasurementId: ${stringLiteral(ga4MeasurementId)},
+  appVersion: ${stringLiteral(`${appVersion}-dev`)},
+  rulesetVersion: ${stringLiteral(rulesetVersion)}
 };
 `;
 
@@ -24,4 +35,7 @@ if (!fs.existsSync(envDir)) {
 fs.writeFileSync(path.join(envDir, 'environment.prod.ts'), envConfigFile);
 fs.writeFileSync(path.join(envDir, 'environment.ts'), devEnvConfigFile);
 
-console.log(`Environment files generated successfully. Google Client ID configured: ${!!googleClientId}`);
+console.log(
+  `Environment files generated successfully. Google Client ID configured: ${!!googleClientId}. ` +
+  `GA4 configured: ${!!ga4MeasurementId}. App version: ${appVersion}.`
+);

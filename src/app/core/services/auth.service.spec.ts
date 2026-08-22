@@ -62,7 +62,41 @@ describe('AuthService', () => {
     expect(stats.unlockedAchievements).toEqual([]);
     expect(stats.acesDefeatedByTwo).toBe(0);
     expect(stats.twosSavedByChallenge).toBe(0);
+    expect(stats.acesRescuedByChallenge).toBe(0);
+    expect(stats.acesRescuingTwos).toBe(0);
+    expect(stats.currentBattleWinStreak).toBe(0);
+    expect(stats.currentBattleLossStreak).toBe(0);
+    expect(stats.juggernautOccurrences).toBe(0);
+    expect(stats.juggernautCardIds).toEqual([]);
+    expect(stats.campaignsCompleted).toBe(0);
     expect(stats.comebackWins).toBe(0);
+  });
+
+  it('should migrate the legacy selected backing into each legacy profile entitlement', () => {
+    localStorage.setItem('war-of-attrition-settings', JSON.stringify({
+      selectedCardBacking: 'royal-purple'
+    }));
+    localStorage.setItem('war-of-attrition-profiles', JSON.stringify([{
+      id: 'legacy-cosmetic-user',
+      name: 'Veteran',
+      email: '',
+      avatarUrl: '',
+      provider: 'guest',
+      isGoogleAuth: false,
+      statistics: {},
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString()
+    }]));
+
+    const freshService = new AuthService();
+    const progression = freshService.activeProfile().progression;
+
+    expect(progression.schemaVersion).toBe(1);
+    expect(progression.selectedCosmetics.cardBackingId).toBe('royal-purple');
+    expect(progression.unlockedCosmetics).toContain(jasmine.objectContaining({
+      cosmeticId: 'royal-purple',
+      reason: 'legacy_selected'
+    }));
   });
 
   it('should sign in with Google data and update signals', () => {
@@ -88,7 +122,9 @@ describe('AuthService', () => {
       battlesCount: 1,
       deepestBattleLayer: 2,
       playerCardsRemaining: 14,
-      largestBattleVictory: 8
+      largestBattleVictory: 8,
+      acesRescuedByChallenge: 2,
+      acesRescuingTwos: 1
     });
 
     let stats = service.userStats();
@@ -103,6 +139,8 @@ describe('AuthService', () => {
     expect(stats.challengeSuccessRate).toBe(67);
     expect(stats.totalBattles).toBe(1);
     expect(stats.highestCardsRemainingAtVictory).toBe(14);
+    expect(stats.acesRescuedByChallenge).toBe(2);
+    expect(stats.acesRescuingTwos).toBe(1);
 
     // Record second game (win) -> streak should be 2
     service.recordGameResult({
@@ -208,5 +246,39 @@ describe('AuthService', () => {
     service.resetActiveUserStats();
     expect(service.userStats().gamesPlayed).toBe(0);
     expect(service.userStats().winRatePercentage).toBe(0);
+    expect(service.activeProfile().progression).toBeTruthy();
+  });
+
+  it('should atomically replace all profiles with a fresh guest for local deletion', () => {
+    service.signInWithGoogle({
+      name: 'Delete Me',
+      email: 'delete-me@example.com',
+      googleId: 'google-delete-me'
+    });
+
+    const guest = service.deleteAllLocalProfilesAndCreateFreshGuest();
+    const persisted = JSON.parse(localStorage.getItem('war-of-attrition-profiles') || '[]');
+
+    expect(guest.provider).toBe('guest');
+    expect(service.allProfiles().length).toBe(1);
+    expect(persisted.length).toBe(1);
+    expect(JSON.stringify(persisted)).not.toContain('delete-me@example.com');
+  });
+
+  it('persists Battle streak and physical Juggernaut history through the typed adapter', () => {
+    service.recordAchievementProgress({
+      currentBattleWinStreak: 5,
+      bestBattleWinStreak: 7,
+      currentBattleLossStreak: 0,
+      bestBattleLossStreak: 3,
+      juggernautOccurrences: 2,
+      juggernautCardIds: ['hearts-A', 'hearts-A', 'spades-K']
+    });
+
+    const freshService = new AuthService();
+    expect(freshService.userStats().currentBattleWinStreak).toBe(5);
+    expect(freshService.userStats().bestBattleLossStreak).toBe(3);
+    expect(freshService.userStats().juggernautOccurrences).toBe(2);
+    expect(freshService.userStats().juggernautCardIds).toEqual(['hearts-A', 'spades-K']);
   });
 });

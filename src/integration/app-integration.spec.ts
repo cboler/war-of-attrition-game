@@ -81,8 +81,11 @@ describe('App Integration Tests', () => {
 
     it('integrates settings into the single profile control', () => {
       const profileButton = fixture.nativeElement.querySelector('.profile-toolbar-btn');
-      expect(profileButton.getAttribute('aria-label')).toContain('settings');
-      expect(profileButton.querySelector('.profile-settings-icon')).toBeTruthy();
+      expect(profileButton.getAttribute('aria-label')).toContain(
+        'career records, achievements, and settings',
+      );
+      expect(profileButton.querySelector('.profile-settings-icon')).toBeFalsy();
+      expect(profileButton.querySelector('img')?.alt).toBe('');
       expect(fixture.nativeElement.querySelector('button[routerLink="/settings"]')).toBeNull();
     });
 

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DiscardPileViewerComponent, DiscardPileData } from './discard-pile-viewer.component';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Suit, Rank, CardImpl, Card } from '../../../core/models/card.model';
+import { DeckColor } from '../../../core/models/game-state.model';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('DiscardPileViewerComponent', () => {
@@ -19,7 +20,13 @@ describe('DiscardPileViewerComponent', () => {
       imports: [DiscardPileViewerComponent, NoopAnimationsModule],
       providers: [
         { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { discardedCards: testCards } as DiscardPileData }
+        {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
+            discardedCards: testCards,
+            playerDeckColor: DeckColor.BLACK,
+          } as DiscardPileData,
+        }
       ]
     }).compileComponents();
 
@@ -37,6 +44,8 @@ describe('DiscardPileViewerComponent', () => {
     expect(cardInfos.length).toBe(2);
     expect(cardInfos[0].card.suit).toBe(Suit.SPADES);
     expect(cardInfos[1].card.suit).toBe(Suit.HEARTS);
+    expect(cardInfos[0].playerType).toBe('player');
+    expect(cardInfos[1].playerType).toBe('opponent');
   });
 
   it('should close dialog when close is called', () => {

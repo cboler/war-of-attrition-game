@@ -6,12 +6,12 @@ import {
   TutorialPrompt,
   TutorialStep
 } from '../core/models/tutorial.model';
+import { APP_LOCAL_STORAGE_KEYS } from '../core/models/app-storage.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TutorialService {
-  private readonly STORAGE_KEY = 'war-of-attrition-tutorial-progress';
   private readonly settingsService = inject(SettingsService);
 
   private readonly progress = signal<TutorialProgress>(this.loadProgress());
@@ -248,7 +248,7 @@ export class TutorialService {
           step: TutorialStep.FIRST_TURN,
           eyebrow: 'TABLE ORIENTATION (4/4)',
           title: 'The Boneyard & Field Manual',
-          message: 'Defeated troops and lost challenges are permanently banished to the Boneyard on the table side. Tap the Field Manual icon anytime to review full rules and mission history.',
+          message: 'Defeated troops and lost challenges are permanently banished to the Boneyard on the table side. Tap the Field Manual icon anytime to review full rules and the Chronicle.',
           highlightSelector: '.table-utility-hub',
           actionText: 'Commence Battle ⚔️',
           canSkip: true,
@@ -345,7 +345,7 @@ export class TutorialService {
 
   private loadProgress(): TutorialProgress {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
+      const stored = localStorage.getItem(APP_LOCAL_STORAGE_KEYS.tutorialProgress);
       if (stored) {
         return { ...DEFAULT_TUTORIAL_PROGRESS, ...JSON.parse(stored) };
       }
@@ -357,7 +357,7 @@ export class TutorialService {
 
   private saveProgress(prog: TutorialProgress): void {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(prog));
+      localStorage.setItem(APP_LOCAL_STORAGE_KEYS.tutorialProgress, JSON.stringify(prog));
     } catch (e) {
       console.warn('Failed to save tutorial progress to localStorage:', e);
     }

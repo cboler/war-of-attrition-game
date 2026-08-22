@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { StoryBookService } from './story-book.service';
 import { GameEventBusService } from './game-event-bus.service';
 import { Card, Rank, Suit } from '../core/models/card.model';
-import { BattleOutcome, GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { PublicBattleResolution } from '../core/models/game-events.model';
 import { ComparisonResult } from '../core/services/card-comparison.service';
 
 describe('StoryBookService', () => {
@@ -20,23 +21,20 @@ describe('StoryBookService', () => {
     isRed: true,
   };
 
-  function battleOutcome(casualties: readonly Card[]): BattleOutcome {
+  function battleOutcome(casualties: readonly Card[]): PublicBattleResolution {
     return {
       winner: PlayerType.PLAYER,
       loser: PlayerType.OPPONENT,
       battleDepth: 1,
-      layers: [],
-      playerCardsAtStake: [],
-      opponentCardsAtStake: casualties,
-      winningCards: [],
-      casualties,
-      publicWinnerCards: [],
-      hiddenWinnerCards: [],
+      selection: null,
       selectedPlayerChampion: null,
       selectedOpponentChampion: null,
-      playerDeckCountBeforeSettlement: 10,
-      opponentDeckCountBeforeSettlement: 10,
-      boneyardCountBeforeSettlement: 0,
+      casualties,
+      casualtyIds: casualties.map((card) => card.id),
+      hiddenWinnerCount: 0,
+      publicWinnerCount: 0,
+      playerCardsAtStakeCount: 0,
+      opponentCardsAtStakeCount: casualties.length,
       finalPlayerDeckCount: 10,
       finalOpponentDeckCount: 10,
       finalBoneyardCount: casualties.length,
@@ -91,7 +89,7 @@ describe('StoryBookService', () => {
     expect(service.entries()[0].badge).toBe('victory');
   });
 
-  it('should record battle layer, target selections, reveals, and casualties', () => {
+  it('should keep Battle depth, authoritative reveals, and casualties without target-position noise', () => {
     eventBus.emit({
       type: 'battle_started',
       turnNumber: 3,
@@ -114,6 +112,16 @@ describe('StoryBookService', () => {
       opponentChosenCard: cardEight,
       comparison: ComparisonResult.PLAYER_WINS,
       winner: PlayerType.PLAYER,
+      selection: {
+        layerRound: 1,
+        playerCard: cardKing,
+        opponentCard: cardEight,
+        playerCardId: cardKing.id,
+        opponentCardId: cardEight.id,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        specialRule: false,
+      },
       specialRule: false,
       message: 'K♣ defeated 8♦.',
     });
@@ -124,12 +132,77 @@ describe('StoryBookService', () => {
       outcome: battleOutcome([cardEight]),
     });
 
-    expect(service.entries().length).toBe(4);
+    expect(service.entries().length).toBe(3);
     expect(service.entries()[0].type).toBe('battle_header');
-    expect(service.entries()[1].type).toBe('battle_selection');
-    expect(service.entries()[2].type).toBe('battle_reveal');
-    expect(service.entries()[3].type).toBe('casualty');
-    expect(service.entries()[3].text).toContain("foe's card falls to the Boneyard");
+    expect(service.entries()[0].eyebrow).toContain('BATTLE');
+    expect(service.entries()[0].eyebrow).not.toContain('BATTLE 1');
+    expect(service.entries()[1].type).toBe('battle_reveal');
+    expect(service.entries()[1].cards?.map(card => card.id)).toEqual([cardKing.id, cardEight.id]);
+    expect(service.entries()[2].type).toBe('casualty');
+    expect(service.entries()[2].text).toContain("foe's card falls to the Boneyard");
+  });
+
+  it('does not expose reinforcement identity when only the acceptance decision is public', () => {
+    eventBus.emit({
+      type: 'challenge_accepted',
+      turnNumber: 4,
+      challenger: PlayerType.OPPONENT,
+      reinforcementCard: cardAce,
+    });
+
+    expect(service.entries().length).toBe(1);
+    expect(service.entries()[0].text).toBe('Opponent committed a reinforcement.');
+    expect(service.entries()[0].text).not.toContain('A');
+    expect(service.entries()[0].cards).toBeUndefined();
+  });
+
+  it('records an equal-rank selected champion reveal as an authoritative tie', () => {
+    const cardThreeHearts: Card = {
+      id: 'three-hearts-physical',
+      suit: Suit.HEARTS,
+      rank: Rank.THREE,
+      value: 3,
+      isRed: true,
+    };
+    const cardThreeClubs: Card = {
+      id: 'three-clubs-physical',
+      suit: Suit.CLUBS,
+      rank: Rank.THREE,
+      value: 3,
+      isRed: false,
+    };
+
+    eventBus.emit({
+      type: 'battle_cards_revealed',
+      turnNumber: 5,
+      // Compatibility mirrors are deliberately stale: Chronicle must trust selection.
+      layerRound: 99,
+      playerChosenCard: cardKing,
+      opponentChosenCard: cardEight,
+      comparison: ComparisonResult.PLAYER_WINS,
+      winner: PlayerType.PLAYER,
+      specialRule: true,
+      selection: {
+        layerRound: 1,
+        playerCard: cardThreeHearts,
+        opponentCard: cardThreeClubs,
+        playerCardId: cardThreeHearts.id,
+        opponentCardId: cardThreeClubs.id,
+        comparison: ComparisonResult.TIE,
+        winner: null,
+        specialRule: false,
+      },
+      message: 'Equal ranks tie.',
+    });
+
+    const reveal = service.entries()[0];
+    expect(reveal.text).toContain('tied');
+    expect(reveal.text).not.toContain('defeated');
+    expect(reveal.eyebrow).toBe('BATTLE REVEAL');
+    expect(reveal.cards?.map(card => card.id)).toEqual([
+      'three-hearts-physical',
+      'three-clubs-physical',
+    ]);
   });
 
   it('uses rescue/loss language for challenge results', () => {
@@ -137,6 +210,7 @@ describe('StoryBookService', () => {
       type: 'challenge_resolved',
       turnNumber: 4,
       challenger: PlayerType.PLAYER,
+      originalBeatenCard: cardEight,
       reinforcementCard: cardTwo,
       originalWinnerCard: cardAce,
       comparison: ComparisonResult.PLAYER_WINS,
@@ -152,6 +226,7 @@ describe('StoryBookService', () => {
       type: 'challenge_resolved',
       turnNumber: 5,
       challenger: PlayerType.PLAYER,
+      originalBeatenCard: cardTwo,
       reinforcementCard: cardEight,
       originalWinnerCard: cardKing,
       comparison: ComparisonResult.OPPONENT_WINS,

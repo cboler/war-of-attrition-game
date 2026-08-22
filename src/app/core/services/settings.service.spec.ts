@@ -1,9 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { SettingsService } from './settings.service';
 import { DEFAULT_SETTINGS, CARD_BACKING_OPTIONS } from '../models/settings.model';
+import { CampaignProgressionService } from './campaign-progression.service';
 
 describe('SettingsService', () => {
   let service: SettingsService;
+  let progression: CampaignProgressionService;
 
   beforeEach(() => {
     spyOn(localStorage, 'getItem').and.returnValue(null);
@@ -11,6 +13,7 @@ describe('SettingsService', () => {
 
     TestBed.configureTestingModule({});
     service = TestBed.inject(SettingsService);
+    progression = TestBed.inject(CampaignProgressionService);
   });
 
   it('should be created', () => {
@@ -55,6 +58,7 @@ describe('SettingsService', () => {
   describe('Card backing management', () => {
     it('should update card backing', () => {
       const newBacking = 'classic-red';
+      progression.unlockCardBacking(newBacking, 'achievement');
       service.setCardBacking(newBacking);
       expect(service.selectedCardBacking()).toBe(newBacking);
     });
@@ -66,6 +70,7 @@ describe('SettingsService', () => {
     });
 
     it('should return correct selected card backing option', () => {
+      progression.unlockCardBacking('royal-purple', 'achievement');
       service.setCardBacking('royal-purple');
       const selectedOption = service.selectedCardBackingOption();
       expect(selectedOption.id).toBe('royal-purple');
@@ -127,6 +132,7 @@ describe('SettingsService', () => {
       service.setTheme('dark');
       service.setDeckHand('left');
       service.setSoundEnabled(false);
+      progression.unlockCardBacking('classic-red', 'achievement');
       service.setCardBacking('classic-red');
 
       service.resetSettings();

@@ -16,22 +16,23 @@ export class PresentationSequencerService {
   private resume: (() => void) | null = null;
   private abort: (() => void) | null = null;
   private sequenceVersion = 0;
-  private lastAdvanceAt = 0;
-  private fastForward = false;
 
   readonly waiting = signal(false);
 
   begin(): number {
     this.cancel();
-    this.fastForward = false;
-    this.lastAdvanceAt = 0;
     return this.sequenceVersion;
   }
 
-  async pause(milliseconds: number, version = this.sequenceVersion): Promise<void> {
+  async pause(
+    milliseconds: number,
+    version = this.sequenceVersion,
+    staticHoldMilliseconds = 0,
+  ): Promise<void> {
     if (version !== this.sequenceVersion) throw new PresentationSequenceCancelled();
-    if (this.shouldCollapseTiming() || this.fastForward) return;
-    const duration = Math.max(0, milliseconds * this.speedMultiplier());
+    const duration = this.shouldCollapseTiming()
+      ? Math.max(0, staticHoldMilliseconds)
+      : Math.max(0, milliseconds * this.speedMultiplier());
     if (duration === 0) return;
 
     await new Promise<void>((resolve, reject) => {
@@ -64,11 +65,14 @@ export class PresentationSequencerService {
   }
 
   advance(): boolean {
-    const now = Date.now();
-    if (this.lastAdvanceAt > 0 && now - this.lastAdvanceAt < 360) this.fastForward = true;
-    this.lastAdvanceAt = now;
     if (!this.resume) return false;
-    this.resume();
+    const resume = this.resume;
+    // Claim this input immediately so a double tap cannot advance twice. Give
+    // the view one frame to apply its "finish this beat" CSS before the async
+    // sequence is allowed to enter the next presentation phase.
+    this.resume = null;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => resume(), 16);
     return true;
   }
 
@@ -84,8 +88,6 @@ export class PresentationSequencerService {
 
   end(version: number): void {
     if (version !== this.sequenceVersion) return;
-    this.fastForward = false;
-    this.lastAdvanceAt = 0;
   }
 
   private shouldCollapseTiming(): boolean {

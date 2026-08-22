@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { GameOutcome, GamePhase, PlayerType } from '../models/game-state.model';
+import { Rank } from '../models/card.model';
+import { DeckColor, GameOutcome, GamePhase, PlayerType } from '../models/game-state.model';
 import { CardComparisonService, ComparisonResult } from './card-comparison.service';
 import { GameStateService } from './game-state.service';
 import { OpponentAIService } from './opponent-ai.service';
@@ -17,7 +18,7 @@ describe('TurnResolutionService', () => {
     gameState = TestBed.inject(GameStateService);
     comparison = TestBed.inject(CardComparisonService);
     opponentAI = TestBed.inject(OpponentAIService);
-    gameState.initializeGame({ shuffle: false });
+    gameState.initializeGame({ shuffle: false, playerDeckColor: DeckColor.RED });
   });
 
   function activeCards() {
@@ -93,6 +94,11 @@ describe('TurnResolutionService', () => {
     const result = service.resolveTurn(cards.playerCard, cards.opponentCard);
 
     expect(result.winner).toBe(PlayerType.PLAYER);
+    expect(result.settlementAttribution?.source).toBe('clash');
+    expect(result.settlementAttribution?.decisiveCard.id).toBe(cards.playerCard.id);
+    expect(result.settlementAttribution?.casualties.map((card) => card.id)).toEqual([
+      cards.opponentCard.id,
+    ]);
     expect(result.opponentConsidered).toBeFalse();
     expect(result.opponentChallenge).toBeFalse();
     expect(challengeDecision).not.toHaveBeenCalled();
@@ -165,11 +171,22 @@ describe('TurnResolutionService', () => {
         expect(gameState.playerCardCount()).toBe(26);
         expect(gameState.opponentCardCount()).toBe(25);
         expect(gameState.discardedCardCount()).toBe(1);
+        expect(result.settlementAttribution?.source).toBe('challenge');
+        expect(result.settlementAttribution?.decisiveCard.id).toBe(reinforcement!.id);
+        expect(result.settlementAttribution?.casualties.map((card) => card.id)).toEqual([
+          cards.opponentCard.id,
+        ]);
       } else if (outcome === ComparisonResult.OPPONENT_WINS) {
         expect(result.message).toBe('Both are now lost.');
         expect(gameState.playerCardCount()).toBe(24);
         expect(gameState.opponentCardCount()).toBe(26);
         expect(gameState.discardedCardCount()).toBe(2);
+        expect(result.settlementAttribution?.source).toBe('challenge');
+        expect(result.settlementAttribution?.decisiveCard.id).toBe(cards.opponentCard.id);
+        expect(result.settlementAttribution?.casualties.map((card) => card.id)).toEqual([
+          cards.playerCard.id,
+          reinforcement!.id,
+        ]);
       } else {
         expect(result.nextPhase).toBe(GamePhase.BATTLE);
         expect(gameState.getStake(PlayerType.PLAYER).length).toBe(2);
@@ -219,6 +236,7 @@ describe('TurnResolutionService', () => {
   });
 
   it('passes an unordered color pool, deck count, and public information into challenge strategy', () => {
+    gameState.initializeGame({ shuffle: false, playerDeckColor: DeckColor.BLACK });
     const cards = activeCards();
     const hiddenPlayerIds = new Set(gameState.currentPlayerDeck.toArray().map(card => card.id));
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
@@ -229,11 +247,69 @@ describe('TurnResolutionService', () => {
 
     const context = strategy.calls.mostRecent().args[1]!;
     expect(context.ownDeckCount).toBe(25);
-    expect(context.ownCardPool.every(card => !card.isRed)).toBeTrue();
+    expect(context.ownCardPool.length).toBe(26);
+    expect(context.ownCardPool.every(card => card.isRed)).toBeTrue();
     expect((context as unknown as { ownDeck?: unknown }).ownDeck).toBeUndefined();
     expect(context.publicCards).toContain(cards.playerCard);
     expect(context.publicCards).toContain(cards.opponentCard);
     expect(context.publicCards.some(card => hiddenPlayerIds.has(card.id))).toBeFalse();
+  });
+
+  [
+    { player: 3, opponent: 3, canRecurse: true },
+    { player: 3, opponent: 4, canRecurse: true },
+    { player: 4, opponent: 3, canRecurse: true },
+    { player: 2, opponent: 3, canRecurse: false },
+    { player: 3, opponent: 2, canRecurse: false },
+  ].forEach(({ player, opponent, canRecurse }) => {
+    it(`${canRecurse ? 'allows' : 'rejects'} recursive Battle with ${player}/${opponent} cards remaining`, () => {
+      const compareSpy = reduceDecksTo(player + 4, opponent + 4);
+      const cards = activeCards();
+      compareSpy.and.returnValue(ComparisonResult.TIE);
+      service.resolveTurn(cards.playerCard, cards.opponentCard);
+      const layer = gameState.dealBattleLayer()!;
+
+      expect(gameState.playerCardCount()).toBe(player);
+      expect(gameState.opponentCardCount()).toBe(opponent);
+      const result = service.resolveBattleSelection(
+        layer.opponentCards[0].id,
+        layer.playerCards[0].id,
+      );
+
+      expect(gameState.canDealBattleLayer()).toBe(canRecurse);
+      expect(result.nextPhase).toBe(canRecurse ? GamePhase.BATTLE : GamePhase.GAME_OVER);
+      expect(result.pendingBattleSettlement).toBe(!canRecurse);
+      expectConserved();
+    });
+  });
+
+  it('returns one immutable physical-card selection when equal-rank champions have different suits', () => {
+    const cards = activeCards();
+    expect(cards.playerCard.rank).toBe(Rank.TWO);
+    expect(cards.opponentCard.rank).toBe(Rank.TWO);
+    service.resolveTurn(cards.playerCard, cards.opponentCard);
+    const layer = gameState.dealBattleLayer()!;
+    const playerChampion = layer.playerCards[0];
+    const opponentChampion = layer.opponentCards[0];
+    expect(playerChampion.rank).toBe(opponentChampion.rank);
+    expect(playerChampion.suit).not.toBe(opponentChampion.suit);
+
+    const result = service.resolveBattleSelection(opponentChampion.id, playerChampion.id);
+
+    expect(result.result).toBe(ComparisonResult.TIE);
+    expect(result.battleSelection?.comparison).toBe(ComparisonResult.TIE);
+    expect(result.battleSelection?.winner).toBeNull();
+    expect(result.battleSelection?.playerCard).toBe(playerChampion);
+    expect(result.battleSelection?.opponentCard).toBe(opponentChampion);
+    expect(result.battleSelection?.playerCardId).toBe(playerChampion.id);
+    expect(result.battleSelection?.opponentCardId).toBe(opponentChampion.id);
+    expect(Object.isFrozen(result.battleSelection)).toBeTrue();
+    expect(gameState.currentState.activeTurn?.battleLayers.at(-1)?.selectedPlayerCardId).toBe(
+      playerChampion.id,
+    );
+    expect(gameState.currentState.activeTurn?.battleLayers.at(-1)?.selectedOpponentCardId).toBe(
+      opponentChampion.id,
+    );
   });
 
   it('awards attrition to the player with 3 cards when the opponent has only 2', () => {
@@ -319,6 +395,10 @@ describe('TurnResolutionService', () => {
     const result = service.resolveBattleSelection(layer.opponentCards[0].id, layer.playerCards[0].id);
 
     expect(result.pendingBattleSettlement).toBeTrue();
+    expect(result.battleSelection).toBe(result.battleOutcome?.battleSelection ?? null);
+    expect(result.settlementAttribution?.source).toBe('battle');
+    expect(result.settlementAttribution?.decisiveCard.id).toBe(layer.playerCards[0].id);
+    expect(result.settlementAttribution?.casualties).toEqual(result.battleOutcome?.casualties ?? []);
     expect(result.battleOutcome?.casualties.length).toBe(4);
     expect(result.battleOutcome?.hiddenWinnerCards.length).toBe(2);
     expect(result.battleOutcome?.casualties).toContain(cards.opponentCard);

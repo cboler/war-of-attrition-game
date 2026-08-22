@@ -6,6 +6,7 @@
   [class.speed-slow]="settings.animationSpeed() === 'slow'"
   [class.boneyard-left]="settings.deckHand() === 'left'"
   [class.boneyard-right]="settings.deckHand() === 'right'"
+  [class.step-skipped]="controller.presentationStepSkipped()"
   (click)="onTableClick($event)"
 >
   <app-card-table>
@@ -13,10 +14,12 @@
       table-seat-top
       name="Opponent"
       position="top"
-      [cardCount]="gameState.opponentCardCount()"
+      [cardCount]="controller.opponentDeckDisplayCount()"
       [cardsAtRisk]="controller.opponentCardsAtRisk()"
       [thinking]="opponentThinking()"
       [quip]="opponentQuip()"
+      [defeatPopping]="controller.deckDefeatPopOwner() === player.OPPONENT"
+      [motionDisabled]="!settings.autoPlayAnimations()"
     />
 
     <div
@@ -55,13 +58,20 @@
         [class.battle-quake-2]="battleQuakeLevel(2)"
         [class.battle-quake-3]="battleQuakeLevel(3)"
         [class.battle-quake-4]="newestBattleRound() >= 4 && settings.autoPlayAnimations()"
-        aria-live="polite"
-        aria-atomic="true"
       >
         @if (battleActive()) {
           <span class="eyebrow">{{ battleAnnouncement() }}</span>
         }
-        <strong [class.status-only]="opponentThinking()">{{ controller.tableMessage() }}</strong>
+        <div class="message-stack" aria-hidden="true">
+          @for (message of controller.battlefieldMessages(); track message.id; let index = $index) {
+            <strong [class.current]="index === 0" [style.--message-index]="index">
+              {{ message.text }}
+            </strong>
+          }
+        </div>
+        <span class="sr-only" aria-live="polite" aria-atomic="true">
+          {{ controller.tableMessage() }}
+        </span>
       </div>
 
       <section class="stakes" [class.in-battle]="battleActive()" aria-label="Cards at stake">
@@ -102,9 +112,12 @@
                       [card]="view.card"
                       [faceDown]="view.faceDown"
                       [glow]="
-                        view.eligible ? 'blue' : view.selected ? cardGlow(player.OPPONENT) : null
+                        view.eligible ? 'blue' : view.selected ? cardGlow(view.id) : null
                       "
                     />
+                    @if (view.selected && controller.comparisonStrengthFor(view.id); as strength) {
+                      <app-comparison-strength [view]="strength" />
+                    }
                   </button>
                 }
               </div>
@@ -126,6 +139,10 @@
               controller.activeOpponentCard() &&
               isGoingToBoneyard(controller.activeOpponentCard()!.id)
             "
+            [class.inactive-comparator]="
+              controller.activeOpponentCard() &&
+              controller.isInactiveComparator(controller.activeOpponentCard()!.id)
+            "
           >
             @if (opponentThinking()) {
               <span class="decision-callout opponent-callout">{{ controller.tableMessage() }}</span>
@@ -134,8 +151,14 @@
               <app-card
                 [card]="card"
                 [faceDown]="activeCardsFaceDown()"
-                [glow]="cardGlow(player.OPPONENT)"
+                [glow]="cardGlow(card.id)"
               />
+              @if (!activeCardsFaceDown() && controller.comparisonStrengthFor(card.id); as strength) {
+                <app-comparison-strength [view]="strength" />
+              }
+              @if (controller.isInactiveComparator(card.id)) {
+                <span class="inactive-label">Inactive for this comparison</span>
+              }
             }
             @if (controller.opponentChallengeCard(); as card) {
               <div
@@ -148,8 +171,14 @@
                 <app-card
                   [card]="card"
                   [faceDown]="challengeCardsFaceDown()"
-                  [glow]="cardGlow(player.OPPONENT)"
+                  [glow]="cardGlow(card.id)"
                 />
+                @if (
+                  !challengeCardsFaceDown() && controller.comparisonStrengthFor(card.id);
+                  as strength
+                ) {
+                  <app-comparison-strength [view]="strength" />
+                }
               </div>
             }
           </div>
@@ -173,13 +202,23 @@
             [class.to-boneyard]="
               controller.activePlayerCard() && isGoingToBoneyard(controller.activePlayerCard()!.id)
             "
+            [class.inactive-comparator]="
+              controller.activePlayerCard() &&
+              controller.isInactiveComparator(controller.activePlayerCard()!.id)
+            "
           >
             @if (controller.activePlayerCard(); as card) {
               <app-card
                 [card]="card"
                 [faceDown]="activeCardsFaceDown()"
-                [glow]="cardGlow(player.PLAYER)"
+                [glow]="cardGlow(card.id)"
               />
+              @if (!activeCardsFaceDown() && controller.comparisonStrengthFor(card.id); as strength) {
+                <app-comparison-strength [view]="strength" />
+              }
+              @if (controller.isInactiveComparator(card.id)) {
+                <span class="inactive-label">Inactive for this comparison</span>
+              }
             }
             @if (controller.playerChallengeCard(); as card) {
               <div
@@ -192,29 +231,23 @@
                 <app-card
                   [card]="card"
                   [faceDown]="challengeCardsFaceDown()"
-                  [glow]="cardGlow(player.PLAYER)"
+                  [glow]="cardGlow(card.id)"
                 />
+                @if (
+                  !challengeCardsFaceDown() && controller.comparisonStrengthFor(card.id);
+                  as strength
+                ) {
+                  <app-comparison-strength [view]="strength" />
+                }
               </div>
             }
             @if (controller.canChooseChallenge()) {
               <div
                 class="decision-callout player-callout"
-                role="group"
-                aria-label="Challenge decision"
+                role="note"
               >
                 <strong>Send reinforcement?</strong>
-                <div class="callout-actions">
-                  <button type="button" class="callout-btn primary" (click)="chooseChallenge(true)">
-                    Challenge
-                  </button>
-                  <button
-                    type="button"
-                    class="callout-btn secondary"
-                    (click)="chooseChallenge(false)"
-                  >
-                    Concede
-                  </button>
-                </div>
+                <span>A new card replaces this beaten card for the next comparison.</span>
               </div>
             }
           </div>
@@ -239,8 +272,11 @@
                     <app-card
                       [card]="view.card"
                       [faceDown]="view.faceDown"
-                      [glow]="view.selected ? cardGlow(player.PLAYER) : null"
+                      [glow]="view.selected ? cardGlow(view.id) : null"
                     />
+                    @if (view.selected && controller.comparisonStrengthFor(view.id); as strength) {
+                      <app-comparison-strength [view]="strength" />
+                    }
                     @if (
                       controller.opponentPointerIndex() === index &&
                       controller.presentationState() === state.OPPONENT_TARGET_SELECTION &&
@@ -257,6 +293,30 @@
           </div>
         </div>
       </section>
+
+      @if (controller.canChooseChallenge() || controller.presentationCanAdvance()) {
+        <div class="thumb-action-region" role="group" aria-label="Current game actions">
+          @if (controller.canChooseChallenge()) {
+            <button type="button" class="thumb-action primary" (click)="chooseChallenge(true)">
+              Challenge
+            </button>
+            <button type="button" class="thumb-action secondary" (click)="chooseChallenge(false)">
+              Concede
+            </button>
+          }
+          @if (controller.presentationCanAdvance()) {
+            <button
+              class="thumb-action continue"
+              type="button"
+              (click)="advancePresentation()"
+              aria-label="Continue now and complete this visual step"
+            >
+              <span>Continue</span>
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          }
+        </div>
+      }
 
       <!-- Colocated Field Manual & Boneyard Utility Hub -->
       <aside
@@ -320,7 +380,14 @@
           </header>
           <div class="boneyard-grid">
             @for (card of controller.visibleBoneyardCards(); track card.id) {
-              <app-card [card]="card" [faceDown]="false" />
+              <button
+                type="button"
+                class="boneyard-card-reference"
+                [attr.aria-label]="'Open Field Manual entry for ' + cardAccessibleName(card)"
+                (click)="openBoneyardReference(card)"
+              >
+                <app-card [card]="card" [faceDown]="false" />
+              </button>
             } @empty {
               <p>No casualties yet.</p>
             }
@@ -328,74 +395,14 @@
         </aside>
       }
 
-      @if (controller.presentationCanAdvance()) {
-        <button
-          class="advance-pill"
-          type="button"
-          (click)="advancePresentation()"
-          aria-label="Continue now and skip this visual pause"
-        >
-          <span>Continue now</span>
-          <mat-icon class="advance-icon">chevron_right</mat-icon>
-        </button>
-      }
-
       <!-- Game-Over Summary Card -->
       @if (controller.presentationState() === state.GAME_OVER) {
-        <div
-          class="game-over"
-          role="region"
-          aria-live="assertive"
-          aria-atomic="true"
-          aria-labelledby="game-over-title"
-        >
-          <span class="game-over-eyebrow">WAR RESOLUTION</span>
-          <h2 id="game-over-title">{{ controller.tableMessage() }}</h2>
-
-          @if (controller.currentGameSummary(); as summary) {
-            <div class="game-over-stats">
-              <div class="stat-pill">
-                <strong>{{ summary.turns }}</strong>
-                <span>{{ summary.turns === 1 ? 'Turn' : 'Turns' }}</span>
-              </div>
-              <div class="stat-pill">
-                <strong>{{ summary.battlesCount }}</strong>
-                <span>{{ summary.battlesCount === 1 ? 'Battle' : 'Battles' }}</span>
-              </div>
-              @if (summary.deepestBattleLayer > 1) {
-                <div class="stat-pill">
-                  <strong>Battle {{ summary.deepestBattleLayer }}</strong>
-                  <span>Deepest Battle</span>
-                </div>
-              }
-              @if (summary.playerChallengesCount > 0) {
-                <div class="stat-pill">
-                  <strong
-                    >{{ summary.playerChallengesWon }}/{{ summary.playerChallengesCount }}</strong
-                  >
-                  <span>Challenges Won</span>
-                </div>
-              }
-              @if (summary.isComeback) {
-                <div class="stat-pill highlight">
-                  <strong>Comeback</strong>
-                  <span>-{{ summary.maxDeficit }} Deficit</span>
-                </div>
-              }
-            </div>
-          }
-
-          <div class="game-over-actions">
-            <button type="button" class="game-over-btn secondary" (click)="toggleStoryBook()">
-              <mat-icon>menu_book</mat-icon>
-              <span>Field Manual</span>
-            </button>
-            <button type="button" class="game-over-btn primary" (click)="restart()">
-              <mat-icon>refresh</mat-icon>
-              <span>Deal Again</span>
-            </button>
-          </div>
-        </div>
+        <app-game-over-summary
+          [message]="controller.tableMessage()"
+          [summary]="controller.currentGameSummary()"
+          (manualRequested)="toggleStoryBook()"
+          (replayRequested)="restart()"
+        />
       }
     </div>
 
@@ -403,18 +410,23 @@
       table-seat-bottom
       name="You"
       position="bottom"
-      [cardCount]="gameState.playerCardCount()"
+      [cardCount]="controller.playerDeckDisplayCount()"
       [cardsAtRisk]="controller.playerCardsAtRisk()"
       [deckInteractive]="controller.canDraw()"
       [deckHand]="settings.deckHand()"
       [quip]="playerQuip()"
+      [defeatPopping]="controller.deckDefeatPopOwner() === player.PLAYER"
+      [motionDisabled]="!settings.autoPlayAnimations()"
       (deckActivated)="draw()"
     />
   </app-card-table>
 
   <!-- Field Manual Drawer -->
   @if (storyBookOpen()) {
-    <app-story-book-drawer (closed)="toggleStoryBook()" />
+    <app-story-book-drawer
+      [referenceCard]="manualReferenceCard()"
+      (closed)="toggleStoryBook()"
+    />
   }
 
   <!-- Contextual Tutorial Overlay -->

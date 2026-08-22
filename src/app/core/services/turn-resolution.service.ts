@@ -1,7 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { Card } from '../models/card.model';
-import { Deck } from '../models/deck.model';
-import { BattleOutcome, GameOutcome, GamePhase, PlayerType } from '../models/game-state.model';
+import {
+  BattleOutcome,
+  BattleSelectionOutcome,
+  GameOutcome,
+  GamePhase,
+  PlayerType,
+  SettlementAttribution,
+  SettlementSource,
+} from '../models/game-state.model';
 import { GameStateService } from './game-state.service';
 import { CardComparisonService, ComparisonResult } from './card-comparison.service';
 import { OpponentAIService } from './opponent-ai.service';
@@ -22,6 +29,10 @@ export interface TurnResult {
   /** Decisive Battles are presented before their cards are physically settled. */
   readonly pendingBattleSettlement: boolean;
   readonly terminalOutcome: GameOutcome | null;
+  /** The exact selected cards and comparison used for this Battle resolution. */
+  readonly battleSelection: BattleSelectionOutcome | null;
+  /** The decisive physical card responsible for actual Boneyard casualties. */
+  readonly settlementAttribution: SettlementAttribution | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,7 +40,6 @@ export class TurnResolutionService {
   private readonly gameState = inject(GameStateService);
   private readonly comparison = inject(CardComparisonService);
   private readonly opponentAI = inject(OpponentAIService);
-  private readonly opponentCardPool = Deck.createBlackDeck().toArray();
 
   resolveTurn(playerCard: Card, opponentCard: Card): TurnResult {
     this.requireCurrentCards(playerCard, opponentCard);
@@ -45,7 +55,7 @@ export class TurnResolutionService {
         this.opponentAI.shouldChallenge(opponentCard, {
           opposingCard: playerCard,
           ownDeckCount: this.gameState.currentOpponentDeck.count,
-          ownCardPool: this.opponentCardPool,
+          ownCardPool: this.gameState.assignedCardPool(PlayerType.OPPONENT),
           publicCards: this.publicInformation(),
         });
       if (opponentChallenges) {
@@ -60,7 +70,11 @@ export class TurnResolutionService {
           cardsKept: [playerCard, opponentCard],
         });
       }
-      return this.settle(PlayerType.PLAYER, result, 'Your card survives.', canOpponentChallenge);
+      return this.settle(PlayerType.PLAYER, result, 'Your card survives.', {
+        opponentConsidered: canOpponentChallenge,
+        source: 'clash',
+        decisiveCard: playerCard,
+      });
     }
 
     if (!special && this.gameState.currentPlayerDeck.count > 0) {
@@ -75,10 +89,15 @@ export class TurnResolutionService {
         cardsKept: [playerCard, opponentCard],
       });
     }
-    return this.settle(PlayerType.OPPONENT, result, 'Opponent card survives.');
+    return this.settle(PlayerType.OPPONENT, result, 'Opponent card survives.', {
+      source: 'clash',
+      decisiveCard: opponentCard,
+    });
   }
 
   resolveChallengeConcession(loser: PlayerType): TurnResult {
+    const turn = this.gameState.currentState.activeTurn;
+    if (!turn) throw new Error('No active turn for challenge concession');
     const winner = loser === PlayerType.PLAYER ? PlayerType.OPPONENT : PlayerType.PLAYER;
     const comparison =
       winner === PlayerType.PLAYER ? ComparisonResult.PLAYER_WINS : ComparisonResult.OPPONENT_WINS;
@@ -88,6 +107,10 @@ export class TurnResolutionService {
       loser === PlayerType.PLAYER
         ? 'You concede. Your card goes to the Boneyard.'
         : 'Opponent concedes. Their card goes to the Boneyard.',
+      {
+        source: 'challenge',
+        decisiveCard: winner === PlayerType.PLAYER ? turn.playerCard : turn.opponentCard,
+      },
     );
   }
 
@@ -116,6 +139,8 @@ export class TurnResolutionService {
       : challenger === PlayerType.PLAYER
         ? PlayerType.OPPONENT
         : PlayerType.PLAYER;
+    const originalWinnerCard =
+      challenger === PlayerType.PLAYER ? turn.opponentCard : turn.playerCard;
     return this.settle(
       winner,
       result,
@@ -126,6 +151,10 @@ export class TurnResolutionService {
         : challenger === PlayerType.PLAYER
           ? 'Both are now lost.'
           : 'Both opponent cards are now lost. You hold.',
+      {
+        source: 'challenge',
+        decisiveCard: challengerWon ? challengeCard : originalWinnerCard,
+      },
     );
   }
 
@@ -138,9 +167,10 @@ export class TurnResolutionService {
       playerCardIdChosenByOpponent,
     );
     const comparison = this.comparison.compareCards(selected.playerCard, selected.opponentCard);
+    const selection = this.createBattleSelection(selected.playerCard, selected.opponentCard, comparison);
     if (comparison === ComparisonResult.TIE) {
       if (!this.gameState.canDealBattleLayer()) {
-        return this.resolveAttrition();
+        return this.resolveAttrition(selection);
       }
       this.gameState.setPhase(GamePhase.BATTLE);
       return this.result({
@@ -149,12 +179,13 @@ export class TurnResolutionService {
         message: 'Still tied. The stake grows.',
         nextPhase: GamePhase.BATTLE,
         cardsKept: [selected.playerCard, selected.opponentCard],
+        battleSelection: selection,
       });
     }
 
     const winner =
       comparison === ComparisonResult.PLAYER_WINS ? PlayerType.PLAYER : PlayerType.OPPONENT;
-    const preview = this.gameState.previewBattleSettlement(winner);
+    const preview = this.gameState.previewBattleSettlement(winner, selection);
     return this.resultFromPreview(
       preview,
       comparison,
@@ -188,7 +219,7 @@ export class TurnResolutionService {
     });
   }
 
-  private resolveAttrition(): TurnResult {
+  private resolveAttrition(battleSelection: BattleSelectionOutcome | null = null): TurnResult {
     const turn = this.gameState.currentState.activeTurn;
     const playerRemaining = this.gameState.playerCardCount();
     const opponentRemaining = this.gameState.opponentCardCount();
@@ -203,12 +234,13 @@ export class TurnResolutionService {
         nextPhase: GamePhase.GAME_OVER,
         cardsKept: this.publicInformationOnTable(),
         terminalOutcome: GameOutcome.TIE,
+        battleSelection,
       });
     }
 
     const winner = outcome === GameOutcome.PLAYER_WIN ? PlayerType.PLAYER : PlayerType.OPPONENT;
     if (turn && turn.battleLayers.length > 0) {
-      const preview = this.gameState.previewBattleSettlement(winner);
+      const preview = this.gameState.previewBattleSettlement(winner, battleSelection);
       return this.resultFromPreview(
         preview,
         ComparisonResult.TIE,
@@ -259,9 +291,23 @@ export class TurnResolutionService {
     winner: PlayerType,
     comparison: ComparisonResult,
     message: string,
-    opponentConsidered = false,
+    options: {
+      readonly opponentConsidered?: boolean;
+      readonly source?: SettlementSource;
+      readonly decisiveCard?: Card;
+    } = {},
   ): TurnResult {
     const preview = this.gameState.settleActiveTurn(winner);
+    const settlementAttribution =
+      options.source && options.decisiveCard
+        ? this.createSettlementAttribution(
+            options.source,
+            winner,
+            options.decisiveCard,
+            preview.casualties,
+            0,
+          )
+        : null;
     return this.result({
       winner,
       comparison,
@@ -269,8 +315,9 @@ export class TurnResolutionService {
       nextPhase: this.gameState.currentPhase,
       cardsLost: preview.casualties,
       cardsKept: preview.publicWinnerCards,
-      opponentConsidered,
+      opponentConsidered: options.opponentConsidered,
       terminalOutcome: this.gameState.currentState.outcome,
+      settlementAttribution,
     });
   }
 
@@ -291,6 +338,8 @@ export class TurnResolutionService {
       battleOutcome: outcome,
       pendingBattleSettlement: true,
       terminalOutcome,
+      battleSelection: outcome.battleSelection,
+      settlementAttribution: this.attributionForBattle(outcome),
     });
   }
 
@@ -307,6 +356,8 @@ export class TurnResolutionService {
     battleOutcome?: BattleOutcome | null;
     pendingBattleSettlement?: boolean;
     terminalOutcome?: GameOutcome | null;
+    battleSelection?: BattleSelectionOutcome | null;
+    settlementAttribution?: SettlementAttribution | null;
   }): TurnResult {
     this.gameState.setLastResult(options.comparison);
     return {
@@ -322,7 +373,65 @@ export class TurnResolutionService {
       battleOutcome: options.battleOutcome ?? null,
       pendingBattleSettlement: options.pendingBattleSettlement ?? false,
       terminalOutcome: options.terminalOutcome ?? null,
+      battleSelection: options.battleSelection ?? null,
+      settlementAttribution: options.settlementAttribution ?? null,
     };
+  }
+
+  private createBattleSelection(
+    playerCard: Card,
+    opponentCard: Card,
+    comparison: ComparisonResult,
+  ): BattleSelectionOutcome {
+    const winner =
+      comparison === ComparisonResult.PLAYER_WINS
+        ? PlayerType.PLAYER
+        : comparison === ComparisonResult.OPPONENT_WINS
+          ? PlayerType.OPPONENT
+          : null;
+    const layerRound = this.gameState.currentState.activeTurn?.battleLayers.at(-1)?.round;
+    if (!layerRound) throw new Error('Battle selection requires an active Battle layer');
+    return Object.freeze({
+      layerRound,
+      playerCard,
+      opponentCard,
+      playerCardId: playerCard.id,
+      opponentCardId: opponentCard.id,
+      comparison,
+      winner,
+      specialRule: this.comparison.isSpecialAceVsTwoRule(playerCard, opponentCard),
+    });
+  }
+
+  private attributionForBattle(outcome: BattleOutcome): SettlementAttribution | null {
+    const selection = outcome.battleSelection;
+    if (!selection || selection.winner !== outcome.winner) return null;
+    const decisiveCard =
+      outcome.winner === PlayerType.PLAYER ? selection.playerCard : selection.opponentCard;
+    return this.createSettlementAttribution(
+      'battle',
+      outcome.winner,
+      decisiveCard,
+      outcome.casualties,
+      outcome.battleDepth,
+    );
+  }
+
+  private createSettlementAttribution(
+    source: SettlementSource,
+    winner: PlayerType,
+    decisiveCard: Card,
+    casualties: readonly Card[],
+    battleDepth: number,
+  ): SettlementAttribution {
+    return Object.freeze({
+      source,
+      winner,
+      loser: winner === PlayerType.PLAYER ? PlayerType.OPPONENT : PlayerType.PLAYER,
+      decisiveCard,
+      casualties: Object.freeze([...casualties]),
+      battleDepth,
+    });
   }
 
   private publicInformation(): readonly Card[] {

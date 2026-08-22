@@ -27,10 +27,12 @@ Experience the tension of attrition combat where every draw counts.
 * **DYNAMIC CHALLENGES:** Lost a card comparison? Draw an extra card and challenge to reclaim victory or sacrifice both to the Boneyard.
 * **MULTI-LAYER BATTLES:** Equal values trigger intense blind-selection battles across recursive layers with escalating stakes.
 * **CAREER RECORDS & STATS:** Track lifetime win streaks, challenge success rates, deepest battle layers reached, and comeback victories.
-* **GOOGLE PLAY ACHIEVEMENTS:** Earn XP and unlock 12 distinct achievements, from pulling off a 15-card comeback to mastering multi-tier battles.
+* **GOOGLE PLAY ACHIEVEMENTS:** Earn XP and unlock 27 distinct achievements, from pulling off a 15-card comeback to mastering multi-tier battles.
 * **CUSTOMIZE YOUR DECK:** Unlock and choose from multiple distinct card backing styles.
 * **SEAMLESS OFFLINE PLAY:** Play anywhere, anytime without requiring a persistent network connection.
-* **CLEAN & AD-FREE:** Zero ads, zero pay-to-win mechanics, and zero in-app purchases. Pure strategic gameplay.
+* **NO PAY-TO-WIN:** Cosmetic tokens are earned through play, with no paid gameplay advantage or in-app purchases.
+
+> **Owner action before publishing:** Do not restore an "ad-free" claim unless the Android Google Mobile Ads banner is disabled in the shipped build. If the banner remains, make the listing, Ads declaration, consent flow, privacy policy, and Data Safety answers describe that behavior consistently.
 
 ---
 

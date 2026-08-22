@@ -117,10 +117,10 @@ Follow these actions in order:
 
 ### 5. Verify Achievements in Play Console
 * **WHERE:** Play Console → **Play Games Services** → **Setup and management** → **Achievements**
-* **ACTION:** Verify all 22 achievements listed in [`achievements-manifest.md`](./achievements-manifest.md), including Veteran at 25 incremental steps and Centurion at 100 incremental steps.
+* **ACTION:** Verify all 27 achievements listed in [`achievements-manifest.md`](./achievements-manifest.md), including Veteran at 25 incremental steps and Centurion at 100 incremental steps.
 * **VALUE COMES FROM:** [`achievements-manifest.md`](./achievements-manifest.md).
 * **WHEN:** Before publishing Play Games project for testing.
-* **HOW TO VERIFY:** Confirm the Play IDs match `src/app/core/models/play-achievements-map.ts` exactly; all 22 supplied IDs are checked in.
+* **HOW TO VERIFY:** Confirm the Play IDs match `src/app/core/models/play-achievements-map.ts` exactly; all 27 supplied IDs are checked in. Update the existing Marathon and War Tested metadata as noted in the manifest.
 
 ### 6. Publish Digital Asset Links on Root Domain
 * **WHERE:** `https://cboler.github.io/.well-known/assetlinks.json`
@@ -135,7 +135,7 @@ Follow these actions in order:
   - **Privacy Policy URL:** `https://cboler.github.io/war-of-attrition-game/privacy/`
   - **Data Safety:** Complete questionnaire using [`data-safety.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/play-store/data-safety.md).
   - **Target Audience:** 13+ (or Everyone).
-  - **Ads:** Select "No, my app does not contain ads".
+  - **Ads:** Do not submit an answer until the shipped Android behavior is verified. Android source currently initializes a Google Mobile Ads banner, so selecting "No" is only accurate if that integration is disabled for the release build. Otherwise update consent, privacy, Data Safety, and store declarations.
 * **WHEN:** Before creating internal release.
 * **HOW TO VERIFY:** All policy declarations show "Completed" in Play Console.
 

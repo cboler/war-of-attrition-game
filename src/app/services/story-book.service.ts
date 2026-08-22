@@ -83,8 +83,9 @@ export class StoryBookService {
           turnNumber: event.turnNumber,
           type: 'challenge',
           eyebrow: `TURN ${event.turnNumber} · CHALLENGE`,
-          text: `${event.challenger === PlayerType.PLAYER ? 'You' : 'Opponent'} committed reinforcement ${this.formatCard(event.reinforcementCard)}.`,
-          cards: [event.reinforcementCard],
+          // The decision is public before the card face is. Card identity is
+          // deliberately deferred to the authoritative resolution event.
+          text: `${event.challenger === PlayerType.PLAYER ? 'You committed' : 'Opponent committed'} a reinforcement.`,
           badge: 'challenge',
         });
         break;
@@ -141,35 +142,31 @@ export class StoryBookService {
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'battle_header',
-          eyebrow: `TURN ${event.turnNumber} · BATTLE ${event.layerRound}`,
-          text: '3 cards dealt face-down for each side. Choose your target blindly.',
+          eyebrow:
+            event.layerRound === 1
+              ? `TURN ${event.turnNumber} · BATTLE`
+              : `TURN ${event.turnNumber} · BATTLE DEPTH ${event.layerRound}`,
+          text:
+            event.layerRound === 1
+              ? 'Each side commits 3 cards face-down. Champions are chosen blindly.'
+              : 'The deadlock deepens. Each side commits 3 new cards for another blind choice.',
           badge: 'battle',
         });
         break;
 
-      case 'battle_target_selected': {
-        const posStr =
-          event.targetIndex === 0 ? 'left' : event.targetIndex === 1 ? 'center' : 'right';
-        const text =
-          event.selector === PlayerType.PLAYER
-            ? `You selected opponent's ${posStr} card.`
-            : `Opponent selected your ${posStr} card.`;
-        this.addEntry({
-          turnNumber: event.turnNumber,
-          type: 'battle_selection',
-          text,
-          actor: event.selector,
-        });
+      case 'battle_target_selected':
+        // Left/centre/right target taps are routine mechanics, not Chronicle
+        // events. The reveal below preserves the authoritative chosen cards.
         break;
-      }
 
       case 'battle_cards_revealed': {
-        const pCardStr = this.formatCard(event.playerChosenCard);
-        const oCardStr = this.formatCard(event.opponentChosenCard);
+        const { layerRound, playerCard, opponentCard, winner } = event.selection;
+        const pCardStr = this.formatCard(playerCard);
+        const oCardStr = this.formatCard(opponentCard);
         let text = '';
-        if (event.winner === PlayerType.PLAYER) {
+        if (winner === PlayerType.PLAYER) {
           text = `${pCardStr} defeated ${oCardStr}.`;
-        } else if (event.winner === PlayerType.OPPONENT) {
+        } else if (winner === PlayerType.OPPONENT) {
           text = `${oCardStr} defeated ${pCardStr}.`;
         } else {
           text = `${pCardStr} tied ${oCardStr}. Recursive Battle continues!`;
@@ -178,11 +175,11 @@ export class StoryBookService {
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'battle_reveal',
-          eyebrow: `BATTLE ${event.layerRound} REVEAL`,
+          eyebrow: layerRound === 1 ? 'BATTLE REVEAL' : `BATTLE DEPTH ${layerRound} REVEAL`,
           text,
-          cards: [event.playerChosenCard, event.opponentChosenCard],
-          badge: event.winner
-            ? event.winner === PlayerType.PLAYER
+          cards: [playerCard, opponentCard],
+          badge: winner
+            ? winner === PlayerType.PLAYER
               ? 'victory'
               : 'defeat'
             : 'battle',
@@ -194,8 +191,8 @@ export class StoryBookService {
         const { outcome } = event;
         const casualtiesText = battleCasualtySummary(outcome.loser, outcome.casualties.length);
         const hiddenReturnedText =
-          outcome.hiddenWinnerCards.length > 0
-            ? ` (${hiddenCardsReturn(outcome.hiddenWinnerCards.length)})`
+          outcome.hiddenWinnerCount > 0
+            ? ` (${hiddenCardsReturn(outcome.hiddenWinnerCount)})`
             : '';
 
         this.addEntry({

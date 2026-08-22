@@ -1,4 +1,4 @@
-<mat-toolbar color="primary" class="app-toolbar">
+<mat-toolbar color="primary" class="app-toolbar" [class.profile-hand-left]="deckHand() === 'left'">
   <div class="app-title-wrapper">
     <a routerLink="/" class="app-title-link" aria-label="War of Attrition Home">
       <span class="app-title-text">{{ title() }}</span>
@@ -6,12 +6,15 @@
   </div>
   <span class="toolbar-spacer"></span>
 
-  <button mat-button class="profile-toolbar-btn" (click)="openProfileDialog()" aria-label="Open profile, career records, achievements, and settings" matTooltip="Profile & Settings">
-    <div class="avatar-badge">
-      <img [src]="activeProfile().avatarUrl" [alt]="activeProfile().name" />
-      <span class="provider-indicator" [class.google]="activeProfile().isGoogleAuth"></span>
-      <mat-icon class="profile-settings-icon" aria-hidden="true">settings</mat-icon>
-    </div>
+  <button
+    mat-button
+    class="profile-toolbar-btn"
+    (click)="openProfileDialog()"
+    [attr.aria-label]="profileButtonLabel()"
+    matTooltip="Profile">
+    <span class="profile-avatar" aria-hidden="true">
+      <img [src]="activeProfile().avatarUrl" alt="" />
+    </span>
     <span class="profile-name-text">{{ activeProfile().name }}</span>
   </button>
 </mat-toolbar>

@@ -1,0 +1,549 @@
+<div class="profile-dialog-container">
+  <header class="dialog-header">
+    <div class="user-header-info">
+      <div class="avatar-wrapper">
+        <img [src]="profile().avatarUrl" alt="" (error)="onAvatarError($event)" />
+      </div>
+      <div class="user-titles">
+        <div class="name-edit-row">
+          @if (!isEditingName) {
+            <h2>{{ profile().name }}</h2>
+          } @else {
+            <label class="visually-hidden" for="commander-name-input">Commander name</label>
+            <input
+              id="commander-name-input"
+              [(ngModel)]="editingName"
+              (keyup.enter)="saveName()"
+              class="name-input"
+              autocomplete="nickname" />
+          }
+          <button
+            mat-icon-button
+            type="button"
+            class="edit-btn"
+            (click)="toggleEditName()"
+            [attr.aria-label]="isEditingName ? 'Save commander name' : 'Edit commander name'">
+            <mat-icon aria-hidden="true">{{ isEditingName ? 'check' : 'edit' }}</mat-icon>
+          </button>
+        </div>
+        <p class="email-sub">{{ profile().email }}</p>
+        <span class="provider-pill">
+          {{ profile().isGoogleAuth ? 'Google account connected' : 'Guest commander profile' }}
+        </span>
+      </div>
+    </div>
+
+    <button mat-icon-button mat-dialog-close type="button" class="close-btn" aria-label="Close Profile">
+      <mat-icon aria-hidden="true">close</mat-icon>
+    </button>
+  </header>
+
+  <nav class="dialog-tabs" role="tablist" aria-label="Profile sections">
+    <button
+      type="button"
+      role="tab"
+      id="profile-tab-stats"
+      class="tab-btn"
+      [class.active]="activeTab() === 'stats'"
+      [attr.aria-selected]="activeTab() === 'stats'"
+      [attr.tabindex]="activeTab() === 'stats' ? 0 : -1"
+      aria-controls="profile-panel-stats"
+      (click)="selectTab('stats')"
+      (keydown)="handleTabKeyDown($event, 'stats')">
+      <mat-icon aria-hidden="true">insights</mat-icon>
+      <span>Career Records</span>
+    </button>
+    <button
+      type="button"
+      role="tab"
+      id="profile-tab-achievements"
+      class="tab-btn"
+      [class.active]="activeTab() === 'achievements'"
+      [attr.aria-selected]="activeTab() === 'achievements'"
+      [attr.tabindex]="activeTab() === 'achievements' ? 0 : -1"
+      aria-controls="profile-panel-achievements"
+      (click)="selectTab('achievements')"
+      (keydown)="handleTabKeyDown($event, 'achievements')">
+      <mat-icon aria-hidden="true">emoji_events</mat-icon>
+      <span>Achievements ({{ unlockedCount() }}/{{ totalAchievements() }})</span>
+    </button>
+    <button
+      type="button"
+      role="tab"
+      id="profile-tab-settings"
+      class="tab-btn"
+      [class.active]="activeTab() === 'settings'"
+      [attr.aria-selected]="activeTab() === 'settings'"
+      [attr.tabindex]="activeTab() === 'settings' ? 0 : -1"
+      aria-controls="profile-panel-settings"
+      (click)="selectTab('settings')"
+      (keydown)="handleTabKeyDown($event, 'settings')">
+      <mat-icon aria-hidden="true">settings</mat-icon>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <div class="dialog-body">
+    @if (activeTab() === 'stats') {
+      <div
+        id="profile-panel-stats"
+        class="stats-tab"
+        role="tabpanel"
+        aria-labelledby="profile-tab-stats">
+        <section class="campaign-overview" aria-labelledby="campaign-progress-title">
+          <div class="campaign-heading">
+            <div>
+              <span class="campaign-eyebrow">CURRENT CAMPAIGN</span>
+              <h3 id="campaign-progress-title">War {{ progression.campaignWarIndex() }} of 3</h3>
+            </div>
+            <div class="token-balance" aria-label="Token balance">
+              <mat-icon aria-hidden="true">toll</mat-icon>
+              <strong>{{ progression.tokenBalance() }}</strong>
+              <span>Tokens</span>
+            </div>
+          </div>
+
+          <div
+            class="campaign-pips"
+            role="progressbar"
+            aria-label="Resolved Wars in current Campaign"
+            aria-valuemin="0"
+            aria-valuemax="3"
+            [attr.aria-valuenow]="currentCampaignRecord().completed">
+            @for (pip of campaignPips; track pip) {
+              <span
+                [class.complete]="pip < currentCampaignRecord().completed"
+                [class.current]="pip === currentCampaignRecord().completed"
+                aria-hidden="true"></span>
+            }
+          </div>
+
+          <div class="campaign-record-line">
+            <span>{{ currentCampaignRecord().wins }}W</span>
+            <span>{{ currentCampaignRecord().losses }}L</span>
+            <span>{{ currentCampaignRecord().ties }}T</span>
+            <span>Attrition {{ signed(currentCampaignRecord().differential) }}</span>
+          </div>
+        </section>
+
+        <section class="records-section" aria-labelledby="basic-records-title">
+          <h3 id="basic-records-title" class="section-subtitle">Basic Records</h3>
+          <div class="stats-grid">
+            <div class="stat-card win-rate" [class.high]="(stats().winRatePercentage || 0) >= 60">
+              <div class="stat-icon"><mat-icon aria-hidden="true">emoji_events</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().winRatePercentage || 0 }}%</span>
+                <span class="stat-label">Win Rate</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon games"><mat-icon aria-hidden="true">sports_esports</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().gamesPlayed }}</span>
+                <span class="stat-label">Wars Played</span>
+              </div>
+            </div>
+            <div class="stat-card won">
+              <div class="stat-icon"><mat-icon aria-hidden="true">thumb_up</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().gamesWon }}</span>
+                <span class="stat-label">Victories</span>
+              </div>
+            </div>
+            <div class="stat-card lost">
+              <div class="stat-icon"><mat-icon aria-hidden="true">thumb_down</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().gamesLost }}</span>
+                <span class="stat-label">Defeats</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">balance</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().gamesTied || 0 }}</span>
+                <span class="stat-label">Tied Wars</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">local_fire_department</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().currentWinStreak || 0 }} / {{ stats().bestWinStreak || 0 }}</span>
+                <span class="stat-label">Streak · Current / Best</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="records-section" aria-labelledby="campaign-records-title">
+          <h3 id="campaign-records-title" class="section-subtitle">Campaign Records</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">map</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ campaignCareer().completed }}</span>
+                <span class="stat-label">Completed</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">military_tech</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ campaignCareer().won }} / {{ campaignCareer().lost }} / {{ campaignCareer().drawn }}</span>
+                <span class="stat-label">Won / Lost / Drawn</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">trending_up</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ signed(campaignCareer().bestDifferential) }}</span>
+                <span class="stat-label">Best Attrition Differential</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="records-section" aria-labelledby="battle-records-title">
+          <h3 id="battle-records-title" class="section-subtitle">Battles & Challenges</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon battles"><mat-icon aria-hidden="true">swords</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().totalBattles || 0 }}</span>
+                <span class="stat-label">Resolved Battles</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">layers</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">Depth {{ stats().deepestRecursiveBattle || 0 }}</span>
+                <span class="stat-label">Deepest Battle</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">bolt</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().mostOpponentCardsDefeatedInBattle || 0 }}</span>
+                <span class="stat-label">Most Battle Casualties</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">shield</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().successfulChallenges || 0 }} / {{ stats().totalChallenges || 0 }}</span>
+                <span class="stat-label">Challenges Won · {{ stats().challengeSuccessRate || 0 }}%</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">timeline</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">
+                  {{ stats().currentBattleWinStreak || 0 }}W / {{ stats().currentBattleLossStreak || 0 }}L
+                </span>
+                <span class="stat-label">
+                  Battle streaks · Best {{ stats().bestBattleWinStreak || 0 }}W / {{ stats().bestBattleLossStreak || 0 }}L
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="records-section" aria-labelledby="memorable-feats-title">
+          <h3 id="memorable-feats-title" class="section-subtitle">Memorable Feats</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">flare</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().acesDefeatedByTwo || 0 }}</span>
+                <span class="stat-label">Aces Defeated by 2</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">shield</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">
+                  {{ stats().twosSavedByChallenge || 0 }} / {{ stats().acesRescuedByChallenge || 0 }}
+                </span>
+                <span class="stat-label">2s / Aces Rescued</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">local_hospital</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().acesRescuingTwos || 0 }}</span>
+                <span class="stat-label">Aces That Rescued a 2</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">whatshot</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().juggernautOccurrences || 0 }}</span>
+                <span class="stat-label">Juggernaut Cards</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">trending_up</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().comebackWins || 0 }} · Max −{{ stats().largestComebackDeficit || 0 }}</span>
+                <span class="stat-label">Comeback Wins</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><mat-icon aria-hidden="true">workspace_premium</mat-icon></div>
+              <div class="stat-data">
+                <span class="stat-value">{{ stats().winsWithOneCardRemaining || 0 }}</span>
+                <span class="stat-label">One-card Victories</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    } @else if (activeTab() === 'achievements') {
+      <div
+        id="profile-panel-achievements"
+        class="achievements-tab"
+        role="tabpanel"
+        aria-labelledby="profile-tab-achievements">
+        <div class="achievements-summary-card">
+          <div class="summary-header">
+            <span class="summary-title">Battle Honors</span>
+            <span class="summary-count">{{ unlockedCount() }} of {{ totalAchievements() }} · {{ unlockedPercentage() }}%</span>
+          </div>
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-label="Achievements unlocked"
+            [attr.aria-valuenow]="unlockedPercentage()"
+            aria-valuemin="0"
+            aria-valuemax="100">
+            <div class="progress-fill" [style.width.%]="unlockedPercentage()"></div>
+          </div>
+        </div>
+
+        @if (showPlayGamesButton()) {
+          <div class="play-games-banner">
+            <button mat-flat-button type="button" class="play-games-btn" (click)="openPlayGamesAchievements()">
+              <mat-icon aria-hidden="true">sports_esports</mat-icon>
+              View Google Play Achievements
+            </button>
+          </div>
+        }
+
+        <div class="achievements-grid">
+          @for (achievement of allAchievements; track achievement.id) {
+            <article class="achievement-item" [class.unlocked]="isAchievementUnlocked(achievement.id)">
+              <div class="ach-icon-wrapper">
+                <mat-icon aria-hidden="true">{{ isAchievementUnlocked(achievement.id) ? achievement.icon : 'lock' }}</mat-icon>
+              </div>
+              <div class="ach-info">
+                <div class="ach-header">
+                  <strong>{{ achievement.name }}</strong>
+                  <span class="ach-status">{{ isAchievementUnlocked(achievement.id) ? 'UNLOCKED' : 'LOCKED' }}</span>
+                </div>
+                <p>{{ achievement.description }}</p>
+              </div>
+            </article>
+          }
+        </div>
+      </div>
+    } @else {
+      <div
+        id="profile-panel-settings"
+        class="settings-tab"
+        role="tabpanel"
+        aria-labelledby="profile-tab-settings">
+        <section class="settings-section" aria-labelledby="preferences-title">
+          <div class="section-heading">
+            <h3 id="preferences-title" class="section-subtitle">Preferences · Appearance & Controls</h3>
+            <p>Adjust the table for your display, motion comfort, and preferred thumb.</p>
+          </div>
+          <div class="settings-fields">
+            <mat-form-field appearance="outline">
+              <mat-label>Theme</mat-label>
+              <mat-select [value]="settings.theme()" (selectionChange)="settings.setTheme($event.value)">
+                <mat-option value="dark">Dark</mat-option>
+                <mat-option value="light">Light</mat-option>
+                <mat-option value="auto">System</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Deck Hand</mat-label>
+              <mat-select [value]="settings.deckHand()" (selectionChange)="settings.setDeckHand($event.value)">
+                <mat-option value="right">Right-handed</mat-option>
+                <mat-option value="left">Left-handed</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Animation Speed</mat-label>
+              <mat-select [value]="settings.animationSpeed()" (selectionChange)="settings.setAnimationSpeed($event.value)">
+                <mat-option value="slow">Slow</mat-option>
+                <mat-option value="normal">Normal</mat-option>
+                <mat-option value="fast">Fast</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="settings-toggles">
+            <mat-slide-toggle [checked]="settings.soundEnabled()" (change)="settings.setSoundEnabled($event.checked)">Sound</mat-slide-toggle>
+            <mat-slide-toggle [checked]="settings.autoPlayAnimations()" (change)="settings.setAutoPlayAnimations($event.checked)">Animations</mat-slide-toggle>
+            <mat-slide-toggle [checked]="settings.showTurnCounter()" (change)="settings.setShowTurnCounter($event.checked)">Turn counter</mat-slide-toggle>
+            <mat-slide-toggle [checked]="settings.showCardDetails()" (change)="settings.setShowCardDetails($event.checked)">Card details</mat-slide-toggle>
+            <mat-slide-toggle [checked]="settings.tutorialEnabled()" (change)="settings.setTutorialEnabled($event.checked)">Tutorial guidance</mat-slide-toggle>
+          </div>
+        </section>
+
+        <section class="settings-section requisitions-section" aria-labelledby="requisitions-title">
+          <div class="section-heading requisitions-heading">
+            <div>
+              <h3 id="requisitions-title" class="section-subtitle">Customization · Requisitions</h3>
+              <p>Campaign tokens unlock card backs permanently and never affect gameplay.</p>
+            </div>
+            <div class="token-balance compact" aria-label="Available token balance">
+              <mat-icon aria-hidden="true">toll</mat-icon>
+              <strong>{{ progression.tokenBalance() }}</strong>
+              <span>available</span>
+            </div>
+          </div>
+
+          <div class="backing-options">
+            @for (option of settings.cardBackingOptions(); track option.id) {
+              <button
+                type="button"
+                class="backing-option"
+                [class.selected]="settings.selectedCardBacking() === option.id"
+                [class.locked]="!progression.isCardBackingUnlocked(option.id)"
+                [attr.aria-pressed]="progression.isCardBackingUnlocked(option.id) ? settings.selectedCardBacking() === option.id : null"
+                [attr.aria-label]="backingActionLabel(option)"
+                (click)="backingAction(option)">
+                <span class="backing-preview" [style]="option.preview" aria-hidden="true"></span>
+                <span class="backing-copy">
+                  <strong>{{ option.name }}</strong>
+                  <small>
+                    @if (progression.isCardBackingUnlocked(option.id)) {
+                      {{ settings.selectedCardBacking() === option.id ? 'Equipped' : 'Unlocked' }}
+                    } @else {
+                      {{ option.tokenCost }} {{ option.tokenCost === 1 ? 'token' : 'tokens' }}
+                    }
+                  </small>
+                </span>
+                <mat-icon aria-hidden="true">
+                  {{ settings.selectedCardBacking() === option.id ? 'check_circle' : progression.isCardBackingUnlocked(option.id) ? 'radio_button_unchecked' : 'lock' }}
+                </mat-icon>
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="account-title">
+          <div class="section-heading">
+            <h3 id="account-title" class="section-subtitle">Account</h3>
+            <p>{{ profile().isGoogleAuth ? 'This profile is connected to Google.' : 'This is a local guest profile on this device.' }}</p>
+          </div>
+          <div class="account-actions">
+            @if (!profile().isGoogleAuth) {
+              <button
+                mat-flat-button
+                type="button"
+                class="google-signin-btn"
+                [disabled]="hasActiveMatch()"
+                (click)="signInGoogle()">
+                <mat-icon aria-hidden="true">login</mat-icon>
+                Sign in with Google
+              </button>
+            } @else {
+              <button
+                mat-stroked-button
+                type="button"
+                class="signout-btn"
+                [disabled]="hasActiveMatch()"
+                (click)="signOut()">
+                <mat-icon aria-hidden="true">logout</mat-icon>
+                Sign out
+              </button>
+            }
+          </div>
+          @if (hasActiveMatch()) {
+            <p class="account-war-guard" role="note">
+              Profile switching is paused during an active War so its records stay with the commander who began it. Finish the War or use Abandon War below first.
+            </p>
+          }
+        </section>
+
+        <section class="settings-section data-section" aria-labelledby="data-title">
+          <div class="section-heading">
+            <h3 id="data-title" class="section-subtitle">Data & Privacy</h3>
+            <p>Career Records are resettable profile data. Campaign currency and historical anonymous gameplay telemetry are managed separately.</p>
+          </div>
+          <div class="analytics-consent-control">
+            <div>
+              <strong>Anonymous gameplay analytics</strong>
+              <span>
+                {{ analyticsConsent() === 'granted' ? 'Allowed' : analyticsConsent() === 'denied' ? 'Off' : 'Not chosen' }}
+              </span>
+              <p>
+                No names, email addresses, or Google IDs are collected. Opt-in begins with the next War; turning it off stops new gameplay events immediately.
+              </p>
+            </div>
+            <div class="analytics-consent-actions" role="group" aria-label="Anonymous gameplay analytics consent">
+              <button
+                mat-stroked-button
+                type="button"
+                class="analytics-allow-btn"
+                [attr.aria-pressed]="analyticsConsent() === 'granted'"
+                (click)="setAnalyticsConsent('granted')">
+                Allow
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                class="analytics-deny-btn"
+                [attr.aria-pressed]="analyticsConsent() === 'denied'"
+                (click)="setAnalyticsConsent('denied')">
+                Keep off
+              </button>
+            </div>
+          </div>
+          <nav class="profile-links" aria-label="Support, privacy, and account data">
+            <a mat-button mat-dialog-close routerLink="/privacy"><mat-icon aria-hidden="true">privacy_tip</mat-icon>Privacy</a>
+            <a mat-button mat-dialog-close routerLink="/support"><mat-icon aria-hidden="true">help_outline</mat-icon>Support</a>
+            <a mat-button mat-dialog-close routerLink="/delete-account"><mat-icon aria-hidden="true">delete_forever</mat-icon>Review data deletion</a>
+          </nav>
+          <div class="reset-actions">
+            <button mat-stroked-button type="button" class="reset-stats-btn" (click)="resetStats()">
+              <mat-icon aria-hidden="true">restart_alt</mat-icon>
+              Reset Career Records
+            </button>
+            <button mat-stroked-button type="button" class="reset-settings-btn" (click)="resetSettings()">
+              <mat-icon aria-hidden="true">restore</mat-icon>
+              Reset preferences
+            </button>
+            <button mat-stroked-button type="button" class="reset-tutorial-btn" (click)="onResetTutorial()">
+              <mat-icon aria-hidden="true">school</mat-icon>
+              Reset tutorial
+            </button>
+          </div>
+          <p class="version-copy">War of Attrition · Version 1.0.2</p>
+        </section>
+
+        @if (hasActiveMatch()) {
+          <section class="settings-section match-actions-section" aria-labelledby="current-war-title">
+            <div class="section-heading">
+              <h3 id="current-war-title" class="section-subtitle">Current War</h3>
+              <p>An unresolved War is active. These deliberate actions record an abandonment.</p>
+            </div>
+            <div class="match-actions-grid">
+              <button mat-stroked-button type="button" class="restart-match-btn" (click)="onRestartMatch()">
+                <mat-icon aria-hidden="true">refresh</mat-icon>
+                Restart War
+              </button>
+              <button mat-stroked-button type="button" class="abandon-match-btn" (click)="onAbandonMatch()">
+                <mat-icon aria-hidden="true">flag</mat-icon>
+                Abandon War
+              </button>
+            </div>
+          </section>
+        }
+
+        <p class="settings-status" role="status" aria-live="polite">{{ settingsStatus() }}</p>
+      </div>
+    }
+  </div>
+</div>

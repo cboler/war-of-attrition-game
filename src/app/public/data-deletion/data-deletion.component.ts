@@ -6,6 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from '../../core/services/auth.service';
 import { SettingsService } from '../../core/services/settings.service';
+import { TutorialService } from '../../services/tutorial.service';
+import { TelemetryConsentService } from '../../services/telemetry-consent.service';
+import {
+  APP_LOCAL_STORAGE_KEYS,
+  APP_SESSION_STORAGE_KEYS
+} from '../../core/models/app-storage.model';
 
 @Component({
   selector: 'app-data-deletion',
@@ -34,8 +40,8 @@ import { SettingsService } from '../../core/services/settings.service';
           <section>
             <h3>1. What Data Exists for Your Account</h3>
             <p>
-              In War of Attrition, your gameplay profile, match counts, win streaks, challenge metrics, custom card backings, 
-              and in-game achievements are stored <strong>locally in your browser/device storage</strong>.
+              In War of Attrition, your gameplay profile, career statistics, Campaign progress, token balance, cosmetic unlocks,
+              preferences, tutorial progress, and local achievements are stored <strong>locally in application-owned browser/device storage</strong>.
             </p>
             <p>
               If you signed in using Google Identity Services, your Google profile name and avatar were cached locally to personalize 
@@ -49,24 +55,28 @@ import { SettingsService } from '../../core/services/settings.service';
               <li>All local player profiles (Guest and Google-linked profiles).</li>
               <li>Lifetime match statistics, win rates, and streak counters.</li>
               <li>Battle and challenge milestone history.</li>
+              <li>Campaign history, cosmetic tokens, and unlocked card backings.</li>
               <li>Custom appearance settings and preferences.</li>
+              <li>Saved analytics-consent choice and tutorial progress.</li>
             </ul>
             <p>
               <em>Note:</em> Deleting your War of Attrition local data <strong>does NOT delete or affect your Google Account</strong>. 
               Achievements already synchronized to Google Play Games Services remain linked to your Google Play Games account in accordance with Google's terms.
+              It also cannot retract pseudonymous analytics events that were previously transmitted to Google Analytics; those are governed by Google's retention and deletion controls.
             </p>
           </section>
 
           <section class="deletion-action-box">
             <h3>Immediate In-App Data Reset & Deletion</h3>
             <p>
-              You can instantly purge all local application storage and reset the game to its initial pristine state right now:
+              You can remove War of Attrition's application-owned local data and reset the game to a new guest profile right now.
+              The operation is scoped and does not clear unrelated data stored by other applications on the same web origin.
             </p>
 
             @if (deletionSuccess()) {
               <div class="success-banner">
                 <mat-icon>check_circle</mat-icon>
-                <span>All local game data, profiles, and statistics have been permanently cleared.</span>
+                <span>War of Attrition's local profiles, progression, settings, and consent choice have been reset.</span>
               </div>
             } @else {
               <button mat-raised-button color="warn" class="delete-now-btn" (click)="performLocalDataDeletion()">
@@ -78,8 +88,9 @@ import { SettingsService } from '../../core/services/settings.service';
           <section>
             <h3>3. Manual Deletion Requests</h3>
             <p>
-              Because our architecture uses on-device local storage, executing the button above immediately purges 100% of the game data on your device. 
-              If you have additional questions regarding data privacy or Google Play data safety, please reach out via our 
+              The button above removes application-owned local state from this browser/device. It does not delete Google Account data,
+              Google Play achievement records, browser cookies controlled by third parties, or previously transmitted analytics records.
+              If you have additional questions regarding data privacy or Google Play data safety, please reach out via our
               <a routerLink="/support">Support Page</a>.
             </p>
           </section>
@@ -106,22 +117,25 @@ import { SettingsService } from '../../core/services/settings.service';
 export class DataDeletionComponent {
   private authService = inject(AuthService);
   private settingsService = inject(SettingsService);
+  private tutorialService = inject(TutorialService);
+  private telemetryConsent = inject(TelemetryConsentService);
 
   readonly deletionSuccess = signal(false);
 
   performLocalDataDeletion(): void {
     if (typeof window !== 'undefined') {
       try {
-        localStorage.clear();
-        sessionStorage.clear();
+        Object.values(APP_LOCAL_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+        APP_SESSION_STORAGE_KEYS.forEach(key => sessionStorage.removeItem(key));
       } catch (e) {
-        console.warn('Could not clear web storage:', e);
+        console.warn('Could not clear all application-owned web storage:', e);
       }
     }
 
-    this.authService.signOut();
-    this.authService.resetActiveUserStats();
+    this.authService.deleteAllLocalProfilesAndCreateFreshGuest();
     this.settingsService.resetSettings();
+    this.tutorialService.resetTutorialProgress();
+    this.telemetryConsent.clearAnalyticsConsent();
     this.deletionSuccess.set(true);
   }
 }

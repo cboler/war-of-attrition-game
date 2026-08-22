@@ -1,0 +1,69 @@
+:host {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 40;
+  width: min(440px, calc(100% - 28px));
+  transform: translate(-50%, -50%);
+}
+
+.game-over {
+  box-sizing: border-box;
+  padding: 28px;
+  border: 1px solid rgba(232, 204, 149, 0.38);
+  border-radius: 18px;
+  color: #f6ecd8;
+  background: rgba(9, 26, 22, 0.98);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
+  text-align: center;
+  animation: game-over-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.game-over-eyebrow {
+  color: #ffd54f;
+  font: 700 0.66rem/1 system-ui, sans-serif;
+  letter-spacing: 0.2em;
+}
+
+h2 { margin: 8px 0 16px; color: #fff; font: 600 1.75rem/1.1 Georgia, serif; }
+.game-over-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 24px; }
+.stat-pill {
+  display: flex;
+  min-width: 72px;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid rgba(228, 191, 114, 0.18);
+  border-radius: 10px;
+  background: rgba(22, 54, 46, 0.75);
+}
+.stat-pill strong { color: #fff9ee; font: 700 0.96rem/1.1 Georgia, serif; }
+.stat-pill span { margin-top: 3px; color: rgba(247, 240, 225, 0.7); font-size: 0.64rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.stat-pill.highlight { border-color: #ffd54f; background: rgba(60, 45, 12, 0.85); }
+.stat-pill.highlight strong { color: #ffd54f; }
+.game-over-actions { display: flex; justify-content: center; gap: 12px; }
+.game-over-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font: 650 0.8rem/1 system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+.game-over-btn mat-icon { width: 18px; height: 18px; font-size: 18px; }
+.game-over-btn.secondary { border: 1px solid rgba(228, 191, 114, 0.4); color: #f7f0e1; background: rgba(20, 50, 42, 0.85); }
+.game-over-btn.primary { border: 1px solid #ffd54f; color: #0c1815; background: #ffd54f; }
+.game-over-btn:hover { transform: translateY(-1px); border-color: #ffd54f; }
+.game-over-btn:focus-visible { outline: 2px solid #ffd54f; outline-offset: 2px; }
+
+@keyframes game-over-pop {
+  from { opacity: 0; transform: translateY(4%) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-over { animation: none; }
+}

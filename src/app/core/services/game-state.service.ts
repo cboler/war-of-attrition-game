@@ -1,16 +1,29 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
 import { Card } from '../models/card.model';
 import { Deck } from '../models/deck.model';
 import {
   ActiveTurn,
   BattleOutcome,
   BattleLayer,
+  BattleSelectionOutcome,
+  DeckColor,
   GameOutcome,
   GamePhase,
   GameState,
   GameStats,
   PlayerType,
 } from '../models/game-state.model';
+
+export const DECK_ASSIGNMENT_RANDOM = new InjectionToken<() => number>('DECK_ASSIGNMENT_RANDOM', {
+  providedIn: 'root',
+  factory: () => Math.random,
+});
+
+export interface InitializeGameOptions {
+  readonly shuffle?: boolean;
+  /** Deterministic override for tests, demos, and restored Wars. */
+  readonly playerDeckColor?: DeckColor;
+}
 
 export interface CardConservationReport {
   readonly total: number;
@@ -22,8 +35,10 @@ export interface CardConservationReport {
 
 @Injectable({ providedIn: 'root' })
 export class GameStateService {
+  private readonly assignmentRandom = inject(DECK_ASSIGNMENT_RANDOM);
   private readonly playerDeck = signal<Deck>(Deck.createRedDeck());
   private readonly opponentDeck = signal<Deck>(Deck.createBlackDeck());
+  private readonly playerDeckColor = signal(DeckColor.RED);
   private readonly discardPile = signal<readonly Card[]>([]);
   private readonly gamePhase = signal(GamePhase.SETUP);
   private readonly turnNumber = signal(0);
@@ -38,6 +53,8 @@ export class GameStateService {
   readonly opponentCardCount = computed(() => this.opponentDeck().count);
   readonly discardedCardCount = computed(() => this.discardPile().length);
   readonly discardedCards = computed(() => [...this.discardPile()]);
+  readonly assignedPlayerDeckColor = this.playerDeckColor.asReadonly();
+  readonly assignedOpponentDeckColor = computed(() => this.oppositeColor(this.playerDeckColor()));
   readonly hasGame = computed(() => this.gamePhase() !== GamePhase.SETUP);
 
   readonly gameStats = computed<GameStats>(() => ({
@@ -56,6 +73,7 @@ export class GameStateService {
     isPlayerTurn: this.isPlayerTurn(),
     canChallenge: this.canChallenge(),
     lastResult: this.lastResult(),
+    playerDeckColor: this.playerDeckColor(),
   }));
 
   get currentPhase(): GamePhase {
@@ -76,15 +94,25 @@ export class GameStateService {
   get currentDiscardPile(): readonly Card[] {
     return [...this.discardPile()];
   }
+  get currentPlayerDeckColor(): DeckColor {
+    return this.playerDeckColor();
+  }
+  get currentOpponentDeckColor(): DeckColor {
+    return this.oppositeColor(this.playerDeckColor());
+  }
 
   /** Business-level match state; deliberately independent of presentation timing. */
   hasMeaningfulUnresolvedGame(): boolean {
     return this.hasGame() && this.gamePhase() !== GamePhase.GAME_OVER && this.turnNumber() > 0;
   }
 
-  initializeGame(options: { shuffle?: boolean } = {}): void {
-    const nextPlayerDeck = Deck.createRedDeck();
-    const nextOpponentDeck = Deck.createBlackDeck();
+  initializeGame(options: InitializeGameOptions = {}): void {
+    const playerColor =
+      options.playerDeckColor ??
+      (this.assignmentRandom() < 0.5 ? DeckColor.RED : DeckColor.BLACK);
+    const opponentColor = this.oppositeColor(playerColor);
+    const nextPlayerDeck = this.createDeck(playerColor);
+    const nextOpponentDeck = this.createDeck(opponentColor);
     if (options.shuffle !== false) {
       nextPlayerDeck.shuffle();
       nextOpponentDeck.shuffle();
@@ -92,6 +120,7 @@ export class GameStateService {
 
     this.playerDeck.set(nextPlayerDeck);
     this.opponentDeck.set(nextOpponentDeck);
+    this.playerDeckColor.set(playerColor);
     this.discardPile.set([]);
     this.gamePhase.set(GamePhase.NORMAL);
     this.turnNumber.set(0);
@@ -102,6 +131,12 @@ export class GameStateService {
     this.canChallenge.set(false);
     this.lastResult.set(null);
     this.assertCardConservation();
+  }
+
+  /** Full known color pool, never the shuffled draw order or current hidden contents. */
+  assignedCardPool(owner: PlayerType): readonly Card[] {
+    const color = owner === PlayerType.PLAYER ? this.currentPlayerDeckColor : this.currentOpponentDeckColor;
+    return this.createDeck(color).toArray();
   }
 
   startTurn(): { playerCard: Card | null; opponentCard: Card | null } {
@@ -255,7 +290,10 @@ export class GameStateService {
     ];
   }
 
-  previewBattleSettlement(winner: PlayerType): BattleOutcome {
+  previewBattleSettlement(
+    winner: PlayerType,
+    battleSelection: BattleSelectionOutcome | null = null,
+  ): BattleOutcome {
     const turn = this.requireActiveTurn();
     const loser = winner === PlayerType.PLAYER ? PlayerType.OPPONENT : PlayerType.PLAYER;
     const playerCardsAtStake = [...this.getStake(PlayerType.PLAYER)];
@@ -296,6 +334,7 @@ export class GameStateService {
       hiddenWinnerCards,
       selectedPlayerChampion,
       selectedOpponentChampion,
+      battleSelection,
       playerDeckCountBeforeSettlement: playerDeckCount,
       opponentDeckCountBeforeSettlement: opponentDeckCount,
       boneyardCountBeforeSettlement: boneyardCount,
@@ -466,6 +505,28 @@ export class GameStateService {
     ) {
       throw new Error('Battle outcome no longer matches the cards at stake');
     }
+    if (outcome.battleSelection) {
+      const latest = this.requireActiveTurn().battleLayers.at(-1);
+      const selection = outcome.battleSelection;
+      if (
+        !latest ||
+        latest.round !== selection.layerRound ||
+        latest.selectedPlayerCardId !== selection.playerCardId ||
+        latest.selectedOpponentCardId !== selection.opponentCardId ||
+        selection.playerCard.id !== selection.playerCardId ||
+        selection.opponentCard.id !== selection.opponentCardId
+      ) {
+        throw new Error('Battle outcome selection no longer matches the selected physical cards');
+      }
+    }
+  }
+
+  private createDeck(color: DeckColor): Deck {
+    return color === DeckColor.RED ? Deck.createRedDeck() : Deck.createBlackDeck();
+  }
+
+  private oppositeColor(color: DeckColor): DeckColor {
+    return color === DeckColor.RED ? DeckColor.BLACK : DeckColor.RED;
   }
 
   private outcomeForWinner(winner: PlayerType): GameOutcome {

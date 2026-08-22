@@ -11,6 +11,7 @@ import { CardComponent } from '../card/card.component';
       class="seat"
       [class.is-bottom]="position() === 'bottom'"
       [class.deck-left]="position() === 'bottom' && deckHand() === 'left'"
+      [class.motion-disabled]="motionDisabled()"
       [attr.aria-label]="name() + ' seat'">
       
       <div class="identity">
@@ -27,7 +28,7 @@ import { CardComponent } from '../card/card.component';
 
       <button
         class="deck"
-        [ngClass]="thicknessClass()"
+        [ngClass]="[thicknessClass(), urgencyClass()]"
         type="button"
         [class.actionable]="deckInteractive()"
         [disabled]="!deckInteractive()"
@@ -50,7 +51,16 @@ import { CardComponent } from '../card/card.component';
         } @else {
           <span class="empty-deck" aria-hidden="true"></span>
         }
-        <span class="deck-count">{{ cardCount() }}</span>
+        @if (cardCount() > 0 || defeatPopping()) {
+          <span class="deck-count" [class.defeat-pop]="defeatPopping()">
+            {{ defeatPopping() ? 1 : cardCount() }}
+            @if (defeatPopping()) {
+              <span class="pop-fragments" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i>
+              </span>
+            }
+          </span>
+        }
       </button>
     </section>
   `,
@@ -65,6 +75,8 @@ export class PlayerSeatComponent {
   thinking = input(false);
   quip = input<string | null>(null);
   deckHand = input<'right' | 'left'>('right');
+  defeatPopping = input(false);
+  motionDisabled = input(false);
   deckActivated = output<void>();
 
   protected dangerLabel = computed(() =>
@@ -79,5 +91,10 @@ export class PlayerSeatComponent {
     if (count <= 10) return 'thickness-modest';
     if (count <= 20) return 'thickness-substantial';
     return 'thickness-thick';
+  });
+
+  protected urgencyClass = computed(() => {
+    const count = this.cardCount();
+    return count > 0 && count <= 5 ? `urgency-${count}` : '';
   });
 }

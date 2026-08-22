@@ -1,0 +1,52 @@
+<section
+  class="game-over"
+  role="region"
+  aria-live="assertive"
+  aria-atomic="true"
+  aria-labelledby="game-over-title"
+>
+  <span class="game-over-eyebrow">WAR RESOLUTION</span>
+  <h2 id="game-over-title">{{ message() }}</h2>
+
+  @if (summary(); as result) {
+    <div class="game-over-stats">
+      <div class="stat-pill">
+        <strong>{{ result.turns }}</strong>
+        <span>{{ result.turns === 1 ? 'Turn' : 'Turns' }}</span>
+      </div>
+      <div class="stat-pill">
+        <strong>{{ result.battlesCount }}</strong>
+        <span>{{ result.battlesCount === 1 ? 'Battle' : 'Battles' }}</span>
+      </div>
+      @if (result.deepestBattleLayer > 1) {
+        <div class="stat-pill">
+          <strong>Depth {{ result.deepestBattleLayer }}</strong>
+          <span>Deepest Battle</span>
+        </div>
+      }
+      @if (result.playerChallengesCount > 0) {
+        <div class="stat-pill">
+          <strong>{{ result.playerChallengesWon }}/{{ result.playerChallengesCount }}</strong>
+          <span>Challenges Won</span>
+        </div>
+      }
+      @if (result.isComeback) {
+        <div class="stat-pill highlight">
+          <strong>Comeback</strong>
+          <span>-{{ result.maxDeficit }} Deficit</span>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="game-over-actions">
+    <button type="button" class="game-over-btn secondary" (click)="manualRequested.emit()">
+      <mat-icon>menu_book</mat-icon>
+      <span>Field Manual</span>
+    </button>
+    <button type="button" class="game-over-btn primary" (click)="replayRequested.emit()">
+      <mat-icon>refresh</mat-icon>
+      <span>Deal Again</span>
+    </button>
+  </div>
+</section>

@@ -1,12 +1,21 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ActiveTurn, GameOutcome, GamePhase, PlayerType } from '../core/models/game-state.model';
+import {
+  ActiveTurn,
+  BattleOutcome,
+  GameOutcome,
+  GamePhase,
+  PlayerType,
+} from '../core/models/game-state.model';
 import { Card, Rank } from '../core/models/card.model';
+import type { PublicBattleResolution } from '../core/models/game-events.model';
 import { GameStateService } from '../core/services/game-state.service';
 import { OpponentAIService } from '../core/services/opponent-ai.service';
 import { SoundService } from '../core/services/sound.service';
 import { TurnResolutionService, TurnResult } from '../core/services/turn-resolution.service';
-import { CardComparisonService } from '../core/services/card-comparison.service';
+import { CardComparisonService, ComparisonResult } from '../core/services/card-comparison.service';
 import { AuthService } from '../core/services/auth.service';
+import { SettingsService } from '../core/services/settings.service';
+import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import {
   PresentationSequenceCancelled,
   PresentationSequencerService,
@@ -16,6 +25,8 @@ import { GameEventBusService } from './game-event-bus.service';
 import { StoryBookService } from './story-book.service';
 import { TutorialService } from './tutorial.service';
 import { TutorialStep } from '../core/models/tutorial.model';
+import { GameTelemetryService } from './game-telemetry.service';
+import type { ComparisonStrengthView } from '../shared/components/comparison-strength/comparison-strength.component';
 import {
   battleTargetInstruction,
   cardsToBoneyard,
@@ -43,6 +54,7 @@ export enum PresentationState {
   CASUALTY_REVEAL = 'casualty_reveal',
   RETURN_WINNER_CARDS = 'return_winner_cards',
   SEND_LOSER_CARDS_TO_BONEYARD = 'send_loser_cards_to_boneyard',
+  DECK_DEFEAT_POP = 'deck_defeat_pop',
   TURN_COMPLETE = 'turn_complete',
   GAME_OVER = 'game_over',
 }
@@ -67,7 +79,7 @@ export function casualtyEmphasisFor(card: Card): CasualtyEmphasis {
 }
 
 export function battleAnnouncementFor(round: number): string {
-  return `Battle ${round}${'!'.repeat(Math.min(round, 4))}`;
+  return round <= 1 ? 'Battle' : `Battle: Depth ${round}`;
 }
 
 export interface TableBattleLayerView {
@@ -93,6 +105,17 @@ export interface CurrentGameSummary {
   readonly maxDeficit: number;
 }
 
+export interface BattlefieldMessage {
+  readonly id: number;
+  readonly text: string;
+}
+
+export interface ComparisonPresentation {
+  readonly player: ComparisonStrengthView;
+  readonly opponent: ComparisonStrengthView;
+  readonly resolved: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class GameControllerService {
   private readonly gameState = inject(GameStateService);
@@ -104,6 +127,9 @@ export class GameControllerService {
   private readonly eventBus = inject(GameEventBusService);
   private readonly comparison = inject(CardComparisonService);
   private readonly authService = inject(AuthService);
+  private readonly settings = inject(SettingsService);
+  private readonly campaignProgression = inject(CampaignProgressionService);
+  private readonly telemetry = inject(GameTelemetryService);
   private readonly storyBook = inject(StoryBookService);
   private readonly tutorial = inject(TutorialService);
 
@@ -119,6 +145,15 @@ export class GameControllerService {
   private readonly selectedPlayerCard = signal<Card | null>(null);
   private readonly opponentPointer = signal<number | null>(null);
   private readonly reaction = signal<TableReaction | null>(null);
+  private readonly comparisonPresentationSignal = signal<ComparisonPresentation | null>(null);
+  private readonly battlefieldMessagesSignal = signal<readonly BattlefieldMessage[]>([
+    { id: 0, text: 'Your deck is ready.' },
+  ]);
+  private readonly deckDefeatPopOwnerSignal = signal<PlayerType | null>(null);
+  private readonly presentationStepSkippedPhaseSignal = signal<PresentationState | null>(null);
+  private readonly holdPlayerFinalBadgeSignal = signal(false);
+  private readonly holdOpponentFinalBadgeSignal = signal(false);
+  private messageCounter = 0;
 
   // Active game telemetry
   private gameStartTime = Date.now();
@@ -132,10 +167,20 @@ export class GameControllerService {
   private largestBattleLoss = 0;
   private acesDefeatedByTwo = 0;
   private twosSavedByChallenge = 0;
+  private acesRescuedByChallenge = 0;
+  private acesRescuingTwos = 0;
   private acesLostInBattles = 0;
   private aceAndTwoLostInSameBattle = 0;
   private maxDeficitExperienced = 0;
   private abandonmentRecorded = false;
+  private currentWarId = '';
+  private lastMeaningfulDecision:
+    | 'draw'
+    | 'challenge'
+    | 'concede'
+    | 'battle_target'
+    | 'continue'
+    | undefined;
 
   private readonly gameSummarySignal = signal<CurrentGameSummary | null>(null);
 
@@ -146,6 +191,20 @@ export class GameControllerService {
   readonly cardsMovingToBoneyard = this.movingToBoneyardIds.asReadonly();
   readonly cardsReturningHome = this.returningHomeIds.asReadonly();
   readonly currentGameSummary = this.gameSummarySignal.asReadonly();
+  readonly comparisonPresentation = this.comparisonPresentationSignal.asReadonly();
+  readonly battlefieldMessages = this.battlefieldMessagesSignal.asReadonly();
+  readonly deckDefeatPopOwner = this.deckDefeatPopOwnerSignal.asReadonly();
+  readonly presentationStepSkipped = computed(
+    () => this.presentationStepSkippedPhaseSignal() === this.phase(),
+  );
+  readonly playerDeckDisplayCount = computed(() => {
+    const count = this.gameState.playerCardCount();
+    return count === 0 && this.holdPlayerFinalBadgeSignal() ? 1 : count;
+  });
+  readonly opponentDeckDisplayCount = computed(() => {
+    const count = this.gameState.opponentCardCount();
+    return count === 0 && this.holdOpponentFinalBadgeSignal() ? 1 : count;
+  });
 
   readonly visibleBoneyardCards = computed(() => {
     const withheld = new Set(this.withheldBoneyardIds());
@@ -271,27 +330,51 @@ export class GameControllerService {
   }
 
   /** Explicit player-requested replacement of the current match. */
-  startNewGame(): void {
-    this.replaceGame(true);
+  startNewGame(abandonmentDecision: 'restart' | 'abandon' = 'restart'): void {
+    this.replaceGame(true, abandonmentDecision);
   }
 
-  private replaceGame(recordAbandonment: boolean): void {
+  private replaceGame(
+    recordAbandonment: boolean,
+    abandonmentDecision: 'restart' | 'abandon' = 'restart',
+  ): void {
     const interruptedBattlePresentation = this.isBattlePresentationPhase();
     const interruptedTurnNumber = this.turnsPlayed;
+    let didAbandon = false;
     if (recordAbandonment && this.hasMeaningfulUnresolvedGame() && !this.abandonmentRecorded) {
+      const activeTurn = this.gameState.currentState.activeTurn;
+      const career = this.authService.userStats();
       this.authService.recordGameAbandoned();
       this.eventBus.emit({
         type: 'game_abandoned',
         turnNumber: this.turnsPlayed,
         turnsPlayed: this.turnsPlayed,
+        playerDeckCount: this.gameState.playerCardCount(),
+        opponentDeckCount: this.gameState.opponentCardCount(),
+        playerCardsAtStakeCount: this.gameState.getStake(PlayerType.PLAYER).length,
+        opponentCardsAtStakeCount: this.gameState.getStake(PlayerType.OPPONENT).length,
+        playerCardDeficit:
+          this.gameState.opponentCardCount() - this.gameState.playerCardCount(),
+        gamePhase: this.gameState.currentPhase,
+        battleDepth: activeTurn?.battleLayers.length ?? 0,
+        currentBattleWinStreak: career.currentBattleWinStreak,
+        currentBattleLossStreak: career.currentBattleLossStreak,
+        presentationPhase: this.phase(),
+        animationSpeed: this.settings.animationSpeed(),
+        lastDecision: this.lastMeaningfulDecision,
+        abandonmentAction: abandonmentDecision,
+        recentEventCategory: this.recentEventCategory(),
+        recentReactionCategory: this.reaction()?.category,
       });
       this.abandonmentRecorded = true;
+      didAbandon = true;
     }
 
     this.sequencer.cancel();
     this.gameState.initializeGame();
     this.phase.set(PresentationState.READY);
     this.gameMessage.set('Your deck is ready.');
+    this.battlefieldMessagesSignal.set([{ id: ++this.messageCounter, text: 'Your deck is ready.' }]);
     void this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
     this.presentedTurn.set(null);
     this.revealedCasualtyIds.set([]);
@@ -303,6 +386,10 @@ export class GameControllerService {
     this.selectedPlayerCard.set(null);
     this.opponentPointer.set(null);
     this.reaction.set(null);
+    this.comparisonPresentationSignal.set(null);
+    this.deckDefeatPopOwnerSignal.set(null);
+    this.holdPlayerFinalBadgeSignal.set(false);
+    this.holdOpponentFinalBadgeSignal.set(false);
     this.gameSummarySignal.set(null);
     this.storyBook.clear();
 
@@ -318,10 +405,13 @@ export class GameControllerService {
     this.largestBattleLoss = 0;
     this.acesDefeatedByTwo = 0;
     this.twosSavedByChallenge = 0;
+    this.acesRescuedByChallenge = 0;
+    this.acesRescuingTwos = 0;
     this.acesLostInBattles = 0;
     this.aceAndTwoLostInSameBattle = 0;
     this.maxDeficitExperienced = 0;
     this.abandonmentRecorded = false;
+    this.lastMeaningfulDecision = undefined;
 
     // An interrupted Battle must release any deferred achievement notices. The
     // old sequence cannot complete after cancellation, so this fresh table is
@@ -332,16 +422,29 @@ export class GameControllerService {
         turnNumber: interruptedTurnNumber,
       });
     }
+
+    const warContext = this.telemetry.beginWar({
+      playerDeckColor: this.gameState.currentPlayerDeckColor,
+      startType: didAbandon ? 'restart' : 'new',
+    });
+    this.currentWarId = warContext.warId;
+    this.eventBus.emit({
+      type: 'war_started',
+      turnNumber: 0,
+      playerDeckColor: this.gameState.currentPlayerDeckColor,
+    });
   }
 
   playerDrawCard(): boolean {
     if (!this.canDraw() || this.gameState.currentPhase !== GamePhase.NORMAL) return false;
+    this.lastMeaningfulDecision = 'draw';
     void this.playTurn();
     return true;
   }
 
   handleChallenge(acceptChallenge: boolean): void {
     if (!this.canChooseChallenge()) return;
+    this.lastMeaningfulDecision = acceptChallenge ? 'challenge' : 'concede';
     void this.playPlayerChallenge(acceptChallenge);
   }
 
@@ -355,11 +458,46 @@ export class GameControllerService {
       typeof selectedCardOrId === 'string' ? selectedCardOrId : selectedCardOrId.id;
     const selectedCard = newest?.opponentCards.find((card) => card.id === selectedId);
     if (!selectedCard) return;
+    this.lastMeaningfulDecision = 'battle_target';
     void this.playBattleSelection(selectedCard);
   }
 
   advancePresentation(): boolean {
-    return this.sequencer.advance();
+    const skippedPhase = this.phase();
+    const advanced = this.sequencer.advance();
+    if (advanced) {
+      this.lastMeaningfulDecision = 'continue';
+      this.presentationStepSkippedPhaseSignal.set(skippedPhase);
+      setTimeout(() => {
+        if (this.presentationStepSkippedPhaseSignal() === skippedPhase) {
+          this.presentationStepSkippedPhaseSignal.set(null);
+        }
+      }, 80);
+    }
+    return advanced;
+  }
+
+  comparisonStrengthFor(cardId: string): ComparisonStrengthView | null {
+    const comparison = this.comparisonPresentationSignal();
+    if (!comparison) return null;
+    if (comparison.player.cardId === cardId) return comparison.player;
+    if (comparison.opponent.cardId === cardId) return comparison.opponent;
+    return null;
+  }
+
+  isInactiveComparator(cardId: string): boolean {
+    const turn = this.presentedTurn();
+    const comparison = this.comparisonPresentationSignal();
+    if (
+      !turn ||
+      !comparison ||
+      comparison.resolved ||
+      (!turn.playerChallengeCard && !turn.opponentChallengeCard)
+    ) {
+      return false;
+    }
+    const activeIds = new Set([comparison.player.cardId, comparison.opponent.cardId]);
+    return (cardId === turn.playerCard.id || cardId === turn.opponentCard.id) && !activeIds.has(cardId);
   }
 
   isRevealedCasualty(cardId: string): boolean {
@@ -376,11 +514,14 @@ export class GameControllerService {
   private async playTurn(): Promise<void> {
     const version = this.sequencer.begin();
     this.reaction.set(null);
+    this.comparisonPresentationSignal.set(null);
     this.revealedCasualtyIds.set([]);
     this.phase.set(PresentationState.DRAWING);
-    this.gameMessage.set('Cards are dealt.');
+    this.announce('Cards are dealt.');
 
     try {
+      this.holdFinalBadgeIfDepletedBy(PlayerType.PLAYER, 1);
+      this.holdFinalBadgeIfDepletedBy(PlayerType.OPPONENT, 1);
       const { playerCard, opponentCard } = this.gameState.startTurn();
       if (!playerCard || !opponentCard) {
         this.finishAtGameOver();
@@ -399,11 +540,12 @@ export class GameControllerService {
         turnNumber: this.turnsPlayed,
       });
 
+      this.primeComparison(playerCard, opponentCard);
       this.syncPresentedTurn();
       this.sound.playCardDraw();
       await this.sequencer.pause(280, version);
       this.phase.set(PresentationState.CLASH_REVEAL);
-      this.gameMessage.set('Reveal.');
+      this.announce('Reveal.');
       this.sound.playCardFlip();
       await this.sequencer.pause(360, version);
       this.phase.set(PresentationState.CLASH_RESOLUTION);
@@ -411,9 +553,9 @@ export class GameControllerService {
 
       const result = this.turnResolution.resolveTurn(playerCard, opponentCard);
       this.withholdBoneyard(result);
-      this.gameMessage.set(result.message);
-
       const specialRule = this.comparison.isSpecialAceVsTwoRule(playerCard, opponentCard);
+      this.resolveComparison(playerCard, opponentCard, result.result, specialRule);
+      this.announce(result.message);
       if (specialRule && result.winner === PlayerType.PLAYER) {
         this.acesDefeatedByTwo++;
       }
@@ -428,13 +570,23 @@ export class GameControllerService {
         specialRule,
         message: result.message,
       });
+      if (result.winner) {
+        this.speakReaction(
+          this.reactions.forClash({
+            playerCard,
+            opponentCard,
+            winner: result.winner,
+            specialRule,
+          }),
+        );
+      }
 
       if (specialRule) {
         await this.tutorial.triggerStep(TutorialStep.ACE_ASSASSINATION);
       } else {
         await this.tutorial.triggerStep(TutorialStep.FIRST_COMPARISON);
       }
-      await this.sequencer.pause(430, version);
+      await this.sequencer.pause(430, version, 650);
       await this.continueFromResult(result, version);
     } catch (error) {
       this.handleSequenceError(error);
@@ -446,7 +598,7 @@ export class GameControllerService {
     try {
       if (!accept) {
         const result = this.turnResolution.resolveChallengeConcession(PlayerType.PLAYER);
-        this.gameMessage.set(result.message);
+        this.announce(result.message);
         this.eventBus.emit({
           type: 'challenge_conceded',
           turnNumber: this.turnsPlayed,
@@ -459,6 +611,7 @@ export class GameControllerService {
       }
 
       this.playerChallengesCount++;
+      this.holdFinalBadgeIfDepletedBy(PlayerType.PLAYER, 1);
       const reinforcement = this.gameState.beginChallenge(PlayerType.PLAYER);
       if (!reinforcement) {
         const result = this.turnResolution.resolveChallengeConcession(PlayerType.PLAYER);
@@ -466,25 +619,35 @@ export class GameControllerService {
         return;
       }
 
+      this.syncPresentedTurn();
+      const turnBeforeReveal = this.presentedTurn();
+      if (turnBeforeReveal) this.primeComparison(reinforcement, turnBeforeReveal.opponentCard);
+      this.phase.set(PresentationState.CHALLENGE_DRAW);
+      this.announce('Reinforcement committed.');
+      this.sound.playCardDraw();
+      await this.sequencer.pause(360, version);
+      this.sound.playCardFlip();
+      this.phase.set(PresentationState.CHALLENGE_CLASH);
+      this.announce('Reinforcement replaces the beaten card for this comparison.');
       this.eventBus.emit({
         type: 'challenge_accepted',
         turnNumber: this.turnsPlayed,
         challenger: PlayerType.PLAYER,
         reinforcementCard: reinforcement,
       });
-
-      this.syncPresentedTurn();
-      this.phase.set(PresentationState.CHALLENGE_DRAW);
-      this.gameMessage.set('Reinforcement committed.');
-      this.sound.playCardDraw();
-      await this.sequencer.pause(360, version);
-      this.sound.playCardFlip();
-      this.phase.set(PresentationState.CHALLENGE_CLASH);
-      this.gameMessage.set('Reinforcement clashes with the original winner.');
       await this.sequencer.pause(500, version);
       const result = this.turnResolution.resolveChallenge(PlayerType.PLAYER);
       this.withholdBoneyard(result);
-      this.gameMessage.set(result.message);
+      const challengeTurn = this.presentedTurn();
+      if (challengeTurn) {
+        this.resolveComparison(
+          reinforcement,
+          challengeTurn.opponentCard,
+          result.result,
+          this.comparison.isSpecialAceVsTwoRule(reinforcement, challengeTurn.opponentCard),
+        );
+      }
+      this.announce(result.message);
 
       const challengerWon = result.winner === PlayerType.PLAYER;
       if (challengerWon) {
@@ -494,6 +657,12 @@ export class GameControllerService {
       const savedTwo = challengerWon && initialCard?.rank === Rank.TWO;
       if (savedTwo) {
         this.twosSavedByChallenge++;
+      }
+      if (challengerWon && initialCard?.rank === Rank.ACE) {
+        this.acesRescuedByChallenge++;
+      }
+      if (savedTwo && reinforcement.rank === Rank.ACE) {
+        this.acesRescuingTwos++;
       }
 
       const turn = this.presentedTurn();
@@ -513,15 +682,25 @@ export class GameControllerService {
           challenger: PlayerType.PLAYER,
           reinforcementCard: reinforcement,
           originalWinnerCard: turn.opponentCard,
+          originalBeatenCard: turn.playerCard,
           comparison: result.result,
           winner: result.winner,
           challengerWon,
           message: result.message,
           savedTwo,
         });
+        this.speakReaction(
+          this.reactions.forChallengeResolution({
+            challenger: PlayerType.PLAYER,
+            originalBeatenCard: turn.playerCard,
+            reinforcementCard: reinforcement,
+            originalWinnerCard: turn.opponentCard,
+            challengerWon,
+          }),
+        );
       }
 
-      await this.sequencer.pause(420, version);
+      await this.sequencer.pause(420, version, 650);
       await this.continueFromResult(result, version);
     } catch (error) {
       this.handleSequenceError(error);
@@ -536,7 +715,7 @@ export class GameControllerService {
 
     if (result.canChallenge) {
       this.phase.set(PresentationState.PLAYER_CHALLENGE_DECISION);
-      this.gameMessage.set('Your card is beaten.');
+      this.announce('Your card is beaten. Reinforcement would replace it in the next clash.');
       this.eventBus.emit({
         type: 'challenge_offered',
         turnNumber: this.turnsPlayed,
@@ -569,12 +748,12 @@ export class GameControllerService {
     });
 
     for (let dots = 1; dots <= 3; dots++) {
-      this.gameMessage.set(`Reinforce ${'.'.repeat(dots)}`);
+      this.announce(`Reinforce ${'.'.repeat(dots)}`, false);
       await this.sequencer.pause(230, version);
     }
 
     if (!result.opponentChallenge) {
-      this.gameMessage.set('Concede.');
+      this.announce('Opponent concedes.');
       this.eventBus.emit({
         type: 'challenge_conceded',
         turnNumber: this.turnsPlayed,
@@ -587,8 +766,9 @@ export class GameControllerService {
       return;
     }
 
-    this.gameMessage.set('Challenge.');
+    this.announce('Opponent challenges.');
     await this.sequencer.pause(260, version);
+    this.holdFinalBadgeIfDepletedBy(PlayerType.OPPONENT, 1);
     const reinforcement = this.gameState.beginChallenge(PlayerType.OPPONENT);
     if (!reinforcement) {
       const concession = this.turnResolution.resolveChallengeConcession(PlayerType.OPPONENT);
@@ -596,24 +776,34 @@ export class GameControllerService {
       return;
     }
 
+    this.syncPresentedTurn();
+    const turnBeforeReveal = this.presentedTurn();
+    if (turnBeforeReveal) this.primeComparison(turnBeforeReveal.playerCard, reinforcement);
+    this.phase.set(PresentationState.CHALLENGE_DRAW);
+    this.announce('Opponent sends reinforcement.');
+    this.sound.playCardDraw();
+    await this.sequencer.pause(380, version);
+    this.sound.playCardFlip();
+    this.phase.set(PresentationState.CHALLENGE_CLASH);
     this.eventBus.emit({
       type: 'challenge_accepted',
       turnNumber: this.turnsPlayed,
       challenger: PlayerType.OPPONENT,
       reinforcementCard: reinforcement,
     });
-
-    this.syncPresentedTurn();
-    this.phase.set(PresentationState.CHALLENGE_DRAW);
-    this.gameMessage.set('Opponent sends reinforcement.');
-    this.sound.playCardDraw();
-    await this.sequencer.pause(380, version);
-    this.sound.playCardFlip();
-    this.phase.set(PresentationState.CHALLENGE_CLASH);
     await this.sequencer.pause(480, version);
     const challengeResult = this.turnResolution.resolveChallenge(PlayerType.OPPONENT);
     this.withholdBoneyard(challengeResult);
-    this.gameMessage.set(challengeResult.message);
+    const comparisonTurn = this.presentedTurn();
+    if (comparisonTurn) {
+      this.resolveComparison(
+        comparisonTurn.playerCard,
+        reinforcement,
+        challengeResult.result,
+        this.comparison.isSpecialAceVsTwoRule(comparisonTurn.playerCard, reinforcement),
+      );
+    }
+    this.announce(challengeResult.message);
 
     const activeTurn = this.presentedTurn();
     if (
@@ -633,15 +823,25 @@ export class GameControllerService {
         challenger: PlayerType.OPPONENT,
         reinforcementCard: reinforcement,
         originalWinnerCard: turn.playerCard,
+        originalBeatenCard: turn.opponentCard,
         comparison: challengeResult.result,
         winner: challengeResult.winner,
         challengerWon: challengeResult.winner === PlayerType.OPPONENT,
         message: challengeResult.message,
         savedTwo: false,
       });
+      this.speakReaction(
+        this.reactions.forChallengeResolution({
+          challenger: PlayerType.OPPONENT,
+          originalBeatenCard: turn.opponentCard,
+          reinforcementCard: reinforcement,
+          originalWinnerCard: turn.playerCard,
+          challengerWon: challengeResult.winner === PlayerType.OPPONENT,
+        }),
+      );
     }
 
-    await this.sequencer.pause(420, version);
+    await this.sequencer.pause(420, version, 650);
     await this.continueFromResult(challengeResult, version);
   }
 
@@ -654,10 +854,12 @@ export class GameControllerService {
     }
     this.deepestBattleLayer = Math.max(this.deepestBattleLayer, existingLayers + 1);
 
-    this.gameMessage.set(battleAnnouncementFor(existingLayers + 1));
+    this.announce(battleAnnouncementFor(existingLayers + 1));
     this.sound.playClash();
     await this.sequencer.pause(470, version);
 
+    this.holdFinalBadgeIfDepletedBy(PlayerType.PLAYER, 3);
+    this.holdFinalBadgeIfDepletedBy(PlayerType.OPPONENT, 3);
     const layer = this.gameState.dealBattleLayer();
     if (!layer) {
       this.gameState.settleAttrition();
@@ -680,7 +882,7 @@ export class GameControllerService {
     this.sound.playCardDraw();
     await this.sequencer.pause(520, version);
     this.phase.set(PresentationState.PLAYER_TARGET_SELECTION);
-    this.gameMessage.set(battleTargetInstruction());
+    this.announce(battleTargetInstruction());
     this.sequencer.end(version);
   }
 
@@ -704,7 +906,7 @@ export class GameControllerService {
       });
 
       this.phase.set(PresentationState.OPPONENT_TARGET_SELECTION);
-      this.gameMessage.set('The foe chooses yours.');
+      this.announce('The foe chooses yours.');
 
       const pointerPath = [0, 2, 1, selectedIndex];
       for (const index of pointerPath) {
@@ -725,36 +927,48 @@ export class GameControllerService {
         selectedOpponentCard.id,
         selectedPlayerCard.id,
       );
+      const selection = result.battleSelection;
+      if (!selection) {
+        throw new Error('Battle resolution did not return its authoritative champion selection');
+      }
+      // From this point onward every presentation-facing selection mirrors the
+      // resolver's immutable physical-card account, never pre-resolution UI state.
+      this.selectedOpponentCard.set(selection.opponentCard);
+      this.selectedPlayerCard.set(selection.playerCard);
+      this.primeComparison(selection.playerCard, selection.opponentCard);
       this.syncPresentedTurn();
       this.pendingHumanTargetId.set(null);
       this.phase.set(PresentationState.BATTLE_REVEAL);
-      this.gameMessage.set('Champions revealed.');
+      this.announce('Champions revealed.');
       this.sound.playCardFlip();
       await this.sequencer.pause(560, version);
       this.sound.playClash();
-      this.gameMessage.set(result.message);
 
-      const specialRule = this.comparison.isSpecialAceVsTwoRule(
-        selectedPlayerCard,
-        selectedOpponentCard,
+      this.resolveComparison(
+        selection.playerCard,
+        selection.opponentCard,
+        selection.comparison,
+        selection.specialRule,
       );
-      if (specialRule && result.winner === PlayerType.PLAYER) {
+      this.announce(result.message);
+      if (selection.specialRule && selection.winner === PlayerType.PLAYER) {
         this.acesDefeatedByTwo++;
       }
 
       this.eventBus.emit({
         type: 'battle_cards_revealed',
         turnNumber: this.turnsPlayed,
-        layerRound: newest.round,
-        playerChosenCard: selectedPlayerCard,
-        opponentChosenCard: selectedOpponentCard,
-        comparison: result.result,
-        winner: result.winner,
-        specialRule,
+        layerRound: selection.layerRound,
+        playerChosenCard: selection.playerCard,
+        opponentChosenCard: selection.opponentCard,
+        comparison: selection.comparison,
+        winner: selection.winner,
+        specialRule: selection.specialRule,
         message: result.message,
+        selection,
       });
 
-      await this.sequencer.pause(500, version);
+      await this.sequencer.pause(500, version, 650);
 
       if (result.pendingBattleSettlement) {
         await this.playBattleSettlement(result, version);
@@ -777,6 +991,7 @@ export class GameControllerService {
         this.selectedOpponentCard.set(null);
         this.selectedPlayerCard.set(null);
         this.opponentPointer.set(null);
+        this.comparisonPresentationSignal.set(null);
         await this.setupBattle(version);
         return;
       }
@@ -803,66 +1018,76 @@ export class GameControllerService {
       this.largestBattleVictory = Math.max(this.largestBattleVictory, casualties.length);
     }
 
-    for (let index = 0; index < casualties.length; index++) {
-      const card = casualties[index];
-      this.revealedCasualtyIds.update((ids) => [...ids, card.id]);
-      this.gameMessage.set(casualtyProgress(index + 1, casualties.length));
+    if (casualties.length > 0) {
+      this.revealedCasualtyIds.set(casualties.map((card) => card.id));
+      this.announce(casualtyProgress(casualties.length, casualties.length));
       this.sound.playCardFlip();
 
-      this.eventBus.emit({
-        type: 'casualty_revealed',
-        turnNumber: this.turnsPlayed,
-        card,
-        casualtyIndex: index + 1,
-        totalCasualties: casualties.length,
-        loser,
+      casualties.forEach((card, index) => {
+        this.eventBus.emit({
+          type: 'casualty_revealed',
+          turnNumber: this.turnsPlayed,
+          card,
+          casualtyIndex: index + 1,
+          totalCasualties: casualties.length,
+          loser,
+          source: result.settlementAttribution?.source,
+          decisiveCard: result.settlementAttribution?.decisiveCard,
+        });
       });
 
-      const isMajor = card.rank === Rank.ACE || card.rank === Rank.TWO;
-      const isFace = card.rank === Rank.KING || card.rank === Rank.QUEEN || card.rank === Rank.JACK;
-      const recognitionDwell = Math.max(340, 560 - index * 24) + (isMajor ? 220 : isFace ? 100 : 0);
-      await this.sequencer.pause(recognitionDwell, version);
-      this.movingToBoneyardIds.update((ids) => [...ids, card.id]);
-      await this.sequencer.pause(360, version);
+      const containsMajor = casualties.some(
+        (card) => card.rank === Rank.ACE || card.rank === Rank.TWO,
+      );
+      await this.sequencer.pause(containsMajor ? 440 : 360, version);
     }
 
     // A casualty-specific quip is safe only after every losing card is public.
-    const reaction = this.reactions.forBattleLoss(loser, casualties);
-    this.reaction.set(reaction);
-    if (reaction) {
-      this.eventBus.emit({
-        type: 'quip_spoken',
-        turnNumber: this.turnsPlayed,
-        speaker: reaction.speaker,
-        message: reaction.message,
-      });
-    }
+    const career = this.authService.userStats();
+    const reaction = this.reactions.forBattleLoss(loser, casualties, {
+      decisiveCard: result.settlementAttribution?.decisiveCard,
+      battleDepth: outcome.battleDepth,
+      winnerBattleStreak:
+        winner === PlayerType.PLAYER
+          ? career.currentBattleWinStreak + 1
+          : career.currentBattleLossStreak + 1,
+    });
+    this.speakReaction(reaction);
 
     this.eventBus.emit({
       type: 'battle_resolved',
       turnNumber: this.turnsPlayed,
-      outcome,
+      outcome: this.publicBattleResolution(outcome),
     });
 
     const winningIds = outcome.winningCards.map((card) => card.id);
     this.returningHomeIds.set(winningIds);
     this.phase.set(PresentationState.RETURN_WINNER_CARDS);
-    this.gameMessage.set(hiddenCardsReturn(outcome.hiddenWinnerCards.length));
+    this.announce(hiddenCardsReturn(outcome.hiddenWinnerCards.length));
     await this.sequencer.pause(380, version);
 
     this.withheldBoneyardIds.set(casualties.map((card) => card.id));
     this.turnResolution.finalizeBattle(outcome, result.nextPhase === GamePhase.GAME_OVER);
+    this.eventBus.emit({
+      type: 'cards_returned',
+      turnNumber: this.turnsPlayed,
+      winner,
+      publicCount: outcome.publicWinnerCards.length,
+      hiddenCount: outcome.hiddenWinnerCards.length,
+    });
     this.movingToBoneyardIds.set(casualties.map((card) => card.id));
     this.phase.set(PresentationState.SEND_LOSER_CARDS_TO_BONEYARD);
-    this.gameMessage.set(cardsToBoneyard(casualties.length));
+    this.announce(cardsToBoneyard(casualties.length));
     this.sound.playBoneyard();
     await this.tutorial.triggerStep(TutorialStep.FIRST_BATTLE_RESOLUTION);
-    await this.sequencer.pause(520, version);
+    await this.sequencer.pause(420, version);
     this.eventBus.emit({
       type: 'cards_sent_to_boneyard',
       turnNumber: this.turnsPlayed,
       cards: casualties,
     });
+    this.emitSettlementAttribution(result);
+    await this.playDeckDefeatPop(loser, version);
     this.withheldBoneyardIds.set([]);
     this.clearPresentedCards();
     await this.finishTurn(version, true);
@@ -881,13 +1106,19 @@ export class GameControllerService {
       const winningIds = this.cardsOwnedBy(winner).map((card) => card.id);
       this.returningHomeIds.set(winningIds);
       this.phase.set(PresentationState.RETURN_WINNER_CARDS);
-      await this.sequencer.pause(230, version);
+      await this.sequencer.pause(360, version);
+      this.eventBus.emit({
+        type: 'cards_returned',
+        turnNumber: this.turnsPlayed,
+        winner,
+        publicCount: result.cardsKept.length,
+        hiddenCount: 0,
+      });
     }
-    if (loser) {
-      for (let index = 0; index < result.cardsLost.length; index++) {
-        const card = result.cardsLost[index];
-        this.revealedCasualtyIds.update((ids) => [...ids, card.id]);
-        this.gameMessage.set(casualtyProgress(index + 1, result.cardsLost.length));
+    if (loser && result.cardsLost.length > 0) {
+      this.revealedCasualtyIds.set(result.cardsLost.map((card) => card.id));
+      this.announce(casualtyProgress(result.cardsLost.length, result.cardsLost.length));
+      result.cardsLost.forEach((card, index) => {
         this.eventBus.emit({
           type: 'casualty_revealed',
           turnNumber: this.turnsPlayed,
@@ -895,21 +1126,24 @@ export class GameControllerService {
           casualtyIndex: index + 1,
           totalCasualties: result.cardsLost.length,
           loser,
+          source: result.settlementAttribution?.source,
+          decisiveCard: result.settlementAttribution?.decisiveCard,
         });
-        await this.sequencer.pause(180, version);
-        this.movingToBoneyardIds.update((ids) => [...ids, card.id]);
-      }
+      });
+      await this.sequencer.pause(360, version);
     }
     this.movingToBoneyardIds.set(result.cardsLost.map((card) => card.id));
     this.phase.set(PresentationState.SEND_LOSER_CARDS_TO_BONEYARD);
-    this.gameMessage.set(cardsToBoneyard(result.cardsLost.length));
+    this.announce(cardsToBoneyard(result.cardsLost.length));
     this.sound.playBoneyard();
-    await this.sequencer.pause(310, version);
+    await this.sequencer.pause(420, version);
     this.eventBus.emit({
       type: 'cards_sent_to_boneyard',
       turnNumber: this.turnsPlayed,
       cards: result.cardsLost,
     });
+    this.emitSettlementAttribution(result);
+    if (loser) await this.playDeckDefeatPop(loser, version);
     this.withheldBoneyardIds.set([]);
     this.clearPresentedCards();
     await this.finishTurn(version);
@@ -925,20 +1159,182 @@ export class GameControllerService {
       return;
     }
     this.phase.set(PresentationState.TURN_COMPLETE);
-    this.gameMessage.set('The field is clear.');
+    this.announce('The field is clear.');
     await this.sequencer.pause(170, version);
     this.phase.set(PresentationState.READY);
-    this.gameMessage.set('Draw when ready.');
+    this.announce('Draw when ready.');
     if (releaseBattleAchievements) {
       this.eventBus.emit({ type: 'battle_presentation_complete', turnNumber: this.turnsPlayed });
     }
     this.sequencer.end(version);
   }
 
+  /**
+   * Keep the latest status compatible with the existing table API while also
+   * retaining a short, bounded narration trail for quick presentation beats.
+   */
+  private announce(text: string, enqueue = true): void {
+    this.gameMessage.set(text);
+    if (!enqueue) return;
+
+    const current = this.battlefieldMessagesSignal();
+    if (current[0]?.text === text) return;
+
+    const message: BattlefieldMessage = { id: ++this.messageCounter, text };
+    this.battlefieldMessagesSignal.set([message, ...current].slice(0, 4));
+
+    setTimeout(() => {
+      this.battlefieldMessagesSignal.update((messages) =>
+        messages.filter((candidate) => candidate.id !== message.id),
+      );
+    }, 5200);
+  }
+
+  private speakReaction(reaction: TableReaction | null): void {
+    if (!reaction) return;
+    this.reaction.set(reaction);
+    this.eventBus.emit({
+      type: 'quip_spoken',
+      turnNumber: this.turnsPlayed,
+      speaker: reaction.speaker,
+      message: reaction.message,
+      category: reaction.category,
+    });
+  }
+
+  private emitSettlementAttribution(result: TurnResult): void {
+    if (!result.settlementAttribution) return;
+    this.eventBus.emit({
+      type: 'settlement_resolved',
+      turnNumber: this.turnsPlayed,
+      attribution: result.settlementAttribution,
+    });
+  }
+
+  /** Strip every still-hidden winner identity before publishing a Battle event. */
+  private publicBattleResolution(outcome: BattleOutcome): PublicBattleResolution {
+    const selection = outcome.battleSelection;
+    const casualties = Object.freeze([...outcome.casualties]);
+    return Object.freeze({
+      winner: outcome.winner,
+      loser: outcome.loser,
+      battleDepth: outcome.battleDepth,
+      selection,
+      selectedPlayerChampion: selection?.playerCard ?? null,
+      selectedOpponentChampion: selection?.opponentCard ?? null,
+      casualties,
+      casualtyIds: Object.freeze(casualties.map((card) => card.id)),
+      hiddenWinnerCount: outcome.hiddenWinnerCards.length,
+      publicWinnerCount: outcome.publicWinnerCards.length,
+      playerCardsAtStakeCount: outcome.playerCardsAtStake.length,
+      opponentCardsAtStakeCount: outcome.opponentCardsAtStake.length,
+      finalPlayerDeckCount: outcome.finalPlayerDeckCount,
+      finalOpponentDeckCount: outcome.finalOpponentDeckCount,
+      finalBoneyardCount: outcome.finalBoneyardCount,
+    });
+  }
+
+  private primeComparison(playerCard: Card, opponentCard: Card): void {
+    this.comparisonPresentationSignal.set({
+      player: this.comparisonView(playerCard, 'ready', playerCard.value, 0, false),
+      opponent: this.comparisonView(opponentCard, 'ready', opponentCard.value, 0, false),
+      resolved: false,
+    });
+  }
+
+  private resolveComparison(
+    playerCard: Card,
+    opponentCard: Card,
+    result: ComparisonResult,
+    specialOverride: boolean,
+  ): void {
+    if (result === ComparisonResult.TIE) {
+      this.comparisonPresentationSignal.set({
+        player: this.comparisonView(
+          playerCard,
+          'tie',
+          0,
+          -playerCard.value,
+          specialOverride,
+        ),
+        opponent: this.comparisonView(
+          opponentCard,
+          'tie',
+          0,
+          -opponentCard.value,
+          specialOverride,
+        ),
+        resolved: true,
+      });
+      return;
+    }
+
+    const playerWon = result === ComparisonResult.PLAYER_WINS;
+    const winner = playerWon ? playerCard : opponentCard;
+    const loser = playerWon ? opponentCard : playerCard;
+    // The 2/A override is categorical, not arithmetic: retain the winner's
+    // truthful base value and strike the losing Ace directly to zero.
+    const winnerRemainder = specialOverride
+      ? winner.value
+      : Math.max(1, winner.value - loser.value);
+    const winnerDamage = specialOverride ? 0 : -loser.value;
+    const loserDamage = specialOverride ? -loser.value : -winner.value;
+    const playerView = playerWon
+      ? this.comparisonView(playerCard, 'winner', winnerRemainder, winnerDamage, specialOverride)
+      : this.comparisonView(playerCard, 'defeated', 0, loserDamage, specialOverride);
+    const opponentView = playerWon
+      ? this.comparisonView(opponentCard, 'defeated', 0, loserDamage, specialOverride)
+      : this.comparisonView(opponentCard, 'winner', winnerRemainder, winnerDamage, specialOverride);
+
+    this.comparisonPresentationSignal.set({
+      player: playerView,
+      opponent: opponentView,
+      resolved: true,
+    });
+  }
+
+  private comparisonView(
+    card: Card,
+    state: ComparisonStrengthView['state'],
+    current: number,
+    damage: number,
+    specialOverride: boolean,
+  ): ComparisonStrengthView {
+    return {
+      cardId: card.id,
+      base: card.value,
+      current,
+      damage,
+      state,
+      specialOverride,
+    };
+  }
+
+  private async playDeckDefeatPop(owner: PlayerType, version: number): Promise<void> {
+    const cardsRemaining =
+      owner === PlayerType.PLAYER
+        ? this.gameState.playerCardCount()
+        : this.gameState.opponentCardCount();
+    if (cardsRemaining !== 0) return;
+
+    this.deckDefeatPopOwnerSignal.set(owner);
+    this.phase.set(PresentationState.DECK_DEFEAT_POP);
+    this.announce('The final reserve is lost.');
+    await this.sequencer.pause(300, version);
+    this.deckDefeatPopOwnerSignal.set(null);
+    if (owner === PlayerType.PLAYER) {
+      this.holdPlayerFinalBadgeSignal.set(false);
+    } else {
+      this.holdOpponentFinalBadgeSignal.set(false);
+    }
+  }
+
   private finishAtGameOver(): void {
     if (this.phase() === PresentationState.GAME_OVER) return;
     const outcome = this.gameState.currentState.outcome ?? GameOutcome.TIE;
     this.phase.set(PresentationState.GAME_OVER);
+    this.holdPlayerFinalBadgeSignal.set(false);
+    this.holdOpponentFinalBadgeSignal.set(false);
 
     const isComeback =
       outcome === GameOutcome.PLAYER_WIN &&
@@ -986,11 +1382,16 @@ export class GameControllerService {
       playerChallengesWon: this.playerChallengesWon,
       acesDefeatedByTwo: this.acesDefeatedByTwo,
       twosSavedByChallenge: this.twosSavedByChallenge,
+      acesRescuedByChallenge: this.acesRescuedByChallenge,
+      acesRescuingTwos: this.acesRescuingTwos,
       acesLostInBattles: this.acesLostInBattles,
       aceAndTwoLostInSameBattle: this.aceAndTwoLostInSameBattle,
       maxDeficitExperienced: this.maxDeficitExperienced,
       isComeback,
     });
+
+    // Preserve the stable War id before telemetry closes its active context.
+    const resolvedWarId = this.currentWarId || this.telemetry.currentWarContext()?.warId || '';
 
     // Emit game_resolved
     this.eventBus.emit({
@@ -1004,15 +1405,27 @@ export class GameControllerService {
       isComeback,
       battlesCount: this.battlesCount,
       playerReinforcementsSent: this.playerChallengesCount,
+      playerDeckColor: this.gameState.currentPlayerDeckColor,
     });
 
+    if (resolvedWarId) {
+      this.campaignProgression.recordResolvedWar({
+        warId: resolvedWarId,
+        outcome,
+        playerCardsRemaining: pCardsRemaining,
+        opponentCardsRemaining: oCardsRemaining,
+        playerDeckColor: this.gameState.currentPlayerDeckColor,
+      });
+      this.currentWarId = '';
+    }
+
     if (outcome === GameOutcome.TIE) {
-      this.gameMessage.set('The war ends in a true tie.');
+      this.announce('The war ends in a true tie.');
     } else if (outcome === GameOutcome.PLAYER_WIN) {
-      this.gameMessage.set('The war is won.');
+      this.announce('The war is won.');
       this.sound.playVictory();
     } else {
-      this.gameMessage.set('The war is lost.');
+      this.announce('The war is lost.');
       this.sound.playDefeat();
     }
     void this.tutorial.triggerStep(TutorialStep.FIRST_GAME_CONCLUSION);
@@ -1020,9 +1433,9 @@ export class GameControllerService {
 
   private async playTerminalTie(result: TurnResult, version: number): Promise<void> {
     this.phase.set(PresentationState.BATTLE_TIE);
-    this.gameMessage.set(result.message);
+    this.announce(result.message);
     this.sound.playClash();
-    await this.sequencer.pause(600, version);
+    await this.sequencer.pause(600, version, 650);
     this.finishAtGameOver();
     this.sequencer.end(version);
   }
@@ -1056,6 +1469,22 @@ export class GameControllerService {
     this.selectedOpponentCard.set(null);
     this.selectedPlayerCard.set(null);
     this.opponentPointer.set(null);
+    this.comparisonPresentationSignal.set(null);
+    this.holdPlayerFinalBadgeSignal.set(false);
+    this.holdOpponentFinalBadgeSignal.set(false);
+  }
+
+  private holdFinalBadgeIfDepletedBy(owner: PlayerType, drawCount: number): void {
+    const count =
+      owner === PlayerType.PLAYER
+        ? this.gameState.playerCardCount()
+        : this.gameState.opponentCardCount();
+    if (count !== drawCount) return;
+    if (owner === PlayerType.PLAYER) {
+      this.holdPlayerFinalBadgeSignal.set(true);
+    } else {
+      this.holdOpponentFinalBadgeSignal.set(true);
+    }
   }
 
   private isBattlePresentationPhase(): boolean {
@@ -1068,10 +1497,43 @@ export class GameControllerService {
       case PresentationState.CASUALTY_REVEAL:
       case PresentationState.RETURN_WINNER_CARDS:
       case PresentationState.SEND_LOSER_CARDS_TO_BONEYARD:
+      case PresentationState.DECK_DEFEAT_POP:
       case PresentationState.TURN_COMPLETE:
         return true;
       default:
         return false;
+    }
+  }
+
+  private recentEventCategory():
+    | 'clash'
+    | 'challenge'
+    | 'battle'
+    | 'settlement'
+    | 'presentation' {
+    switch (this.phase()) {
+      case PresentationState.DRAWING:
+      case PresentationState.CLASH_REVEAL:
+      case PresentationState.CLASH_RESOLUTION:
+        return 'clash';
+      case PresentationState.PLAYER_CHALLENGE_DECISION:
+      case PresentationState.OPPONENT_CONSIDERING_CHALLENGE:
+      case PresentationState.CHALLENGE_DRAW:
+      case PresentationState.CHALLENGE_CLASH:
+        return 'challenge';
+      case PresentationState.BATTLE_SETUP:
+      case PresentationState.PLAYER_TARGET_SELECTION:
+      case PresentationState.OPPONENT_TARGET_SELECTION:
+      case PresentationState.BATTLE_REVEAL:
+      case PresentationState.BATTLE_TIE:
+        return 'battle';
+      case PresentationState.CASUALTY_REVEAL:
+      case PresentationState.RETURN_WINNER_CARDS:
+      case PresentationState.SEND_LOSER_CARDS_TO_BONEYARD:
+      case PresentationState.DECK_DEFEAT_POP:
+        return 'settlement';
+      default:
+        return 'presentation';
     }
   }
 
@@ -1110,7 +1572,7 @@ export class GameControllerService {
   private recoverFromError(error: unknown): void {
     console.error('Game flow error:', error);
     this.sequencer.cancel();
-    this.gameMessage.set('The table was reset after an invalid game state.');
+    this.announce('The table was reset after an invalid game state.');
     this.replaceGame(false);
   }
 }

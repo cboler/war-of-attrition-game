@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { PlayerType } from '../core/models/game-state.model';
+import { Card } from '../core/models/card.model';
 import { GameStateService } from '../core/services/game-state.service';
 import { SettingsService } from '../core/services/settings.service';
 import { AchievementService } from '../services/achievement.service';
@@ -13,6 +14,8 @@ import {
   battleAnnouncementFor
 } from '../services/game-controller.service';
 import { CardComponent } from '../shared/components/card/card.component';
+import { ComparisonStrengthComponent } from '../shared/components/comparison-strength/comparison-strength.component';
+import { GameOverSummaryComponent } from '../shared/components/game-over-summary/game-over-summary.component';
 import { CardTableComponent } from '../shared/components/card-table/card-table.component';
 import { PlayerSeatComponent } from '../shared/components/player-seat/player-seat.component';
 import { StoryBookDrawerComponent } from '../shared/components/story-book-drawer/story-book-drawer.component';
@@ -24,6 +27,8 @@ import { TutorialOverlayComponent } from '../shared/components/tutorial-overlay/
     CommonModule,
     MatIconModule,
     CardComponent,
+    ComparisonStrengthComponent,
+    GameOverSummaryComponent,
     CardTableComponent,
     PlayerSeatComponent,
     StoryBookDrawerComponent,
@@ -43,6 +48,7 @@ export class TableGame implements OnInit {
   protected readonly player = PlayerType;
   protected readonly boneyardOpen = signal(false);
   protected readonly storyBookOpen = signal(false);
+  protected readonly manualReferenceCard = signal<Card | null>(null);
 
   protected readonly opponentThinking = computed(() =>
     this.controller.presentationState() === PresentationState.OPPONENT_CONSIDERING_CHALLENGE ||
@@ -102,13 +108,19 @@ export class TableGame implements OnInit {
 
   protected onTableClick(event: MouseEvent): void {
     const element = event.target as HTMLElement | null;
-    if (element?.closest('button, a, details, summary, .achievement-toast, .story-book-drawer, .boneyard-drawer, .tutorial-overlay')) return;
+    if (
+      element?.closest(
+        'button, a, details, summary, .achievement-toast, .story-book-drawer, .drawer-backdrop, .boneyard-drawer, .tutorial-overlay',
+      )
+    )
+      return;
     this.advancePresentation();
   }
 
   protected restart(): void {
     this.boneyardOpen.set(false);
     this.storyBookOpen.set(false);
+    this.manualReferenceCard.set(null);
     this.controller.startNewGame();
   }
 
@@ -117,7 +129,22 @@ export class TableGame implements OnInit {
   }
 
   protected toggleStoryBook(): void {
-    this.storyBookOpen.update(open => !open);
+    if (this.storyBookOpen()) {
+      this.storyBookOpen.set(false);
+      this.manualReferenceCard.set(null);
+      return;
+    }
+    this.manualReferenceCard.set(null);
+    this.storyBookOpen.set(true);
+  }
+
+  protected openBoneyardReference(card: Card): void {
+    this.manualReferenceCard.set(card);
+    this.storyBookOpen.set(true);
+  }
+
+  protected cardAccessibleName(card: Card): string {
+    return `${card.rank} of ${card.suit}`;
   }
 
   protected isReturning(id: string): boolean {
@@ -132,11 +159,11 @@ export class TableGame implements OnInit {
     return this.newestBattleRound() === level && this.settings.autoPlayAnimations();
   }
 
-  protected cardGlow(owner: PlayerType): 'green' | 'red' | 'blue' | null {
-    const result = this.gameState.currentState.lastResult;
-    if (result === 'tie') return 'blue';
-    if (result === 'player_wins') return owner === PlayerType.PLAYER ? 'green' : 'red';
-    if (result === 'opponent_wins') return owner === PlayerType.OPPONENT ? 'green' : 'red';
-    return null;
+  protected cardGlow(cardId: string): 'green' | 'red' | 'blue' | null {
+    const strength = this.controller.comparisonStrengthFor(cardId);
+    if (!strength || strength.state === 'ready') return null;
+    if (strength.state === 'winner') return 'green';
+    if (strength.state === 'defeated') return 'red';
+    return 'blue';
   }
 }

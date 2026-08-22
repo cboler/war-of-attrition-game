@@ -1,16 +1,18 @@
-import { Injectable, signal, computed, effect } from '@angular/core';
+import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import {
   AppSettings,
   DEFAULT_SETTINGS,
   CardBackingOption,
   CARD_BACKING_OPTIONS
 } from '../models/settings.model';
+import { APP_LOCAL_STORAGE_KEYS } from '../models/app-storage.model';
+import { CampaignProgressionService } from './campaign-progression.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SettingsService {
-  private readonly STORAGE_KEY = 'war-of-attrition-settings';
+  private readonly progressionService = inject(CampaignProgressionService);
 
   // Private signals for reactive state
   private settings = signal<AppSettings>(this.loadSettings());
@@ -19,7 +21,7 @@ export class SettingsService {
   readonly currentSettings = this.settings.asReadonly();
   readonly theme = computed(() => this.currentSettings().theme);
   readonly deckHand = computed(() => this.currentSettings().deckHand);
-  readonly selectedCardBacking = computed(() => this.currentSettings().selectedCardBacking);
+  readonly selectedCardBacking = this.progressionService.selectedCardBackingId;
   readonly animationSpeed = computed(() => this.currentSettings().animationSpeed);
   readonly soundEnabled = computed(() => this.currentSettings().soundEnabled);
   readonly showTurnCounter = computed(() => this.currentSettings().showTurnCounter);
@@ -39,14 +41,25 @@ export class SettingsService {
     effect(() => {
       this.saveSettings(this.currentSettings());
     });
+    effect(() => {
+      const selectedCardBacking = this.selectedCardBacking();
+      this.settings.update(current => current.selectedCardBacking === selectedCardBacking
+        ? current
+        : { ...current, selectedCardBacking });
+    });
   }
 
   // Settings management methods
   updateSettings(partialSettings: Partial<AppSettings>): void {
-    this.settings.update(current => ({ ...current, ...partialSettings }));
+    const { selectedCardBacking, ...preferences } = partialSettings;
+    this.settings.update(current => ({ ...current, ...preferences }));
+    if (selectedCardBacking !== undefined) {
+      this.setCardBacking(selectedCardBacking);
+    }
   }
 
   resetSettings(): void {
+    this.progressionService.selectCardBacking(DEFAULT_SETTINGS.selectedCardBacking);
     this.settings.set({ ...DEFAULT_SETTINGS });
   }
 
@@ -62,8 +75,11 @@ export class SettingsService {
 
   // Card backing management
   setCardBacking(backingId: string): void {
-    if (this.cardBackingOptions().some(option => option.id === backingId)) {
-      this.updateSettings({ selectedCardBacking: backingId });
+    if (
+      this.cardBackingOptions().some(option => option.id === backingId) &&
+      this.progressionService.selectCardBacking(backingId)
+    ) {
+      this.settings.update(current => ({ ...current, selectedCardBacking: backingId }));
     }
   }
 
@@ -99,7 +115,7 @@ export class SettingsService {
   // Persistence methods
   private loadSettings(): AppSettings {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
+      const stored = localStorage.getItem(APP_LOCAL_STORAGE_KEYS.settings);
       if (stored) {
         const parsed = JSON.parse(stored);
         return { ...DEFAULT_SETTINGS, ...parsed };
@@ -112,7 +128,7 @@ export class SettingsService {
 
   private saveSettings(settings: AppSettings): void {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(settings));
+      localStorage.setItem(APP_LOCAL_STORAGE_KEYS.settings, JSON.stringify(settings));
     } catch (error) {
       console.warn('Failed to save settings to localStorage:', error);
     }

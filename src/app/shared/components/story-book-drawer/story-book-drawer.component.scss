@@ -96,7 +96,7 @@
     color: rgba(247, 240, 225, 0.6);
     font: 600 0.78rem/1 system-ui, sans-serif;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: color 150ms ease, border-color 150ms ease;
 
     mat-icon {
       font-size: 16px;
@@ -126,10 +126,6 @@
   overflow-y: auto;
   padding: 18px 20px;
   overscroll-behavior: contain;
-
-  &:focus-visible {
-    outline: none;
-  }
 }
 
 .empty-state {
@@ -306,13 +302,39 @@
   flex-direction: column;
   gap: 14px;
 
+  .rules-intro {
+    margin: 0;
+    color: rgba(247, 240, 225, 0.72);
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+
   .rule-card {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    width: 100%;
+    min-height: 88px;
+    align-items: flex-start;
     gap: 14px;
     padding: 14px;
     border-radius: 10px;
     background: rgba(18, 44, 37, 0.65);
     border: 1px solid rgba(228, 191, 114, 0.15);
+    color: #f7f0e1;
+    cursor: pointer;
+    text-align: left;
+    transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+
+    &:hover {
+      background: rgba(24, 57, 47, 0.88);
+      border-color: rgba(255, 213, 79, 0.5);
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #ffd54f;
+      outline-offset: 2px;
+    }
 
     .rule-icon {
       mat-icon {
@@ -324,31 +346,158 @@
     }
 
     .rule-body {
-      flex: 1;
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 6px;
 
-      h3 {
-        margin: 0 0 6px;
+      strong {
         font: 600 0.95rem/1.2 Georgia, serif;
         color: #fff9ee;
       }
 
-      p {
-        margin: 0;
+      span {
         font-size: 0.82rem;
         line-height: 1.45;
         color: rgba(247, 240, 225, 0.85);
-
-        strong {
-          color: #ffd54f;
-        }
-
-        em {
-          color: #81d4fa;
-          font-style: normal;
-          font-weight: 600;
-        }
       }
     }
+
+    .demo-affordance {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #ffd54f;
+      font: 700 0.62rem/1 system-ui, sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+
+      mat-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+      }
+    }
+  }
+}
+
+.card-reference {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.reference-heading {
+  h3 {
+    margin: 5px 0 3px;
+    color: #fff9ee;
+    font: 600 1.2rem/1.2 Georgia, serif;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(247, 240, 225, 0.62);
+    font-size: 0.72rem;
+  }
+
+  code {
+    color: #e5c175;
+    overflow-wrap: anywhere;
+  }
+}
+
+.reference-eyebrow {
+  color: #e5c175;
+  font: 700 0.6rem/1 system-ui, sans-serif;
+  letter-spacing: 0.15em;
+}
+
+.reference-card-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  border: 1px solid rgba(228, 191, 114, 0.18);
+  border-radius: 12px;
+  background: rgba(18, 44, 37, 0.68);
+
+  app-card {
+    --card-width: 96px;
+    --card-height: 134px;
+    flex: 0 0 auto;
+  }
+
+  dl {
+    display: grid;
+    flex: 1;
+    gap: 10px;
+    margin: 0;
+  }
+
+  dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid rgba(247, 240, 225, 0.1);
+  }
+
+  dt {
+    color: rgba(247, 240, 225, 0.62);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+    color: #ffd54f;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+}
+
+.reference-guidance {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-left: 3px solid #81d4fa;
+  background: rgba(2, 136, 209, 0.1);
+
+  > mat-icon {
+    flex: 0 0 auto;
+    color: #81d4fa;
+  }
+
+  strong {
+    color: #fff9ee;
+    font-size: 0.82rem;
+  }
+
+  p {
+    margin: 5px 0 0;
+    color: rgba(247, 240, 225, 0.74);
+    font-size: 0.76rem;
+    line-height: 1.4;
+  }
+}
+
+.show-rule-btn {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 13px;
+  border: 1px solid rgba(229, 193, 117, 0.45);
+  border-radius: 7px;
+  background: transparent;
+  color: #e5c175;
+  cursor: pointer;
+  font-weight: 650;
+
+  &:focus-visible {
+    outline: 2px solid #ffd54f;
+    outline-offset: 2px;
   }
 }
 
@@ -393,5 +542,46 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@media (max-width: 390px) {
+  .drawer-tabs {
+    padding-inline: 5px;
+    gap: 2px;
+
+    .tab-btn {
+      min-width: 0;
+      padding-inline: 7px;
+
+      span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  .drawer-content {
+    padding-inline: 14px;
+  }
+
+  .rules-reference .rule-card {
+    grid-template-columns: auto minmax(0, 1fr);
+
+    .demo-affordance {
+      grid-column: 2;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-backdrop,
+  .story-book-drawer {
+    animation: none;
+  }
+
+  .story-node,
+  .rules-reference .rule-card {
+    transition: none;
   }
 }

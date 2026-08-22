@@ -1,440 +1,162 @@
-import { ChangeDetectionStrategy, Component, inject, ElementRef, ViewChild, AfterViewInit, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef
+} from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
+import { CampaignProgressionService } from '../../../core/services/campaign-progression.service';
 import { PlatformAchievementsService } from '../../../core/services/platform-achievements.service';
 import { SettingsService } from '../../../core/services/settings.service';
-import { GameControllerService } from '../../../services/game-controller.service';
-import { TutorialService } from '../../../services/tutorial.service';
 import { ACHIEVEMENTS } from '../../../core/models/achievement.model';
+import { CardBackingOption } from '../../../core/models/settings.model';
+import { GameOutcome } from '../../../core/models/game-state.model';
+import { GameControllerService } from '../../../services/game-controller.service';
+import { TelemetryConsentService } from '../../../services/telemetry-consent.service';
+import { TutorialService } from '../../../services/tutorial.service';
+
+type ProfileTab = 'stats' | 'achievements' | 'settings';
+
+interface ProfileConfirmationData {
+  readonly title: string;
+  readonly message: string;
+  readonly confirmLabel: string;
+  readonly destructive?: boolean;
+}
+
+@Component({
+  selector: 'app-profile-confirmation-dialog',
+  imports: [MatDialogModule, MatButtonModule],
+  template: `
+    <h2 mat-dialog-title>{{ data.title }}</h2>
+    <mat-dialog-content>
+      <p>{{ data.message }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button type="button" (click)="dialogRef.close(false)">Cancel</button>
+      <button
+        mat-flat-button
+        type="button"
+        class="profile-confirm-action"
+        [class.destructive]="data.destructive"
+        (click)="dialogRef.close(true)">
+        {{ data.confirmLabel }}
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: `
+    :host { display: block; max-width: 430px; }
+    p { line-height: 1.5; }
+    .profile-confirm-action { background: #e5c175; color: #102a23; }
+    .profile-confirm-action.destructive { background: #b3261e; color: #fff; }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class ProfileConfirmationDialogComponent {
+  readonly dialogRef = inject(MatDialogRef<ProfileConfirmationDialogComponent>);
+  readonly data = inject<ProfileConfirmationData>(MAT_DIALOG_DATA);
+}
 
 @Component({
   selector: 'app-profile-dialog',
-  standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
-    MatDividerModule,
-    MatTooltipModule,
     MatFormFieldModule,
     MatSelectModule,
     MatSlideToggleModule,
     RouterLink
   ],
-  template: `
-    <div class="profile-dialog-container">
-      <div class="dialog-header">
-        <div class="user-header-info">
-          <div class="avatar-wrapper">
-            <img [src]="profile().avatarUrl" [alt]="profile().name" (error)="onAvatarError($event)" />
-            <span class="auth-badge" [class.google]="profile().isGoogleAuth">
-              <mat-icon>{{ profile().isGoogleAuth ? 'verified_user' : 'person' }}</mat-icon>
-            </span>
-          </div>
-          <div class="user-titles">
-            <div class="name-edit-row">
-              <h2 *ngIf="!isEditingName">{{ profile().name }}</h2>
-              <input *ngIf="isEditingName" [(ngModel)]="editingName" (keyup.enter)="saveName()" class="name-input" />
-              <button mat-icon-button class="edit-btn" (click)="toggleEditName()" aria-label="Edit commander name">
-                <mat-icon>{{ isEditingName ? 'check' : 'edit' }}</mat-icon>
-              </button>
-            </div>
-            <p class="email-sub">{{ profile().email }}</p>
-            <span class="provider-pill" [class.google]="profile().isGoogleAuth">
-              {{ profile().isGoogleAuth ? 'Google Account Connected' : 'Guest Commander Profile' }}
-            </span>
-          </div>
-        </div>
-
-        <button mat-icon-button mat-dialog-close class="close-btn" aria-label="Close dialog">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <div class="dialog-tabs">
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab() === 'stats'"
-          (click)="activeTab.set('stats')">
-          <mat-icon>insights</mat-icon>
-          <span>Career Records</span>
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab() === 'achievements'"
-          (click)="activeTab.set('achievements')">
-          <mat-icon>emoji_events</mat-icon>
-          <span>Achievements ({{ unlockedCount() }}/{{ totalAchievements() }})</span>
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab() === 'settings'"
-          (click)="activeTab.set('settings')">
-          <mat-icon>settings</mat-icon>
-          <span>Settings</span>
-        </button>
-      </div>
-
-      <mat-divider></mat-divider>
-
-      <div class="dialog-body">
-        @if (activeTab() === 'stats') {
-          <div class="stats-tab">
-            <!-- Basic Records -->
-            <div class="records-section">
-              <h4 class="section-subtitle">Basic Records</h4>
-              <div class="stats-grid">
-                <div class="stat-card win-rate" [class.high]="(stats().winRatePercentage || 0) >= 60">
-                  <div class="stat-icon"><mat-icon>emoji_events</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().winRatePercentage || 0 }}%</span>
-                    <span class="stat-label">Win Rate</span>
-                  </div>
-                </div>
-
-                <div class="stat-card">
-                  <div class="stat-icon games"><mat-icon>sports_esports</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().gamesPlayed }}</span>
-                    <span class="stat-label">Games Played</span>
-                  </div>
-                </div>
-
-                <div class="stat-card won">
-                  <div class="stat-icon"><mat-icon>thumb_up</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().gamesWon }}</span>
-                    <span class="stat-label">Victories</span>
-                  </div>
-                </div>
-
-                <div class="stat-card lost">
-                  <div class="stat-icon"><mat-icon>thumb_down</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().gamesLost }}</span>
-                    <span class="stat-label">Defeats</span>
-                  </div>
-                </div>
-
-                <div class="stat-card">
-                  <div class="stat-icon"><mat-icon>local_fire_department</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().currentWinStreak || 0 }} / {{ stats().bestWinStreak || 0 }}</span>
-                    <span class="stat-label">Streak (Cur / Best)</span>
-                  </div>
-                </div>
-
-                <div class="stat-card">
-                  <div class="stat-icon"><mat-icon>flag</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().gamesAbandoned || 0 }}</span>
-                    <span class="stat-label">Games Abandoned</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Battles & Challenges -->
-            <div class="records-section">
-              <h4 class="section-subtitle">Battles & Challenges</h4>
-              <div class="stats-grid">
-                <div class="stat-card">
-                  <div class="stat-icon battles"><mat-icon>swords</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().totalBattles || 0 }}</span>
-                    <span class="stat-label">Total Battles</span>
-                  </div>
-                </div>
-
-                <div class="stat-card">
-                  <div class="stat-icon"><mat-icon>layers</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">Battle {{ stats().deepestRecursiveBattle || 1 }}</span>
-                    <span class="stat-label">Deepest Battle</span>
-                  </div>
-                </div>
-
-                <div class="stat-card">
-                  <div class="stat-icon"><mat-icon>bolt</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().mostOpponentCardsDefeatedInBattle || 0 }}</span>
-                    <span class="stat-label">Most Defeated in Battle</span>
-                  </div>
-                </div>
-
-                <div class="stat-card">
-                  <div class="stat-icon"><mat-icon>shield</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().successfulChallenges || 0 }} / {{ stats().totalChallenges || 0 }}</span>
-                    <span class="stat-label">Challenges Won ({{ stats().challengeSuccessRate || 0 }}%)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Memorable Card Moments -->
-            <div class="records-section">
-              <h4 class="section-subtitle">Memorable Feats</h4>
-              <div class="stats-grid">
-                <div class="stat-card">
-                  <div class="stat-icon"><mat-icon>flare</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().acesDefeatedByTwo || 0 }}</span>
-                    <span class="stat-label">Aces Defeated by 2</span>
-                  </div>
-                </div>
-
-                <div class="stat-card">
-                  <div class="stat-icon"><mat-icon>shield</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().twosSavedByChallenge || 0 }}</span>
-                    <span class="stat-label">2s Saved by Reinforcement</span>
-                  </div>
-                </div>
-
-                <div class="stat-card">
-                  <div class="stat-icon"><mat-icon>trending_up</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().comebackWins || 0 }} (Max -{{ stats().largestComebackDeficit || 0 }})</span>
-                    <span class="stat-label">Comeback Wins</span>
-                  </div>
-                </div>
-
-                <div class="stat-card">
-                  <div class="stat-icon"><mat-icon>workspace_premium</mat-icon></div>
-                  <div class="stat-data">
-                    <span class="stat-value">{{ stats().winsWithOneCardRemaining || 0 }}</span>
-                    <span class="stat-label">1-Card Victories</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        } @else if (activeTab() === 'achievements') {
-          <!-- Achievements Tab -->
-          <div class="achievements-tab">
-            <div class="achievements-summary-card">
-              <div class="summary-header">
-                <span class="summary-title">Battle Honors</span>
-                <span class="summary-count">{{ unlockedCount() }} of {{ totalAchievements() }} ({{ unlockedPercentage() }}%)</span>
-              </div>
-              <div class="progress-track" role="progressbar" [attr.aria-valuenow]="unlockedPercentage()" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-fill" [style.width.%]="unlockedPercentage()"></div>
-              </div>
-            </div>
-
-            @if (showPlayGamesButton()) {
-              <div class="play-games-banner">
-                <button mat-flat-button class="play-games-btn" (click)="openPlayGamesAchievements()">
-                  <mat-icon>sports_esports</mat-icon>
-                  View Google Play Achievements
-                </button>
-              </div>
-            }
-
-            <div class="achievements-grid">
-              @for (ach of allAchievements; track ach.id) {
-                <div class="achievement-item" [class.unlocked]="isAchievementUnlocked(ach.id)">
-                  <div class="ach-icon-wrapper">
-                    <mat-icon>{{ isAchievementUnlocked(ach.id) ? ach.icon : 'lock' }}</mat-icon>
-                  </div>
-                  <div class="ach-info">
-                    <div class="ach-header">
-                      <strong>{{ ach.name }}</strong>
-                      <span class="ach-status">{{ isAchievementUnlocked(ach.id) ? 'UNLOCKED' : 'LOCKED' }}</span>
-                    </div>
-                    <p>{{ ach.description }}</p>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        } @else {
-          <div class="settings-tab">
-            <!-- Contextual Current Match Section -->
-            @if (hasActiveMatch()) {
-              <section class="settings-section match-actions-section" aria-labelledby="current-match-title">
-                <h4 id="current-match-title" class="section-subtitle">Current Game</h4>
-                <p class="match-section-desc">A game is currently active on the table.</p>
-                <div class="match-actions-grid">
-                  <button mat-flat-button class="restart-match-btn" (click)="onRestartMatch()">
-                    <mat-icon>refresh</mat-icon>
-                    <span>Restart Match</span>
-                  </button>
-                  <button mat-stroked-button color="warn" class="abandon-match-btn" (click)="onAbandonMatch()">
-                    <mat-icon>flag</mat-icon>
-                    <span>Abandon Match</span>
-                  </button>
-                </div>
-              </section>
-            }
-
-            <section class="settings-section" aria-labelledby="appearance-settings-title">
-              <h4 id="appearance-settings-title" class="section-subtitle">Appearance & Controls</h4>
-              <div class="settings-fields">
-                <mat-form-field appearance="outline">
-                  <mat-label>Theme</mat-label>
-                  <mat-select [value]="settings.theme()" (selectionChange)="settings.setTheme($event.value)">
-                    <mat-option value="dark">Dark</mat-option>
-                    <mat-option value="light">Light</mat-option>
-                    <mat-option value="auto">System</mat-option>
-                  </mat-select>
-                </mat-form-field>
-                <mat-form-field appearance="outline">
-                  <mat-label>Deck Hand</mat-label>
-                  <mat-select [value]="settings.deckHand()" (selectionChange)="settings.setDeckHand($event.value)">
-                    <mat-option value="right">Right-handed</mat-option>
-                    <mat-option value="left">Left-handed</mat-option>
-                  </mat-select>
-                </mat-form-field>
-                <mat-form-field appearance="outline">
-                  <mat-label>Animation Speed</mat-label>
-                  <mat-select [value]="settings.animationSpeed()" (selectionChange)="settings.setAnimationSpeed($event.value)">
-                    <mat-option value="slow">Slow</mat-option>
-                    <mat-option value="normal">Normal</mat-option>
-                    <mat-option value="fast">Fast</mat-option>
-                  </mat-select>
-                </mat-form-field>
-              </div>
-
-              <div class="settings-toggles">
-                <mat-slide-toggle [checked]="settings.soundEnabled()" (change)="settings.setSoundEnabled($event.checked)">Sound</mat-slide-toggle>
-                <mat-slide-toggle [checked]="settings.autoPlayAnimations()" (change)="settings.setAutoPlayAnimations($event.checked)">Animations</mat-slide-toggle>
-                <mat-slide-toggle [checked]="settings.showTurnCounter()" (change)="settings.setShowTurnCounter($event.checked)">Turn counter</mat-slide-toggle>
-                <mat-slide-toggle [checked]="settings.showCardDetails()" (change)="settings.setShowCardDetails($event.checked)">Card details</mat-slide-toggle>
-              </div>
-            </section>
-
-            <!-- Tutorial Guidance Section -->
-            <section class="settings-section" aria-labelledby="tutorial-guidance-title">
-              <h4 id="tutorial-guidance-title" class="section-subtitle">Tutorial Guidance</h4>
-              <div class="settings-toggles">
-                <mat-slide-toggle [checked]="settings.tutorialEnabled()" (change)="settings.setTutorialEnabled($event.checked)">
-                  Show Tutorial Guidance
-                </mat-slide-toggle>
-              </div>
-              <button mat-stroked-button class="reset-tutorial-btn" (click)="onResetTutorial()">
-                <mat-icon>school</mat-icon> Reset Tutorial Progress
-              </button>
-            </section>
-
-            <section class="settings-section" aria-labelledby="card-backing-title">
-              <h4 id="card-backing-title" class="section-subtitle">Card Backing</h4>
-              <div class="backing-options">
-                @for (option of settings.cardBackingOptions(); track option.id) {
-                  <button
-                    type="button"
-                    class="backing-option"
-                    [class.selected]="settings.selectedCardBacking() === option.id"
-                    [attr.aria-pressed]="settings.selectedCardBacking() === option.id"
-                    (click)="settings.setCardBacking(option.id)">
-                    <span class="backing-preview" [style]="option.preview" aria-hidden="true"></span>
-                    <span>{{ option.name }}</span>
-                    @if (settings.selectedCardBacking() === option.id) {
-                      <mat-icon>check_circle</mat-icon>
-                    }
-                  </button>
-                }
-              </div>
-            </section>
-
-            <section class="settings-section settings-footer" aria-labelledby="about-title">
-              <div>
-                <h4 id="about-title" class="section-subtitle">About & Data</h4>
-                <p>War of Attrition · Version 1.0.2</p>
-              </div>
-              <nav class="profile-links" aria-label="Support and legal links">
-                <a mat-button mat-dialog-close routerLink="/privacy"><mat-icon>privacy_tip</mat-icon>Privacy</a>
-                <a mat-button mat-dialog-close routerLink="/support"><mat-icon>help_outline</mat-icon>Support</a>
-                <a mat-button mat-dialog-close routerLink="/delete-account"><mat-icon>delete_forever</mat-icon>Delete data</a>
-              </nav>
-              <button mat-stroked-button class="reset-settings-btn" (click)="resetSettings()">
-                <mat-icon>restore</mat-icon>Reset preferences
-              </button>
-            </section>
-          </div>
-        }
-
-        <mat-divider class="body-divider"></mat-divider>
-
-        <div class="auth-actions-row">
-          <div *ngIf="!profile().isGoogleAuth" #googleBtnContainer class="google-btn-wrapper"></div>
-          <button *ngIf="!profile().isGoogleAuth" mat-raised-button class="google-signin-btn" (click)="signInGoogle()">
-            <svg class="google-svg" viewBox="0 0 24 24" width="18" height="18">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-            </svg>
-            Sign in with Google
-          </button>
-
-          <button *ngIf="profile().isGoogleAuth" mat-stroked-button color="warn" class="signout-btn" (click)="signOut()">
-            <mat-icon>logout</mat-icon> Sign Out
-          </button>
-
-          <button mat-button class="reset-stats-btn" (click)="resetStats()" matTooltip="Reset active user stats and career records">
-            <mat-icon>restart_alt</mat-icon> Reset Stats
-          </button>
-        </div>
-      </div>
-    </div>
-  `,
-  styleUrls: ['./profile-dialog.component.scss'],
+  templateUrl: './profile-dialog.component.html',
+  styleUrl: './profile-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ProfileDialogComponent implements AfterViewInit {
-  private authService = inject(AuthService);
-  private platformAchievements = inject(PlatformAchievementsService);
-  private gameController = inject(GameControllerService);
-  private tutorial = inject(TutorialService);
-  private dialogRef = inject(MatDialogRef<ProfileDialogComponent>);
+export class ProfileDialogComponent {
+  private readonly authService = inject(AuthService);
+  private readonly platformAchievements = inject(PlatformAchievementsService);
+  private readonly gameController = inject(GameControllerService);
+  private readonly tutorial = inject(TutorialService);
+  private readonly dialogRef = inject(MatDialogRef<ProfileDialogComponent>);
+  private readonly dialog = inject(MatDialog);
+
   readonly settings = inject(SettingsService);
-
-  @ViewChild('googleBtnContainer') googleBtnContainer?: ElementRef<HTMLDivElement>;
-
+  readonly progression = inject(CampaignProgressionService);
+  readonly telemetryConsent = inject(TelemetryConsentService);
+  readonly analyticsConsent = this.telemetryConsent.analyticsConsent;
   readonly profile = this.authService.activeProfile;
   readonly stats = this.authService.userStats;
   readonly allAchievements = ACHIEVEMENTS;
-  readonly activeTab = signal<'stats' | 'achievements' | 'settings'>('stats');
+  readonly activeTab = signal<ProfileTab>('stats');
+  readonly settingsStatus = signal('');
 
-  readonly unlockedCount = computed(() =>
-    this.stats().unlockedAchievements?.length || 0
-  );
+  readonly unlockedCount = computed(() => this.stats().unlockedAchievements?.length || 0);
   readonly totalAchievements = computed(() => ACHIEVEMENTS.length);
   readonly unlockedPercentage = computed(() =>
     Math.round((this.unlockedCount() / Math.max(1, this.totalAchievements())) * 100)
   );
-
   readonly hasActiveMatch = computed(() => this.gameController.hasMeaningfulUnresolvedGame());
-
-  readonly showPlayGamesButton = computed(() =>
-    this.platformAchievements.isPlayGamesAvailable() &&
-    this.platformAchievements.isPlayGamesSignedIn()
+  readonly showPlayGamesButton = computed(
+    () =>
+      this.platformAchievements.isPlayGamesAvailable() &&
+      this.platformAchievements.isPlayGamesSignedIn()
   );
+
+  readonly currentCampaignRecord = computed(() => {
+    const wars = this.progression.currentCampaign().wars;
+    return {
+      completed: wars.length,
+      wins: wars.filter(war => war.outcome === GameOutcome.PLAYER_WIN).length,
+      losses: wars.filter(war => war.outcome === GameOutcome.OPPONENT_WIN).length,
+      ties: wars.filter(war => war.outcome === GameOutcome.TIE).length,
+      differential: wars.reduce((total, war) => total + war.margin, 0)
+    };
+  });
+
+  readonly campaignCareer = computed(() => {
+    const statistics = this.stats();
+    return {
+      completed: statistics.campaignsCompleted,
+      won: statistics.campaignsWon,
+      lost: statistics.campaignsLost,
+      drawn: statistics.campaignsDrawn,
+      bestDifferential: statistics.bestCampaignDifferential,
+    };
+  });
+
+  readonly campaignPips = [0, 1, 2] as const;
 
   isEditingName = false;
   editingName = '';
 
-  ngAfterViewInit(): void {
-    if (this.googleBtnContainer?.nativeElement && !this.profile().isGoogleAuth) {
-      this.authService.renderGoogleButton(this.googleBtnContainer.nativeElement);
-    }
+  selectTab(tab: ProfileTab): void {
+    this.activeTab.set(tab);
+  }
+
+  handleTabKeyDown(event: KeyboardEvent, current: ProfileTab): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+
+    event.preventDefault();
+    const tabs: readonly ProfileTab[] = ['stats', 'achievements', 'settings'];
+    const currentIndex = tabs.indexOf(current);
+    let nextIndex = currentIndex;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = tabs.length - 1;
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
+
+    const nextTab = tabs[nextIndex];
+    this.selectTab(nextTab);
+    queueMicrotask(() => document.getElementById(`profile-tab-${nextTab}`)?.focus());
   }
 
   isAchievementUnlocked(id: string): boolean {
@@ -462,50 +184,184 @@ export class ProfileDialogComponent implements AfterViewInit {
   }
 
   signInGoogle(): void {
+    if (this.hasActiveMatch()) {
+      this.settingsStatus.set(
+        'Finish the current War or deliberately abandon it before changing profiles.'
+      );
+      return;
+    }
+
     try {
       this.authService.promptGoogleSignIn();
-    } catch (e) {
-      console.warn('Google Sign-In could not be initialized:', e);
+    } catch (error) {
+      console.warn('Google Sign-In could not be initialized:', error);
+      this.settingsStatus.set('Google Sign-In is not available right now.');
     }
   }
 
   signOut(): void {
-    this.authService.signOut();
+    if (this.hasActiveMatch()) {
+      this.settingsStatus.set(
+        'Finish the current War or deliberately abandon it before changing profiles.'
+      );
+      return;
+    }
+
+    this.confirm(
+      {
+        title: 'Sign out?',
+        message: 'Your local guest profile remains available on this device after signing out.',
+        confirmLabel: 'Sign out'
+      },
+      () => this.authService.signOut()
+    );
   }
 
   onRestartMatch(): void {
-    if (confirm('Restart current match? This will clear the table and deal a fresh game.')) {
-      this.gameController.startNewGame();
-      this.dialogRef.close();
-    }
+    this.confirm(
+      {
+        title: 'Restart current War?',
+        message: 'This clears the current table, records the unresolved War as abandoned, and deals a fresh War.',
+        confirmLabel: 'Restart War',
+        destructive: true
+      },
+      () => {
+        this.gameController.startNewGame('restart');
+        this.dialogRef.close();
+      }
+    );
   }
 
   onAbandonMatch(): void {
-    if (confirm('Abandon current match? This match will be recorded as an abandonment in your career records.')) {
-      this.gameController.startNewGame();
-      this.dialogRef.close();
-    }
+    this.confirm(
+      {
+        title: 'Abandon current War?',
+        message: 'The unresolved War will be recorded as abandoned and will not advance Campaign progress.',
+        confirmLabel: 'Abandon War',
+        destructive: true
+      },
+      () => {
+        this.gameController.startNewGame('abandon');
+        this.dialogRef.close();
+      }
+    );
   }
 
   onResetTutorial(): void {
-    this.tutorial.resetTutorialProgress();
-    alert('Tutorial progress has been reset. You will see contextual gameplay tips on your next match.');
+    this.confirm(
+      {
+        title: 'Reset tutorial guidance?',
+        message: 'Contextual gameplay tips will begin again during your next War.',
+        confirmLabel: 'Reset tutorial'
+      },
+      () => {
+        this.tutorial.resetTutorialProgress();
+        this.settingsStatus.set('Tutorial guidance has been reset.');
+      }
+    );
   }
 
   resetStats(): void {
-    if (confirm('Are you sure you want to reset your statistics and career records?')) {
-      this.authService.resetActiveUserStats();
-    }
+    this.confirm(
+      {
+        title: 'Reset Career Records?',
+        message: 'This permanently clears player-facing statistics and records. Campaign tokens and unlocked cosmetics are not removed.',
+        confirmLabel: 'Reset records',
+        destructive: true
+      },
+      () => {
+        this.authService.resetActiveUserStats();
+        this.settingsStatus.set('Career Records have been reset.');
+      }
+    );
   }
 
   resetSettings(): void {
-    if (confirm('Reset all preferences to their defaults?')) {
-      this.settings.resetSettings();
+    this.confirm(
+      {
+        title: 'Reset preferences?',
+        message: 'Theme, controls, sound, and animation preferences will return to their defaults. Unlocked cosmetics remain yours.',
+        confirmLabel: 'Reset preferences',
+        destructive: true
+      },
+      () => {
+        this.settings.resetSettings();
+        this.settingsStatus.set('Preferences have been reset.');
+      }
+    );
+  }
+
+  setAnalyticsConsent(consent: 'granted' | 'denied'): void {
+    this.telemetryConsent.setAnalyticsConsent(consent);
+    this.settingsStatus.set(
+      consent === 'granted'
+        ? 'Anonymous gameplay analytics will begin with the next War.'
+        : 'Anonymous gameplay analytics are off.',
+    );
+  }
+
+  backingAction(option: CardBackingOption): void {
+    this.settingsStatus.set('');
+    if (this.progression.isCardBackingUnlocked(option.id)) {
+      this.settings.setCardBacking(option.id);
+      this.settingsStatus.set(`${option.name} is now equipped.`);
+      return;
     }
+
+    if (this.progression.tokenBalance() < option.tokenCost) {
+      const needed = option.tokenCost - this.progression.tokenBalance();
+      this.settingsStatus.set(
+        `${option.name} needs ${needed} more ${needed === 1 ? 'token' : 'tokens'}.`
+      );
+      return;
+    }
+
+    this.confirm(
+      {
+        title: `Unlock ${option.name}?`,
+        message: `Spend ${option.tokenCost} ${option.tokenCost === 1 ? 'token' : 'tokens'} to permanently unlock and equip this card backing?`,
+        confirmLabel: 'Unlock backing'
+      },
+      () => {
+        const result = this.progression.purchaseCardBacking(option.id);
+        if (result.status === 'unlocked' || result.status === 'already_unlocked') {
+          this.settingsStatus.set(
+            `${option.name} unlocked and equipped. ${result.tokenBalance} ${result.tokenBalance === 1 ? 'token remains' : 'tokens remain'}.`
+          );
+        } else if (result.status === 'insufficient_tokens') {
+          this.settingsStatus.set('Your token balance changed before the purchase could complete.');
+        }
+      }
+    );
+  }
+
+  backingActionLabel(option: CardBackingOption): string {
+    if (this.settings.selectedCardBacking() === option.id) return `${option.name}, selected`;
+    if (this.progression.isCardBackingUnlocked(option.id)) return `Equip ${option.name}`;
+    return `Unlock ${option.name} for ${option.tokenCost} ${option.tokenCost === 1 ? 'token' : 'tokens'}`;
+  }
+
+  signed(value: number): string {
+    return value > 0 ? `+${value}` : `${value}`;
   }
 
   onAvatarError(event: Event): void {
     const target = event.target as HTMLImageElement;
     target.src = 'https://api.dicebear.com/7.x/bottts/svg?seed=Commander';
+  }
+
+  private confirm(data: ProfileConfirmationData, onConfirm: () => void): void {
+    this.dialog
+      .open(ProfileConfirmationDialogComponent, {
+        data,
+        width: 'min(430px, calc(100vw - 24px))',
+        maxWidth: 'calc(100vw - 24px)',
+        autoFocus: 'first-tabbable',
+        restoreFocus: true
+      })
+      .afterClosed()
+      .subscribe(confirmed => {
+        if (confirmed) onConfirm();
+      });
   }
 }

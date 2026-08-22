@@ -1,14 +1,30 @@
 import { TestBed } from '@angular/core/testing';
-import { GameOutcome, GamePhase, PlayerType } from '../models/game-state.model';
-import { GameStateService } from './game-state.service';
+import {
+  BattleSelectionOutcome,
+  ComparisonResult,
+  DeckColor,
+  GameOutcome,
+  GamePhase,
+  PlayerType,
+} from '../models/game-state.model';
+import { DECK_ASSIGNMENT_RANDOM, GameStateService } from './game-state.service';
 
 describe('GameStateService card ledger', () => {
   let service: GameStateService;
+  let assignmentRolls: number[];
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    assignmentRolls = [];
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: DECK_ASSIGNMENT_RANDOM,
+          useFactory: () => () => assignmentRolls.shift() ?? 0,
+        },
+      ],
+    });
     service = TestBed.inject(GameStateService);
-    service.initializeGame({ shuffle: false });
+    service.initializeGame({ shuffle: false, playerDeckColor: DeckColor.RED });
   });
 
   function expectConserved(): void {
@@ -60,6 +76,36 @@ describe('GameStateService card ledger', () => {
       second.opponentCards[0].id,
       second.playerCards[0].id
     )).not.toThrow();
+    expectConserved();
+  });
+
+  it('supports either color assignment while ownership and the exposed assignment stay stable', () => {
+    service.initializeGame({ shuffle: false, playerDeckColor: DeckColor.BLACK });
+
+    expect(service.currentPlayerDeckColor).toBe(DeckColor.BLACK);
+    expect(service.currentOpponentDeckColor).toBe(DeckColor.RED);
+    expect(service.assignedPlayerDeckColor()).toBe(DeckColor.BLACK);
+    expect(service.assignedOpponentDeckColor()).toBe(DeckColor.RED);
+    expect(service.currentState.playerDeckColor).toBe(DeckColor.BLACK);
+    expect(service.currentPlayerDeck.toArray().every((card) => !card.isRed)).toBeTrue();
+    expect(service.currentOpponentDeck.toArray().every((card) => card.isRed)).toBeTrue();
+    expect(service.assignedCardPool(PlayerType.PLAYER).every((card) => !card.isRed)).toBeTrue();
+    expect(service.assignedCardPool(PlayerType.OPPONENT).every((card) => card.isRed)).toBeTrue();
+    expectConserved();
+  });
+
+  it('rolls assignment once per War and never changes it during that War', () => {
+    assignmentRolls = [0.49, 0.75];
+    service.initializeGame({ shuffle: false });
+    expect(service.currentPlayerDeckColor).toBe(DeckColor.RED);
+
+    service.startTurn();
+    service.settleActiveTurn(PlayerType.PLAYER);
+    expect(service.currentPlayerDeckColor).toBe(DeckColor.RED);
+
+    service.initializeGame({ shuffle: false });
+    expect(service.currentPlayerDeckColor).toBe(DeckColor.BLACK);
+    expect(assignmentRolls).toEqual([]);
     expectConserved();
   });
 
@@ -118,6 +164,33 @@ describe('GameStateService card ledger', () => {
     expect(outcome.casualties).toContain(outcome.selectedOpponentChampion!);
     expect(outcome.casualties.length).toBe(4);
     expect(outcome.finalBoneyardCount).toBe(outcome.boneyardCountBeforeSettlement + 4);
+    expectConserved();
+  });
+
+  it('rejects a Battle outcome whose physical selection does not match active target IDs', () => {
+    service.startTurn();
+    service.setPhase(GamePhase.BATTLE);
+    const layer = service.dealBattleLayer()!;
+    const selected = service.selectNewestBattleTargets(
+      layer.opponentCards[0].id,
+      layer.playerCards[0].id,
+    );
+    const mismatchedSelection: BattleSelectionOutcome = {
+      layerRound: layer.round,
+      playerCard: layer.playerCards[1],
+      opponentCard: selected.opponentCard,
+      playerCardId: layer.playerCards[1].id,
+      opponentCardId: selected.opponentCard.id,
+      comparison: ComparisonResult.PLAYER_WINS,
+      winner: PlayerType.PLAYER,
+      specialRule: false,
+    };
+    const outcome = service.previewBattleSettlement(PlayerType.PLAYER, mismatchedSelection);
+
+    expect(() => service.settleActiveTurn(PlayerType.PLAYER, outcome)).toThrowError(
+      'Battle outcome selection no longer matches the selected physical cards',
+    );
+    expect(service.discardedCardCount()).toBe(0);
     expectConserved();
   });
 

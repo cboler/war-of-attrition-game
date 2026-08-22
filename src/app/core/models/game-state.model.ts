@@ -1,5 +1,16 @@
 import { Card } from './card.model';
 
+export enum ComparisonResult {
+  PLAYER_WINS = 'player_wins',
+  OPPONENT_WINS = 'opponent_wins',
+  TIE = 'tie',
+}
+
+export enum DeckColor {
+  RED = 'red',
+  BLACK = 'black',
+}
+
 export enum GamePhase {
   SETUP = 'setup',
   NORMAL = 'normal',
@@ -41,6 +52,33 @@ export interface BattleLayer {
 }
 
 /**
+ * The one authoritative account of the physical champions selected for a
+ * Battle layer and the comparison performed on them.
+ */
+export interface BattleSelectionOutcome {
+  readonly layerRound: number;
+  readonly playerCard: Card;
+  readonly opponentCard: Card;
+  readonly playerCardId: string;
+  readonly opponentCardId: string;
+  readonly comparison: ComparisonResult;
+  readonly winner: PlayerType | null;
+  readonly specialRule: boolean;
+}
+
+export type SettlementSource = 'clash' | 'challenge' | 'battle';
+
+/** Explicit causal attribution for cards actually sent to the Boneyard. */
+export interface SettlementAttribution {
+  readonly source: SettlementSource;
+  readonly winner: PlayerType;
+  readonly loser: PlayerType;
+  readonly decisiveCard: Card;
+  readonly casualties: readonly Card[];
+  readonly battleDepth: number;
+}
+
+/**
  * The immutable account of a decisive Battle, captured before its presentation
  * starts.  Every consumer of Battle settlement (the Boneyard, animations,
  * the Field Manual, and achievements) must use this one account rather than
@@ -59,6 +97,7 @@ export interface BattleOutcome {
   readonly hiddenWinnerCards: readonly Card[];
   readonly selectedPlayerChampion: Card | null;
   readonly selectedOpponentChampion: Card | null;
+  readonly battleSelection: BattleSelectionOutcome | null;
   readonly playerDeckCountBeforeSettlement: number;
   readonly opponentDeckCountBeforeSettlement: number;
   readonly boneyardCountBeforeSettlement: number;
@@ -87,4 +126,5 @@ export interface GameState {
   isPlayerTurn: boolean;
   canChallenge: boolean;
   lastResult: string | null;
+  playerDeckColor: DeckColor;
 }

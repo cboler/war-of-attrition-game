@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { Game } from './game';
 import { GameStateService } from '../core/services/game-state.service';
 import { GameControllerService } from '../services/game-controller.service';
@@ -62,6 +62,12 @@ describe('GameComponent', () => {
     const drawn = component['gameController'].playerDrawCard();
     expect(drawn).toBe(true);
 
+    flushMicrotasks();
+    // Motion-disabled play still holds each resolved comparison long enough to
+    // read: first the opening clash, then the opponent's reinforcement clash.
+    tick(650);
+    flushMicrotasks();
+    tick(650);
     flushMicrotasks();
     fixture.detectChanges();
 

@@ -570,7 +570,10 @@ export class Game implements OnInit, OnDestroy {
     const discardedCards = this.gameStateService.discardedCards();
     
     this.dialog.open(DiscardPileViewerComponent, {
-      data: { discardedCards },
+      data: {
+        discardedCards,
+        playerDeckColor: this.gameStateService.currentPlayerDeckColor,
+      },
       width: '90%',
       maxWidth: '800px',
       maxHeight: '90vh',

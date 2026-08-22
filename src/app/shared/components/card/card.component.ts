@@ -16,6 +16,7 @@ import { SettingsService } from '../../../core/services/settings.service';
          [class.glow-green]="glow() === 'green'"
          [class.glow-red]="glow() === 'red'"
          [class.glow-blue]="glow() === 'blue'"
+         [class.motion-disabled]="!animationsEnabled()"
          [class.clickable]="clickable()"
          [class.animate-slide-in]="effectiveAnimationState() === 'slide-in'"
          [class.animate-flip]="effectiveAnimationState() === 'flip'"

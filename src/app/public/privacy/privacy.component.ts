@@ -29,7 +29,7 @@ import { MatDividerModule } from '@angular/material/divider';
         </mat-card-header>
 
         <mat-card-content class="legal-content">
-          <div class="last-updated">Last Updated: August 16, 2026</div>
+          <div class="last-updated">Last Updated: August 22, 2026</div>
 
           <section>
             <h3>1. Overview & Developer Identity</h3>
@@ -42,12 +42,12 @@ import { MatDividerModule } from '@angular/material/divider';
 
           <section>
             <h3>2. Data We Collect & How It Is Used</h3>
-            <p>We believe in data minimization. The application operates primarily on your device with no hidden tracking or data mining:</p>
+            <p>We use data minimization. The application operates primarily on your device:</p>
             <ul>
               <li>
                 <strong>Local Game Profile & Career Statistics:</strong> We store player display names, match history, win/loss records, 
-                challenges, battle layers reached, and unlocked achievements locally in your browser/device local storage. This data never 
-                leaves your device unless synced with connected Google services.
+                challenges, battle layers reached, Campaign progress, cosmetic tokens, and unlocked achievements locally in your browser/device storage.
+                Profile names, email addresses, Google account IDs, and avatar URLs are not included in gameplay analytics.
               </li>
               <li>
                 <strong>Optional Google Sign-In:</strong> If you choose to sign in with Google, we receive basic public profile information 
@@ -62,6 +62,11 @@ import { MatDividerModule } from '@angular/material/divider';
                 <strong>Gameplay State & Preferences:</strong> User settings (theme selection, sound effects, animation speed, and card backings) 
                 are saved exclusively in local storage.
               </li>
+              <li>
+                <strong>Optional Gameplay Analytics:</strong> When a release has Google Analytics configured and you grant analytics consent,
+                the game may send pseudonymous gameplay events such as outcomes, turn counts, public card comparisons, Campaign summaries,
+                and cosmetic unlocks. These records use random War/Campaign identifiers and version fields; they do not use your local or Google profile ID.
+              </li>
             </ul>
           </section>
 
@@ -71,23 +76,26 @@ import { MatDividerModule } from '@angular/material/divider';
             <ul>
               <li><strong>Google Identity Services:</strong> Authentication and profile display (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>).</li>
               <li><strong>Google Play Games Services:</strong> Leaderboards and achievement synchronization on Android (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Play Terms</a>).</li>
-              <li><strong>Google Tag Manager / Google Analytics:</strong> Basic anonymous web telemetry for web version error diagnostics and usage metrics (<a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Partner Privacy Policy</a>).</li>
+              <li><strong>Google Analytics:</strong> Consent-gated pseudonymous gameplay telemetry when configured. Google may process online identifiers and technical information under its terms (<a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses partner data</a>).</li>
             </ul>
           </section>
 
           <section>
             <h3>4. Advertising & Monetization</h3>
             <p>
-              War of Attrition contains <strong>NO third-party advertising</strong>, NO in-app purchases, NO monetization trackers, and NO sale or rental of personal data to data brokers.
+              Tokens and cosmetics are earned through play and cannot be purchased with real money. We do not sell or rent personal data.
+              The Android project currently contains a Google Mobile Ads banner integration; release owners must ensure the deployed behavior,
+              consent flow, store advertising declaration, and Google Play Data Safety answers remain consistent.
             </p>
           </section>
 
           <section>
             <h3>5. Data Retention & Deletion</h3>
             <p>
-              Your gameplay data is retained in local storage until you clear it. You can erase all local statistics, profiles, and achievement progress 
-              at any time using the in-app "Reset Active Profile Stats" button or through our public <a routerLink="/delete-account">Data Deletion Page</a>. 
-              Deleting app data does not delete your Google Account.
+              Local gameplay data is retained until you reset or delete it. "Reset Stats" clears resettable career statistics only and preserves
+              Campaign progression, tokens, and cosmetic entitlements. The <a routerLink="/delete-account">Data Deletion Page</a> resets all
+              War of Attrition application-owned local data. Local deletion does not delete your Google Account, synchronized Google Play records,
+              or analytics records already transmitted to Google. Analytics consent can be withdrawn for future collection.
             </p>
           </section>
 

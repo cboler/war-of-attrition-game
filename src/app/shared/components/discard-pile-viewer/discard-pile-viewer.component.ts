@@ -4,11 +4,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { CommonModule } from '@angular/common';
-import { Card, Suit } from '../../../core/models/card.model';
+import { Card } from '../../../core/models/card.model';
+import { DeckColor } from '../../../core/models/game-state.model';
 import { CardComponent } from '../card/card.component';
 
 export interface DiscardPileData {
   discardedCards: Card[];
+  playerDeckColor: DeckColor;
 }
 
 export interface DiscardedCardInfo {
@@ -294,9 +296,11 @@ export class DiscardPileViewerComponent {
   // Show discarded cards in reverse chronological order (newest first) for better UX
   discardedCardInfos = computed((): DiscardedCardInfo[] => 
     this.discardedCards()
-      .map((card, index) => ({
+      .map((card) => ({
         card,
-        playerType: (card.suit === Suit.HEARTS || card.suit === Suit.DIAMONDS ? 'player' : 'opponent') as 'player' | 'opponent', // Determine by card color
+        playerType: (card.isRed === (this.data.playerDeckColor === DeckColor.RED)
+          ? 'player'
+          : 'opponent') as 'player' | 'opponent',
         turnNumber: undefined, // Don't show turn numbers since we don't have reliable tracking
         reason: undefined // Don't show reasons since we don't have reliable tracking
       }))

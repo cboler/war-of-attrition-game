@@ -1,11 +1,33 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { ACHIEVEMENTS, AchievementDefinition } from '../core/models/achievement.model';
-import { GameOutcome, PlayerType } from '../core/models/game-state.model';
-import { Rank } from '../core/models/card.model';
+import {
+  DeckColor,
+  GameOutcome,
+  PlayerType,
+  SettlementAttribution,
+} from '../core/models/game-state.model';
+import { Card, Rank } from '../core/models/card.model';
 import { AuthService } from '../core/services/auth.service';
+import { GameStatistics } from '../core/models/settings.model';
 import { PlatformAchievementsService } from '../core/services/platform-achievements.service';
 import { GameEvent, GameEventBusService } from './game-event-bus.service';
 import { SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD } from './game-controller.service';
+
+export interface AchievementProgress {
+  readonly currentBattleWinStreak: number;
+  readonly bestBattleWinStreak: number;
+  readonly currentBattleLossStreak: number;
+  readonly bestBattleLossStreak: number;
+  readonly juggernautOccurrences: number;
+  readonly juggernautCardIds: readonly string[];
+}
+
+type AchievementProgressPersistence = AuthService & {
+  updateStatistics?: (
+    updates: Partial<GameStatistics> & Partial<AchievementProgress>,
+  ) => GameStatistics | void;
+  recordAchievementProgress?: (progress: AchievementProgress) => GameStatistics | void;
+};
 
 @Injectable({ providedIn: 'root' })
 export class AchievementService {
@@ -15,13 +37,50 @@ export class AchievementService {
 
   readonly allAchievements = signal<readonly AchievementDefinition[]>(ACHIEVEMENTS);
   readonly latestUnlock = signal<AchievementDefinition | null>(null);
+  private readonly battleWinStreak = signal(0);
+  private readonly bestBattleWinStreak = signal(0);
+  private readonly battleLossStreak = signal(0);
+  private readonly bestBattleLossStreak = signal(0);
+  private readonly juggernautOccurrences = signal(0);
+  private readonly historicJuggernautCardIds = signal<readonly string[]>([]);
+
+  /** Domain state exposed for persistence/profile adapters without leaking mutable collections. */
+  readonly achievementProgress = computed<AchievementProgress>(() => ({
+    currentBattleWinStreak: this.battleWinStreak(),
+    bestBattleWinStreak: this.bestBattleWinStreak(),
+    currentBattleLossStreak: this.battleLossStreak(),
+    bestBattleLossStreak: this.bestBattleLossStreak(),
+    juggernautOccurrences: this.juggernautOccurrences(),
+    juggernautCardIds: [...this.historicJuggernautCardIds()],
+  }));
 
   private toastTimeout: ReturnType<typeof setTimeout> | null = null;
   private battlePresentationActive = false;
   private readonly deferredBattleToasts: AchievementDefinition[] = [];
   private readonly toastQueue: AchievementDefinition[] = [];
+  private currentPlayerDeckColor: DeckColor | null = null;
+  private readonly publicBoneyardCards = new Map<string, Card>();
+  private readonly casualtiesByDecisiveCard = new Map<string, Set<string>>();
+  private readonly juggernautsThisWar = new Set<string>();
+  private progressProfileId: string | null = null;
 
   constructor() {
+    this.hydrateAchievementProgress();
+    effect(() => {
+      const profile = this.authService.activeProfile();
+      untracked(() => {
+        if (profile.id !== this.progressProfileId) {
+          this.currentPlayerDeckColor = null;
+          this.publicBoneyardCards.clear();
+          this.casualtiesByDecisiveCard.clear();
+          this.juggernautsThisWar.clear();
+        }
+        // Rehydrate for same-profile statistic resets as well as profile
+        // switches. Setting identical signal values is inert, while a reset
+        // must immediately clear persisted Battle/Juggernaut records.
+        this.hydrateAchievementProgress();
+      });
+    });
     this.eventBus.events$.subscribe((event) => this.evaluateEvent(event));
 
     // Reconcile existing unlocks with native platform on startup
@@ -77,6 +136,15 @@ export class AchievementService {
 
   private evaluateEvent(event: GameEvent): void {
     switch (event.type) {
+      case 'war_started':
+        this.currentPlayerDeckColor = event.playerDeckColor;
+        this.publicBoneyardCards.clear();
+        this.casualtiesByDecisiveCard.clear();
+        this.juggernautsThisWar.clear();
+        this.battlePresentationActive = false;
+        this.deferredBattleToasts.length = 0;
+        break;
+
       case 'clash_resolved':
         // ASSASSIN: Defeat an Ace with a 2
         if (event.specialRule && event.winner === PlayerType.PLAYER) {
@@ -88,6 +156,12 @@ export class AchievementService {
         if (event.cards.length > 0) {
           this.unlock('war.first_casualty', event.turnNumber);
         }
+        event.cards.forEach((card) => this.publicBoneyardCards.set(card.id, card));
+        this.evaluateGraveIntelligence(event.turnNumber);
+        break;
+
+      case 'settlement_resolved':
+        this.evaluateJuggernaut(event.attribution, event.turnNumber);
         break;
 
       case 'challenge_resolved':
@@ -97,6 +171,14 @@ export class AchievementService {
         // NOT TODAY: Successfully challenge to save a 2
         if (event.challenger === PlayerType.PLAYER && event.challengerWon && event.savedTwo) {
           this.unlock('war.not_today', event.turnNumber);
+        }
+        if (
+          event.challenger === PlayerType.PLAYER &&
+          event.challengerWon &&
+          event.originalBeatenCard?.rank === Rank.TWO &&
+          event.reinforcementCard.rank === Rank.ACE
+        ) {
+          this.unlock('war.cavalry_came', event.turnNumber);
         }
         if (
           event.winner === PlayerType.PLAYER &&
@@ -126,13 +208,17 @@ export class AchievementService {
         break;
 
       case 'battle_cards_revealed':
-        if (event.specialRule && event.winner === PlayerType.PLAYER) {
+        if (
+          event.selection.specialRule &&
+          event.selection.winner === PlayerType.PLAYER
+        ) {
           this.unlock('war.assassin', event.turnNumber);
         }
         break;
 
-      case 'battle_resolved':
+      case 'battle_resolved': {
         const outcome = event.outcome;
+        this.updateBattleStreaks(outcome.winner, event.turnNumber);
         // MASSACRE: Defeat at least 10 opponent cards in one Battle
         if (outcome.winner === PlayerType.PLAYER) {
           this.unlock('war.first_battle_win', event.turnNumber);
@@ -159,6 +245,7 @@ export class AchievementService {
           this.unlock('war.battle_layer_4', event.turnNumber);
         }
         break;
+      }
 
       case 'battle_presentation_complete':
         this.battlePresentationActive = false;
@@ -193,7 +280,7 @@ export class AchievementService {
           this.unlock('war.first_defeat', event.turns);
         }
 
-        if (event.turns >= 40) {
+        if (event.turns >= 42) {
           this.unlock('war.marathon', event.turns);
         }
 
@@ -225,6 +312,92 @@ export class AchievementService {
     if (resolvedGames >= 25) this.unlock('profile.veteran');
     if (resolvedGames >= 100) this.unlock('profile.centurion');
     this.syncIncrementalProgress(resolvedGames);
+  }
+
+  private evaluateJuggernaut(attribution: SettlementAttribution, turnNumber: number): void {
+    if (attribution.winner !== PlayerType.PLAYER || !this.isJuggernautRank(attribution.decisiveCard.rank)) {
+      return;
+    }
+
+    const cardId = attribution.decisiveCard.id;
+    const creditedCasualties = this.casualtiesByDecisiveCard.get(cardId) ?? new Set<string>();
+    attribution.casualties.forEach((card) => creditedCasualties.add(card.id));
+    this.casualtiesByDecisiveCard.set(cardId, creditedCasualties);
+
+    if (creditedCasualties.size < 3 || this.juggernautsThisWar.has(cardId)) return;
+
+    this.juggernautsThisWar.add(cardId);
+    this.juggernautOccurrences.update((count) => count + 1);
+    if (!this.historicJuggernautCardIds().includes(cardId)) {
+      this.historicJuggernautCardIds.update((ids) => [...ids, cardId]);
+    }
+    this.persistAchievementProgress();
+    this.unlock('war.juggernaut', turnNumber);
+  }
+
+  private updateBattleStreaks(winner: PlayerType, turnNumber: number): void {
+    if (winner === PlayerType.PLAYER) {
+      this.battleWinStreak.update((streak) => streak + 1);
+      this.bestBattleWinStreak.update((best) => Math.max(best, this.battleWinStreak()));
+      this.battleLossStreak.set(0);
+      if (this.battleWinStreak() >= 5) this.unlock('war.expert_strategist', turnNumber);
+    } else {
+      this.battleLossStreak.update((streak) => streak + 1);
+      this.bestBattleLossStreak.update((best) => Math.max(best, this.battleLossStreak()));
+      this.battleWinStreak.set(0);
+      if (this.battleLossStreak() >= 5) this.unlock('war.poor_strategy', turnNumber);
+    }
+    this.persistAchievementProgress();
+  }
+
+  private evaluateGraveIntelligence(turnNumber: number): void {
+    if (!this.currentPlayerDeckColor) return;
+
+    const playerIsRed = this.currentPlayerDeckColor === DeckColor.RED;
+    const publicCasualties = [...this.publicBoneyardCards.values()];
+    const lostPlayerTwoIds = new Set(
+      publicCasualties
+        .filter((card) => card.isRed === playerIsRed && card.rank === Rank.TWO)
+        .map((card) => card.id),
+    );
+    const bothPlayerTwosLost = lostPlayerTwoIds.size === 2;
+    const neitherOpponentAceLost = !publicCasualties.some(
+      (card) => card.isRed !== playerIsRed && card.rank === Rank.ACE,
+    );
+    if (bothPlayerTwosLost && neitherOpponentAceLost) {
+      this.unlock('war.grave_intelligence', turnNumber);
+    }
+  }
+
+  private isJuggernautRank(rank: Rank): boolean {
+    return [Rank.ACE, Rank.KING, Rank.QUEEN, Rank.JACK].includes(rank);
+  }
+
+  private hydrateAchievementProgress(): void {
+    const profile = this.authService.activeProfile();
+    const statistics = profile.statistics as GameStatistics &
+      Partial<AchievementProgress>;
+    this.progressProfileId = profile.id;
+    this.battleWinStreak.set(statistics.currentBattleWinStreak ?? 0);
+    this.bestBattleWinStreak.set(statistics.bestBattleWinStreak ?? 0);
+    this.battleLossStreak.set(statistics.currentBattleLossStreak ?? 0);
+    this.bestBattleLossStreak.set(statistics.bestBattleLossStreak ?? 0);
+    this.juggernautOccurrences.set(statistics.juggernautOccurrences ?? 0);
+    this.historicJuggernautCardIds.set([...(statistics.juggernautCardIds ?? [])]);
+  }
+
+  /**
+   * Persistence adapter seam. Newer AuthService implementations may expose the
+   * purpose-built method; the generic statistics patch remains backwards compatible.
+   */
+  private persistAchievementProgress(): void {
+    const persistence = this.authService as AchievementProgressPersistence;
+    const progress = this.achievementProgress();
+    if (persistence.recordAchievementProgress) {
+      persistence.recordAchievementProgress(progress);
+      return;
+    }
+    persistence.updateStatistics?.(progress);
   }
 
   private syncIncrementalProgress(resolvedGames: number): void {
