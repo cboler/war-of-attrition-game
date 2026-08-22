@@ -110,6 +110,6 @@ The input is a documented, non-PII context bucket; output contains anonymous agg
 
 Official references: [GA4 event collection](https://developers.google.com/analytics/devguides/collection/ga4/events), [collection limits](https://support.google.com/analytics/answer/9267744), [Google tag privacy controls](https://developers.google.com/tag-platform/security/guides/privacy), [consent mode concepts](https://developers.google.com/tag-platform/security/concepts/consent-mode), [PII policy](https://support.google.com/analytics/answer/6366371), [Analytics data deletion requests](https://support.google.com/analytics/answer/9940393), [BigQuery linking](https://support.google.com/analytics/answer/9823238), and [BigQuery export schema](https://support.google.com/analytics/answer/7029846).
 
-## Open-testing policy blocker: advertising
+## Advertising & Closed-Testing Status
 
-The Android source currently initializes Google Mobile Ads while the Play guide/store materials say the app contains no ads. This telemetry pass does not change the unrelated AdMob implementation. Before open testing, the owner must either disable the banner in the shipped build or update the privacy policy, consent implementation, Ads declaration, Data Safety form, and store copy to match actual behavior.
+In build `4.0.2` (and subsequent testing builds), Google Mobile Ads is disabled via the build configuration feature gate (`ads_enabled = false`). Neither test nor production ads are initialized or requested. The AdMob integration scaffold is preserved for future production use, with activation deferred until production monetization and appropriate store/privacy disclosures are configured.

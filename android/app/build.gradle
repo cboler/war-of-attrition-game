@@ -13,9 +13,9 @@ def twaManifest = [
     backgroundColor: '#0d221c',
     enableNotifications: false,
     splashScreenFadeOutDuration: 300,
-    // Keep this in sync with the CI's semver-packed release code: 4.0.1 -> 40001.
-    versionCode: 40001,
-    versionName: '4.0.1'
+    // Keep this in sync with the CI's semver-packed release code: 4.0.2 -> 40002.
+    versionCode: 40002,
+    versionName: '4.0.2'
 ]
 
 def resolveVersionCode(defaultCode) {
@@ -55,6 +55,18 @@ def resolvePlayGamesProjectId() {
     return value
 }
 
+def resolveAdsEnabled() {
+    def envVal = System.getenv("ADS_ENABLED")
+    if (envVal != null && !envVal.trim().isEmpty()) {
+        return Boolean.parseBoolean(envVal.trim())
+    }
+    def propVal = project.findProperty("ADS_ENABLED")
+    if (propVal != null && !propVal.toString().trim().isEmpty()) {
+        return Boolean.parseBoolean(propVal.toString().trim())
+    }
+    return false
+}
+
 android {
     namespace 'com.cboler.warofattrition'
     compileSdk 36
@@ -81,6 +93,7 @@ android {
         resValue "string", "game_services_project_id", resolvePlayGamesProjectId()
         resValue "string", "admob_app_id", "ca-app-pub-3940256099942544~3347511713"
         resValue "string", "admob_banner_ad_unit_id", "ca-app-pub-3940256099942544/6300978111"
+        resValue "bool", "ads_enabled", resolveAdsEnabled().toString()
     }
 
     signingConfigs {

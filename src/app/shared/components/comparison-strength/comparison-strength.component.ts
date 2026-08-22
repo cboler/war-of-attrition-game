@@ -28,8 +28,9 @@ export interface ComparisonStrengthView {
       role="status"
     >
       <span class="strength-label">Power</span>
-      <strong class="strength-value" aria-hidden="true"></strong>
-      <span class="strength-base" aria-hidden="true">/ {{ view().base }}</span>
+      <strong class="strength-value" aria-hidden="true">
+        <span class="strength-value-text">{{ view().current }}</span>
+      </strong>
       @if (view().damage < 0) {
         <span class="damage-number" aria-hidden="true">{{ view().damage }}</span>
       }

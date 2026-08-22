@@ -10,12 +10,26 @@ This document outlines the AdMob integration for the **War of Attrition** Androi
 - **Ad-Free Web Application**: The Angular application, PWA, and GitHub Pages web builds (`docs/`) are 100% ad-free. No web ad SDKs, scripts, or ad DOM containers exist in the web code.
 - **Top Anchored Banner**: A single small adaptive/standard banner is displayed at the top of the Android native frame.
 - **Graceful Collapse**: If an advertisement fails to load (e.g. offline, ad inventory unavailable), the ad container collapses/hides to prevent blank space and protect player ergonomics.
+- **Explicit Feature Gate**: Controlled via `ads_enabled` boolean resource (`resolveAdsEnabled()` in `android/app/build.gradle`).
 
 ---
 
-## 2. Test Credentials (Active in Repository)
+## 2. Closed-Testing Build Status (`4.0.2`)
 
-The repository is configured with Google's officially approved test IDs:
+For the closed-testing build:
+- **`ADS ENABLED = false`**: `resolveAdsEnabled()` defaults to `false`.
+- `MainActivity` does not instantiate or initialize `AdMobBannerBridge` or `MobileAds`.
+- No banner requests, test ads, or production ads are requested or displayed.
+- The AdMob bridge implementation and dependencies are preserved as a scaffold for future activation.
+
+To enable ads during local development or testing builds:
+- Set environment variable `ADS_ENABLED=true` or pass project property `-PADS_ENABLED=true` to Gradle.
+
+---
+
+## 3. Test Credentials (Active in Repository)
+
+The repository is configured with Google's officially approved test IDs (used only when `ads_enabled` is explicitly enabled):
 
 | Key | Identifier | Purpose |
 |---|---|---|
@@ -24,7 +38,7 @@ The repository is configured with Google's officially approved test IDs:
 
 ---
 
-## 3. Transitioning to Production Credentials
+## 4. Transitioning to Production Credentials
 
 When publishing production builds to Google Play:
 

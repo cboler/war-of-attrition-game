@@ -18,8 +18,11 @@ public class MainActivity extends LauncherActivity {
         playGamesBridge = new PlayGamesBridge(this);
         playGamesBridge.initialize();
 
-        adMobBannerBridge = new AdMobBannerBridge(this);
-        adMobBannerBridge.initialize();
+        boolean adsEnabled = getResources().getBoolean(R.bool.ads_enabled);
+        if (adsEnabled) {
+            adMobBannerBridge = new AdMobBannerBridge(this);
+            adMobBannerBridge.initialize();
+        }
     }
 
     @Override

@@ -28,6 +28,11 @@ public class AdMobBannerBridge {
 
     public void initialize() {
         try {
+            boolean adsEnabled = activity.getResources().getBoolean(R.bool.ads_enabled);
+            if (!adsEnabled) {
+                Log.d(TAG, "AdMob disabled via ads_enabled configuration.");
+                return;
+            }
             MobileAds.initialize(activity, initializationStatus -> {
                 Log.d(TAG, "AdMob MobileAds initialized successfully.");
                 activity.runOnUiThread(this::setupAndLoadBanner);
