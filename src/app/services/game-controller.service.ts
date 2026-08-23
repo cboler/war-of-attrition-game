@@ -555,6 +555,7 @@ export class GameControllerService {
       this.withholdBoneyard(result);
       const specialRule = this.comparison.isSpecialAceVsTwoRule(playerCard, opponentCard);
       this.resolveComparison(playerCard, opponentCard, result.result, specialRule);
+      this.playComparisonResolutionSound(result.result);
       this.announce(result.message);
       if (specialRule && result.winner === PlayerType.PLAYER) {
         this.acesDefeatedByTwo++;
@@ -646,6 +647,7 @@ export class GameControllerService {
           result.result,
           this.comparison.isSpecialAceVsTwoRule(reinforcement, challengeTurn.opponentCard),
         );
+        this.playComparisonResolutionSound(result.result);
       }
       this.announce(result.message);
 
@@ -802,6 +804,7 @@ export class GameControllerService {
         challengeResult.result,
         this.comparison.isSpecialAceVsTwoRule(comparisonTurn.playerCard, reinforcement),
       );
+      this.playComparisonResolutionSound(challengeResult.result);
     }
     this.announce(challengeResult.message);
 
@@ -950,6 +953,7 @@ export class GameControllerService {
         selection.comparison,
         selection.specialRule,
       );
+      this.playComparisonResolutionSound(selection.comparison, true);
       this.announce(result.message);
       if (selection.specialRule && selection.winner === PlayerType.PLAYER) {
         this.acesDefeatedByTwo++;
@@ -1236,8 +1240,8 @@ export class GameControllerService {
 
   private primeComparison(playerCard: Card, opponentCard: Card): void {
     this.comparisonPresentationSignal.set({
-      player: this.comparisonView(playerCard, 'ready', playerCard.value, 0, false),
-      opponent: this.comparisonView(opponentCard, 'ready', opponentCard.value, 0, false),
+      player: this.comparisonView(playerCard, opponentCard, 'ready', playerCard.value, 0, false),
+      opponent: this.comparisonView(opponentCard, playerCard, 'ready', opponentCard.value, 0, false),
       resolved: false,
     });
   }
@@ -1252,6 +1256,7 @@ export class GameControllerService {
       this.comparisonPresentationSignal.set({
         player: this.comparisonView(
           playerCard,
+          opponentCard,
           'tie',
           0,
           -playerCard.value,
@@ -1259,6 +1264,7 @@ export class GameControllerService {
         ),
         opponent: this.comparisonView(
           opponentCard,
+          playerCard,
           'tie',
           0,
           -opponentCard.value,
@@ -1280,11 +1286,25 @@ export class GameControllerService {
     const winnerDamage = specialOverride ? 0 : -loser.value;
     const loserDamage = specialOverride ? -loser.value : -winner.value;
     const playerView = playerWon
-      ? this.comparisonView(playerCard, 'winner', winnerRemainder, winnerDamage, specialOverride)
-      : this.comparisonView(playerCard, 'defeated', 0, loserDamage, specialOverride);
+      ? this.comparisonView(
+          playerCard,
+          opponentCard,
+          'winner',
+          winnerRemainder,
+          winnerDamage,
+          specialOverride,
+        )
+      : this.comparisonView(playerCard, opponentCard, 'defeated', 0, loserDamage, specialOverride);
     const opponentView = playerWon
-      ? this.comparisonView(opponentCard, 'defeated', 0, loserDamage, specialOverride)
-      : this.comparisonView(opponentCard, 'winner', winnerRemainder, winnerDamage, specialOverride);
+      ? this.comparisonView(opponentCard, playerCard, 'defeated', 0, loserDamage, specialOverride)
+      : this.comparisonView(
+          opponentCard,
+          playerCard,
+          'winner',
+          winnerRemainder,
+          winnerDamage,
+          specialOverride,
+        );
 
     this.comparisonPresentationSignal.set({
       player: playerView,
@@ -1295,6 +1315,7 @@ export class GameControllerService {
 
   private comparisonView(
     card: Card,
+    opposingCard: Card,
     state: ComparisonStrengthView['state'],
     current: number,
     damage: number,
@@ -1307,7 +1328,28 @@ export class GameControllerService {
       damage,
       state,
       specialOverride,
+      opposingBase: opposingCard.value,
+      opposingRank: opposingCard.rank === Rank.ACE ? 'Ace' : opposingCard.rank,
     };
+  }
+
+  private playComparisonResolutionSound(result: ComparisonResult, isBattle = false): void {
+    if (result === ComparisonResult.TIE) return;
+
+    if (isBattle) {
+      if (result === ComparisonResult.PLAYER_WINS) {
+        this.sound.playBattleVictory();
+      } else {
+        this.sound.playBattleDefeat();
+      }
+      return;
+    }
+
+    if (result === ComparisonResult.PLAYER_WINS) {
+      this.sound.playPositiveResolution();
+    } else {
+      this.sound.playNegativeResolution();
+    }
   }
 
   private async playDeckDefeatPop(owner: PlayerType, version: number): Promise<void> {

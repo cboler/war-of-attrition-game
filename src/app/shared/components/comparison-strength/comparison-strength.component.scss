@@ -4,10 +4,14 @@
   right: -38px;
   z-index: 16;
   transform: translateY(-50%);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .comparison-strength {
+  position: relative;
+}
+
+.power-badge {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -21,12 +25,25 @@
   color: #e8fbff;
   background: linear-gradient(180deg, rgba(12, 39, 52, 0.96), rgba(4, 19, 28, 0.96));
   box-shadow: 0 3px 0 rgba(1, 9, 13, 0.8), 0 0 0 1px rgba(105, 174, 194, 0.16);
+  appearance: none;
+  cursor: pointer;
   font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
   text-shadow: 1px 1px 0 #061015;
   text-align: center;
   transition:
     border-color 180ms ease,
     filter 180ms ease;
+}
+
+.power-badge:hover,
+.power-badge:focus-visible {
+  border-color: #ffd54f;
+  filter: brightness(1.12);
+}
+
+.power-badge:focus-visible {
+  outline: 2px solid #ffd54f;
+  outline-offset: 3px;
 }
 
 .strength-label {
@@ -52,18 +69,18 @@
   display: inline;
 }
 
-.is-winner {
+.is-winner .power-badge {
   border-color: rgba(94, 234, 139, 0.86);
   color: #baffcf;
 }
 
-.is-defeated,
-.is-tie {
+.is-defeated .power-badge,
+.is-tie .power-badge {
   border-color: rgba(255, 113, 113, 0.84);
   color: #fff0f0;
 }
 
-.is-tie {
+.is-tie .power-badge {
   border-color: rgba(120, 183, 255, 0.82);
 }
 
@@ -78,25 +95,45 @@
   animation: damage-float 620ms ease-out both;
 }
 
-.special-rule {
+.power-inspector {
   position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  width: max-content;
-  max-width: 112px;
-  padding: 3px 5px;
-  border: 1px solid rgba(255, 213, 79, 0.76);
-  border-radius: 4px;
-  color: #201602;
-  background: #ffd54f;
-  font: 800 0.48rem/1.15 system-ui, sans-serif;
-  letter-spacing: 0.04em;
-  text-align: center;
+  top: 50%;
+  right: calc(100% + 8px);
+  z-index: 30;
+  width: min(224px, calc(100vw - 32px));
+  padding: 9px 10px;
+  box-sizing: border-box;
+  transform: translateY(-50%);
+  border: 1px solid rgba(229, 193, 117, 0.72);
+  border-radius: 5px;
+  color: #fff8e9;
+  background: rgba(8, 28, 22, 0.98);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.48);
+  font: 700 0.65rem/1.35 ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  text-align: left;
   text-shadow: none;
+}
+
+.power-inspector p {
+  margin: 0;
+}
+
+.power-inspector p + p {
+  margin-top: 4px;
+}
+
+.power-inspector span {
+  color: #e5c175;
+}
+
+.power-inspector .inspector-rule {
+  color: #ffd54f;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.comparison-strength.motion-disabled {
+.comparison-strength.motion-disabled .power-badge {
   transition: none;
 }
 
@@ -115,7 +152,12 @@
 
 @media (max-width: 620px) {
   :host { right: -31px; }
-  .comparison-strength { min-width: 40px; padding: 3px 5px; }
+  .power-badge { min-width: 40px; padding: 3px 5px; }
+  .power-inspector {
+    top: calc(100% + 8px);
+    right: -12px;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

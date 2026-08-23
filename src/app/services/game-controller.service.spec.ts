@@ -10,6 +10,7 @@ import { CardComparisonService, ComparisonResult } from '../core/services/card-c
 import { GameStateService } from '../core/services/game-state.service';
 import { OpponentAIService } from '../core/services/opponent-ai.service';
 import { SettingsService } from '../core/services/settings.service';
+import { SoundService } from '../core/services/sound.service';
 import { TurnResolutionService } from '../core/services/turn-resolution.service';
 import { GameEventBusService } from './game-event-bus.service';
 import {
@@ -28,6 +29,7 @@ describe('GameControllerService presentation integration', () => {
   let eventBus: GameEventBusService;
   let storyBook: StoryBookService;
   let progression: CampaignProgressionService;
+  let sound: SoundService;
 
   beforeEach(() => {
     localStorage.clear();
@@ -41,6 +43,7 @@ describe('GameControllerService presentation integration', () => {
     eventBus = TestBed.inject(GameEventBusService);
     storyBook = TestBed.inject(StoryBookService);
     progression = TestBed.inject(CampaignProgressionService);
+    sound = TestBed.inject(SoundService);
 
     settings.setTutorialEnabled(false);
     settings.setSoundEnabled(false);
@@ -79,6 +82,95 @@ describe('GameControllerService presentation integration', () => {
     expect(controller.comparisonPresentation()).toBeNull();
     flush();
   }));
+
+  it('plays one positive result cue for a player clash win and does not replay it on Continue', fakeAsync(() => {
+    settings.setAutoPlayAnimations(false);
+    const positive = spyOn(sound, 'playPositiveResolution');
+    const negative = spyOn(sound, 'playNegativeResolution');
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+
+    controller.playerDrawCard();
+    flushMicrotasks();
+
+    expect(positive).toHaveBeenCalledTimes(1);
+    expect(negative).not.toHaveBeenCalled();
+    controller.advancePresentation();
+    tick(16);
+    flushMicrotasks();
+    expect(positive).toHaveBeenCalledTimes(1);
+    flush();
+  }));
+
+  it('plays a negative clash cue, then the reinforcement outcome from the human perspective', fakeAsync(() => {
+    settings.setAutoPlayAnimations(false);
+    const positive = spyOn(sound, 'playPositiveResolution');
+    const negative = spyOn(sound, 'playNegativeResolution');
+    spyOn(comparison, 'compareCards').and.returnValues(
+      ComparisonResult.OPPONENT_WINS,
+      ComparisonResult.PLAYER_WINS,
+    );
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+
+    controller.playerDrawCard();
+    flushMicrotasks();
+    tick(650);
+    flushMicrotasks();
+    expect(negative).toHaveBeenCalledTimes(1);
+    expect(controller.presentationState()).toBe(PresentationState.PLAYER_CHALLENGE_DECISION);
+
+    controller.handleChallenge(true);
+    flushMicrotasks();
+
+    expect(positive).toHaveBeenCalledTimes(1);
+    expect(negative).toHaveBeenCalledTimes(1);
+    flush();
+  }));
+
+  it('plays a second negative cue when a player reinforcement fails', fakeAsync(() => {
+    settings.setAutoPlayAnimations(false);
+    const positive = spyOn(sound, 'playPositiveResolution');
+    const negative = spyOn(sound, 'playNegativeResolution');
+    spyOn(comparison, 'compareCards').and.returnValues(
+      ComparisonResult.OPPONENT_WINS,
+      ComparisonResult.OPPONENT_WINS,
+    );
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+
+    controller.playerDrawCard();
+    flushMicrotasks();
+    tick(650);
+    flushMicrotasks();
+    controller.handleChallenge(true);
+    flushMicrotasks();
+
+    expect(positive).not.toHaveBeenCalled();
+    expect(negative).toHaveBeenCalledTimes(2);
+    flush();
+  }));
+
+  it('maps all reinforcement and Battle outcomes from the human perspective without cueing ties', () => {
+    const positive = spyOn(sound, 'playPositiveResolution');
+    const negative = spyOn(sound, 'playNegativeResolution');
+    const battleVictory = spyOn(sound, 'playBattleVictory');
+    const battleDefeat = spyOn(sound, 'playBattleDefeat');
+    const internal = controller as unknown as {
+      playComparisonResolutionSound(result: ComparisonResult, isBattle?: boolean): void;
+    };
+
+    internal.playComparisonResolutionSound(ComparisonResult.PLAYER_WINS);
+    internal.playComparisonResolutionSound(ComparisonResult.OPPONENT_WINS);
+    internal.playComparisonResolutionSound(ComparisonResult.PLAYER_WINS, true);
+    internal.playComparisonResolutionSound(ComparisonResult.OPPONENT_WINS, true);
+    internal.playComparisonResolutionSound(ComparisonResult.TIE);
+    internal.playComparisonResolutionSound(ComparisonResult.TIE, true);
+
+    expect(positive).toHaveBeenCalledTimes(1);
+    expect(negative).toHaveBeenCalledTimes(1);
+    expect(battleVictory).toHaveBeenCalledTimes(1);
+    expect(battleDefeat).toHaveBeenCalledTimes(1);
+  });
 
   it('advances only the current visual beat and leaves the next beat timed', fakeAsync(() => {
     settings.setAutoPlayAnimations(true);
@@ -146,6 +238,7 @@ describe('GameControllerService presentation integration', () => {
 
   it('uses one authoritative physical-card selection through resolver, table, event, and Chronicle', fakeAsync(() => {
     settings.setAutoPlayAnimations(false);
+    const battleVictory = spyOn(sound, 'playBattleVictory');
     const compare = spyOn(comparison, 'compareCards').and.returnValues(
       ComparisonResult.TIE,
       ComparisonResult.PLAYER_WINS,
@@ -177,6 +270,7 @@ describe('GameControllerService presentation integration', () => {
     const tableOpponentSelection = tableLayer.opponentCards.find((card) => card.selected)!;
     const chronicleReveal = storyBook.entries().find((entry) => entry.type === 'battle_reveal')!;
 
+    expect(battleVictory).toHaveBeenCalledTimes(1);
     expect(compare.calls.argsFor(1).map((card) => card.id)).toEqual([
       foeTarget.id,
       humanTarget.id,
@@ -282,6 +376,23 @@ describe('GameControllerService presentation integration', () => {
 
     expect(recordWar).not.toHaveBeenCalled();
     expect(progression.currentCampaign().wars.length).toBe(1);
+  });
+
+  it('reserves the existing full victory and defeat melodies for final War outcomes', () => {
+    const victory = spyOn(sound, 'playVictory');
+    const defeat = spyOn(sound, 'playDefeat');
+    const internal = controller as unknown as { finishAtGameOver(): void };
+
+    gameState.endGame(GameOutcome.PLAYER_WIN);
+    internal.finishAtGameOver();
+    expect(victory).toHaveBeenCalledTimes(1);
+    expect(defeat).not.toHaveBeenCalled();
+
+    controller.startNewGame();
+    gameState.endGame(GameOutcome.OPPONENT_WIN);
+    internal.finishAtGameOver();
+    expect(victory).toHaveBeenCalledTimes(1);
+    expect(defeat).toHaveBeenCalledTimes(1);
   });
 
   it('primes Ace vs 8 as neutral/ready and resolves Ace as winner with remainder 6 and 8 as defeated at zero', () => {

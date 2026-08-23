@@ -48,6 +48,76 @@ body {
   }
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .table-page .playfield {
+    display: grid;
+    grid-template: 1fr minmax(300px, 440px) 1fr / 1fr minmax(260px, 600px) 1fr;
+    align-items: center;
+  }
+
+  .table-page .playfield .stakes {
+    position: relative;
+    inset: auto !important;
+    grid-area: 2 / 2;
+    align-self: stretch;
+    grid-template-rows: 1fr 48px 1fr;
+  }
+
+  .table-page .playfield .announcement {
+    position: relative;
+    inset: auto !important;
+    // Its own row above the stakes cell keeps messages off the card faces,
+    // where near-white text would otherwise vanish against white cards.
+    grid-area: 1 / 2;
+    align-self: end;
+    justify-self: center;
+    padding-bottom: 14px;
+    transform: none !important;
+  }
+
+  .table-page .playfield .table-utility-hub,
+  .table-page .playfield .thumb-action-region {
+    position: relative;
+    inset: auto !important;
+  }
+
+  .table-page .playfield .table-utility-hub {
+    grid-area: 2 / 3;
+    align-self: center;
+    justify-self: end;
+    transform: none !important;
+  }
+
+  .table-page .playfield .thumb-action-region {
+    grid-area: 2 / 2;
+    align-self: end;
+    justify-self: center;
+    transform: translateY(86px);
+  }
+
+  .table-page.boneyard-left .to-boneyard {
+    animation-name: to-boneyard-right !important;
+  }
+}
+
+.boneyard-drawer.is-empty {
+  display: flex;
+  flex-direction: column;
+}
+
+.boneyard-drawer.is-empty .boneyard-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.boneyard-empty-state {
+  display: grid;
+  grid-column: 1 / -1;
+  margin: 0;
+  place-items: center;
+  text-align: center;
+}
+
 /* Responsive utilities */
 .responsive-container {
   width: 100%;

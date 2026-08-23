@@ -256,6 +256,7 @@ app-card-table {
   font:
     500 clamp(0.85rem, 1.5vw, 1.05rem)/1.25 Georgia,
     serif;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .message-stack {
@@ -727,6 +728,30 @@ app-card-table {
   font-weight: 600;
 }
 
+.boneyard-empty {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 2.5 / 3.5;
+  place-content: center;
+  gap: 5px;
+  box-sizing: border-box;
+  padding: 8px 4px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.boneyard-empty strong {
+  margin: 0;
+  font-size: clamp(0.7rem, 0.9vw, 0.82rem);
+  line-height: 1.1;
+}
+
+.boneyard-empty small {
+  display: block;
+  white-space: nowrap;
+}
+
 .pile {
   position: relative;
   display: block;
@@ -1118,6 +1143,13 @@ app-card-table {
   }
   .thumb-action-region { bottom: 3px; gap: 5px; }
   .thumb-action { min-width: 76px; min-height: 46px; padding-inline: 10px; font-size: 0.67rem; }
+}
+
+@media (max-height: 500px) and (pointer: coarse) {
+  .table-utility-hub {
+    flex-direction: row;
+    gap: 8px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

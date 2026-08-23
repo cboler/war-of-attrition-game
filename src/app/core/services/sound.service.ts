@@ -129,6 +129,26 @@ export class SoundService {
     }
   }
 
+  /** Brief upward confirmation for a result that benefits the human player. */
+  playPositiveResolution(): void {
+    this.playResolutionSweep(440, 660, 0.15, 0.14, 'triangle');
+  }
+
+  /** Brief downward confirmation for a result that harms the human player. */
+  playNegativeResolution(): void {
+    this.playResolutionSweep(240, 160, 0.17, 0.11, 'sawtooth');
+  }
+
+  /** A stronger, still compact upward cue for a resolved Battle. */
+  playBattleVictory(): void {
+    this.playResolutionSweep(360, 880, 0.24, 0.2, 'triangle');
+  }
+
+  /** A stronger, still compact downward cue for a lost Battle. */
+  playBattleDefeat(): void {
+    this.playResolutionSweep(320, 110, 0.26, 0.17, 'sawtooth');
+  }
+
   /**
    * Sound effect for victory
    */
@@ -202,6 +222,34 @@ export class SoundService {
       const gain = ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    } catch (error) {
+      console.warn('Audio playback error:', error);
+    }
+  }
+
+  private playResolutionSweep(
+    startFrequency: number,
+    endFrequency: number,
+    duration: number,
+    volume: number,
+    waveform: OscillatorType,
+  ): void {
+    if (!this.canPlay()) return;
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = waveform;
+      osc.frequency.setValueAtTime(startFrequency, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(endFrequency, ctx.currentTime + duration);
       gain.gain.setValueAtTime(volume, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
       osc.connect(gain);

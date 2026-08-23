@@ -349,28 +349,39 @@
           (click)="toggleBoneyard()"
           aria-label="Open Boneyard casualty pile"
         >
-          <span class="pile" aria-hidden="true">
-            @if (controller.visibleBoneyardCount() >= 15) {
-              <span class="fan-extra-two"></span>
-            }
-            @if (controller.visibleBoneyardCount() >= 5) {
-              <span class="fan-extra-one"></span>
-            }
-            @if (controller.visibleBoneyardCount() >= 2) {
-              <span class="fan-base-two"></span>
-              <span class="fan-base-one"></span>
-            }
-            @if (controller.visibleBoneyardCards().at(-1); as topCard) {
-              <app-card [card]="topCard" [faceDown]="false" />
-            }
-          </span>
-          <strong>Boneyard</strong>
-          <small>{{ controller.visibleBoneyardCount() }} lost</small>
+          @if (controller.visibleBoneyardCount() === 0) {
+            <span class="boneyard-empty" aria-hidden="true">
+              <strong>Boneyard</strong>
+              <small>No cards lost</small>
+            </span>
+          } @else {
+            <span class="pile" aria-hidden="true">
+              @if (controller.visibleBoneyardCount() >= 15) {
+                <span class="fan-extra-two"></span>
+              }
+              @if (controller.visibleBoneyardCount() >= 5) {
+                <span class="fan-extra-one"></span>
+              }
+              @if (controller.visibleBoneyardCount() >= 2) {
+                <span class="fan-base-two"></span>
+                <span class="fan-base-one"></span>
+              }
+              @if (controller.visibleBoneyardCards().at(-1); as topCard) {
+                <app-card [card]="topCard" [faceDown]="false" />
+              }
+            </span>
+            <strong>Boneyard</strong>
+            <small>{{ controller.visibleBoneyardCount() }} lost</small>
+          }
         </button>
       </aside>
 
       @if (boneyardOpen()) {
-        <aside class="boneyard-drawer" aria-label="Boneyard cards">
+        <aside
+          class="boneyard-drawer"
+          [class.is-empty]="controller.visibleBoneyardCount() === 0"
+          aria-label="Boneyard cards"
+        >
           <header>
             <div>
               <span>BONEYARD</span
@@ -389,7 +400,7 @@
                 <app-card [card]="card" [faceDown]="false" />
               </button>
             } @empty {
-              <p>No casualties yet.</p>
+              <p class="boneyard-empty-state">No casualties yet.</p>
             }
           </div>
         </aside>

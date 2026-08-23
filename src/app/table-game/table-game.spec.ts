@@ -387,8 +387,8 @@ describe('TableGame presentation', () => {
 
     expect(gameState.discardedCardCount()).toBe(1);
     expect(controller.visibleBoneyardCount()).toBe(0);
-    expect(fixture.nativeElement.querySelector('.boneyard small').textContent.trim()).toBe(
-      '0 lost',
+    expect(fixture.nativeElement.querySelector('.boneyard-empty small').textContent.trim()).toBe(
+      'No cards lost',
     );
 
     tick(3000);

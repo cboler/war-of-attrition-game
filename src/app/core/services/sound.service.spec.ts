@@ -25,6 +25,10 @@ describe('SoundService', () => {
       service.playCardDraw();
       service.playCardFlip();
       service.playClash();
+      service.playPositiveResolution();
+      service.playNegativeResolution();
+      service.playBattleVictory();
+      service.playBattleDefeat();
       service.playVictory();
       service.playDefeat();
     }).not.toThrow();
@@ -37,8 +41,40 @@ describe('SoundService', () => {
       service.playCardDraw();
       service.playCardFlip();
       service.playClash();
+      service.playPositiveResolution();
+      service.playNegativeResolution();
+      service.playBattleVictory();
+      service.playBattleDefeat();
       service.playVictory();
       service.playDefeat();
     }).not.toThrow();
+  });
+
+  it('uses distinct rising and falling sweeps for ordinary and Battle resolutions', () => {
+    const resolutionSweep = spyOn<any>(service, 'playResolutionSweep');
+
+    service.playPositiveResolution();
+    service.playNegativeResolution();
+    service.playBattleVictory();
+    service.playBattleDefeat();
+
+    expect(resolutionSweep.calls.allArgs()).toEqual([
+      [440, 660, 0.15, 0.14, 'triangle'],
+      [240, 160, 0.17, 0.11, 'sawtooth'],
+      [360, 880, 0.24, 0.2, 'triangle'],
+      [320, 110, 0.26, 0.17, 'sawtooth'],
+    ]);
+  });
+
+  it('does not create an audio context for resolution cues when sound is disabled', () => {
+    settingsService.setSoundEnabled(false);
+    const getAudioContext = spyOn<any>(service, 'getAudioContext');
+
+    service.playPositiveResolution();
+    service.playNegativeResolution();
+    service.playBattleVictory();
+    service.playBattleDefeat();
+
+    expect(getAudioContext).not.toHaveBeenCalled();
   });
 });

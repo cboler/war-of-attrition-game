@@ -86,7 +86,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 12px 4px 6px;
+  padding: 6px 16px 6px 8px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(228, 191, 114, 0.2);
@@ -98,6 +98,16 @@
   &:hover {
     background: rgba(255, 255, 255, 0.14);
     border-color: #e5c175;
+  }
+
+  // Material wraps our content in an injected `.mdc-button__label` span that
+  // our scoped styles can't reach directly; without this the avatar and name
+  // fall back to stacked block layout instead of a centered row.
+  ::ng-deep .mdc-button__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
   }
 
   .profile-avatar {
@@ -131,7 +141,7 @@
   .profile-toolbar-btn {
     max-width: min(46vw, 156px);
     margin-right: 0;
-    padding-inline: 5px 10px;
+    padding-inline: 6px 12px;
 
     .profile-name-text {
       max-width: 92px;
