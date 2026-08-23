@@ -501,4 +501,23 @@ describe('GameControllerService presentation integration', () => {
     expect(pres?.opponent.damage).toBe(-14);
     expect(pres?.opponent.specialOverride).toBeTrue();
   });
+
+  it('emits game_resolved with surviving player card IDs upon game over player victory', () => {
+    let resolvedEvent: any = null;
+    eventBus.events$.subscribe(event => {
+      if (event.type === 'game_resolved') {
+        resolvedEvent = event;
+      }
+    });
+
+    const internal = controller as unknown as { finishAtGameOver(): void };
+    const gs = gameState as any;
+    gs.outcome.set(GameOutcome.PLAYER_WIN);
+
+    internal.finishAtGameOver();
+
+    expect(resolvedEvent).toBeTruthy();
+    expect(resolvedEvent.outcome).toBe(GameOutcome.PLAYER_WIN);
+    expect(resolvedEvent.survivingPlayerCardIds.length).toBeGreaterThan(0);
+  });
 });

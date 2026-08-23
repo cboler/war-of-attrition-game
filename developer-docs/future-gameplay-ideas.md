@@ -26,23 +26,15 @@ This document catalogs future design concepts and backlog ideas for **War of Att
 
 ---
 
-### B. Hall of Valor / Persistent Card Service Records
+### B. Hall of Valor / Persistent Card Service Records (Graduated to Implemented System)
 
-**Concept**:
-Because standard playing cards have stable suit/rank identities (`hearts-K`, `diamonds-2`, `spades-A`), the game can track persistent historical service records for individual cards across all career Wars.
+> **Status**: Fully implemented. See [`developer-docs/hall-of-valor.md`](./hall-of-valor.md) for the active architecture, distinction semantics, event attribution flow, profile scoping, and Field Manual UI integration.
 
-**Tracked Career Distinctions**:
-- **Confirmed Casualties**: Total enemy cards sent to the Boneyard by this specific card.
-- **Ace Assassinations**: For Two cards (`hearts-2`, `diamonds-2`), total Aces slain under the special rule.
-- **Reinforcement Rescues**: Times this card entered as a reinforcement to turn a defeat into victory.
-- **Times Rescued**: Times this card was facing defeat but was saved by an incoming reinforcement.
-- **Deadlock Battles Survived**: Number of recursive Battle layers this card participated in.
-- **Wars Survived**: Number of victorious Wars where this card remained in the player's deck at game end.
-- **Juggernaut Citations**: Awarded when a card wins 3+ consecutive clashes or battles in a single match.
-- **Notable Losses**: Memorable defeats suffered against specific rival cards.
-
-**Player Experience**:
-Card service records create organic emotional attachment to individual physical card identities, giving players "veteran champions" and memorable grudges without altering the deterministic card values.
+**Core Principles Maintained**:
+- **Strict Physical Deck Fidelity**: Meta-game history and presentation only. Decorated cards retain standard physical ranks, values, and probabilities.
+- **Authoritative Event-Driven Attribution**: Uses real domain settlement attribution rather than visual or DOM heuristics.
+- **Hidden-Information Integrity**: Never leaks private Battle layers, unseen returned cards, or hidden deck order.
+- **Tracked Career Distinctions**: Confirmed Casualties, Ace Assassinations (2-vs-Ace), Reinforcement Rescues, Times Rescued, Battle Layers Survived, Victorious Wars Survived, Juggernaut Citations (3-streak per War), and Notable Rivalries.
 
 ---
 

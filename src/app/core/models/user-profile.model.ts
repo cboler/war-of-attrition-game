@@ -3,6 +3,10 @@ import {
   CampaignProgression,
   createDefaultCampaignProgression
 } from './progression.model';
+import {
+  HallOfValorState,
+  createDefaultHallOfValor
+} from './hall-of-valor.model';
 
 export type AuthProvider = 'guest' | 'google';
 
@@ -15,6 +19,7 @@ export interface UserProfile {
   isGoogleAuth: boolean;
   statistics: GameStatistics;
   progression: CampaignProgression;
+  hallOfValor: HallOfValorState;
   createdAt: string;
   lastLoginAt: string;
 }
@@ -30,6 +35,7 @@ export function createDefaultGuestProfile(selectedCardBackingId?: string): UserP
     isGoogleAuth: false,
     statistics: { ...DEFAULT_STATISTICS },
     progression: createDefaultCampaignProgression(selectedCardBackingId, now),
+    hallOfValor: createDefaultHallOfValor(),
     createdAt: now,
     lastLoginAt: now
   };

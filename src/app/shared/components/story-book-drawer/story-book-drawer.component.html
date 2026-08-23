@@ -39,6 +39,20 @@
       type="button"
       role="tab"
       class="tab-btn"
+      [class.active]="activeTab() === 'valor'"
+      [attr.aria-selected]="activeTab() === 'valor'"
+      [attr.tabindex]="activeTab() === 'valor' ? 0 : -1"
+      aria-controls="panel-valor"
+      id="tab-valor"
+      (click)="selectTab('valor')"
+      (keydown)="handleTabKeyDown($event, 'valor')">
+      <mat-icon aria-hidden="true">military_tech</mat-icon>
+      <span>Hall of Valor</span>
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
       [class.active]="activeTab() === 'rules'"
       [attr.aria-selected]="activeTab() === 'rules'"
       [attr.tabindex]="activeTab() === 'rules' ? 0 : -1"
@@ -118,6 +132,193 @@
           </div>
         }
       </div>
+    } @else if (activeTab() === 'valor') {
+      <div id="panel-valor" role="tabpanel" aria-labelledby="tab-valor" class="valor-panel">
+        @if (selectedValorCard(); as detail) {
+          <!-- Card Detail Service Record View -->
+          <article class="valor-detail-view">
+            <header class="valor-detail-header">
+              <button
+                type="button"
+                class="valor-back-btn"
+                aria-label="Back to Hall of Valor roll"
+                (click)="closeValorDetail()">
+                <mat-icon aria-hidden="true">arrow_back</mat-icon>
+                <span>Roll of Honor</span>
+              </button>
+              <div class="detail-title-group">
+                <span class="detail-eyebrow">SERVICE RECORD</span>
+                <h3>{{ cardNameFromId(detail.cardId) }}</h3>
+                <code>{{ detail.cardId }}</code>
+              </div>
+            </header>
+
+            <div class="valor-detail-body">
+              <div class="detail-card-hero">
+                <app-card [card]="cardFromId(detail.cardId)" [faceDown]="false" />
+                <div class="hero-honors-summary">
+                  @if (detail.juggernautCitations > 0) {
+                    <div class="hero-citation-badge">
+                      <mat-icon aria-hidden="true">military_tech</mat-icon>
+                      <div>
+                        <strong>{{ detail.juggernautCitations }} Juggernaut {{ detail.juggernautCitations === 1 ? 'Citation' : 'Citations' }}</strong>
+                        <small>Recorded 3 consecutive decisive victories in a War</small>
+                      </div>
+                    </div>
+                  }
+                  @if (detail.aceAssassinations > 0) {
+                    <div class="hero-citation-badge assassin-badge">
+                      <mat-icon aria-hidden="true">star</mat-icon>
+                      <div>
+                        <strong>{{ detail.aceAssassinations }} Ace Assassinations</strong>
+                        <small>Slain under the special 2-defeats-Ace rule</small>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Complete Career Statistics Breakdown -->
+              <section class="detail-stats-section" aria-label="Career Statistics">
+                <h4 class="section-heading">Career Combat Honors</h4>
+                <div class="stats-grid">
+                  <div class="stat-card">
+                    <span class="stat-value">{{ detail.confirmedCasualties }}</span>
+                    <span class="stat-label">Confirmed Casualties</span>
+                  </div>
+                  @if (detail.cardId.endsWith('-2') || detail.aceAssassinations > 0) {
+                    <div class="stat-card">
+                      <span class="stat-value">{{ detail.aceAssassinations }}</span>
+                      <span class="stat-label">Ace Assassinations</span>
+                    </div>
+                  }
+                  <div class="stat-card">
+                    <span class="stat-value">{{ detail.reinforcementRescues }}</span>
+                    <span class="stat-label">Reinforcement Rescues</span>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-value">{{ detail.timesRescued }}</span>
+                    <span class="stat-label">Times Rescued</span>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-value">{{ detail.victoriousWarsSurvived }}</span>
+                    <span class="stat-label">Victorious Wars Survived</span>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-value">{{ detail.battleLayersSurvived }}</span>
+                    <span class="stat-label">Battle Layers Survived</span>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Notable Losses & Rivals -->
+              @if (rivalLossesList(detail).length > 0) {
+                <section class="detail-rivals-section" aria-label="Rivalries & Defeats">
+                  <h4 class="section-heading">Notable Rivalries & Defeats</h4>
+                  <div class="rivals-list">
+                    @for (rival of rivalLossesList(detail); track rival.rivalId) {
+                      <div class="rival-row">
+                        <app-card [card]="rival.card" [faceDown]="false" />
+                        <div class="rival-info">
+                          <strong>{{ rival.name }}</strong>
+                          <span>Fell in battle {{ rival.count }} {{ rival.count === 1 ? 'time' : 'times' }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+          </article>
+        } @else {
+          <!-- Hall Overview Roll of Honor -->
+          @if (hallOfValor.decoratedCards().length === 0) {
+            <div class="empty-state">
+              <mat-icon class="empty-icon" aria-hidden="true">military_tech</mat-icon>
+              <p>The Hall of Valor is empty.</p>
+              <small>Cards that distinguish themselves in battle (slaying Aces, rescuing allies, surviving Battles, earning Juggernaut Citations) will be commemorated here.</small>
+            </div>
+          } @else {
+            <div class="valor-overview">
+              <div class="valor-roll-header">
+                <span class="roll-count">{{ hallOfValor.totalDecoratedCards() }} DECORATED {{ hallOfValor.totalDecoratedCards() === 1 ? 'CARD' : 'CARDS' }}</span>
+                <span class="roll-subtext">Ordered by highest career distinctions</span>
+              </div>
+
+              <div class="valor-cards-list">
+                @for (record of hallOfValor.decoratedCards(); track record.cardId) {
+                  <button
+                    type="button"
+                    class="valor-card-entry"
+                    [attr.aria-label]="'View service record for ' + cardNameFromId(record.cardId)"
+                    (click)="selectValorCard(record.cardId)">
+                    <div class="entry-card-preview">
+                      <app-card [card]="cardFromId(record.cardId)" [faceDown]="false" />
+                    </div>
+                    <div class="entry-details">
+                      <div class="entry-title-row">
+                        <strong class="entry-title">{{ cardNameFromId(record.cardId) }}</strong>
+                        <code>{{ record.cardId }}</code>
+                      </div>
+                      <div class="entry-tags">
+                        @if (record.juggernautCitations > 0) {
+                          <span class="honor-tag tag-juggernaut">
+                            <mat-icon aria-hidden="true">military_tech</mat-icon>
+                            {{ record.juggernautCitations }} Juggernaut{{ record.juggernautCitations > 1 ? 's' : '' }}
+                          </span>
+                        }
+                        @if (record.aceAssassinations > 0) {
+                          <span class="honor-tag tag-assassin">
+                            <mat-icon aria-hidden="true">star</mat-icon>
+                            {{ record.aceAssassinations }} Ace Slayings
+                          </span>
+                        }
+                        @if (record.confirmedCasualties > 0) {
+                          <span class="honor-tag tag-casualties">
+                            <mat-icon aria-hidden="true">swords</mat-icon>
+                            {{ record.confirmedCasualties }} Casualties
+                          </span>
+                        }
+                        @if (record.reinforcementRescues > 0) {
+                          <span class="honor-tag tag-rescue">
+                            <mat-icon aria-hidden="true">shield</mat-icon>
+                            {{ record.reinforcementRescues }} Rescues
+                          </span>
+                        }
+                        @if (record.victoriousWarsSurvived > 0) {
+                          <span class="honor-tag tag-wars">
+                            <mat-icon aria-hidden="true">flag</mat-icon>
+                            {{ record.victoriousWarsSurvived }} Wars Won
+                          </span>
+                        }
+                        @if (record.battleLayersSurvived > 0) {
+                          <span class="honor-tag tag-battle">
+                            <mat-icon aria-hidden="true">layers</mat-icon>
+                            {{ record.battleLayersSurvived }} Layers
+                          </span>
+                        }
+                        @if (record.timesRescued > 0) {
+                          <span class="honor-tag tag-saved">
+                            <mat-icon aria-hidden="true">favorite</mat-icon>
+                            Saved {{ record.timesRescued }}x
+                          </span>
+                        }
+                        @if (primaryRivalLabel(record); as rivalText) {
+                          <span class="honor-tag tag-rival">
+                            <mat-icon aria-hidden="true">crisis_alert</mat-icon>
+                            Rival: {{ rivalText }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                    <mat-icon class="entry-arrow" aria-hidden="true">chevron_right</mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
     } @else if (activeTab() === 'rules') {
       <div id="panel-rules" role="tabpanel" aria-labelledby="tab-rules" class="rules-reference">
         @if (activeDemo(); as demo) {
@@ -147,42 +348,59 @@
     } @else {
       @if (referenceCard(); as card) {
         <article id="panel-reference" role="tabpanel" aria-labelledby="tab-reference" class="card-reference">
-        <div class="reference-heading">
-          <span class="reference-eyebrow">BONEYARD CASUALTY</span>
-          <h3>{{ cardName(card) }}</h3>
-          <p>Exact casualty record <code>{{ card.id }}</code></p>
-        </div>
-
-        <div class="reference-card-row">
-          <app-card [card]="card" [faceDown]="false" />
-          <dl>
-            <div>
-              <dt>Base value</dt>
-              <dd>{{ card.value }}</dd>
-            </div>
-            <div>
-              <dt>Rank</dt>
-              <dd>{{ card.rank }}</dd>
-            </div>
-            <div>
-              <dt>Suit</dt>
-              <dd>{{ card.suit }}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div class="reference-guidance">
-          <mat-icon aria-hidden="true">info</mat-icon>
-          <div>
-            <strong>{{ rankGuidance(card) }}</strong>
-            <p>Suits identify cards but never affect comparison or break equal-rank ties.</p>
+          <div class="reference-heading">
+            <span class="reference-eyebrow">BONEYARD CASUALTY</span>
+            <h3>{{ cardName(card) }}</h3>
+            <p>Exact casualty record <code>{{ card.id }}</code></p>
           </div>
-        </div>
 
-        <button type="button" class="show-rule-btn" (click)="selectTab('rules')">
-          <mat-icon aria-hidden="true">play_circle</mat-icon>
-          Explore rule demonstrations
-        </button>
+          <div class="reference-card-row">
+            <app-card [card]="card" [faceDown]="false" />
+            <dl>
+              <div>
+                <dt>Base value</dt>
+                <dd>{{ card.value }}</dd>
+              </div>
+              <div>
+                <dt>Rank</dt>
+                <dd>{{ card.rank }}</dd>
+              </div>
+              <div>
+                <dt>Suit</dt>
+                <dd>{{ card.suit }}</dd>
+              </div>
+            </dl>
+          </div>
+
+          @if (hallOfValor.hasDecorations(card.id)) {
+            <div class="reference-valor-card">
+              <div class="valor-summary-header">
+                <mat-icon aria-hidden="true">military_tech</mat-icon>
+                <strong>SERVICE RECORD COMMEMORATED</strong>
+              </div>
+              <p class="valor-summary-text">{{ valorCardSummary(card.id) }}</p>
+              <button
+                type="button"
+                class="view-in-valor-btn"
+                (click)="viewInHallOfValor(card.id)">
+                <mat-icon aria-hidden="true">military_tech</mat-icon>
+                <span>View in Hall of Valor</span>
+              </button>
+            </div>
+          }
+
+          <div class="reference-guidance">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <div>
+              <strong>{{ rankGuidance(card) }}</strong>
+              <p>Suits identify cards but never affect comparison or break equal-rank ties.</p>
+            </div>
+          </div>
+
+          <button type="button" class="show-rule-btn" (click)="selectTab('rules')">
+            <mat-icon aria-hidden="true">play_circle</mat-icon>
+            Explore rule demonstrations
+          </button>
         </article>
       }
     }

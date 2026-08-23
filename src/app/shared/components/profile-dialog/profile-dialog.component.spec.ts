@@ -129,6 +129,20 @@ describe('ProfileDialogComponent', () => {
     expect(resetSpy).not.toHaveBeenCalled();
   }));
 
+  it('resets Career Records and Hall of Valor when confirmed', fakeAsync(() => {
+    const resetSpy = spyOn(authService, 'resetActiveUserStats');
+    component.resetStats();
+    fixture.detectChanges();
+
+    const confirm = document.body.querySelector('.profile-confirm-action') as HTMLButtonElement;
+    expect(confirm).toBeTruthy();
+    confirm.click();
+    tick();
+
+    expect(resetSpy).toHaveBeenCalled();
+    expect(component.settingsStatus()).toContain('Career Records and Hall of Valor have been reset');
+  }));
+
   it('shows Campaign progress and token-backed Requisitions', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.campaign-overview')?.textContent).toContain('CURRENT CAMPAIGN');

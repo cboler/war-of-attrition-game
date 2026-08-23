@@ -235,8 +235,9 @@ export function mapGameEventToTelemetry(
         reaction_category: event.category
       }) : null;
 
-    // Presentation-only events are intentionally absent.
+    // Presentation-only or domain-specific events without standalone telemetry records.
     case 'battle_presentation_complete':
+    case 'valor_citation_awarded':
       return null;
   }
 }

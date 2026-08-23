@@ -281,4 +281,114 @@ describe('AuthService', () => {
     expect(freshService.userStats().juggernautOccurrences).toBe(2);
     expect(freshService.userStats().juggernautCardIds).toEqual(['hearts-A', 'spades-K']);
   });
+
+  it('should initialize with empty Hall of Valor state and normalize legacy stored profiles', () => {
+    expect(service.hallOfValor()).toEqual({ records: {} });
+
+    // Stored legacy profile without hallOfValor field
+    localStorage.setItem('war-of-attrition-profiles', JSON.stringify([{
+      id: 'legacy-user-hov',
+      name: 'Old Commander',
+      provider: 'guest',
+      statistics: {}
+    }]));
+
+    const freshService = new AuthService();
+    expect(freshService.hallOfValor()).toEqual({ records: {} });
+  });
+
+  it('should update and persist Hall of Valor data for the active profile', () => {
+    service.updateActiveProfileHallOfValor(current => ({
+      records: {
+        ...current.records,
+        'diamonds-2': {
+          cardId: 'diamonds-2',
+          confirmedCasualties: 5,
+          aceAssassinations: 2,
+          reinforcementRescues: 1,
+          timesRescued: 0,
+          battleLayersSurvived: 1,
+          victoriousWarsSurvived: 3,
+          juggernautCitations: 1,
+          notableLosses: { 'spades-A': 1 }
+        }
+      }
+    }));
+
+    expect(service.hallOfValor().records['diamonds-2'].confirmedCasualties).toBe(5);
+    expect(service.hallOfValor().records['diamonds-2'].aceAssassinations).toBe(2);
+
+    // Verify persistence across new instance
+    const freshService = new AuthService();
+    expect(freshService.hallOfValor().records['diamonds-2'].confirmedCasualties).toBe(5);
+  });
+
+  it('should isolate Hall of Valor records between guest and Google profiles', () => {
+    // Add record to guest
+    service.updateActiveProfileHallOfValor(() => ({
+      records: {
+        'hearts-A': {
+          cardId: 'hearts-A',
+          confirmedCasualties: 10,
+          aceAssassinations: 0,
+          reinforcementRescues: 0,
+          timesRescued: 0,
+          battleLayersSurvived: 0,
+          victoriousWarsSurvived: 1,
+          juggernautCitations: 0,
+          notableLosses: {}
+        }
+      }
+    }));
+
+    // Switch to Google user
+    service.signInWithGoogle({ name: 'Google Player', email: 'gplayer@example.com' });
+    expect(service.hallOfValor().records['hearts-A']).toBeUndefined();
+
+    // Add record to Google user
+    service.updateActiveProfileHallOfValor(() => ({
+      records: {
+        'spades-K': {
+          cardId: 'spades-K',
+          confirmedCasualties: 8,
+          aceAssassinations: 0,
+          reinforcementRescues: 2,
+          timesRescued: 0,
+          battleLayersSurvived: 0,
+          victoriousWarsSurvived: 2,
+          juggernautCitations: 1,
+          notableLosses: {}
+        }
+      }
+    }));
+    expect(service.hallOfValor().records['spades-K'].confirmedCasualties).toBe(8);
+
+    // Switch back to guest
+    service.signOut();
+    expect(service.hallOfValor().records['hearts-A'].confirmedCasualties).toBe(10);
+    expect(service.hallOfValor().records['spades-K']).toBeUndefined();
+  });
+
+  it('should clear Hall of Valor records when resetting active user stats', () => {
+    service.updateActiveProfileHallOfValor(() => ({
+      records: {
+        'clubs-Q': {
+          cardId: 'clubs-Q',
+          confirmedCasualties: 4,
+          aceAssassinations: 0,
+          reinforcementRescues: 1,
+          timesRescued: 0,
+          battleLayersSurvived: 0,
+          victoriousWarsSurvived: 1,
+          juggernautCitations: 0,
+          notableLosses: {}
+        }
+      }
+    }));
+
+    expect(service.hallOfValor().records['clubs-Q']).toBeDefined();
+
+    service.resetActiveUserStats();
+    expect(service.hallOfValor().records).toEqual({});
+  });
 });

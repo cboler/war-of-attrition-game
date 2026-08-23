@@ -1,4 +1,5 @@
 import { Card } from './card.model';
+import { OpponentCommanderId } from './commander.model';
 import {
   BattleSelectionOutcome,
   ComparisonResult,
@@ -30,6 +31,7 @@ export type GameEventType =
   | 'settlement_resolved'
   | 'quip_spoken'
   | 'achievement_unlocked'
+  | 'valor_citation_awarded'
   | 'game_resolved'
   | 'game_abandoned';
 
@@ -208,6 +210,18 @@ export interface AchievementUnlockedEvent extends BaseGameEvent {
   readonly icon: string;
 }
 
+export type ValorCitationType = 'juggernaut';
+
+export interface ValorCitationAwardedEvent extends BaseGameEvent {
+  readonly type: 'valor_citation_awarded';
+  readonly card: Card;
+  readonly cardId: string;
+  readonly citation: ValorCitationType;
+  readonly citationName: string;
+  readonly description: string;
+  readonly commanderId?: OpponentCommanderId;
+}
+
 export interface GameResolvedEvent extends BaseGameEvent {
   readonly type: 'game_resolved';
   readonly outcome: GameOutcome;
@@ -219,6 +233,7 @@ export interface GameResolvedEvent extends BaseGameEvent {
   readonly battlesCount: number;
   readonly playerReinforcementsSent: number;
   readonly playerDeckColor?: DeckColor;
+  readonly survivingPlayerCardIds?: readonly string[];
 }
 
 export type ExplicitAbandonmentDecision =
@@ -280,5 +295,6 @@ export type GameEvent =
   | SettlementResolvedEvent
   | QuipSpokenEvent
   | AchievementUnlockedEvent
+  | ValorCitationAwardedEvent
   | GameResolvedEvent
   | GameAbandonedEvent;

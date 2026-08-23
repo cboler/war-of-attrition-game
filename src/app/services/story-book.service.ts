@@ -227,6 +227,18 @@ export class StoryBookService {
         });
         break;
 
+      case 'valor_citation_awarded':
+        this.addEntry({
+          turnNumber: event.turnNumber,
+          type: 'achievement',
+          eyebrow: `VALOR CITATION · ${this.formatCard(event.card)}`,
+          title: event.citationName,
+          text: event.description,
+          cards: [event.card],
+          badge: 'achievement',
+        });
+        break;
+
       case 'game_resolved': {
         let title = '';
         let text = '';

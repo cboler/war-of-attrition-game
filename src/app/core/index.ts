@@ -2,6 +2,7 @@
 export * from './models/card.model';
 export * from './models/deck.model';
 export * from './models/game-state.model';
+export * from './models/hall-of-valor.model';
 
 // Services
 export * from './services/card-comparison.service';

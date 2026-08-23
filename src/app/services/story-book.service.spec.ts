@@ -260,4 +260,24 @@ describe('StoryBookService', () => {
     expect(service.entries().length).toBe(0);
     expect(service.hasEntries()).toBe(false);
   });
+
+  it('should record valor citation awards as a dignified Chronicle achievement entry', () => {
+    eventBus.emit({
+      type: 'valor_citation_awarded',
+      turnNumber: 12,
+      card: cardKing,
+      cardId: cardKing.id,
+      citation: 'juggernaut',
+      citationName: 'Juggernaut Citation',
+      description: 'K♣ recorded 3 consecutive decisive victories in this War.'
+    });
+
+    expect(service.entries().length).toBe(1);
+    const entry = service.entries()[0];
+    expect(entry.type).toBe('achievement');
+    expect(entry.title).toBe('Juggernaut Citation');
+    expect(entry.eyebrow).toContain('VALOR CITATION');
+    expect(entry.cards).toEqual([cardKing]);
+    expect(entry.badge).toBe('achievement');
+  });
 });

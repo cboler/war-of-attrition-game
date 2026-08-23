@@ -11,6 +11,11 @@ import {
   DEFAULT_CARD_BACKING_ID,
   normalizeCampaignProgression
 } from '../models/progression.model';
+import {
+  HallOfValorState,
+  createDefaultHallOfValor,
+  normalizeHallOfValor
+} from '../models/hall-of-valor.model';
 import { APP_LOCAL_STORAGE_KEYS } from '../models/app-storage.model';
 
 @Injectable({
@@ -32,6 +37,9 @@ export class AuthService {
   readonly isAuthenticated = computed<boolean>(() => this.activeProfile().isGoogleAuth);
   readonly isGoogleUser = computed<boolean>(() => this.activeProfile().provider === 'google');
   readonly userStats = computed<GameStatistics>(() => this.activeProfile().statistics);
+  readonly hallOfValor = computed<HallOfValorState>(() =>
+    normalizeHallOfValor(this.activeProfile().hallOfValor)
+  );
 
   private gisInitialized = false;
   private readonly DEFAULT_CLIENT_ID = environment.googleClientId || '';
@@ -160,7 +168,8 @@ export class AuthService {
               progression: normalizeCampaignProgression(
                 p.progression,
                 p.progression ? DEFAULT_CARD_BACKING_ID : legacySelectedCardBacking
-              )
+              ),
+              hallOfValor: normalizeHallOfValor(p.hallOfValor)
             }));
         }
       }
@@ -248,6 +257,7 @@ export class AuthService {
         isGoogleAuth: true,
         statistics: { ...DEFAULT_STATISTICS },
         progression: normalizeCampaignProgression(undefined, this.readLegacySelectedCardBacking()),
+        hallOfValor: createDefaultHallOfValor(),
         createdAt: now,
         lastLoginAt: now
       };
@@ -304,6 +314,21 @@ export class AuthService {
     );
     this.persistProfiles();
     return progression;
+  }
+
+  /** Controlled persistence seam for profile-scoped Hall of Valor card service records. */
+  updateActiveProfileHallOfValor(
+    updater: (current: HallOfValorState) => HallOfValorState
+  ): HallOfValorState {
+    const currentProfile = this.activeProfile();
+    const current = normalizeHallOfValor(currentProfile.hallOfValor);
+    const hallOfValor = normalizeHallOfValor(updater(current));
+    const updatedProfile: UserProfile = { ...currentProfile, hallOfValor };
+    this.profilesSignal.update(profiles =>
+      profiles.map(profile => profile.id === updatedProfile.id ? updatedProfile : profile)
+    );
+    this.persistProfiles();
+    return hallOfValor;
   }
 
   /**
@@ -544,13 +569,14 @@ export class AuthService {
   }
 
   /**
-   * Reset active user statistics
+   * Reset active user statistics and Hall of Valor career records
    */
   resetActiveUserStats(): void {
     const currentProfile = this.activeProfile();
     const updatedProfile: UserProfile = {
       ...currentProfile,
-      statistics: { ...DEFAULT_STATISTICS }
+      statistics: { ...DEFAULT_STATISTICS },
+      hallOfValor: createDefaultHallOfValor()
     };
 
     const profiles = this.profilesSignal().map(p => p.id === updatedProfile.id ? updatedProfile : p);

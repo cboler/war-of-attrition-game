@@ -501,6 +501,449 @@
   }
 }
 
+/* --- Hall of Valor Panel --- */
+.valor-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.valor-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.valor-roll-header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(228, 191, 114, 0.15);
+
+  .roll-count {
+    color: #e5c175;
+    font: 700 0.68rem/1 system-ui, sans-serif;
+    letter-spacing: 0.12em;
+  }
+
+  .roll-subtext {
+    font-size: 0.76rem;
+    color: rgba(247, 240, 225, 0.65);
+  }
+}
+
+.valor-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.valor-card-entry {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(18, 44, 37, 0.7);
+  border: 1px solid rgba(228, 191, 114, 0.2);
+  border-radius: 8px;
+  color: #f7f0e1;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+
+  &:hover {
+    background: rgba(26, 60, 50, 0.9);
+    border-color: #e5c175;
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ffd54f;
+    outline-offset: 2px;
+  }
+
+  .entry-card-preview {
+    flex: 0 0 auto;
+  }
+
+  .entry-details {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .entry-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+
+    .entry-title {
+      font: 600 0.95rem/1.2 Georgia, serif;
+      color: #fff9ee;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    code {
+      font-size: 0.7rem;
+      color: rgba(247, 240, 225, 0.5);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex: 0 0 auto;
+    }
+  }
+
+  .entry-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .entry-arrow {
+    flex: 0 0 auto;
+    color: rgba(228, 191, 114, 0.6);
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.honor-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 12px;
+  font: 600 0.68rem/1 system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(247, 240, 225, 0.9);
+
+  mat-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+  }
+
+  &.tag-juggernaut {
+    background: rgba(255, 213, 79, 0.18);
+    border-color: rgba(255, 213, 79, 0.5);
+    color: #ffe082;
+  }
+
+  &.tag-assassin {
+    background: rgba(239, 83, 80, 0.18);
+    border-color: rgba(239, 83, 80, 0.5);
+    color: #ff8a80;
+  }
+
+  &.tag-casualties {
+    background: rgba(255, 152, 0, 0.15);
+    border-color: rgba(255, 152, 0, 0.4);
+    color: #ffb74d;
+  }
+
+  &.tag-rescue {
+    background: rgba(38, 166, 154, 0.18);
+    border-color: rgba(38, 166, 154, 0.5);
+    color: #80cbc4;
+  }
+
+  &.tag-wars {
+    background: rgba(102, 187, 106, 0.18);
+    border-color: rgba(102, 187, 106, 0.5);
+    color: #a5d6a7;
+  }
+
+  &.tag-battle {
+    background: rgba(129, 212, 250, 0.15);
+    border-color: rgba(129, 212, 250, 0.4);
+    color: #b3e5fc;
+  }
+
+  &.tag-saved {
+    background: rgba(186, 104, 200, 0.18);
+    border-color: rgba(186, 104, 200, 0.5);
+    color: #ce93d8;
+  }
+
+  &.tag-rival {
+    background: rgba(224, 224, 224, 0.12);
+    border-color: rgba(224, 224, 224, 0.3);
+    color: #e0e0e0;
+  }
+}
+
+/* --- Valor Detail View --- */
+.valor-detail-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.valor-detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(228, 191, 114, 0.2);
+
+  .valor-back-btn {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(228, 191, 114, 0.3);
+    border-radius: 6px;
+    color: #e5c175;
+    font: 600 0.76rem/1 system-ui, sans-serif;
+    cursor: pointer;
+    transition: background 150ms ease;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      background: rgba(228, 191, 114, 0.15);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #ffd54f;
+      outline-offset: 2px;
+    }
+  }
+
+  .detail-title-group {
+    .detail-eyebrow {
+      color: #e5c175;
+      font: 700 0.62rem/1 system-ui, sans-serif;
+      letter-spacing: 0.14em;
+    }
+
+    h3 {
+      margin: 4px 0 2px;
+      font: 600 1.25rem/1.2 Georgia, serif;
+      color: #fff9ee;
+    }
+
+    code {
+      font-size: 0.72rem;
+      color: rgba(247, 240, 225, 0.5);
+    }
+  }
+}
+
+.valor-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.detail-card-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  background: rgba(18, 44, 37, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(228, 191, 114, 0.15);
+
+  .hero-honors-summary {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .hero-citation-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 213, 79, 0.15);
+    border: 1px solid rgba(255, 213, 79, 0.4);
+    border-radius: 6px;
+    color: #ffe082;
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      color: #ffd54f;
+      flex: 0 0 auto;
+    }
+
+    strong {
+      display: block;
+      font-size: 0.84rem;
+      color: #fff9ee;
+    }
+
+    small {
+      display: block;
+      font-size: 0.72rem;
+      color: rgba(247, 240, 225, 0.7);
+    }
+
+    &.assassin-badge {
+      background: rgba(239, 83, 80, 0.15);
+      border-color: rgba(239, 83, 80, 0.4);
+      color: #ff8a80;
+
+      mat-icon {
+        color: #ef5350;
+      }
+    }
+  }
+}
+
+.section-heading {
+  margin: 0 0 10px;
+  color: #e5c175;
+  font: 700 0.74rem/1 system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    background: rgba(18, 44, 37, 0.6);
+    border: 1px solid rgba(228, 191, 114, 0.15);
+    border-radius: 6px;
+
+    .stat-value {
+      font: 700 1.25rem/1 system-ui, sans-serif;
+      color: #ffd54f;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: rgba(247, 240, 225, 0.7);
+      line-height: 1.2;
+    }
+  }
+}
+
+.detail-rivals-section {
+  .rivals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rival-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(18, 44, 37, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+
+    .rival-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      strong {
+        font: 600 0.88rem/1.2 Georgia, serif;
+        color: #fff9ee;
+      }
+
+      span {
+        font-size: 0.74rem;
+        color: rgba(247, 240, 225, 0.65);
+      }
+    }
+  }
+}
+
+/* --- Card Reference Tab Service Record Banner --- */
+.reference-valor-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(229, 193, 117, 0.12);
+  border: 1px solid rgba(229, 193, 117, 0.35);
+  border-radius: 8px;
+
+  .valor-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #ffd54f;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    strong {
+      font: 700 0.72rem/1 system-ui, sans-serif;
+      letter-spacing: 0.08em;
+    }
+  }
+
+  .valor-summary-text {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #fff9ee;
+    line-height: 1.35;
+  }
+
+  .view-in-valor-btn {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #e5c175;
+    border: 1px solid #e5c175;
+    border-radius: 5px;
+    color: #102a23;
+    font: 700 0.74rem/1 system-ui, sans-serif;
+    cursor: pointer;
+    transition: background 150ms ease;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      background: #f1cf85;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #ffd54f;
+      outline-offset: 2px;
+    }
+  }
+}
+
 .drawer-footer {
   display: flex;
   align-items: center;

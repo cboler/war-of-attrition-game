@@ -263,13 +263,13 @@ export class ProfileDialogComponent {
     this.confirm(
       {
         title: 'Reset Career Records?',
-        message: 'This permanently clears player-facing statistics and records. Campaign tokens and unlocked cosmetics are not removed.',
+        message: 'This permanently clears player-facing statistics, career records, and Hall of Valor service history. Campaign tokens and unlocked cosmetics are not removed.',
         confirmLabel: 'Reset records',
         destructive: true
       },
       () => {
         this.authService.resetActiveUserStats();
-        this.settingsStatus.set('Career Records have been reset.');
+        this.settingsStatus.set('Career Records and Hall of Valor have been reset.');
       }
     );
   }

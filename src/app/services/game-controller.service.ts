@@ -1466,6 +1466,11 @@ export class GameControllerService {
     // Preserve the stable War id before telemetry closes its active context.
     const resolvedWarId = this.currentWarId || this.telemetry.currentWarContext()?.warId || '';
 
+    const survivingPlayerCardIds =
+      outcome === GameOutcome.PLAYER_WIN
+        ? this.gameState.currentPlayerDeck.toArray().map((c) => c.id)
+        : [];
+
     // Emit game_resolved
     this.eventBus.emit({
       type: 'game_resolved',
@@ -1479,6 +1484,7 @@ export class GameControllerService {
       battlesCount: this.battlesCount,
       playerReinforcementsSent: this.playerChallengesCount,
       playerDeckColor: this.gameState.currentPlayerDeckColor,
+      survivingPlayerCardIds,
     });
 
     if (resolvedWarId) {

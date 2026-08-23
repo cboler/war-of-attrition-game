@@ -13,12 +13,18 @@ import {
   signal
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { Card, Rank } from '../../../core/models/card.model';
+import { Card, CardImpl, Rank, Suit } from '../../../core/models/card.model';
+import {
+  CardServiceRecord,
+  isDecoratedCard,
+  isValidCanonicalCardId
+} from '../../../core/models/hall-of-valor.model';
+import { HallOfValorService } from '../../../services/hall-of-valor.service';
 import { StoryBookService } from '../../../services/story-book.service';
 import { CardComponent } from '../card/card.component';
 import { RuleDemoComponent, RuleDemoKind } from '../rule-demo/rule-demo.component';
 
-type FieldManualTab = 'chronicle' | 'rules' | 'reference';
+type FieldManualTab = 'chronicle' | 'valor' | 'rules' | 'reference';
 
 interface RuleEntry {
   readonly id: RuleDemoKind;
@@ -84,18 +90,25 @@ const RULE_ENTRIES: readonly RuleEntry[] = [
 })
 export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   protected readonly storyBook = inject(StoryBookService);
+  protected readonly hallOfValor = inject(HallOfValorService);
   protected readonly rules = RULE_ENTRIES;
   protected readonly activeTab = signal<FieldManualTab>('chronicle');
   protected readonly activeDemo = signal<RuleDemoKind | null>(null);
+  protected readonly selectedValorCardId = signal<string | null>(null);
 
   readonly referenceCard = input<Card | null>(null);
   readonly closed = output<void>();
 
   protected readonly availableTabs = computed<readonly FieldManualTab[]>(() =>
     this.referenceCard()
-      ? ['chronicle', 'rules', 'reference']
-      : ['chronicle', 'rules']
+      ? ['chronicle', 'valor', 'rules', 'reference']
+      : ['chronicle', 'valor', 'rules']
   );
+
+  protected readonly selectedValorCard = computed<CardServiceRecord | null>(() => {
+    const id = this.selectedValorCardId();
+    return id ? this.hallOfValor.getRecord(id) : null;
+  });
 
   @ViewChild('drawerContainer') private drawerContainer?: ElementRef<HTMLElement>;
   @ViewChild('closeBtn') private closeBtn?: ElementRef<HTMLButtonElement>;
@@ -110,6 +123,7 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
       if (card && card.id !== this.lastReferenceId) {
         this.lastReferenceId = card.id;
         this.activeDemo.set(null);
+        this.selectedValorCardId.set(null);
         this.activeTab.set('reference');
       }
     });
@@ -174,10 +188,35 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
     }, 0);
   }
 
+  protected selectValorCard(cardId: string): void {
+    this.selectedValorCardId.set(cardId);
+  }
+
+  protected closeValorDetail(): void {
+    this.selectedValorCardId.set(null);
+  }
+
+  protected viewInHallOfValor(cardId: string): void {
+    this.selectedValorCardId.set(cardId);
+    this.selectTab('valor');
+  }
+
+  protected cardFromId(cardId: string): Card {
+    if (!isValidCanonicalCardId(cardId)) {
+      return new CardImpl(Suit.HEARTS, Rank.ACE);
+    }
+    const [suitStr, rankStr] = cardId.split('-');
+    return new CardImpl(suitStr as Suit, rankStr as Rank);
+  }
+
   protected cardName(card: Card): string {
     const rank = this.rankName(card.rank);
     const suit = card.suit.charAt(0).toUpperCase() + card.suit.slice(1);
     return `${rank} of ${suit}`;
+  }
+
+  protected cardNameFromId(cardId: string): string {
+    return this.cardName(this.cardFromId(cardId));
   }
 
   protected rankGuidance(card: Card): string {
@@ -190,6 +229,58 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
     return `Its comparison value is ${card.value}. Higher ranks win; equal ranks tie.`;
   }
 
+  protected primaryRivalLabel(record: CardServiceRecord): string {
+    const entries = Object.entries(record.notableLosses || {});
+    if (entries.length === 0) return '';
+    entries.sort((a, b) => b[1] - a[1]);
+    const [rivalId, count] = entries[0];
+    const rivalCard = this.cardFromId(rivalId);
+    const symbol = this.suitSymbol(rivalCard.suit);
+    return `${rivalCard.rank}${symbol} (${count} ${count === 1 ? 'defeat' : 'defeats'})`;
+  }
+
+  protected rivalLossesList(record: CardServiceRecord): Array<{
+    rivalId: string;
+    card: Card;
+    name: string;
+    count: number;
+  }> {
+    const entries = Object.entries(record.notableLosses || {});
+    entries.sort((a, b) => b[1] - a[1]);
+    return entries.map(([rivalId, count]) => {
+      const card = this.cardFromId(rivalId);
+      return {
+        rivalId,
+        card,
+        name: this.cardName(card),
+        count
+      };
+    });
+  }
+
+  protected valorCardSummary(cardId: string): string {
+    const record = this.hallOfValor.getRecord(cardId);
+    if (!record || !isDecoratedCard(record)) return '';
+
+    const parts: string[] = [];
+    if (record.juggernautCitations > 0) {
+      parts.push(`${record.juggernautCitations} Juggernaut ${record.juggernautCitations === 1 ? 'Citation' : 'Citations'}`);
+    }
+    if (record.aceAssassinations > 0) {
+      parts.push(`${record.aceAssassinations} Ace ${record.aceAssassinations === 1 ? 'Assassination' : 'Assassinations'}`);
+    }
+    if (record.confirmedCasualties > 0) {
+      parts.push(`${record.confirmedCasualties} ${record.confirmedCasualties === 1 ? 'Casualty' : 'Casualties'}`);
+    }
+    if (record.reinforcementRescues > 0) {
+      parts.push(`${record.reinforcementRescues} ${record.reinforcementRescues === 1 ? 'Rescue' : 'Rescues'}`);
+    }
+    if (record.victoriousWarsSurvived > 0) {
+      parts.push(`Survived ${record.victoriousWarsSurvived} ${record.victoriousWarsSurvived === 1 ? 'War' : 'Wars'}`);
+    }
+    return parts.join(' · ');
+  }
+
   closeDrawer(): void {
     this.closed.emit();
   }
@@ -199,6 +290,8 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
       event.preventDefault();
       if (this.activeDemo()) {
         this.closeRuleDemo();
+      } else if (this.selectedValorCardId()) {
+        this.closeValorDetail();
       } else {
         this.closeDrawer();
       }
@@ -236,6 +329,21 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
         return 'Jack';
       default:
         return rank;
+    }
+  }
+
+  private suitSymbol(suit: string): string {
+    switch (suit) {
+      case 'hearts':
+        return '♥';
+      case 'diamonds':
+        return '♦';
+      case 'clubs':
+        return '♣';
+      case 'spades':
+        return '♠';
+      default:
+        return '';
     }
   }
 }
