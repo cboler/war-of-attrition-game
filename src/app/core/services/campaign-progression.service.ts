@@ -15,7 +15,9 @@ import {
   LimitedReservesCampaignState,
   calculateWarMargin,
   canHumanReinforce,
+  canInspectCasualties,
   getHumanReserves,
+  isFogOfWarMode,
   isLimitedReservesMode,
   isTotalWarMode,
   CosmeticPurchaseResult,
@@ -57,6 +59,7 @@ export class CampaignProgressionService {
   readonly ordersSelected = computed<boolean>(() => this.currentCampaign().ordersSelected);
   readonly isLimitedReserves = computed<boolean>(() => isLimitedReservesMode(this.currentCampaign()));
   readonly isTotalWar = computed<boolean>(() => isTotalWarMode(this.currentCampaign()));
+  readonly isFogOfWar = computed<boolean>(() => isFogOfWarMode(this.currentCampaign()));
   readonly runningCampaignDifferential = computed<number>(() =>
     this.currentCampaign().wars.reduce((sum, w) => sum + w.margin, 0)
   );
@@ -87,6 +90,13 @@ export class CampaignProgressionService {
    */
   canHumanReinforce(deckCount: number): boolean {
     return canHumanReinforce(this.currentCampaign(), deckCount);
+  }
+
+  /**
+   * Authoritative check whether casualty inspection / historical ledgers are accessible.
+   */
+  canInspectCurrentWarCasualties(isWarResolved: boolean): boolean {
+    return canInspectCasualties(this.activeCampaignMode(), isWarResolved);
   }
 
   /**

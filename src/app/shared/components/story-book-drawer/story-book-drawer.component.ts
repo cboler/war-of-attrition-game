@@ -20,7 +20,10 @@ import {
   isValidCanonicalCardId
 } from '../../../core/models/hall-of-valor.model';
 import { HallOfValorService } from '../../../services/hall-of-valor.service';
-import { StoryBookService } from '../../../services/story-book.service';
+import { CampaignProgressionService } from '../../../core/services/campaign-progression.service';
+import { GameStateService } from '../../../core/services/game-state.service';
+import { GamePhase } from '../../../core/models/game-state.model';
+import { StoryBookEntry, StoryBookService } from '../../../services/story-book.service';
 import { CardComponent } from '../card/card.component';
 import { RuleDemoComponent, RuleDemoKind } from '../rule-demo/rule-demo.component';
 
@@ -91,6 +94,8 @@ const RULE_ENTRIES: readonly RuleEntry[] = [
 export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   protected readonly storyBook = inject(StoryBookService);
   protected readonly hallOfValor = inject(HallOfValorService);
+  protected readonly progression = inject(CampaignProgressionService, { optional: true });
+  protected readonly gameState = inject(GameStateService, { optional: true });
   protected readonly rules = RULE_ENTRIES;
   protected readonly activeTab = signal<FieldManualTab>('chronicle');
   protected readonly activeDemo = signal<RuleDemoKind | null>(null);
@@ -100,17 +105,90 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   readonly referenceCard = input<Card | null>(null);
   readonly closed = output<void>();
 
+  readonly isFogOfWarActive = computed<boolean>(() =>
+    (this.progression?.isFogOfWar() ?? false) &&
+    this.gameState?.currentPhase !== GamePhase.GAME_OVER
+  );
+
   protected readonly availableTabs = computed<readonly FieldManualTab[]>(() =>
     this.referenceCard()
       ? ['chronicle', 'valor', 'rules', 'reference']
       : ['chronicle', 'valor', 'rules']
   );
 
+  protected entryText(entry: StoryBookEntry): string {
+    if (!this.isFogOfWarActive()) {
+      return entry.text;
+    }
+    switch (entry.type) {
+      case 'clash':
+        return 'Assassination resolved under Fog of War.';
+      case 'challenge':
+        if (entry.text.includes('committed')) {
+          return 'Reinforcement committed under Fog of War.';
+        }
+        if (entry.text.includes('conceded')) {
+          return 'Challenge conceded under Fog of War.';
+        }
+        if (entry.badge === 'victory') {
+          return 'Card rescued under Fog of War.';
+        }
+        if (entry.badge === 'defeat') {
+          return 'Reinforcement failed under Fog of War.';
+        }
+        if (entry.badge === 'battle') {
+          return 'Reinforcement tied. Battle initiated under Fog of War.';
+        }
+        return 'Challenge resolved under Fog of War.';
+      case 'battle_reveal':
+        if (entry.badge === 'victory') {
+          return 'Player champion prevailed under Fog of War.';
+        }
+        if (entry.badge === 'defeat') {
+          return 'Opponent champion prevailed under Fog of War.';
+        }
+        if (entry.badge === 'battle') {
+          return 'Champions tied under Fog of War. Battle continues!';
+        }
+        return 'Battle champions revealed under Fog of War.';
+      case 'casualty':
+        return 'Battle resolved. Casualties surrendered to the sealed Boneyard.';
+      case 'achievement':
+        if (entry.eyebrow?.includes('VALOR')) {
+          return 'Combat citation recorded in field records.';
+        }
+        return entry.text;
+      default:
+        return entry.text;
+    }
+  }
+
+  protected entryEyebrow(entry: StoryBookEntry): string {
+    if (!this.isFogOfWarActive()) {
+      return entry.eyebrow ?? '';
+    }
+    if (entry.eyebrow?.includes('VALOR CITATION')) {
+      return 'VALOR CITATION · SEALED';
+    }
+    return entry.eyebrow ?? '';
+  }
+
+  protected showEntryCards(entry: StoryBookEntry): boolean {
+    if (this.isFogOfWarActive()) return false;
+    return !!(entry.cards && entry.cards.length > 0 && entry.type === 'casualty');
+  }
+
+  protected showEntryComparison(entry: StoryBookEntry): boolean {
+    if (this.isFogOfWarActive()) return false;
+    return !!entry.comparison;
+  }
+
   protected isComparisonExpanded(entryId: string): boolean {
     return this.expandedComparisonEntryIds().has(entryId);
   }
 
   protected toggleComparisonExpanded(entryId: string): void {
+    if (this.isFogOfWarActive()) return;
     this.expandedComparisonEntryIds.update(current => {
       const next = new Set(current);
       if (next.has(entryId)) {

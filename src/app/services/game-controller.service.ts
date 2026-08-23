@@ -222,6 +222,10 @@ export class GameControllerService {
   });
 
 
+  readonly isFogOfWarActive = computed<boolean>(
+    () => this.campaignProgression.isFogOfWar() && this.phase() !== PresentationState.GAME_OVER
+  );
+  readonly canInspectCasualties = computed<boolean>(() => !this.isFogOfWarActive());
   readonly visibleBoneyardCards = computed(() => {
     const withheld = new Set(this.withheldBoneyardIds());
     return this.gameState.discardedCards().filter((card) => !withheld.has(card.id));

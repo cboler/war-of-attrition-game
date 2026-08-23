@@ -43,10 +43,11 @@ describe('CampaignOrdersDialogComponent', () => {
 
   it('should render all campaign order options', () => {
     const cards = fixture.nativeElement.querySelectorAll('.order-card');
-    expect(cards.length).toBe(3);
+    expect(cards.length).toBe(4);
     expect(cards[0].textContent).toContain('Standard Campaign');
     expect(cards[1].textContent).toContain('Limited Reserves');
     expect(cards[2].textContent).toContain('Total War');
+    expect(cards[3].textContent).toContain('Fog of War');
   });
 
   it('should allow selecting Limited Reserves mode', () => {
@@ -67,15 +68,24 @@ describe('CampaignOrdersDialogComponent', () => {
     expect(cards[2].classList).toContain('selected');
   });
 
+  it('should allow selecting Fog of War mode', () => {
+    const cards = fixture.nativeElement.querySelectorAll('.order-card');
+    cards[3].click();
+    fixture.detectChanges();
+
+    expect(component.selectedMode()).toBe('fog_of_war');
+    expect(cards[3].classList).toContain('selected');
+  });
+
   it('should confirm orders and close dialog with selected mode', () => {
     const selectSpy = spyOn(progressionService, 'selectCampaignOrders').and.callThrough();
 
-    component.selectMode('total_war');
+    component.selectMode('fog_of_war');
     component.confirmOrders();
 
-    expect(selectSpy).toHaveBeenCalledWith('total_war');
-    expect(dialogRefSpy.close).toHaveBeenCalledWith('total_war');
-    expect(progressionService.activeCampaignMode()).toBe('total_war');
-    expect(progressionService.isTotalWar()).toBeTrue();
+    expect(selectSpy).toHaveBeenCalledWith('fog_of_war');
+    expect(dialogRefSpy.close).toHaveBeenCalledWith('fog_of_war');
+    expect(progressionService.activeCampaignMode()).toBe('fog_of_war');
+    expect(progressionService.isFogOfWar()).toBeTrue();
   });
 });

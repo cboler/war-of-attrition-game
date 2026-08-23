@@ -5,24 +5,38 @@ import { GameEventBusService } from '../../../services/game-event-bus.service';
 import { Card, Rank, Suit } from '../../../core/models/card.model';
 import { HallOfValorService } from '../../../services/hall-of-valor.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { CampaignProgressionService } from '../../../core/services/campaign-progression.service';
+import { GameStateService } from '../../../core/services/game-state.service';
+import { GamePhase } from '../../../core/models/game-state.model';
 
 describe('StoryBookDrawerComponent', () => {
   let component: StoryBookDrawerComponent;
   let fixture: ComponentFixture<StoryBookDrawerComponent>;
   let storyBook: StoryBookService;
   let authService: AuthService;
+  let progressionService: CampaignProgressionService;
+  let gameState: GameStateService;
 
   beforeEach(async () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [StoryBookDrawerComponent],
-      providers: [StoryBookService, HallOfValorService, AuthService, GameEventBusService]
+      providers: [
+        StoryBookService,
+        HallOfValorService,
+        AuthService,
+        GameEventBusService,
+        CampaignProgressionService,
+        GameStateService
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(StoryBookDrawerComponent);
     component = fixture.componentInstance;
     storyBook = TestBed.inject(StoryBookService);
     authService = TestBed.inject(AuthService);
+    progressionService = TestBed.inject(CampaignProgressionService);
+    gameState = TestBed.inject(GameStateService);
     fixture.detectChanges();
   });
 
@@ -405,6 +419,97 @@ describe('StoryBookDrawerComponent', () => {
       const compiled = fixture.nativeElement as HTMLElement;
       expect(compiled.querySelectorAll('.story-node').length).toBe(1);
       expect(compiled.querySelector('.node-combat-math')).toBeNull();
+    });
+  });
+
+  describe('Fog of War Chronicle and Hall of Valor sealing', () => {
+    it('redacts Chronicle narrative text, suppresses combat math and casualty strips during active War, and reveals upon GAME_OVER', () => {
+      progressionService.selectCampaignOrders('fog_of_war');
+      gameState.setPhase(GamePhase.NORMAL);
+      fixture.detectChanges();
+
+      expect(component.isFogOfWarActive()).toBeTrue();
+
+      const cardSeven: Card = { id: 'spades-7', suit: Suit.SPADES, rank: Rank.SEVEN, value: 7, isRed: false };
+      const cardKing: Card = { id: 'hearts-K', suit: Suit.HEARTS, rank: Rank.KING, value: 13, isRed: true };
+
+      // Add a clash entry with comparison metadata
+      storyBook.addEntry({
+        turnNumber: 1,
+        type: 'clash',
+        eyebrow: 'TURN 1 · CLASH',
+        text: 'K♥ defeated 7♠',
+        badge: 'victory',
+        comparison: {
+          card: cardKing,
+          opposingCard: cardSeven,
+          base: 13,
+          opposingBase: 7,
+          opposingRank: '7',
+          state: 'winner',
+          current: 6,
+          damage: 0,
+          specialOverride: false,
+          formulaText: '13 − 7 = 6',
+        }
+      });
+
+      // Add a casualty entry with cards
+      storyBook.addEntry({
+        turnNumber: 2,
+        type: 'casualty',
+        eyebrow: 'BATTLE CASUALTIES',
+        text: '4 casualties sent to Boneyard',
+        badge: 'defeat',
+        cards: [cardSeven, cardKing]
+      });
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const nodes = compiled.querySelectorAll('.story-node');
+      expect(nodes.length).toBe(2);
+
+      // Node 1: Redacted text and suppressed combat math button
+      expect(nodes[0].classList).toContain('fog-sealed');
+      expect(nodes[0].querySelector('.node-text')?.textContent).toContain('Assassination resolved under Fog of War.');
+      expect(nodes[0].querySelector('.combat-math-trigger')).toBeNull();
+
+      // Node 2: Redacted casualty text and hidden casualty card strip
+      expect(nodes[1].classList).toContain('fog-sealed');
+      expect(nodes[1].querySelector('.node-text')?.textContent).toContain('Casualties surrendered to the sealed Boneyard.');
+      expect(nodes[1].querySelector('.casualties-strip')).toBeNull();
+
+      // Check Hall of Valor tab while Fog is active: sealed state displayed
+      (compiled.querySelector('#tab-valor') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(compiled.querySelector('#panel-valor')).toBeTruthy();
+      expect(compiled.querySelector('.fog-sealed-state')).toBeTruthy();
+      expect(compiled.querySelector('#panel-valor')?.textContent).toContain('Field Records Sealed');
+      expect(compiled.querySelector('#panel-valor')?.textContent).toContain('Hall of Valor service records are sealed');
+
+      // Now War concludes (GAME_OVER)
+      gameState.setPhase(GamePhase.GAME_OVER);
+      fixture.detectChanges();
+
+      expect(component.isFogOfWarActive()).toBeFalse();
+
+      // Hall of Valor unsealed (empty state since no decorated cards)
+      expect(compiled.querySelector('.fog-sealed-state')).toBeNull();
+      expect(compiled.querySelector('#panel-valor')?.textContent).toContain('The Hall of Valor is empty');
+
+      // Switch back to Chronicle tab: truth revealed!
+      (compiled.querySelector('#tab-chronicle') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      const unsealedNodes = compiled.querySelectorAll('.story-node');
+      expect(unsealedNodes[0].classList).not.toContain('fog-sealed');
+      expect(unsealedNodes[0].querySelector('.node-text')?.textContent).toContain('K♥ defeated 7♠');
+      expect(unsealedNodes[0].querySelector('.combat-math-trigger')).toBeTruthy();
+
+      expect(unsealedNodes[1].classList).not.toContain('fog-sealed');
+      expect(unsealedNodes[1].querySelector('.node-text')?.textContent).toContain('4 casualties sent to Boneyard');
+      expect(unsealedNodes[1].querySelector('.casualties-strip')).toBeTruthy();
     });
   });
 });

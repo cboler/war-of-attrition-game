@@ -710,6 +710,64 @@ app-card-table {
     color: #fffaf0;
     transform: translateY(-2px);
   }
+
+  &.fog-sealed {
+    cursor: default;
+    opacity: 0.9;
+
+    &:hover {
+      background: transparent;
+      color: rgba(244, 235, 214, 0.8);
+      transform: none;
+    }
+
+    small {
+      color: #cfd8dc;
+      font-style: italic;
+      letter-spacing: 0.05em;
+    }
+
+    .pile {
+      position: relative;
+      border-color: rgba(207, 216, 220, 0.45);
+      filter: drop-shadow(0 0 10px rgba(176, 190, 197, 0.25));
+
+      &::after {
+        content: 'FOG';
+        position: absolute;
+        inset: -2px;
+        display: grid;
+        place-content: center;
+        border-radius: 9px;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(176, 190, 197, 0.42) 0%,
+          rgba(96, 125, 139, 0.55) 60%,
+          rgba(38, 50, 56, 0.75) 100%
+        );
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        border: 1.5px dashed rgba(207, 216, 220, 0.6);
+        color: #eceff1;
+        font: 700 0.65rem/1 system-ui, sans-serif;
+        letter-spacing: 0.18em;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+        z-index: 5;
+      }
+    }
+
+    .boneyard-empty {
+      border: 1.5px dashed rgba(207, 216, 220, 0.45);
+      background: radial-gradient(
+        ellipse at center,
+        rgba(176, 190, 197, 0.2) 0%,
+        rgba(38, 50, 56, 0.45) 100%
+      );
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+  }
 }
 .boneyard:focus-visible {
   outline: 2px solid #ffd54f;

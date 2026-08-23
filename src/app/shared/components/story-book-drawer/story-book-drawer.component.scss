@@ -281,6 +281,71 @@
       margin-bottom: 6px;
     }
   }
+
+  &.fog-sealed {
+    background: linear-gradient(
+      135deg,
+      rgba(18, 44, 37, 0.55) 0%,
+      rgba(38, 50, 56, 0.45) 100%
+    );
+    border-color: rgba(207, 216, 220, 0.25);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+
+    .node-text {
+      font-style: italic;
+      color: rgba(207, 216, 220, 0.88);
+    }
+  }
+}
+
+.fog-sealed-state {
+  padding: 28px 20px;
+  border: 1.5px dashed rgba(207, 216, 220, 0.45);
+  border-radius: 14px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(144, 164, 174, 0.18) 0%,
+    rgba(38, 50, 56, 0.45) 100%
+  );
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 0 30px rgba(176, 190, 197, 0.15);
+
+  .fog-cloud-badge {
+    display: grid;
+    place-items: center;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(176, 190, 197, 0.28) 0%,
+      rgba(96, 125, 139, 0.4) 100%
+    );
+    border: 1.5px dashed rgba(207, 216, 220, 0.6);
+    box-shadow: 0 0 24px rgba(176, 190, 197, 0.35);
+    margin-bottom: 14px;
+
+    .empty-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      margin: 0;
+      color: #eceff1;
+    }
+  }
+
+  p {
+    color: #eceff1;
+    font-size: 1.15rem;
+  }
+
+  small {
+    color: rgba(207, 216, 220, 0.85);
+    font-style: italic;
+    max-width: 320px;
+  }
 }
 
 .casualties-strip {

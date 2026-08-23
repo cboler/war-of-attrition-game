@@ -4,6 +4,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { ProfileDialogComponent } from './profile-dialog.component';
 import { AuthService } from '../../../core/services/auth.service';
+import { CampaignProgressionService } from '../../../core/services/campaign-progression.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { GameControllerService } from '../../../services/game-controller.service';
 import { TutorialService } from '../../../services/tutorial.service';
@@ -258,5 +259,19 @@ describe('ProfileDialogComponent', () => {
     component.saveName();
     expect(authService.updateProfileName).toHaveBeenCalledWith('General Caesar');
     expect(component.isEditingName).toBeFalse();
+  });
+
+  it('renders Fog of War campaign orders and sealed pill in Campaign Overview', () => {
+    const progressionService = TestBed.inject(CampaignProgressionService);
+    progressionService.selectCampaignOrders('fog_of_war');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const ordersCallout = root.querySelector('.campaign-orders-callout');
+    expect(ordersCallout).toBeTruthy();
+    expect(ordersCallout?.textContent).toContain('Fog of War');
+    const fogPill = root.querySelector('.fog-pill');
+    expect(fogPill).toBeTruthy();
+    expect(fogPill?.textContent).toContain('Boneyard sealed until War end');
   });
 });

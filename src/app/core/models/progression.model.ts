@@ -17,7 +17,7 @@ export type DeckColor = 'red' | 'black' | 'unknown';
 export type CampaignOutcome = 'victory' | 'defeat' | 'draw';
 export type CosmeticType = 'card_back' | 'profile_frame' | 'title' | 'table_treatment';
 export type CosmeticUnlockReason = 'default' | 'tokens' | 'achievement' | 'legacy_selected';
-export type CampaignModeId = 'standard' | 'limited_reserves' | 'total_war';
+export type CampaignModeId = 'standard' | 'limited_reserves' | 'total_war' | 'fog_of_war';
 export const DEFAULT_CAMPAIGN_MODE_ID: CampaignModeId = 'standard';
 
 export interface CampaignWarRecord {
@@ -110,7 +110,12 @@ export interface CosmeticPurchaseResult {
 }
 
 export function isCampaignModeId(value: unknown): value is CampaignModeId {
-  return value === 'standard' || value === 'limited_reserves' || value === 'total_war';
+  return (
+    value === 'standard' ||
+    value === 'limited_reserves' ||
+    value === 'total_war' ||
+    value === 'fog_of_war'
+  );
 }
 
 export function canHumanReinforce(campaign: ActiveCampaign, deckCount: number): boolean {
@@ -136,6 +141,23 @@ export function isLimitedReservesMode(campaign: ActiveCampaign): boolean {
 
 export function isTotalWarMode(campaign: ActiveCampaign): boolean {
   return campaign.mode === 'total_war';
+}
+
+export function isFogOfWarMode(campaign: ActiveCampaign): boolean {
+  return campaign.mode === 'fog_of_war';
+}
+
+/**
+ * Authoritative information-access rule:
+ * While the War is active in Fog of War mode, casualties and historical combat details are sealed.
+ * Once the War resolves, the seal is lifted.
+ */
+export function isFogOfWarActive(mode: CampaignModeId, isWarResolved: boolean): boolean {
+  return mode === 'fog_of_war' && !isWarResolved;
+}
+
+export function canInspectCasualties(mode: CampaignModeId, isWarResolved: boolean): boolean {
+  return !isFogOfWarActive(mode, isWarResolved);
 }
 
 export function createProgressionId(prefix: 'campaign' | 'war' = 'campaign'): string {

@@ -299,6 +299,39 @@ describe('CampaignProgressionService', () => {
       expect(result.completedCampaign?.tokensEarned).toBe(2); // 1 victory + 1 positive differential
       expect(service.tokenBalance()).toBe(2);
     });
+
+    it('handles Fog of War mode selection and casualty inspection permission checks', () => {
+      expect(service.isFogOfWar()).toBeFalse();
+      expect(service.canInspectCurrentWarCasualties(false)).toBeTrue();
+
+      const selected = service.selectCampaignOrders('fog_of_war');
+      expect(selected).toBeTrue();
+      expect(service.ordersSelected()).toBeTrue();
+      expect(service.activeCampaignMode()).toBe('fog_of_war');
+      expect(service.isFogOfWar()).toBeTrue();
+      expect(service.isLimitedReserves()).toBeFalse();
+      expect(service.isTotalWar()).toBeFalse();
+
+      // Casualties sealed during active War
+      expect(service.canInspectCurrentWarCasualties(false)).toBeFalse();
+      // Casualties accessible once War concludes
+      expect(service.canInspectCurrentWarCasualties(true)).toBeTrue();
+
+      // Standard reinforcement rules apply (deck count only)
+      expect(service.canHumanReinforce(10)).toBeTrue();
+      expect(service.canHumanReinforce(0)).toBeFalse();
+
+      // Complete Fog of War campaign (2-of-3 match wins)
+      service.recordResolvedWar(war('fog-w1', GameOutcome.PLAYER_WIN, 5, 0));
+      service.recordResolvedWar(war('fog-w2', GameOutcome.PLAYER_WIN, 3, 0));
+      const result = service.recordResolvedWar(war('fog-w3', GameOutcome.OPPONENT_WIN, 0, 4));
+
+      expect(result.completedCampaign?.mode).toBe('fog_of_war');
+      expect(result.completedCampaign?.outcome).toBe('victory');
+      expect(result.completedCampaign?.wins).toBe(2);
+      expect(result.completedCampaign?.losses).toBe(1);
+      expect(result.completedCampaign?.tokensEarned).toBe(2);
+    });
   });
 });
 

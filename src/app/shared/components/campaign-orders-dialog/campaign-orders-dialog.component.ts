@@ -39,6 +39,14 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     description: 'The Campaign is decided by cumulative card differential across all three Wars. Every card matters, even in defeat.',
     ruleSummary: 'Individual Wars contribute signed card margins. Final Campaign victory belongs to the commander with positive cumulative differential.',
     reinforcementPolicy: 'Deck Count Only'
+  },
+  {
+    id: 'fog_of_war',
+    title: 'Fog of War',
+    tag: 'Alternate Rules · Imperfect Information',
+    description: 'The Boneyard is sealed during each War. Fallen cards cannot be reviewed until the fighting ends. Trust your memory.',
+    ruleSummary: 'Casualties and past clashes are sealed from inspection while fighting continues. Fallen cards are revealed at War conclusion.',
+    reinforcementPolicy: 'Deck Count Only'
   }
 ];
 

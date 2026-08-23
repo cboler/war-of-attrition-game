@@ -95,9 +95,10 @@
             @for (entry of storyBook.entries(); track entry.id) {
               <article
                 [class]="'story-node type-' + entry.type"
-                [class.has-badge]="!!entry.badge">
-                @if (entry.eyebrow) {
-                  <span class="node-eyebrow">{{ entry.eyebrow }}</span>
+                [class.has-badge]="!!entry.badge"
+                [class.fog-sealed]="isFogOfWarActive()">
+                @if (entryEyebrow(entry); as eyebrow) {
+                  <span class="node-eyebrow">{{ eyebrow }}</span>
                 }
 
                 @if (entry.title) {
@@ -105,9 +106,9 @@
                 }
 
                 <div class="node-body">
-                  <p class="node-text">{{ entry.text }}</p>
+                  <p class="node-text">{{ entryText(entry) }}</p>
 
-                  @if (entry.cards && entry.cards.length > 0 && entry.type === 'casualty') {
+                  @if (showEntryCards(entry) && entry.cards) {
                     <div class="casualties-strip" aria-label="Revealed casualty cards">
                       @for (card of entry.cards; track card.id) {
                         <app-card [card]="card" [faceDown]="false" />
@@ -115,7 +116,7 @@
                     </div>
                   }
 
-                  @if (entry.comparison; as comp) {
+                  @if (showEntryComparison(entry) && entry.comparison; as comp) {
                     <div
                       class="node-combat-math"
                       [class.is-expanded]="isComparisonExpanded(entry.id)">
@@ -206,10 +207,19 @@
       </div>
     } @else if (activeTab() === 'valor') {
       <div id="panel-valor" role="tabpanel" aria-labelledby="tab-valor" class="valor-panel">
-        @if (selectedValorCard(); as detail) {
-          <!-- Card Detail Service Record View -->
-          <article class="valor-detail-view">
-            <header class="valor-detail-header">
+        @if (isFogOfWarActive()) {
+          <div class="empty-state fog-sealed-state" role="status" aria-label="Field records sealed during Fog of War">
+            <div class="fog-cloud-badge" aria-hidden="true">
+              <mat-icon class="empty-icon">visibility_off</mat-icon>
+            </div>
+            <p>Field Records Sealed</p>
+            <small>Hall of Valor service records are sealed during active operations under Fog of War. Records will be unsealed when this War concludes.</small>
+          </div>
+        } @else {
+          @if (selectedValorCard(); as detail) {
+            <!-- Card Detail Service Record View -->
+            <article class="valor-detail-view">
+              <header class="valor-detail-header">
               <button
                 type="button"
                 class="valor-back-btn"
@@ -390,7 +400,8 @@
             </div>
           }
         }
-      </div>
+      }
+    </div>
     } @else if (activeTab() === 'rules') {
       <div id="panel-rules" role="tabpanel" aria-labelledby="tab-rules" class="rules-reference">
         @if (activeDemo(); as demo) {
@@ -444,7 +455,7 @@
             </dl>
           </div>
 
-          @if (hallOfValor.hasDecorations(card.id)) {
+          @if (!isFogOfWarActive() && hallOfValor.hasDecorations(card.id)) {
             <div class="reference-valor-card">
               <div class="valor-summary-header">
                 <mat-icon aria-hidden="true">military_tech</mat-icon>

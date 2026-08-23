@@ -672,5 +672,21 @@ describe('GameControllerService presentation integration', () => {
       expect(progression.remainingReserves()).toBe(0);
       expect(progression.canHumanReinforce(10)).toBeFalse();
     });
+
+    it('manages isFogOfWarActive and canInspectCasualties signals correctly across phases', () => {
+      progression.selectCampaignOrders('fog_of_war');
+      expect(controller.isFogOfWarActive()).toBeTrue();
+      expect(controller.canInspectCasualties()).toBeFalse();
+
+      // When game transitions to GAME_OVER
+      (controller as any).phase.set(PresentationState.GAME_OVER);
+      expect(controller.isFogOfWarActive()).toBeFalse();
+      expect(controller.canInspectCasualties()).toBeTrue();
+
+      // Starting next War re-engages the active Fog seal
+      controller.startNewGame();
+      expect(controller.isFogOfWarActive()).toBeTrue();
+      expect(controller.canInspectCasualties()).toBeFalse();
+    });
   });
 });

@@ -58,10 +58,11 @@ Unlike achievements (which observe rare events under standard rules), **Alternat
 - A crushing 26–0 sweep in War 1 provides a massive buffer that can withstand a narrow 12–14 defeat in War 2.
 - Every card matters even in defeat, foregrounding attrition margin at War conclusion and on table seating.
 
-#### 3. Fog of War (Future Candidate)
-- Information in the Boneyard is restricted during active play.
-- Casualties are placed face-down into the discard stack and cannot be freely inspected until the War concludes.
-- Forces players to rely on memory and intuition rather than precise casualty counting.
+#### 3. Fog of War (Graduated to Implemented System)
+- Information in the Boneyard, historical Chronicle combat details, and live Hall of Valor records are restricted during active War play.
+- Casualties are sealed in the Boneyard and revealed at War conclusion.
+- Forces players to rely on memory and intuition rather than a searchable historical casualty ledger.
+- Full details documented in [`developer-docs/alternate-rules-campaigns.md`](./alternate-rules-campaigns.md).
 
 #### 4. No Retreat (Future Candidate)
 - The War must be fought to the bitter end.

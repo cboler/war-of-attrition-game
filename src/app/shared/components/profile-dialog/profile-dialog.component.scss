@@ -589,6 +589,18 @@ mat-divider {
       font-weight: 700;
       letter-spacing: 0.05em;
     }
+
+    .fog-pill {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(144, 164, 174, 0.16);
+      border: 1px solid rgba(176, 190, 197, 0.35);
+      color: #cfd8dc;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
   }
 }
 

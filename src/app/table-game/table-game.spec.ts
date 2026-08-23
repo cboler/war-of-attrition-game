@@ -554,5 +554,50 @@ describe('TableGame presentation', () => {
       expect(controller.presentationState()).toBe(PresentationState.READY);
       expect(controller.comparisonPresentation()).toBeNull();
     }));
+
+    it('seals Boneyard button and drawer during active Fog of War, then unseals upon game over', fakeAsync(() => {
+      const progressionService = TestBed.inject(CampaignProgressionService);
+      progressionService.selectCampaignOrders('fog_of_war');
+      fixture.detectChanges();
+
+      expect(progressionService.isFogOfWar()).toBeTrue();
+      expect(controller.isFogOfWarActive()).toBeTrue();
+
+      const boneyardBtn = fixture.nativeElement.querySelector('.boneyard') as HTMLButtonElement;
+      expect(boneyardBtn).toBeTruthy();
+      expect(boneyardBtn.classList).toContain('fog-sealed');
+      expect(boneyardBtn.disabled).toBeTrue();
+      expect(boneyardBtn.textContent).toContain('Sealed');
+
+      // Attempting to toggle Boneyard is blocked
+      boneyardBtn.click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.boneyard-drawer')).toBeNull();
+
+      // Simulate a card discarded to boneyard
+      const dummyCard = { id: 'dummy-card', rank: Rank.KING, suit: Suit.SPADES, value: 13, isRed: false };
+      const gameState = TestBed.inject(GameStateService);
+      (gameState as any).discardPile.set([dummyCard]);
+      fixture.detectChanges();
+
+      // Card is in boneyard, but top card is faceDown and count is hidden behind "Sealed"
+      expect(boneyardBtn.classList).toContain('fog-sealed');
+      expect(boneyardBtn.textContent).toContain('Sealed');
+      expect((fixture.componentInstance as any).isFogOfWarActive()).toBeTrue();
+
+      // War concludes (GAME_OVER)
+      (controller as any).phase.set(PresentationState.GAME_OVER);
+      fixture.detectChanges();
+
+      expect(controller.isFogOfWarActive()).toBeFalse();
+      expect(boneyardBtn.classList).not.toContain('fog-sealed');
+      expect(boneyardBtn.disabled).toBeFalse();
+      expect(boneyardBtn.textContent).toContain('1 lost');
+
+      // Boneyard can now be toggled open
+      boneyardBtn.click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.boneyard-drawer')).toBeTruthy();
+    }));
   });
 });

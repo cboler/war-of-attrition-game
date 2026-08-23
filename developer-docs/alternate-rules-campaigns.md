@@ -64,12 +64,31 @@
 - **Token Rewards**:
   - 1 token for Campaign Victory + 1 bonus token for positive differential (2 tokens max, matching standard economy).
 
+### D. Fog of War (`fog_of_war`)
+
+- **Description**: Strategic information constraint creating imperfect historical knowledge during active play.
+- **Core Principle**: Record Truth, Present According to Information Access. Domain models, event buses, telemetry, achievements, and statistics record complete truthful history internally, while presentation surfaces conceal past casualties and historical comparisons until the War concludes.
+- **Active-War Sealing**:
+  - **Boneyard**: Casualty pile displays face-down top card, non-numeric `Sealed` status, and disabled tap-to-inspect viewer with atmospheric foggy blur effect.
+  - **Chronicle (Field Manual)**: Comparison card identities, combat math formulas/expanders, and casualty strips are sealed in active play, replaced with narrative operational summaries.
+  - **Hall of Valor**: Live service record ledger is sealed until War conclusion with thematic field notice. Internal attribution continues uninterrupted.
+  - **Rules of Engagement**: Interactive drills and rules remain 100% accessible at all times.
+- **Current-Live Event Presentation**:
+  - Cards currently clashing or battling on table remain visible, with live glows and comparison strength indicators rendered normally.
+- **War-End Reveal**:
+  - Upon genuine War conclusion (`GamePhase.GAME_OVER`), all seals lift immediately: Boneyard inspection resumes, Chronicle reveals exact combat math and card identities, and Hall of Valor updates become viewable.
+  - Starting the subsequent War re-engages the active-War seal.
+- **Scoring**:
+  - Uses Standard Campaign scoring (best 2-of-3 match wins/losses).
+- **Opponent AI**:
+  - Operates strictly with standard legal public information; does not cheat or suffer artificial memory loss.
+
 ---
 
 ## 3. Data Models & Domain Contracts
 
 ```typescript
-export type CampaignModeId = 'standard' | 'limited_reserves' | 'total_war';
+export type CampaignModeId = 'standard' | 'limited_reserves' | 'total_war' | 'fog_of_war';
 
 export interface LimitedReservesCampaignState {
   readonly initialReserves: number;    // Exactly 5
@@ -104,15 +123,21 @@ export interface CampaignHistoryEntry {
 ### Pure Rule Functions
 
 - `canHumanReinforce(campaign: ActiveCampaign, deckCount: number): boolean`
-  - Returns `deckCount > 0` for `standard` and `total_war`.
+  - Returns `deckCount > 0` for `standard`, `total_war`, and `fog_of_war`.
   - Returns `deckCount > 0 && (campaign.limitedReserves?.remainingReserves ?? 0) > 0` for `limited_reserves`.
 - `getHumanReserves(campaign: ActiveCampaign): { remaining: number; max: number } | null`
-  - Returns `null` for `standard` and `total_war`.
+  - Returns `null` for `standard`, `total_war`, and `fog_of_war`.
   - Returns `{ remaining, max }` for `limited_reserves`.
 - `isLimitedReservesMode(campaign: ActiveCampaign): boolean`
   - Returns `campaign.mode === 'limited_reserves'`.
 - `isTotalWarMode(campaign: ActiveCampaign): boolean`
   - Returns `campaign.mode === 'total_war'`.
+- `isFogOfWarMode(campaign: ActiveCampaign): boolean`
+  - Returns `campaign.mode === 'fog_of_war'`.
+- `isFogOfWarActive(mode: CampaignModeId, isWarResolved: boolean): boolean`
+  - Returns `mode === 'fog_of_war' && !isWarResolved`.
+- `canInspectCasualties(mode: CampaignModeId, isWarResolved: boolean): boolean`
+  - Returns `!isFogOfWarActive(mode, isWarResolved)`.
 
 ---
 
@@ -120,16 +145,17 @@ export interface CampaignHistoryEntry {
 
 ### 1. Campaign Orders Briefing Modal (`CampaignOrdersDialogComponent`)
 - Displayed before War 1 begins when `ordersSelected === false`.
-- Thematic military briefing interface with gold trim, dark green felt styling, opposing commander profile, and clear selection between *Standard Campaign*, *Limited Reserves*, and *Total War*.
+- Thematic military briefing interface with gold trim, dark green felt styling, opposing commander profile, and clear selection among *Standard Campaign*, *Limited Reserves*, *Total War*, and *Fog of War*.
 - Accessible with full keyboard navigation (`Tab`, `Space`, `Enter`, arrow keys) and ARIA attributes.
 
 ### 2. Tabletop Badges (`PlayerSeatComponent`)
 - Rendered on the player's seat during active play:
   - When `activeCampaignMode === 'limited_reserves'`: Displays `RESERVES 5 / 5` or `RESERVES 0 / 5`.
   - When `activeCampaignMode === 'total_war'`: Displays running differential `TOTAL WAR · DIFF +8`.
+  - When `activeCampaignMode === 'fog_of_war'`: Seat remains unencumbered without unnecessary badges.
 
 ### 3. Career & Profile Dialog (`ProfileDialogComponent`)
-- Displays the active Campaign Orders and reserve / differential tallies under the Current Campaign overview tab.
+- Displays the active Campaign Orders (`Fog of War` with `Boneyard sealed until War end` status pill) under the Current Campaign overview tab.
 
 ---
 
@@ -137,7 +163,7 @@ export interface CampaignHistoryEntry {
 
 - Telemetry context includes `campaign_mode` across all domain events (`war_started`, `turn_started`, `comparison_resolved`, `reinforcement_offered`, `reinforcement_decision`, `reinforcement_resolved`, `battle_resolved`, `settlement_resolved`, `game_resolved`, `game_abandoned`, `campaign_resolved`).
 - `campaign_resolved` records include:
-  - `campaign_mode: 'standard' | 'limited_reserves' | 'total_war'`
+  - `campaign_mode: 'standard' | 'limited_reserves' | 'total_war' | 'fog_of_war'`
   - `remaining_reserves: number` (when `limited_reserves`)
   - `final_differential: number`
 - All events strictly maintain GA4 parameter budget limits (<= 25 parameters per custom event).

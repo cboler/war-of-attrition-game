@@ -346,14 +346,20 @@
           [ngClass]="boneyardThicknessClass()"
           type="button"
           [class.has-cards]="controller.visibleBoneyardCount() > 0"
-          [attr.aria-expanded]="boneyardOpen()"
+          [class.fog-sealed]="isFogOfWarActive()"
+          [attr.aria-expanded]="isFogOfWarActive() ? null : boneyardOpen()"
+          [disabled]="isFogOfWarActive()"
           (click)="toggleBoneyard()"
-          aria-label="Open Boneyard casualty pile"
+          [attr.aria-label]="
+            isFogOfWarActive()
+              ? 'Boneyard sealed during Fog of War'
+              : 'Open Boneyard casualty pile'
+          "
         >
           @if (controller.visibleBoneyardCount() === 0) {
             <span class="boneyard-empty" aria-hidden="true">
               <strong>Boneyard</strong>
-              <small>No cards lost</small>
+              <small>{{ isFogOfWarActive() ? 'Sealed' : 'No cards lost' }}</small>
             </span>
           } @else {
             <span class="pile" aria-hidden="true">
@@ -368,16 +374,16 @@
                 <span class="fan-base-one"></span>
               }
               @if (controller.visibleBoneyardCards().at(-1); as topCard) {
-                <app-card [card]="topCard" [faceDown]="false" />
+                <app-card [card]="topCard" [faceDown]="isFogOfWarActive()" />
               }
             </span>
             <strong>Boneyard</strong>
-            <small>{{ controller.visibleBoneyardCount() }} lost</small>
+            <small>{{ isFogOfWarActive() ? 'Sealed' : controller.visibleBoneyardCount() + ' lost' }}</small>
           }
         </button>
       </aside>
 
-      @if (boneyardOpen()) {
+      @if (boneyardOpen() && !isFogOfWarActive()) {
         <aside
           class="boneyard-drawer"
           [class.is-empty]="controller.visibleBoneyardCount() === 0"

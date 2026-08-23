@@ -87,6 +87,8 @@ export class TableGame implements OnInit {
     return battleAnnouncementFor(round);
   });
 
+  protected readonly isFogOfWarActive = computed(() => this.controller.isFogOfWarActive());
+
   protected readonly playerReserves = computed(() => {
     if (!this.progression.isLimitedReserves()) return null;
     const remaining = this.progression.remainingReserves() ?? 0;
@@ -188,6 +190,7 @@ export class TableGame implements OnInit {
   }
 
   protected toggleBoneyard(): void {
+    if (this.isFogOfWarActive()) return;
     this.boneyardOpen.update(open => !open);
   }
 
@@ -202,6 +205,7 @@ export class TableGame implements OnInit {
   }
 
   protected openBoneyardReference(card: Card): void {
+    if (this.isFogOfWarActive()) return;
     this.manualReferenceCard.set(card);
     this.storyBookOpen.set(true);
   }

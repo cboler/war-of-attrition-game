@@ -4,7 +4,10 @@ import {
   DEFAULT_CAMPAIGN_MODE_ID,
   LIMITED_RESERVES_INITIAL_COUNT,
   canHumanReinforce,
+  canInspectCasualties,
   getHumanReserves,
+  isFogOfWarActive,
+  isFogOfWarMode,
   isLimitedReservesMode,
   normalizeCampaignProgression,
   summarizeCampaign,
@@ -28,6 +31,34 @@ describe('ProgressionModel and Rules', () => {
       expect(canHumanReinforce(campaign, 5)).toBeTrue();
       expect(canHumanReinforce(campaign, 1)).toBeTrue();
       expect(canHumanReinforce(campaign, 0)).toBeFalse();
+    });
+
+    it('allows reinforcement in Fog of War mode based on deck count only', () => {
+      const campaign: ActiveCampaign = {
+        campaignId: 'camp-fog',
+        commanderId: 'analyst',
+        mode: 'fog_of_war',
+        ordersSelected: true,
+        wars: []
+      };
+
+      expect(isFogOfWarMode(campaign)).toBeTrue();
+      expect(getHumanReserves(campaign)).toBeNull();
+      expect(canHumanReinforce(campaign, 12)).toBeTrue();
+      expect(canHumanReinforce(campaign, 0)).toBeFalse();
+    });
+
+    it('determines Fog of War active state and casualty inspection access correctly', () => {
+      expect(isFogOfWarActive('fog_of_war', false)).toBeTrue();
+      expect(isFogOfWarActive('fog_of_war', true)).toBeFalse();
+      expect(isFogOfWarActive('standard', false)).toBeFalse();
+      expect(isFogOfWarActive('total_war', false)).toBeFalse();
+      expect(isFogOfWarActive('limited_reserves', false)).toBeFalse();
+
+      expect(canInspectCasualties('fog_of_war', false)).toBeFalse();
+      expect(canInspectCasualties('fog_of_war', true)).toBeTrue();
+      expect(canInspectCasualties('standard', false)).toBeTrue();
+      expect(canInspectCasualties('total_war', false)).toBeTrue();
     });
 
     it('requires both deck cards > 0 and remaining reserves > 0 in Limited Reserves mode', () => {

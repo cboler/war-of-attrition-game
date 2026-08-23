@@ -242,6 +242,22 @@ describe('GameTelemetryService', () => {
     const warStarted = transport.records.find(record => record.name === 'war_started');
     expect(warStarted?.parameters['campaign_mode']).toBe('total_war');
   });
+
+  it('emits campaign_mode: fog_of_war for Fog of War Campaign', () => {
+    progression.selectCampaignOrders('fog_of_war');
+
+    service.beginWar({ warId: 'fog-war-3', playerDeckColor: DeckColor.RED });
+    progression.recordResolvedWar(war('fog-war-1', GameOutcome.PLAYER_WIN, 4, 0));
+    progression.recordResolvedWar(war('fog-war-2', GameOutcome.OPPONENT_WIN, 0, 2));
+    progression.recordResolvedWar(war('fog-war-3', GameOutcome.PLAYER_WIN, 2, 0));
+
+    const campaignRecord = transport.records.find(record => record.name === 'campaign_resolved');
+    expect(campaignRecord).toBeTruthy();
+    expect(campaignRecord?.parameters['campaign_mode']).toBe('fog_of_war');
+
+    const warStarted = transport.records.find(record => record.name === 'war_started');
+    expect(warStarted?.parameters['campaign_mode']).toBe('fog_of_war');
+  });
 });
 
 function war(
