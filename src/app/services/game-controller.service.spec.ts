@@ -502,6 +502,48 @@ describe('GameControllerService presentation integration', () => {
     expect(pres?.opponent.specialOverride).toBeTrue();
   });
 
+  it('resets comparison presentation when priming next comparison and clears stale winner/loser states', () => {
+    const cardP1 = { id: 'card-p1', rank: Rank.ACE, suit: 'hearts', value: 14 } as any;
+    const cardO1 = { id: 'card-o1', rank: Rank.EIGHT, suit: 'clubs', value: 8 } as any;
+    const cardP2 = { id: 'card-p2', rank: Rank.SEVEN, suit: 'diamonds', value: 7 } as any;
+    const cardO2 = { id: 'card-o2', rank: Rank.KING, suit: 'spades', value: 13 } as any;
+
+    const internal = controller as unknown as {
+      primeComparison(p: any, o: any): void;
+      resolveComparison(p: any, o: any, r: ComparisonResult, s: boolean): void;
+      clearPresentedCards(): void;
+    };
+
+    // Turn 1: Player Wins
+    internal.primeComparison(cardP1, cardO1);
+    internal.resolveComparison(cardP1, cardO1, ComparisonResult.PLAYER_WINS, false);
+    expect(controller.comparisonStrengthFor('card-p1')?.state).toBe('winner');
+    expect(controller.comparisonStrengthFor('card-o1')?.state).toBe('defeated');
+
+    // Turn 2 begins: prime new cards
+    internal.primeComparison(cardP2, cardO2);
+    expect(controller.comparisonPresentation()?.resolved).toBeFalse();
+    expect(controller.comparisonPresentation()?.player.state).toBe('ready');
+    expect(controller.comparisonPresentation()?.opponent.state).toBe('ready');
+
+    // Old cards have no strength views; new unrevealed cards have ready state
+    expect(controller.comparisonStrengthFor('card-p1')).toBeNull();
+    expect(controller.comparisonStrengthFor('card-o1')).toBeNull();
+    expect(controller.comparisonStrengthFor('card-p2')?.state).toBe('ready');
+    expect(controller.comparisonStrengthFor('card-o2')?.state).toBe('ready');
+
+    // Turn 2 resolves: Opponent Wins
+    internal.resolveComparison(cardP2, cardO2, ComparisonResult.OPPONENT_WINS, false);
+    expect(controller.comparisonStrengthFor('card-p2')?.state).toBe('defeated');
+    expect(controller.comparisonStrengthFor('card-o2')?.state).toBe('winner');
+
+    // Clear presentation
+    internal.clearPresentedCards();
+    expect(controller.comparisonPresentation()).toBeNull();
+    expect(controller.comparisonStrengthFor('card-p2')).toBeNull();
+    expect(controller.comparisonStrengthFor('card-o2')).toBeNull();
+  });
+
   it('emits game_resolved with surviving player card IDs upon game over player victory', () => {
     let resolvedEvent: any = null;
     eventBus.events$.subscribe(event => {
@@ -572,5 +614,63 @@ describe('GameControllerService presentation integration', () => {
       expect(controller.presentationState()).not.toBe(PresentationState.PLAYER_CHALLENGE_DECISION);
       flush();
     }));
+
+    it('preserves campaignId, mode, and spent reserves on Restart War and does not advance resolved wars', () => {
+      progression.selectCampaignOrders('limited_reserves');
+      progression.consumeHumanReserve();
+      progression.consumeHumanReserve();
+      expect(progression.remainingReserves()).toBe(3);
+
+      const campaignIdBefore = progression.currentCampaign().campaignId;
+      const commanderBefore = progression.currentCampaign().commanderId;
+      const warsBefore = progression.currentCampaign().wars.length;
+
+      // Player restarts the active War
+      controller.startNewGame('restart');
+
+      expect(progression.currentCampaign().campaignId).toBe(campaignIdBefore);
+      expect(progression.currentCampaign().commanderId).toBe(commanderBefore);
+      expect(progression.activeCampaignMode()).toBe('limited_reserves');
+      expect(progression.remainingReserves()).toBe(3);
+      expect(progression.currentCampaign().wars.length).toBe(warsBefore);
+      expect(progression.ordersSelected()).toBeTrue();
+    });
+
+    it('preserves campaignId, mode, and spent reserves on Abandon War', () => {
+      progression.selectCampaignOrders('limited_reserves');
+      progression.consumeHumanReserve();
+      expect(progression.remainingReserves()).toBe(4);
+
+      const campaignIdBefore = progression.currentCampaign().campaignId;
+      const commanderBefore = progression.currentCampaign().commanderId;
+
+      // Player abandons the active War
+      controller.startNewGame('abandon');
+
+      expect(progression.currentCampaign().campaignId).toBe(campaignIdBefore);
+      expect(progression.currentCampaign().commanderId).toBe(commanderBefore);
+      expect(progression.activeCampaignMode()).toBe('limited_reserves');
+      expect(progression.remainingReserves()).toBe(4);
+      expect(progression.currentCampaign().wars.length).toBe(0);
+      expect(progression.ordersSelected()).toBeTrue();
+    });
+
+    it('exhausted reserves (0/5) remain exhausted after Restart War or Abandon War', () => {
+      progression.selectCampaignOrders('limited_reserves');
+      for (let i = 0; i < 5; i++) {
+        progression.consumeHumanReserve();
+      }
+      expect(progression.remainingReserves()).toBe(0);
+
+      // Restart War should NOT refund exhausted reserves
+      controller.startNewGame('restart');
+      expect(progression.remainingReserves()).toBe(0);
+      expect(progression.canHumanReinforce(10)).toBeFalse();
+
+      // Abandon War should NOT refund exhausted reserves
+      controller.startNewGame('abandon');
+      expect(progression.remainingReserves()).toBe(0);
+      expect(progression.canHumanReinforce(10)).toBeFalse();
+    });
   });
 });

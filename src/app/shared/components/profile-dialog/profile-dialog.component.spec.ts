@@ -211,17 +211,43 @@ describe('ProfileDialogComponent', () => {
     expect((root.querySelector('.account-actions button') as HTMLButtonElement).disabled).toBeTrue();
   });
 
-  it('records the explicit Abandon War decision after confirmation', fakeAsync(() => {
+  it('records the explicit Abandon War decision after confirmation with accurate copy', fakeAsync(() => {
     const startSpy = spyOn(gameController, 'startNewGame');
 
     component.onAbandonMatch();
     fixture.detectChanges();
+    const dialogContent = document.body.querySelector('mat-dialog-content');
+    expect(dialogContent?.textContent).toContain('spent Limited Reserves remain unchanged');
+
     (document.body.querySelector('.profile-confirm-action') as HTMLButtonElement).click();
     tick();
 
     expect(startSpy).toHaveBeenCalledOnceWith('abandon');
     expect(dialogRefSpy.close).toHaveBeenCalled();
   }));
+
+  it('records the explicit Restart War decision after confirmation with accurate copy', fakeAsync(() => {
+    const startSpy = spyOn(gameController, 'startNewGame');
+
+    component.onRestartMatch();
+    fixture.detectChanges();
+    const dialogContent = document.body.querySelector('mat-dialog-content');
+    expect(dialogContent?.textContent).toContain('spent Limited Reserves are unchanged');
+
+    (document.body.querySelector('.profile-confirm-action') as HTMLButtonElement).click();
+    tick();
+
+    expect(startSpy).toHaveBeenCalledOnceWith('restart');
+    expect(dialogRefSpy.close).toHaveBeenCalled();
+  }));
+
+  it('renders the authoritative environment application version in settings footer', () => {
+    component.activeTab.set('settings');
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const versionCopy = root.querySelector('.version-copy');
+    expect(versionCopy?.textContent).toBe(`War of Attrition · Version ${component.appVersion}`);
+  });
 
   it('should allow commander name editing', () => {
     component.toggleEditName();

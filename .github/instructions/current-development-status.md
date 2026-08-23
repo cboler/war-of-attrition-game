@@ -34,10 +34,11 @@ The core game and meta-progression architectures are fully implemented, tested, 
 ### Progression, Personalization & Telemetry
 - **Opponent Commanders & AI Personalities**: Parameterized decision engine in `OpponentAIService` powering five distinct fair-play archetypes (The Quartermaster, The Gambler, The Analyst, The Attritionist, The Cornered General) with contextual dialogue in `TableReactionService`, persistent campaign-level assignment, rotation without immediate repeat, table seat presentation, and telemetry integration. See [`developer-docs/opponent-commanders.md`](../../developer-docs/opponent-commanders.md).
 - **Commander Profile & Statistics**: Persistent local statistics tracking win rate, game durations, battle records, challenge success rates, and memorable card events (e.g. Ace assassinations, Juggernauts).
-- **Achievements System**: 15 tiered achievements with local persistence and scaffolded Play Games Services synchronization.
+- **Achievements System**: 27 tiered achievements with local persistence and scaffolded Play Games Services synchronization.
+- **Hall of Valor (Card Service Records)**: Persistent historical service records for individual physical-card identities across multiple Wars, fully implemented in version 4.1.0 (Roll of Honor, card detail ledgers, Juggernaut Citations at 5-streak threshold, notable rivalries, Field Manual integration). See [`developer-docs/hall-of-valor.md`](../../developer-docs/hall-of-valor.md).
 - **Three-War Campaign & Alternate Rules**: Multi-war campaign progression tracking match scores, cumulative card differentials, opposing commander records, and career distinctions. Includes the **Campaign Orders** briefing interface before War 1 and the **Limited Reserves** alternate campaign ruleset (5 cross-war reinforcements, table reserves badge, zero-reserve auto-concession, and safe legacy progression migration). See [`developer-docs/alternate-rules-campaigns.md`](../../developer-docs/alternate-rules-campaigns.md).
 - **Cosmetic Card Backings**: Token wallet and card-backing customization unlockable via campaign progression.
-- **Privacy-Compliant Telemetry**: Google Analytics 4 integration with explicit user consent prompts (`TelemetryConsentService`), denying tracking by default until granted, with zero analytics collected in test/screenshot modes.
+- **Privacy-Compliant Telemetry**: Google Analytics 4 integration with verified outgoing transmission, standard `gtag.js` command queue bootstrap, and explicit user consent prompts (`TelemetryConsentService`), denying tracking by default until granted, with zero analytics collected in test/screenshot modes.
 
 ### Platform Packaging & Tooling
 - **Android TWA Wrapper**: Native Android application wrapper built with Google ChromeOS / Android Browser Helper, targeting Android 14+ (API 36).
@@ -73,5 +74,6 @@ War of Attrition is designed to be fully playable with an ordinary, physical 52-
 
 The following concepts are preserved for post-release development and are documented in [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md):
 
-- **Hall of Valor (Card Service Records)**: Persistent historical service records for individual physical-card identities (`hearts-Q`, `diamonds-2`, etc.) across multiple Wars.
-- **Alternate Rules Campaigns**: Campaign variants that adjust constraints without breaking standard physical card rules (Limited Reserves, Fog of War, No Retreat, Total War, Escalation).
+- **Alternate Rules Campaign Modifiers**: Additional campaign variants (Fog of War, No Retreat, Total War, Escalation).
+- **Casualty Granularity in Hall of Valor**: Distinguishing 1v1 duel casualties from mass Battle casualties on card service records.
+- **Chronicle Combat History Tooltips**: Detailed math breakdown tooltips for past chronicle items.

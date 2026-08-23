@@ -229,6 +229,46 @@ describe('CampaignProgressionService', () => {
       expect(service.ordersSelected()).toBeFalse();
       expect(service.remainingReserves()).toBeNull();
     });
+
+    it('completing War 3 creates a DIFFERENT campaignId and selecting Limited Reserves on new Campaign restores 5/5', () => {
+      service.selectCampaignOrders('limited_reserves');
+      const initialCampaignId = service.currentCampaign().campaignId;
+
+      // Exhaust all reserves in War 1
+      for (let i = 0; i < 5; i++) {
+        service.consumeHumanReserve();
+      }
+      expect(service.remainingReserves()).toBe(0);
+
+      service.recordResolvedWar(war('c-w1', GameOutcome.PLAYER_WIN, 1, 0));
+      service.recordResolvedWar(war('c-w2', GameOutcome.PLAYER_WIN, 2, 0));
+      service.recordResolvedWar(war('c-w3', GameOutcome.PLAYER_WIN, 3, 0));
+
+      // After War 3, new campaignId is created
+      const nextCampaign = service.currentCampaign();
+      expect(nextCampaign.campaignId).not.toBe(initialCampaignId);
+      expect(nextCampaign.ordersSelected).toBeFalse();
+      expect(nextCampaign.wars.length).toBe(0);
+      expect(service.remainingReserves()).toBeNull();
+
+      // Selecting Limited Reserves on the new Campaign allocates fresh 5 / 5
+      service.selectCampaignOrders('limited_reserves');
+      expect(service.ordersSelected()).toBeTrue();
+      expect(service.activeCampaignMode()).toBe('limited_reserves');
+      expect(service.remainingReserves()).toBe(5);
+      expect(service.initialReserves()).toBe(5);
+    });
+
+    it('standard mode remains unaffected and has no reserve limits', () => {
+      service.selectCampaignOrders('standard');
+      expect(service.ordersSelected()).toBeTrue();
+      expect(service.activeCampaignMode()).toBe('standard');
+      expect(service.isLimitedReserves()).toBeFalse();
+      expect(service.remainingReserves()).toBeNull();
+      expect(service.canHumanReinforce(10)).toBeTrue();
+      expect(service.consumeHumanReserve()).toBeTrue();
+      expect(service.remainingReserves()).toBeNull();
+    });
   });
 });
 

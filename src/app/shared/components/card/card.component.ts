@@ -12,10 +12,10 @@ import { SettingsService } from '../../../core/services/settings.service';
          [class.face-down]="faceDown()"
          [class.red-card]="isRed()"
          [class.black-card]="!isRed()"
-         [class.glowing]="glow()"
-         [class.glow-green]="glow() === 'green'"
-         [class.glow-red]="glow() === 'red'"
-         [class.glow-blue]="glow() === 'blue'"
+         [class.glowing]="effectiveGlow()"
+         [class.glow-green]="effectiveGlow() === 'green'"
+         [class.glow-red]="effectiveGlow() === 'red'"
+         [class.glow-blue]="effectiveGlow() === 'blue'"
          [class.motion-disabled]="!animationsEnabled()"
          [class.clickable]="clickable()"
          [class.animate-slide-in]="effectiveAnimationState() === 'slide-in'"
@@ -75,6 +75,14 @@ export class CardComponent {
 
   protected isRed = computed(() => this.card()?.isRed ?? false);
   
+  // Face-down cards must NEVER receive winner/loser or action glow (hidden-information requirement)
+  protected effectiveGlow = computed(() => {
+    if (this.faceDown()) {
+      return null;
+    }
+    return this.glow();
+  });
+
   // Computed properties for settings integration
   protected cardBackingPattern = computed(() => {
     const selectedOption = this.settingsService.selectedCardBackingOption();

@@ -204,6 +204,16 @@ describe('GameStateService card ledger', () => {
     expectConserved();
   });
 
+  it('clears previous lastResult when a new turn starts', () => {
+    service.startTurn();
+    service.settleActiveTurn(PlayerType.PLAYER);
+    expect(service.currentState.lastResult).toBe('player_wins');
+
+    service.startTurn();
+    expect(service.currentState.lastResult).toBeNull();
+    expectConserved();
+  });
+
   it('represents an equal terminal state as a true tie rather than an arbitrary winner', () => {
     service.endGame();
     expect(service.currentPhase).toBe(GamePhase.GAME_OVER);

@@ -9,6 +9,7 @@ import {
 import {
   CardServiceRecord,
   HallOfValorState,
+  JUGGERNAUT_CITATION_THRESHOLD,
   compareDecoratedCards,
   createDefaultCardServiceRecord,
   isDecoratedCard,
@@ -149,7 +150,7 @@ export class HallOfValorService {
       const currentStreak = (this.cardStreaksThisWar.get(cardId) || 0) + 1;
       this.cardStreaksThisWar.set(cardId, currentStreak);
 
-      if (currentStreak >= 3 && !this.juggernautsAwardedThisWar.has(cardId)) {
+      if (currentStreak >= JUGGERNAUT_CITATION_THRESHOLD && !this.juggernautsAwardedThisWar.has(cardId)) {
         this.juggernautsAwardedThisWar.add(cardId);
         this.mutateCard(cardId, r => ({
           ...r,
@@ -164,7 +165,7 @@ export class HallOfValorService {
           cardId,
           citation: 'juggernaut',
           citationName: 'Juggernaut Citation',
-          description: `${decisive.rank} of ${decisive.suit} recorded 3 consecutive decisive victories in this War.`,
+          description: `${decisive.rank} of ${decisive.suit} recorded ${JUGGERNAUT_CITATION_THRESHOLD} consecutive decisive victories in this War.`,
           ...(commanderId ? { commanderId } : {})
         });
       }

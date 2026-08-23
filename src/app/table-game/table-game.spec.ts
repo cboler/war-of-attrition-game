@@ -6,6 +6,7 @@ import { OpponentAIService } from '../core/services/opponent-ai.service';
 import { SettingsService } from '../core/services/settings.service';
 import { AchievementService } from '../services/achievement.service';
 import { AuthService } from '../core/services/auth.service';
+import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { StoryBookService } from '../services/story-book.service';
 import { GameEvent, GameEventBusService } from '../services/game-event-bus.service';
 import {
@@ -444,4 +445,114 @@ describe('TableGame presentation', () => {
     fixture.detectChanges();
     expect(document.activeElement).toBe(referenceButton);
   }));
+
+  it('triggers Campaign Orders dialog on draw when orders are unselected and blocks card draw', () => {
+    const progression = TestBed.inject(CampaignProgressionService);
+    const component = fixture.componentInstance;
+    const dialogSpy = spyOn(dialog, 'open').and.callThrough();
+    const drawSpy = spyOn(controller, 'playerDrawCard');
+
+    // Force unselected orders state
+    expect(progression.ordersSelected()).toBeFalse();
+    expect(progression.campaignWarIndex()).toBe(1);
+
+    (component as any).draw();
+
+    expect(dialogSpy).toHaveBeenCalled();
+    expect(drawSpy).not.toHaveBeenCalled();
+  });
+
+  it('triggers Campaign Orders dialog on restart when a new Campaign begins before War 1', () => {
+    const progression = TestBed.inject(CampaignProgressionService);
+    const component = fixture.componentInstance;
+    const dialogSpy = spyOn(dialog, 'open').and.callThrough();
+
+    expect(progression.ordersSelected()).toBeFalse();
+    expect(progression.campaignWarIndex()).toBe(1);
+
+    (component as any).restart();
+
+    expect(dialogSpy).toHaveBeenCalled();
+  });
+
+  describe('comparison glow lifecycle and face-down hidden information invariant', () => {
+    it('returns null glow for unrevealed / ready comparisons and applies outcome glow only when resolved', () => {
+      const cardP = { id: 'card-p1', rank: Rank.ACE, suit: 'hearts', value: 14 } as any;
+      const cardO = { id: 'card-o1', rank: Rank.EIGHT, suit: 'clubs', value: 8 } as any;
+      const internal = controller as unknown as {
+        primeComparison(p: any, o: any): void;
+        resolveComparison(p: any, o: any, r: ComparisonResult, s: boolean): void;
+        clearPresentedCards(): void;
+      };
+      const component = fixture.componentInstance;
+
+      // 1. Newly primed comparison (ready / unrevealed): NO outcome glow
+      internal.primeComparison(cardP, cardO);
+      expect((component as any).cardGlow(cardP.id)).toBeNull();
+      expect((component as any).cardGlow(cardO.id)).toBeNull();
+
+      // 2. Resolved comparison: Player wins
+      internal.resolveComparison(cardP, cardO, ComparisonResult.PLAYER_WINS, false);
+      expect((component as any).cardGlow(cardP.id)).toBe('green');
+      expect((component as any).cardGlow(cardO.id)).toBe('red');
+
+      // 3. Advancing to next comparison: prime new cards -> glow is immediately cleared
+      const cardP2 = { id: 'card-p2', rank: Rank.SEVEN, suit: 'diamonds', value: 7 } as any;
+      const cardO2 = { id: 'card-o2', rank: Rank.KING, suit: 'spades', value: 13 } as any;
+      internal.primeComparison(cardP2, cardO2);
+      expect((component as any).cardGlow(cardP.id)).toBeNull();
+      expect((component as any).cardGlow(cardO.id)).toBeNull();
+      expect((component as any).cardGlow(cardP2.id)).toBeNull();
+      expect((component as any).cardGlow(cardO2.id)).toBeNull();
+
+      // 4. Resolve Turn 2 (Opponent wins): only Turn 2 cards receive glow
+      internal.resolveComparison(cardP2, cardO2, ComparisonResult.OPPONENT_WINS, false);
+      expect((component as any).cardGlow(cardP2.id)).toBe('red');
+      expect((component as any).cardGlow(cardO2.id)).toBe('green');
+
+      // 5. Settlement cleanup: clearing presentation removes all glow
+      internal.clearPresentedCards();
+      expect((component as any).cardGlow(cardP2.id)).toBeNull();
+      expect((component as any).cardGlow(cardO2.id)).toBeNull();
+    });
+
+    it('correctly transitions between opposite consecutive comparison outcomes without leaking stale glow', fakeAsync(() => {
+      const opponentAI = TestBed.inject(OpponentAIService);
+      const compareSpy = spyOn(comparison, 'compareCards');
+      spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+      spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+      const component = fixture.componentInstance;
+
+      // Turn 1: Player Wins
+      compareSpy.and.returnValue(ComparisonResult.PLAYER_WINS);
+      controller.playerDrawCard();
+      continuePastReadableHold();
+
+      // Turn 1 settled cleanly into READY with no lingering comparison presentation
+      expect(controller.presentationState()).toBe(PresentationState.READY);
+      expect(controller.activePlayerCard()).toBeNull();
+      expect(controller.activeOpponentCard()).toBeNull();
+      expect(controller.comparisonPresentation()).toBeNull();
+
+      // Turn 2: Opponent Wins
+      compareSpy.and.returnValue(ComparisonResult.OPPONENT_WINS);
+      controller.playerDrawCard();
+      continuePastReadableHold();
+
+      // In Turn 2, player is offered challenge
+      expect(controller.presentationState()).toBe(PresentationState.PLAYER_CHALLENGE_DECISION);
+      const turn2Player = controller.activePlayerCard()!;
+      const turn2Opponent = controller.activeOpponentCard()!;
+      expect((component as any).cardGlow(turn2Player.id)).toBe('red');
+      expect((component as any).cardGlow(turn2Opponent.id)).toBe('green');
+
+      // Decline challenge to settle Turn 2
+      controller.handleChallenge(false);
+      flushMicrotasks();
+      fixture.detectChanges();
+
+      expect(controller.presentationState()).toBe(PresentationState.READY);
+      expect(controller.comparisonPresentation()).toBeNull();
+    }));
+  });
 });

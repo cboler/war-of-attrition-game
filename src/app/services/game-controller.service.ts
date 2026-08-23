@@ -921,6 +921,7 @@ export class GameControllerService {
 
   private async setupBattle(version: number): Promise<void> {
     this.phase.set(PresentationState.BATTLE_SETUP);
+    this.comparisonPresentationSignal.set(null);
     const existingLayers = this.gameState.currentState.activeTurn?.battleLayers.length ?? 0;
     if (existingLayers === 0) {
       this.battlesCount++;

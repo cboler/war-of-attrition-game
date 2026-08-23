@@ -229,11 +229,11 @@ describe('HallOfValorService', () => {
     expect(service.getRecord(cardHK.id)?.victoriousWarsSurvived).toBe(1);
   });
 
-  it('should award Juggernaut Citation on 3 consecutive decisive appearances in a War and emit event', () => {
-    let citationEmitted = false;
+  it('should award Juggernaut Citation on 5 consecutive decisive appearances in a War and emit event', () => {
+    let emittedEvent: any = null;
     eventBus.events$.subscribe(event => {
       if (event.type === 'valor_citation_awarded' && event.cardId === cardHK.id) {
-        citationEmitted = true;
+        emittedEvent = event;
       }
     });
 
@@ -258,23 +258,31 @@ describe('HallOfValorService', () => {
       });
     };
 
-    // 1st win
+    // 1st through 4th win -> No citation yet
     makeWin(1);
     expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(0);
-    expect(citationEmitted).toBeFalse();
+    expect(emittedEvent).toBeNull();
 
-    // 2nd win
     makeWin(5);
     expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(0);
-    expect(citationEmitted).toBeFalse();
+    expect(emittedEvent).toBeNull();
 
-    // 3rd win -> Citation awarded!
     makeWin(9);
-    expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(1);
-    expect(citationEmitted).toBeTrue();
+    expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(0);
+    expect(emittedEvent).toBeNull();
 
-    // 4th win in same War -> Still 1 citation (at most one per War)
-    makeWin(14);
+    makeWin(12);
+    expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(0);
+    expect(emittedEvent).toBeNull();
+
+    // 5th win -> Citation awarded!
+    makeWin(15);
+    expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(1);
+    expect(emittedEvent).not.toBeNull();
+    expect(emittedEvent.description).toContain('5 consecutive decisive victories');
+
+    // 6th win in same War -> Still 1 citation (at most one per War)
+    makeWin(18);
     expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(1);
   });
 
@@ -300,14 +308,16 @@ describe('HallOfValorService', () => {
       });
     };
 
-    // 2 wins
+    // 4 wins
     makeWin(1);
     makeWin(3);
+    makeWin(5);
+    makeWin(7);
 
     // Defeat cardHK
     eventBus.emit({
       type: 'settlement_resolved',
-      turnNumber: 5,
+      turnNumber: 9,
       attribution: {
         source: 'clash',
         winner: PlayerType.OPPONENT,
@@ -318,13 +328,15 @@ describe('HallOfValorService', () => {
       }
     });
 
-    // 1 win after defeat (streak is now 1, not 3)
-    makeWin(8);
+    // 4 wins after defeat (streak is now 4, not 5 -> not awarded)
+    makeWin(11);
+    makeWin(13);
+    makeWin(15);
+    makeWin(17);
     expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(0);
 
-    // 2 more wins (streak now 3) -> now awarded!
-    makeWin(10);
-    makeWin(12);
+    // 5th win after defeat (streak reaches 5) -> now awarded!
+    makeWin(19);
     expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(1);
   });
 });

@@ -155,6 +155,7 @@ export class GameStateService {
     }
 
     this.turnNumber.update((turn) => turn + 1);
+    this.lastResult.set(null);
     this.activeTurn.set({
       playerCard,
       opponentCard,

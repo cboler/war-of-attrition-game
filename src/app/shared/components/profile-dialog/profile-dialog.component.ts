@@ -21,6 +21,7 @@ import { GameOutcome } from '../../../core/models/game-state.model';
 import { GameControllerService } from '../../../services/game-controller.service';
 import { TelemetryConsentService } from '../../../services/telemetry-consent.service';
 import { TutorialService } from '../../../services/tutorial.service';
+import { environment } from '../../../../environments/environment';
 
 type ProfileTab = 'stats' | 'achievements' | 'settings';
 
@@ -96,6 +97,7 @@ export class ProfileDialogComponent {
   readonly allAchievements = ACHIEVEMENTS;
   readonly activeTab = signal<ProfileTab>('stats');
   readonly settingsStatus = signal('');
+  readonly appVersion = environment.appVersion;
 
   readonly unlockedCount = computed(() => this.stats().unlockedAchievements?.length || 0);
   readonly totalAchievements = computed(() => ACHIEVEMENTS.length);
@@ -219,7 +221,8 @@ export class ProfileDialogComponent {
     this.confirm(
       {
         title: 'Restart current War?',
-        message: 'This clears the current table, records the unresolved War as abandoned, and deals a fresh War.',
+        message:
+          'Restart this War? The unresolved War will be recorded as abandoned and redealt within the current Campaign. Campaign Orders and spent Limited Reserves are unchanged.',
         confirmLabel: 'Restart War',
         destructive: true
       },
@@ -234,7 +237,8 @@ export class ProfileDialogComponent {
     this.confirm(
       {
         title: 'Abandon current War?',
-        message: 'The unresolved War will be recorded as abandoned and will not advance Campaign progress.',
+        message:
+          'Abandon this War? The unresolved War will be recorded as abandoned and will not advance Campaign progress. Campaign Orders and spent Limited Reserves remain unchanged.',
         confirmLabel: 'Abandon War',
         destructive: true
       },

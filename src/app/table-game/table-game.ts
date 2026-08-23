@@ -142,6 +142,10 @@ export class TableGame implements OnInit {
   }
 
   protected draw(): void {
+    if (!this.progression.ordersSelected() && this.progression.campaignWarIndex() === 1) {
+      this.openCampaignOrdersDialog();
+      return;
+    }
     this.controller.playerDrawCard();
   }
 
@@ -173,6 +177,9 @@ export class TableGame implements OnInit {
     this.storyBookOpen.set(false);
     this.manualReferenceCard.set(null);
     this.controller.startNewGame();
+    if (!this.progression.ordersSelected() && this.progression.campaignWarIndex() === 1) {
+      this.openCampaignOrdersDialog();
+    }
   }
 
   protected toggleBoneyard(): void {

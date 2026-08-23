@@ -92,8 +92,12 @@ Hall of Valor data is attached directly to the active local `UserProfile` in `Au
 | **Times Rescued** | In the same successful player challenge, credit the original beaten player card (`originalBeatenCard`) with +1 times rescued. |
 | **Battle Layers Survived** | When a Battle layer resolves its blind selection (`battle_cards_revealed`), credit the player's revealed public champion (`selection.playerCard`) with +1 Battle layer survived. |
 | **Victorious Wars Survived** | When the player wins the War (`GameOutcome.PLAYER_WIN` in `game_resolved`), credit every card remaining in the player's deck at game end with +1 victorious War survived. |
-| **Juggernaut Citation** | Awarded when a card achieves **3 consecutive decisive appearances in the same War without suffering an intervening defeat**. At most 1 Juggernaut Citation is awarded per card per War. Transient streaks reset on defeat, War end, or match abandonment. |
+| **Juggernaut Citation** | Awarded when a card achieves **5 consecutive decisive appearances in the same War without suffering an intervening defeat**. At most 1 Juggernaut Citation is awarded per card per War. Transient streaks reset on defeat, War end, or match abandonment. |
 | **Notable Losses & Rivals** | When a player card becomes a casualty in an opponent victory, record the opposing decisive card responsible and increment the rival's defeat counter in `notableLosses[rivalCardId]`. |
+
+> [!TIP]
+> **Planned Ledger Metric: 1v1 Duel Casualties vs. Mass Battle Casualties**
+> Future meta-progression passes will refine `confirmedCasualties` by breaking out single-combat clash casualties (`clash` / `challenge` sources) from mass Battle casualties (`battle` source with multi-card stakes) using the existing causal data in `SettlementAttribution.source`.
 
 ### Per-War Player Ownership
 Service credit is awarded only while a card is serving in the **human player's deck** for that War. Because deck colors rotate between Wars (Player can be Red or Black), any of the 52 cards may earn player service credit during its career based on authoritative per-War deck assignment (`playerDeckColor`).

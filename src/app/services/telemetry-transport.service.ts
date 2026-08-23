@@ -26,7 +26,7 @@ export class NoopTelemetryTransport implements TelemetryTransport {
 
 type GtagFunction = (...args: unknown[]) => void;
 type TelemetryWindow = Window & typeof globalThis & {
-  dataLayer?: unknown[][];
+  dataLayer?: unknown[];
   gtag?: GtagFunction;
 };
 
@@ -60,13 +60,23 @@ export class GtagTelemetryTransport implements TelemetryTransport {
     if (typeof window === 'undefined' || typeof document === 'undefined') return null;
     const telemetryWindow = window as TelemetryWindow;
     telemetryWindow.dataLayer = telemetryWindow.dataLayer || [];
-    telemetryWindow.gtag = telemetryWindow.gtag || ((...args: unknown[]) => {
-      telemetryWindow.dataLayer?.push(args);
-    });
+    if (!telemetryWindow.gtag) {
+      telemetryWindow.gtag = function gtag(): void {
+        // Supported gtag.js bootstrap: dataLayer.push(arguments) pushes the Arguments object,
+        // which gtag.js requires to identify and process gtag command queue entries.
+        // eslint-disable-next-line prefer-rest-params
+        telemetryWindow.dataLayer?.push(arguments);
+      };
+    }
 
     if (!this.initialized) {
       this.initialized = true;
-      this.updateExistingGtagConsent(true);
+      telemetryWindow.gtag('consent', 'default', {
+        analytics_storage: 'granted',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied'
+      });
       telemetryWindow.gtag('js', new Date());
       telemetryWindow.gtag('config', this.config.measurementId.trim(), {
         send_page_view: false,
@@ -79,6 +89,9 @@ export class GtagTelemetryTransport implements TelemetryTransport {
         script.id = 'war-of-attrition-ga4';
         script.async = true;
         script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(this.config.measurementId.trim())}`;
+        script.onerror = (err) => {
+          console.warn('[Telemetry] Google Analytics gtag.js failed to load:', err);
+        };
         document.head.appendChild(script);
       }
     }

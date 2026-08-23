@@ -113,7 +113,7 @@
                       [card]="view.card"
                       [faceDown]="view.faceDown"
                       [glow]="
-                        view.eligible ? 'blue' : view.selected ? cardGlow(view.id) : null
+                        view.faceDown ? null : (view.eligible ? 'blue' : view.selected ? cardGlow(view.id) : null)
                       "
                     />
                     @if (view.selected && controller.comparisonStrengthFor(view.id); as strength) {
@@ -152,7 +152,7 @@
               <app-card
                 [card]="card"
                 [faceDown]="activeCardsFaceDown()"
-                [glow]="cardGlow(card.id)"
+                [glow]="activeCardsFaceDown() ? null : cardGlow(card.id)"
               />
               @if (!activeCardsFaceDown() && controller.comparisonStrengthFor(card.id); as strength) {
                 <app-comparison-strength [view]="strength" />
@@ -172,7 +172,7 @@
                 <app-card
                   [card]="card"
                   [faceDown]="challengeCardsFaceDown()"
-                  [glow]="cardGlow(card.id)"
+                  [glow]="challengeCardsFaceDown() ? null : cardGlow(card.id)"
                 />
                 @if (
                   !challengeCardsFaceDown() && controller.comparisonStrengthFor(card.id);
@@ -212,7 +212,7 @@
               <app-card
                 [card]="card"
                 [faceDown]="activeCardsFaceDown()"
-                [glow]="cardGlow(card.id)"
+                [glow]="activeCardsFaceDown() ? null : cardGlow(card.id)"
               />
               @if (!activeCardsFaceDown() && controller.comparisonStrengthFor(card.id); as strength) {
                 <app-comparison-strength [view]="strength" />
@@ -232,7 +232,7 @@
                 <app-card
                   [card]="card"
                   [faceDown]="challengeCardsFaceDown()"
-                  [glow]="cardGlow(card.id)"
+                  [glow]="challengeCardsFaceDown() ? null : cardGlow(card.id)"
                 />
                 @if (
                   !challengeCardsFaceDown() && controller.comparisonStrengthFor(card.id);
@@ -273,7 +273,7 @@
                     <app-card
                       [card]="view.card"
                       [faceDown]="view.faceDown"
-                      [glow]="view.selected ? cardGlow(view.id) : null"
+                      [glow]="view.faceDown ? null : (view.selected ? cardGlow(view.id) : null)"
                     />
                     @if (view.selected && controller.comparisonStrengthFor(view.id); as strength) {
                       <app-comparison-strength [view]="strength" />

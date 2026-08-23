@@ -134,7 +134,8 @@ describe('CardComponent', () => {
   });
 
   describe('glow effects', () => {
-    it('should apply green glow class', () => {
+    it('should apply green glow class on face-up cards', () => {
+      fixture.componentRef.setInput('faceDown', false);
       fixture.componentRef.setInput('glow', 'green');
       fixture.detectChanges();
 
@@ -143,7 +144,8 @@ describe('CardComponent', () => {
       expect(card.classList.contains('glow-green')).toBe(true);
     });
 
-    it('should apply red glow class', () => {
+    it('should apply red glow class on face-up cards', () => {
+      fixture.componentRef.setInput('faceDown', false);
       fixture.componentRef.setInput('glow', 'red');
       fixture.detectChanges();
 
@@ -152,13 +154,31 @@ describe('CardComponent', () => {
       expect(card.classList.contains('glow-red')).toBe(true);
     });
 
-    it('should apply blue glow class', () => {
+    it('should apply blue glow class on face-up cards', () => {
+      fixture.componentRef.setInput('faceDown', false);
       fixture.componentRef.setInput('glow', 'blue');
       fixture.detectChanges();
 
       const card = fixture.nativeElement.querySelector('.card');
       expect(card.classList.contains('glowing')).toBe(true);
       expect(card.classList.contains('glow-blue')).toBe(true);
+    });
+
+    it('must NOT apply glow classes to face-down cards even if glow input is provided', () => {
+      fixture.componentRef.setInput('faceDown', true);
+      fixture.componentRef.setInput('glow', 'green');
+      fixture.detectChanges();
+
+      const card = fixture.nativeElement.querySelector('.card');
+      expect(card.classList.contains('glowing')).toBe(false);
+      expect(card.classList.contains('glow-green')).toBe(false);
+      expect(card.classList.contains('glow-red')).toBe(false);
+      expect(card.classList.contains('glow-blue')).toBe(false);
+
+      fixture.componentRef.setInput('glow', 'red');
+      fixture.detectChanges();
+      expect(card.classList.contains('glowing')).toBe(false);
+      expect(card.classList.contains('glow-red')).toBe(false);
     });
   });
 
@@ -252,7 +272,6 @@ describe('CardComponent', () => {
       const cardBack = fixture.nativeElement.querySelector('.card-back');
       expect(cardBack).toBeTruthy();
       
-      // Check that cardBackingPattern computed property returns a pattern
       const pattern = component['cardBackingPattern']();
       expect(pattern).toBeTruthy();
       expect(typeof pattern).toBe('string');
@@ -270,37 +289,30 @@ describe('CardComponent', () => {
     });
 
     it('should update card backing pattern when settings change', () => {
-      // Explicitly set initial baseline to classic-blue
       settingsService.setCardBacking('classic-blue');
       fixture.componentRef.setInput('faceDown', true);
       fixture.detectChanges();
 
-      // Get initial pattern (blue)
       const initialPattern = component['cardBackingPattern']();
       expect(initialPattern).toContain('linear-gradient');
-      expect(initialPattern).toContain('#1565c0'); // Classic blue pattern
+      expect(initialPattern).toContain('#1565c0');
 
-      // Change to red backing
       progression.unlockCardBacking('classic-red', 'achievement');
       settingsService.setCardBacking('classic-red');
       fixture.detectChanges();
 
-      // Pattern should update to red
       const updatedPattern = component['cardBackingPattern']();
       expect(updatedPattern).toContain('linear-gradient');
-      expect(updatedPattern).toContain('#c62828'); // Red pattern
-      expect(updatedPattern).not.toContain('#1565c0'); // Should not contain blue anymore
+      expect(updatedPattern).toContain('#c62828');
+      expect(updatedPattern).not.toContain('#1565c0');
 
-      // Verify the DOM element also gets updated
       const cardBack = fixture.nativeElement.querySelector('.card-back');
-      // Check for RGB equivalent of #c62828 or the hex value in the style attribute
       expect(cardBack.style.background.includes('rgb(198, 40, 40)') || cardBack.getAttribute('style').includes('#c62828')).toBe(true);
     });
 
     it('should apply different card backing options correctly', () => {
       fixture.componentRef.setInput('faceDown', true);
       
-      // Test each available card backing option
       const backingOptions = settingsService.cardBackingOptions();
       
       for (const option of backingOptions) {

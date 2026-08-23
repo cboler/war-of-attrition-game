@@ -34,7 +34,7 @@ This document catalogs future design concepts and backlog ideas for **War of Att
 - **Strict Physical Deck Fidelity**: Meta-game history and presentation only. Decorated cards retain standard physical ranks, values, and probabilities.
 - **Authoritative Event-Driven Attribution**: Uses real domain settlement attribution rather than visual or DOM heuristics.
 - **Hidden-Information Integrity**: Never leaks private Battle layers, unseen returned cards, or hidden deck order.
-- **Tracked Career Distinctions**: Confirmed Casualties, Ace Assassinations (2-vs-Ace), Reinforcement Rescues, Times Rescued, Battle Layers Survived, Victorious Wars Survived, Juggernaut Citations (3-streak per War), and Notable Rivalries.
+- **Tracked Career Distinctions**: Confirmed Casualties, Ace Assassinations (2-vs-Ace), Reinforcement Rescues, Times Rescued, Battle Layers Survived, Victorious Wars Survived, Juggernaut Citations (5-streak per War), and Notable Rivalries.
 
 ---
 

@@ -17,6 +17,8 @@ export interface HallOfValorState {
   readonly records: Readonly<Record<string, CardServiceRecord>>;
 }
 
+export const JUGGERNAUT_CITATION_THRESHOLD = 5;
+
 export const CANONICAL_CARD_IDS: readonly string[] = Object.freeze(
   Object.values(Suit).flatMap(suit =>
     Object.values(Rank).map(rank => `${suit}-${rank}`)
