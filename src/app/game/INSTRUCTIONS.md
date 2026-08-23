@@ -4,10 +4,10 @@ The `game` folder contains the primary interactive UI component (`Game`) orchest
 
 ## 📄 File Overview
 
-- [`game.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/game/game.ts) - Game component TypeScript logic.
-- [`game.html`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/game/game.html) - Component template utilizing Angular native control flow (`@if`, `@for`).
-- [`game.scss`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/game/game.scss) - SCSS styles, layout rules, and animation classes.
-- [`Agent.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/game/Agent.md) - Agent technical reference document.
+- [`game.ts`](game.ts) - Game component TypeScript logic.
+- [`game.html`](game.html) - Component template utilizing Angular native control flow (`@if`, `@for`).
+- [`game.scss`](game.scss) - SCSS styles, layout rules, and animation classes.
+- [`Agent.md`](Agent.md) - Agent technical reference document.
 
 ## 🎮 Component Key Responsibilities
 

@@ -1,0 +1,13 @@
+# Gitleaks Configuration for War of Attrition Game
+title = "War of Attrition Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global Allowlist for public test IDs and mock hashes"
+paths = [
+  '''^\.gitleaks\.toml$''',
+  '''^package-lock\.json$''',
+  '''^docs/''',
+]

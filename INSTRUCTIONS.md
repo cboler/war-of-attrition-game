@@ -6,14 +6,14 @@ Welcome to the **War of Attrition Game** codebase. This file serves as the top-l
 
 For domain-specific instructions and subsystem details, refer to the cascading instruction files:
 
-- [`.github/instructions/INSTRUCTIONS.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/INSTRUCTIONS.md) - Specifications, rules, milestone plans, and requirements.
-- [`src/INSTRUCTIONS.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/INSTRUCTIONS.md) - Source root standards, TypeScript rules, and Angular configuration.
-- [`src/app/INSTRUCTIONS.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/INSTRUCTIONS.md) - Application structure, routing, and Signal-based state architecture.
-- [`src/app/core/INSTRUCTIONS.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/INSTRUCTIONS.md) - Core domain logic (models, card comparison, game state, turn resolution).
-- [`src/app/game/INSTRUCTIONS.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/game/INSTRUCTIONS.md) - Game board UI component, animations, user action handling, and demo mode.
-- [`src/app/services/INSTRUCTIONS.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/INSTRUCTIONS.md) - High-level controller services (`GameControllerService`, `ProgressService`).
-- [`src/app/settings/INSTRUCTIONS.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/settings/INSTRUCTIONS.md) - Preferences and settings component (theme, card backings).
-- [`src/app/shared/INSTRUCTIONS.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/shared/INSTRUCTIONS.md) - Reusable components (`GameBoardComponent`, `CardComponent`).
+- [`.github/instructions/INSTRUCTIONS.md`](.github/instructions/INSTRUCTIONS.md) - Specifications, rules, milestone plans, and requirements.
+- [`src/INSTRUCTIONS.md`](src/INSTRUCTIONS.md) - Source root standards, TypeScript rules, and Angular configuration.
+- [`src/app/INSTRUCTIONS.md`](src/app/INSTRUCTIONS.md) - Application structure, routing, and Signal-based state architecture.
+- [`src/app/core/INSTRUCTIONS.md`](src/app/core/INSTRUCTIONS.md) - Core domain logic (models, card comparison, game state, turn resolution).
+- [`src/app/game/INSTRUCTIONS.md`](src/app/game/INSTRUCTIONS.md) - Game board UI component, animations, user action handling, and demo mode.
+- [`src/app/services/INSTRUCTIONS.md`](src/app/services/INSTRUCTIONS.md) - High-level controller services (`GameControllerService`, `ProgressService`).
+- [`src/app/settings/INSTRUCTIONS.md`](src/app/settings/INSTRUCTIONS.md) - Preferences and settings component (theme, card backings).
+- [`src/app/shared/INSTRUCTIONS.md`](src/app/shared/INSTRUCTIONS.md) - Reusable components (`GameBoardComponent`, `CardComponent`).
 
 ---
 

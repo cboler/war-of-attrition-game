@@ -2,15 +2,33 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const opensslPath = 'C:\\Program Files\\Git\\usr\\bin\\openssl.exe';
+function resolveOpenSsl() {
+  if (process.env.OPENSSL_BIN) return process.env.OPENSSL_BIN;
+  try {
+    execSync('openssl version', { stdio: 'ignore' });
+    return 'openssl';
+  } catch {
+    const gitOpenSsl = 'C:\\Program Files\\Git\\usr\\bin\\openssl.exe';
+    if (fs.existsSync(gitOpenSsl)) return gitOpenSsl;
+    return 'openssl';
+  }
+}
+
+const opensslPath = resolveOpenSsl();
 const outputDir = path.join(__dirname, '..', 'android');
 const keyPath = path.join(outputDir, 'upload-key.pem');
 const certPath = path.join(outputDir, 'upload-cert.pem');
 const keystorePath = path.join(outputDir, 'upload-keystore.p12');
 const jksPath = path.join(outputDir, 'upload-keystore.jks');
 
-const KEY_ALIAS = 'upload';
-const STORE_PASS = 'warofattrition2026';
+const KEY_ALIAS = process.env.WAR_UPLOAD_KEY_ALIAS || 'upload';
+const STORE_PASS = process.env.WAR_UPLOAD_KEYSTORE_PASSWORD || process.argv[2];
+
+if (!STORE_PASS) {
+  console.error('ERROR: Keystore password must be provided via WAR_UPLOAD_KEYSTORE_PASSWORD environment variable or as a CLI argument.');
+  console.error('Example: WAR_UPLOAD_KEYSTORE_PASSWORD="<password>" node scripts/generate-keystore.js');
+  process.exit(1);
+}
 
 console.log('Generating Android Upload Keystore and Fingerprints...');
 
@@ -43,8 +61,9 @@ console.log('ANDROID UPLOAD KEYSTORE GENERATED SUCCESSFULLY');
 console.log('======================================================');
 console.log(`Keystore Location: ${keystorePath}`);
 console.log(`Key Alias:         ${KEY_ALIAS}`);
-console.log(`Keystore Password: ${STORE_PASS}`);
+console.log(`Keystore Password: [PROTECTED]`);
 console.log('------------------------------------------------------');
 console.log(`SHA-1 Fingerprint:   ${sha1}`);
 console.log(`SHA-256 Fingerprint: ${sha256}`);
 console.log('======================================================\n');
+

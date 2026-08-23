@@ -4,12 +4,12 @@ This directory contains application-level controller services connecting domain 
 
 ## ⚙️ Service Index
 
-- [`game-controller.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/game-controller.service.ts) - Primary controller orchestrating deck clicks, challenge flows, opponent AI challenges, battle setups, and presentation states.
-- [`story-book.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/story-book.service.ts) - Service recording tactical match chronicle entries and combat milestones.
-- [`table-reaction.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/table-reaction.service.ts) - Service generating situational quip reactions during clashes, challenges, and battles.
-- [`progress.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/progress.service.ts) - (Legacy) Service maintaining milestone development data for unrouted demo UI.
-- [`game-demo.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/game-demo.service.ts) - (Legacy) Simulation service for unrouted demo UI.
-- [`Agent.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/Agent.md) - Subsystem technical reference for AI agents.
+- [`game-controller.service.ts`](game-controller.service.ts) - Primary controller orchestrating deck clicks, challenge flows, opponent AI challenges, battle setups, and presentation states.
+- [`story-book.service.ts`](story-book.service.ts) - Service recording tactical match chronicle entries and combat milestones.
+- [`table-reaction.service.ts`](table-reaction.service.ts) - Service generating situational quip reactions during clashes, challenges, and battles.
+- [`progress.service.ts`](progress.service.ts) - (Legacy) Service maintaining milestone development data for unrouted demo UI.
+- [`game-demo.service.ts`](game-demo.service.ts) - (Legacy) Simulation service for unrouted demo UI.
+- [`Agent.md`](Agent.md) - Subsystem technical reference for AI agents.
 
 ## 🔄 Interaction Guidelines
 

@@ -143,10 +143,10 @@ flowchart TD
 
 War of Attrition is in **Production Readiness / Final Polish** (Google Play closed testing, store asset automation, device validation).
 
-- **Current Implementation Status**: [`.github/instructions/current-development-status.md`](file:///.github/instructions/current-development-status.md) — Live status, active systems, and release priorities.
-- **Rules & Specification**: [`.github/instructions/war-of-attrition-requirements.md`](file:///.github/instructions/war-of-attrition-requirements.md) — Authoritative physical game rules and requirements.
-- **Documentation Index**: [`.github/instructions/README.md`](file:///.github/instructions/README.md) — Complete documentation hierarchy and development guides.
-- **Future Design Backlog**: [`developer-docs/future-gameplay-ideas.md`](file:///developer-docs/future-gameplay-ideas.md) — AI Commanders, Hall of Valor, and Alternate Rules Campaigns.
+- **Current Implementation Status**: [`.github/instructions/current-development-status.md`](.github/instructions/current-development-status.md) — Live status, active systems, and release priorities.
+- **Rules & Specification**: [`.github/instructions/war-of-attrition-requirements.md`](.github/instructions/war-of-attrition-requirements.md) — Authoritative physical game rules and requirements.
+- **Documentation Index**: [`.github/instructions/README.md`](.github/instructions/README.md) — Complete documentation hierarchy and development guides.
+- **Future Design Backlog**: [`developer-docs/future-gameplay-ideas.md`](developer-docs/future-gameplay-ideas.md) — AI Commanders, Hall of Valor, and Alternate Rules Campaigns.
 
 # Cadillac / 31
 

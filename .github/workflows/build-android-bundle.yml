@@ -93,11 +93,21 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Decode Upload Keystore
+      - name: Validate and Decode Upload Keystore
         run: |
-          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.p12
+          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_BASE64 secret is not configured in repository secrets."
+            exit 1
           fi
+          if [ -z "${{ secrets.WAR_UPLOAD_KEYSTORE_PASSWORD }}" ]; then
+            echo "ERROR: WAR_UPLOAD_KEYSTORE_PASSWORD secret is not configured in repository secrets."
+            exit 1
+          fi
+          if [ -z "${{ secrets.WAR_UPLOAD_KEY_PASSWORD }}" ]; then
+            echo "ERROR: WAR_UPLOAD_KEY_PASSWORD secret is not configured in repository secrets."
+            exit 1
+          fi
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.p12
 
       - name: Grant Execute Permission for Gradle
         run: chmod +x android/gradlew
@@ -107,8 +117,8 @@ jobs:
         env:
           WAR_UPLOAD_KEYSTORE_PATH: ${{ github.workspace }}/android/upload-keystore.p12
           WAR_UPLOAD_KEY_ALIAS: ${{ secrets.WAR_UPLOAD_KEY_ALIAS || 'upload' }}
-          WAR_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.WAR_UPLOAD_KEYSTORE_PASSWORD || 'warofattrition2026' }}
-          WAR_UPLOAD_KEY_PASSWORD: ${{ secrets.WAR_UPLOAD_KEY_PASSWORD || 'warofattrition2026' }}
+          WAR_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.WAR_UPLOAD_KEYSTORE_PASSWORD }}
+          WAR_UPLOAD_KEY_PASSWORD: ${{ secrets.WAR_UPLOAD_KEY_PASSWORD }}
           APP_VERSION_CODE: ${{ steps.versioning.outputs.version_code }}
           APP_VERSION_NAME: ${{ steps.versioning.outputs.version_name }}
           PLAY_GAMES_PROJECT_ID: ${{ vars.PLAY_GAMES_PROJECT_ID || '334487063631' }}

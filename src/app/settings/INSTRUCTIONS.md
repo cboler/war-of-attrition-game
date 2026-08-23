@@ -4,10 +4,10 @@ This directory contains the settings configuration component and user preference
 
 ## 📁 Files
 
-- [`settings.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/settings/settings.ts) - Settings component class.
-- [`settings.html`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/settings/settings.html) - Settings component template.
-- [`settings.scss`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/settings/settings.scss) - Settings styling.
-- [`Agent.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/settings/Agent.md) - Subsystem technical documentation.
+- [`settings.ts`](settings.ts) - Settings component class.
+- [`settings.html`](settings.html) - Settings component template.
+- [`settings.scss`](settings.scss) - Settings styling.
+- [`Agent.md`](Agent.md) - Subsystem technical documentation.
 
 ## 🎨 Feature Responsibilities
 

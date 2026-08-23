@@ -5,15 +5,15 @@ The `core` directory is the single source of truth for game business logic, stat
 ## 📁 Directory Structure
 
 - `models/`: Immutable domain models and interfaces:
-  - [`card.model.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/models/card.model.ts) - Suits, ranks, display names, and color identifiers.
-  - [`deck.model.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/models/deck.model.ts) - Deck operations (draw, shuffle, count, color filtering).
-  - [`game-state.model.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/models/game-state.model.ts) - Enums (`GamePhase`, `PlayerType`, `ComparisonResult`) and state interfaces (`GameState`, `ActiveTurn`).
-  - [`settings.model.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/models/settings.model.ts) - Preference configuration models.
+  - [`card.model.ts`](models/card.model.ts) - Suits, ranks, display names, and color identifiers.
+  - [`deck.model.ts`](models/deck.model.ts) - Deck operations (draw, shuffle, count, color filtering).
+  - [`game-state.model.ts`](models/game-state.model.ts) - Enums (`GamePhase`, `PlayerType`, `ComparisonResult`) and state interfaces (`GameState`, `ActiveTurn`).
+  - [`settings.model.ts`](models/settings.model.ts) - Preference configuration models.
 - `services/`: Core logic services:
-  - [`card-comparison.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/services/card-comparison.service.ts) - Evaluates rank comparisons including Ace vs. 2 special rule.
-  - [`game-state.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/services/game-state.service.ts) - Manages player/opponent decks, discard pile, turn history, and signal state.
-  - [`turn-resolution.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/services/turn-resolution.service.ts) - Resolves turn comparisons, challenge wins/losses/ties, and battle outcomes.
-  - [`opponent-ai.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/core/services/opponent-ai.service.ts) - AI decision making for challenging turn losses.
+  - [`card-comparison.service.ts`](services/card-comparison.service.ts) - Evaluates rank comparisons including Ace vs. 2 special rule.
+  - [`game-state.service.ts`](services/game-state.service.ts) - Manages player/opponent decks, discard pile, turn history, and signal state.
+  - [`turn-resolution.service.ts`](services/turn-resolution.service.ts) - Resolves turn comparisons, challenge wins/losses/ties, and battle outcomes.
+  - [`opponent-ai.service.ts`](services/opponent-ai.service.ts) - AI decision making for challenging turn losses.
 
 ## 🃏 Game Logic Rules
 

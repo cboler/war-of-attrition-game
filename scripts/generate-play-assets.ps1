@@ -1,14 +1,17 @@
 Add-Type -AssemblyName System.Drawing
 
-$srcPath = "C:\Users\lacyv\Documents\GitHub\war-of-attrition-game\developer-docs\play-store\assets\master-promo.jpg"
-$userUploadPath = "C:\Users\lacyv\.gemini\antigravity-ide\brain\4e176787-255a-49d7-905f-93dd79863dff\.user_uploaded\media_1786930541952.jpg"
+$rootDir = Split-Path -Parent $PSScriptRoot
+$assetsDir = Join-Path $rootDir "developer-docs\play-store\assets"
+$srcPath = Join-Path $assetsDir "master-promo.jpg"
 
-$assetsDir = "C:\Users\lacyv\Documents\GitHub\war-of-attrition-game\developer-docs\play-store\assets"
 if (!(Test-Path $assetsDir)) { New-Item -ItemType Directory -Path $assetsDir -Force }
 $screenshotsDir = Join-Path $assetsDir "screenshots"
 if (!(Test-Path $screenshotsDir)) { New-Item -ItemType Directory -Path $screenshotsDir -Force }
 
-Copy-Item $userUploadPath $srcPath -Force
+if (!(Test-Path $srcPath)) {
+    Write-Error "Source master promo image not found at $srcPath"
+    exit 1
+}
 
 $src = [System.Drawing.Bitmap]::FromFile($srcPath)
 
@@ -54,7 +57,7 @@ $appIcon512 = Crop-Image-To-Bitmap 13 58 140 174 512 512
 $appIcon512.Save((Join-Path $assetsDir "icon-512x512.png"), [System.Drawing.Imaging.ImageFormat]::Png)
 
 Write-Output "--- Generating PWA Icons in public/icons/ ---"
-$pwaIconsDir = "C:\Users\lacyv\Documents\GitHub\war-of-attrition-game\public\icons"
+$pwaIconsDir = Join-Path $rootDir "public\icons"
 $sizes = @(72, 96, 128, 144, 152, 192, 384, 512)
 foreach ($size in $sizes) {
     $outPath = Join-Path $pwaIconsDir "icon-${size}x${size}.png"
@@ -62,7 +65,7 @@ foreach ($size in $sizes) {
 }
 
 # Favicon
-$faviconPath = "C:\Users\lacyv\Documents\GitHub\war-of-attrition-game\public\favicon.ico"
+$faviconPath = Join-Path $rootDir "public\favicon.ico"
 $icon64 = New-Object System.Drawing.Bitmap(64, 64, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
 $g = [System.Drawing.Graphics]::FromImage($icon64)
 $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
@@ -73,7 +76,7 @@ $icon64.Dispose()
 Write-Output "Generated Favicon at: $faviconPath"
 
 Write-Output "--- Generating Android Launcher Mipmaps ---"
-$resDir = "C:\Users\lacyv\Documents\GitHub\war-of-attrition-game\android\app\src\main\res"
+$resDir = Join-Path $rootDir "android\app\src\main\res"
 $mipmaps = @{
     "mipmap-mdpi" = 48
     "mipmap-hdpi" = 72

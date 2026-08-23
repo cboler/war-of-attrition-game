@@ -96,7 +96,7 @@ Follow these actions in order:
 * **ACTION:** Opt-in to Google Play App Signing (let Google manage and sign release keys).
 * **VALUE SOURCE:** Play Console creates the production signing certificate and presents the **SHA-256 certificate fingerprint**.
 * **WHEN:** Initial release setup.
-* **HOW TO VERIFY:** Copy the SHA-256 fingerprint into your [`owner-values.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/play-store/owner-values.md).
+* **HOW TO VERIFY:** Copy the SHA-256 fingerprint into your [`owner-values.md`](./owner-values.md).
 
 ### 3. Create Android OAuth Client ID in Existing Google Cloud Project
 * **WHERE:** Google Cloud Console (`console.cloud.google.com`) → Select your existing project → **APIs & Services** → **Credentials**
@@ -125,7 +125,7 @@ Follow these actions in order:
 ### 6. Publish Digital Asset Links on Root Domain
 * **WHERE:** `https://cboler.github.io/.well-known/assetlinks.json`
 * **ACTION:** Deploy `assetlinks.json` containing the Play App Signing SHA-256 fingerprint to your root user repository.
-* **VALUE COMES FROM:** [`developer-docs/play-store/assetlinks-guide.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/play-store/assetlinks-guide.md).
+* **VALUE COMES FROM:** [`developer-docs/play-store/assetlinks-guide.md`](./assetlinks-guide.md).
 * **WHEN:** Before testing on device.
 * **HOW TO VERIFY:** Check via browser at `https://cboler.github.io/.well-known/assetlinks.json` and ensure Chrome opens the app without browser URL bar.
 
@@ -133,7 +133,7 @@ Follow these actions in order:
 * **WHERE:** Play Console → **Policy and programs** → **App content**
 * **ACTION:**
   - **Privacy Policy URL:** `https://cboler.github.io/war-of-attrition-game/privacy/`
-  - **Data Safety:** Complete questionnaire using [`data-safety.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/play-store/data-safety.md).
+  - **Data Safety:** Complete questionnaire using [`data-safety.md`](./data-safety.md).
   - **Target Audience:** 13+ (or Everyone).
   - **Ads:** Do not submit an answer until the shipped Android behavior is verified. Android source currently initializes a Google Mobile Ads banner, so selecting "No" is only accurate if that integration is disabled for the release build. Otherwise update consent, privacy, Data Safety, and store declarations.
 * **WHEN:** Before creating internal release.
