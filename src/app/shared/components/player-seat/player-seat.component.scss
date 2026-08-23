@@ -80,6 +80,54 @@
   }
 }
 
+.total-war-badge {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px !important;
+  padding: 2px 7px;
+  background: rgba(30, 24, 10, 0.85);
+  border: 1px solid rgba(229, 193, 117, 0.45);
+  border-radius: 4px;
+  font-size: clamp(0.64rem, 0.8vw, 0.72rem) !important;
+  letter-spacing: 0.06em;
+  color: #e5c175 !important;
+  line-height: 1.2;
+
+  .total-war-label {
+    opacity: 0.85;
+    font-size: 0.6rem !important;
+    font-weight: 700;
+    margin: 0 !important;
+    letter-spacing: 0.08em;
+  }
+
+  .total-war-diff {
+    font-weight: 700;
+    color: #ffd54f !important;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  &.diff-positive {
+    border-color: rgba(74, 222, 128, 0.5);
+    background: rgba(16, 44, 28, 0.85);
+
+    .total-war-diff {
+      color: #86efac !important;
+    }
+  }
+
+  &.diff-negative {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(54, 18, 18, 0.85);
+
+    .total-war-diff {
+      color: #fca5a5 !important;
+    }
+  }
+}
+
 .status-dot {
   width: 9px;
   height: 9px;

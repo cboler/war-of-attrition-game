@@ -163,5 +163,63 @@ describe('ProgressionModel and Rules', () => {
       expect(summary.wins).toBe(2);
       expect(summary.losses).toBe(1);
     });
+
+    it('summarizes a Total War Campaign where positive differential wins despite losing 2 of 3 wars', () => {
+      const summary = summarizeCampaign(
+        'tw-victory-camp',
+        [
+          { warId: 'w1', outcome: GameOutcome.OPPONENT_WIN, margin: -2, playerDeckColor: 'red', completedAt: '2026-08-20' },
+          { warId: 'w2', outcome: GameOutcome.OPPONENT_WIN, margin: -2, playerDeckColor: 'red', completedAt: '2026-08-20' },
+          { warId: 'w3', outcome: GameOutcome.PLAYER_WIN, margin: 15, playerDeckColor: 'red', completedAt: '2026-08-20' }
+        ],
+        'quartermaster',
+        'total_war'
+      );
+
+      expect(summary.mode).toBe('total_war');
+      expect(summary.wins).toBe(1);
+      expect(summary.losses).toBe(2);
+      expect(summary.differential).toBe(11);
+      expect(summary.outcome).toBe('victory'); // Total War victory because differential > 0 (+11)
+      expect(summary.tokensEarned).toBe(2); // 1 for victory + 1 for positive differential
+    });
+
+    it('summarizes a Total War Campaign where negative differential loses despite winning 2 of 3 wars', () => {
+      const summary = summarizeCampaign(
+        'tw-defeat-camp',
+        [
+          { warId: 'w1', outcome: GameOutcome.PLAYER_WIN, margin: 1, playerDeckColor: 'red', completedAt: '2026-08-20' },
+          { warId: 'w2', outcome: GameOutcome.PLAYER_WIN, margin: 1, playerDeckColor: 'red', completedAt: '2026-08-20' },
+          { warId: 'w3', outcome: GameOutcome.OPPONENT_WIN, margin: -10, playerDeckColor: 'red', completedAt: '2026-08-20' }
+        ],
+        'quartermaster',
+        'total_war'
+      );
+
+      expect(summary.mode).toBe('total_war');
+      expect(summary.wins).toBe(2);
+      expect(summary.losses).toBe(1);
+      expect(summary.differential).toBe(-8);
+      expect(summary.outcome).toBe('defeat'); // Total War defeat because differential < 0 (-8)
+      expect(summary.tokensEarned).toBe(0);
+    });
+
+    it('summarizes a Total War Campaign as draw when differential equals zero', () => {
+      const summary = summarizeCampaign(
+        'tw-draw-camp',
+        [
+          { warId: 'w1', outcome: GameOutcome.PLAYER_WIN, margin: 4, playerDeckColor: 'red', completedAt: '2026-08-20' },
+          { warId: 'w2', outcome: GameOutcome.OPPONENT_WIN, margin: -4, playerDeckColor: 'red', completedAt: '2026-08-20' },
+          { warId: 'w3', outcome: GameOutcome.TIE, margin: 0, playerDeckColor: 'red', completedAt: '2026-08-20' }
+        ],
+        'quartermaster',
+        'total_war'
+      );
+
+      expect(summary.mode).toBe('total_war');
+      expect(summary.differential).toBe(0);
+      expect(summary.outcome).toBe('draw');
+      expect(summary.tokensEarned).toBe(0);
+    });
   });
 });

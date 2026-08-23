@@ -31,6 +31,16 @@ import { CardComponent } from '../card/card.component';
               <strong class="reserve-count">{{ res.remaining }} / {{ res.max }}</strong>
             </span>
           }
+          @if (totalWarDifferential() !== null) {
+            <span
+              class="total-war-badge"
+              [class.diff-positive]="(totalWarDifferential() ?? 0) > 0"
+              [class.diff-negative]="(totalWarDifferential() ?? 0) < 0"
+              [attr.aria-label]="'Total War running differential: ' + ((totalWarDifferential() ?? 0) >= 0 ? '+' : '') + totalWarDifferential()">
+              <span class="total-war-label">TOTAL WAR</span>
+              <strong class="total-war-diff">DIFF {{ (totalWarDifferential() ?? 0) >= 0 ? '+' : '' }}{{ totalWarDifferential() }}</strong>
+            </span>
+          }
         </div>
       </div>
 
@@ -91,6 +101,7 @@ export class PlayerSeatComponent {
   defeatPopping = input(false);
   motionDisabled = input(false);
   reserves = input<{ remaining: number; max: number } | null>(null);
+  totalWarDifferential = input<number | null>(null);
 
   deckActivated = output<void>();
 

@@ -26,6 +26,64 @@
 }
 
 h2 { margin: 8px 0 16px; color: #fff; font: 600 1.75rem/1.1 Georgia, serif; }
+
+.total-war-banner {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 20px;
+
+  &.final {
+    margin-bottom: 22px;
+  }
+
+  .diff-highlight {
+    flex: 1;
+    max-width: 170px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(30, 24, 10, 0.85);
+    border: 1px solid rgba(229, 193, 117, 0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .diff-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(228, 191, 114, 0.85);
+    }
+
+    .diff-value {
+      font-family: Georgia, serif;
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #ffd54f;
+      margin-top: 2px;
+    }
+
+    &.positive {
+      background: rgba(16, 48, 30, 0.85);
+      border-color: rgba(74, 222, 128, 0.45);
+
+      .diff-value {
+        color: #86efac;
+      }
+    }
+
+    &.negative {
+      background: rgba(56, 18, 18, 0.85);
+      border-color: rgba(239, 68, 68, 0.45);
+
+      .diff-value {
+        color: #fca5a5;
+      }
+    }
+  }
+}
+
 .game-over-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 24px; }
 .stat-pill {
   display: flex;

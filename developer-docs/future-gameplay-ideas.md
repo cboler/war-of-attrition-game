@@ -53,18 +53,19 @@ Unlike achievements (which observe rare events under standard rules), **Alternat
 - Unlocks deep cross-war resource management: "Do I challenge this King in War 1, or save my reserves for War 3?"
 - When reserves reach 0, human challenges are exhausted and beaten clashes are conceded automatically.
 
-#### 2. Fog of War (Future Candidate)
+#### 2. Total War (Graduated to Implemented System)
+- Campaign victory is determined strictly by **cumulative signed card differential** across all three Wars, rather than simple 2-out-of-3 match wins.
+- A crushing 26–0 sweep in War 1 provides a massive buffer that can withstand a narrow 12–14 defeat in War 2.
+- Every card matters even in defeat, foregrounding attrition margin at War conclusion and on table seating.
+
+#### 3. Fog of War (Future Candidate)
 - Information in the Boneyard is restricted during active play.
 - Casualties are placed face-down into the discard stack and cannot be freely inspected until the War concludes.
 - Forces players to rely on memory and intuition rather than precise casualty counting.
 
-#### 3. No Retreat (Future Candidate)
+#### 4. No Retreat (Future Candidate)
 - The War must be fought to the bitter end.
 - Abandoning, conceding, or resetting an unresolved War immediately forfeits the entire Campaign with maximum penalty to career differential.
-
-#### 4. Total War (Future Candidate)
-- Campaign victory is determined strictly by **cumulative card differential** across all three Wars, rather than simple 2-out-of-3 match wins.
-- A crushing 26–0 sweep in War 1 provides a massive buffer that can withstand a narrow 12–14 defeat in War 2.
 
 #### 5. Escalation (Future Candidate)
 - Each successful reinforcement or multi-layer battle in a War increases the stake cost or difficulty of subsequent actions in that Campaign.

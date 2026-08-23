@@ -95,6 +95,7 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   protected readonly activeTab = signal<FieldManualTab>('chronicle');
   protected readonly activeDemo = signal<RuleDemoKind | null>(null);
   protected readonly selectedValorCardId = signal<string | null>(null);
+  protected readonly expandedComparisonEntryIds = signal<ReadonlySet<string>>(new Set());
 
   readonly referenceCard = input<Card | null>(null);
   readonly closed = output<void>();
@@ -104,6 +105,22 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
       ? ['chronicle', 'valor', 'rules', 'reference']
       : ['chronicle', 'valor', 'rules']
   );
+
+  protected isComparisonExpanded(entryId: string): boolean {
+    return this.expandedComparisonEntryIds().has(entryId);
+  }
+
+  protected toggleComparisonExpanded(entryId: string): void {
+    this.expandedComparisonEntryIds.update(current => {
+      const next = new Set(current);
+      if (next.has(entryId)) {
+        next.delete(entryId);
+      } else {
+        next.add(entryId);
+      }
+      return next;
+    });
+  }
 
   protected readonly selectedValorCard = computed<CardServiceRecord | null>(() => {
     const id = this.selectedValorCardId();

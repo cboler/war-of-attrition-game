@@ -94,6 +94,11 @@ export class TableGame implements OnInit {
     return { remaining, max };
   });
 
+  protected readonly playerTotalWarDiff = computed(() => {
+    if (!this.progression.isTotalWar()) return null;
+    return this.progression.runningCampaignDifferential();
+  });
+
   protected readonly boneyardThicknessClass = computed(() => {
     const count = this.controller.visibleBoneyardCount();
     if (count === 0) return 'boneyard-0';

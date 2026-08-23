@@ -31,6 +31,14 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     description: 'A strict strategic constraint testing long-range resource management.',
     ruleSummary: 'You begin with exactly 5 reinforcements for the entire Three-War Campaign. Used reserves do not return between Wars.',
     reinforcementPolicy: '5 Reserves (Entire Campaign)'
+  },
+  {
+    id: 'total_war',
+    title: 'Total War',
+    tag: 'Alternate Rules · Cumulative Differential',
+    description: 'The Campaign is decided by cumulative card differential across all three Wars. Every card matters, even in defeat.',
+    ruleSummary: 'Individual Wars contribute signed card margins. Final Campaign victory belongs to the commander with positive cumulative differential.',
+    reinforcementPolicy: 'Deck Count Only'
   }
 ];
 

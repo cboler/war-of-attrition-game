@@ -279,5 +279,182 @@ describe('StoryBookService', () => {
     expect(entry.eyebrow).toContain('VALOR CITATION');
     expect(entry.cards).toEqual([cardKing]);
     expect(entry.badge).toBe('achievement');
+    expect(entry.comparison).toBeUndefined();
+  });
+
+  describe('Comparison explanation metadata', () => {
+    it('attaches comparison explanation to special rule clash (player 2 vs opponent Ace)', () => {
+      eventBus.emit({
+        type: 'clash_resolved',
+        turnNumber: 2,
+        playerCard: cardTwo,
+        opponentCard: cardAce,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        specialRule: true,
+        message: '2♠ assassinated A♥!',
+      });
+
+      const entry = service.entries()[0];
+      expect(entry.comparison).toBeDefined();
+      expect(entry.comparison?.state).toBe('winner');
+      expect(entry.comparison?.specialOverride).toBe(true);
+      expect(entry.comparison?.base).toBe(2);
+      expect(entry.comparison?.opposingBase).toBe(14);
+      expect(entry.comparison?.formulaText).toContain('2 defeats Ace');
+    });
+
+    it('attaches comparison explanation to special rule clash (opponent 2 vs player Ace)', () => {
+      eventBus.emit({
+        type: 'clash_resolved',
+        turnNumber: 2,
+        playerCard: cardAce,
+        opponentCard: cardTwo,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        specialRule: true,
+        message: '2♠ assassinated A♥!',
+      });
+
+      const entry = service.entries()[0];
+      expect(entry.comparison).toBeDefined();
+      expect(entry.comparison?.state).toBe('defeated');
+      expect(entry.comparison?.specialOverride).toBe(true);
+      expect(entry.comparison?.base).toBe(14);
+      expect(entry.comparison?.opposingBase).toBe(2);
+    });
+
+    it('uses the reinforcement card and not the originally beaten card for challenge comparison', () => {
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 5,
+        challenger: PlayerType.PLAYER,
+        originalBeatenCard: cardEight, // beaten card was 8
+        reinforcementCard: cardKing,   // drew King (13)
+        originalWinnerCard: cardAce,   // challenged Ace (14)
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        challengerWon: false,
+        message: 'Both are now lost.',
+        savedTwo: false,
+      });
+
+      const entry = service.entries()[0];
+      expect(entry.comparison).toBeDefined();
+      expect(entry.comparison?.card.id).toBe(cardKing.id);
+      expect(entry.comparison?.opposingCard.id).toBe(cardAce.id);
+      expect(entry.comparison?.base).toBe(13);
+      expect(entry.comparison?.opposingBase).toBe(14);
+      expect(entry.comparison?.state).toBe('defeated');
+      expect(entry.comparison?.formulaText).toBe('13 − 14 → Defeated');
+    });
+
+    it('attaches player-winning comparison to successful reinforcement challenge', () => {
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 6,
+        challenger: PlayerType.PLAYER,
+        originalBeatenCard: cardEight,
+        reinforcementCard: cardKing,
+        originalWinnerCard: cardEight,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        challengerWon: true,
+        message: 'Card rescued.',
+        savedTwo: false,
+      });
+
+      const entry = service.entries()[0];
+      expect(entry.comparison?.state).toBe('winner');
+      expect(entry.comparison?.current).toBe(5);
+      expect(entry.comparison?.formulaText).toBe('13 − 8 = 5 remaining');
+    });
+
+    it('attaches tie comparison to tied reinforcement challenge', () => {
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 7,
+        challenger: PlayerType.PLAYER,
+        originalBeatenCard: cardTwo,
+        reinforcementCard: cardEight,
+        originalWinnerCard: cardEight,
+        comparison: ComparisonResult.TIE,
+        winner: null,
+        challengerWon: false,
+        message: 'Tied. Battle initiated.',
+        savedTwo: false,
+      });
+
+      const entry = service.entries()[0];
+      expect(entry.comparison?.state).toBe('tie');
+      expect(entry.comparison?.formulaText).toContain('8 vs 8');
+      expect(entry.comparison?.formulaText).toContain('Equal Power → Battle');
+    });
+
+    it('attaches public champion comparison to Battle reveal without leaking hidden cards', () => {
+      eventBus.emit({
+        type: 'battle_cards_revealed',
+        turnNumber: 8,
+        layerRound: 1,
+        playerChosenCard: cardKing,
+        opponentChosenCard: cardEight,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        selection: {
+          layerRound: 1,
+          playerCard: cardKing,
+          opponentCard: cardEight,
+          playerCardId: cardKing.id,
+          opponentCardId: cardEight.id,
+          comparison: ComparisonResult.PLAYER_WINS,
+          winner: PlayerType.PLAYER,
+          specialRule: false,
+        },
+        specialRule: false,
+        message: 'K♣ defeated 8♦.',
+      });
+
+      const entry = service.entries()[0];
+      expect(entry.comparison).toBeDefined();
+      expect(entry.comparison?.base).toBe(13);
+      expect(entry.comparison?.opposingBase).toBe(8);
+      expect(entry.comparison?.state).toBe('winner');
+      expect(entry.comparison?.formulaText).toBe('13 − 8 = 5 remaining');
+    });
+
+    it('does not attach fake comparison explanation to non-comparison events', () => {
+      eventBus.emit({
+        type: 'challenge_conceded',
+        turnNumber: 9,
+        loser: PlayerType.PLAYER,
+        winner: PlayerType.OPPONENT,
+        message: 'You conceded the challenge.',
+      });
+
+      eventBus.emit({
+        type: 'cards_returned',
+        turnNumber: 9,
+        winner: PlayerType.PLAYER,
+        hiddenCount: 3,
+        publicCount: 1,
+      });
+
+      eventBus.emit({
+        type: 'cards_sent_to_boneyard',
+        turnNumber: 9,
+        cards: [cardEight],
+      });
+
+      eventBus.emit({
+        type: 'quip_spoken',
+        turnNumber: 9,
+        speaker: PlayerType.OPPONENT,
+        message: 'A tactical setback.',
+      });
+
+      expect(service.entries().length).toBe(2); // concession and quip
+      expect(service.entries()[0].comparison).toBeUndefined();
+      expect(service.entries()[1].comparison).toBeUndefined();
+    });
   });
 });

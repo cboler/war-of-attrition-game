@@ -17,6 +17,7 @@ import {
   canHumanReinforce,
   getHumanReserves,
   isLimitedReservesMode,
+  isTotalWarMode,
   CosmeticPurchaseResult,
   CosmeticUnlock,
   CosmeticUnlockReason,
@@ -55,6 +56,10 @@ export class CampaignProgressionService {
   readonly activeCampaignMode = computed<CampaignModeId>(() => this.currentCampaign().mode);
   readonly ordersSelected = computed<boolean>(() => this.currentCampaign().ordersSelected);
   readonly isLimitedReserves = computed<boolean>(() => isLimitedReservesMode(this.currentCampaign()));
+  readonly isTotalWar = computed<boolean>(() => isTotalWarMode(this.currentCampaign()));
+  readonly runningCampaignDifferential = computed<number>(() =>
+    this.currentCampaign().wars.reduce((sum, w) => sum + w.margin, 0)
+  );
   readonly limitedReserves = computed<LimitedReservesCampaignState | null>(() =>
     this.currentCampaign().limitedReserves ?? null
   );

@@ -5,8 +5,33 @@
   aria-atomic="true"
   aria-labelledby="game-over-title"
 >
-  <span class="game-over-eyebrow">WAR RESOLUTION</span>
-  <h2 id="game-over-title">{{ message() }}</h2>
+  @if (summary()?.campaignMode === 'total_war') {
+    <span class="game-over-eyebrow">TOTAL WAR · WAR {{ summary()?.warIndex }} OF 3</span>
+    <h2 id="game-over-title">{{ message() }}</h2>
+
+    @if (summary()?.warIndex === 3) {
+      <div class="total-war-banner final">
+        <div class="diff-highlight campaign-diff" [class.positive]="(summary()?.runningCampaignDifferential ?? 0) > 0" [class.negative]="(summary()?.runningCampaignDifferential ?? 0) < 0">
+          <span class="diff-title">Final Campaign Differential</span>
+          <strong class="diff-value">{{ (summary()?.runningCampaignDifferential ?? 0) >= 0 ? '+' : '' }}{{ summary()?.runningCampaignDifferential }}</strong>
+        </div>
+      </div>
+    } @else {
+      <div class="total-war-banner">
+        <div class="diff-highlight war-diff" [class.positive]="(summary()?.warDifferential ?? 0) > 0" [class.negative]="(summary()?.warDifferential ?? 0) < 0">
+          <span class="diff-title">War Differential</span>
+          <strong class="diff-value">{{ (summary()?.warDifferential ?? 0) >= 0 ? '+' : '' }}{{ summary()?.warDifferential }}</strong>
+        </div>
+        <div class="diff-highlight campaign-diff" [class.positive]="(summary()?.runningCampaignDifferential ?? 0) > 0" [class.negative]="(summary()?.runningCampaignDifferential ?? 0) < 0">
+          <span class="diff-title">Campaign Differential</span>
+          <strong class="diff-value">{{ (summary()?.runningCampaignDifferential ?? 0) >= 0 ? '+' : '' }}{{ summary()?.runningCampaignDifferential }}</strong>
+        </div>
+      </div>
+    }
+  } @else {
+    <span class="game-over-eyebrow">WAR RESOLUTION</span>
+    <h2 id="game-over-title">{{ message() }}</h2>
+  }
 
   @if (summary(); as result) {
     <div class="game-over-stats">

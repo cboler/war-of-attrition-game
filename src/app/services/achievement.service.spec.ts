@@ -478,7 +478,7 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('war.marathon')).toBe(true);
   });
 
-  it('defines and maps all 27 canonical achievements exactly once', () => {
+  it('defines 28 local achievements and maps the 27 Play Games achievements', () => {
     const exactPlayIds: Readonly<Record<string, string>> = {
       'war.first_casualty': 'CgkIz5juh94JEAIQDA',
       'war.first_battle': 'CgkIz5juh94JEAIQEQ',
@@ -509,9 +509,10 @@ describe('AchievementService', () => {
       'profile.centurion': 'CgkIz5juh94JEAIQAw',
     };
     const ids = ACHIEVEMENTS.map((achievement) => achievement.id);
-    expect(ids.length).toBe(27);
-    expect(new Set(ids).size).toBe(27);
-    expect(Object.keys(PLAY_ACHIEVEMENT_MAPPINGS).sort()).toEqual([...ids].sort());
+    expect(ids.length).toBe(28);
+    expect(new Set(ids).size).toBe(28);
+    expect(ids).toContain('war.battle_assassin');
+    expect(Object.keys(PLAY_ACHIEVEMENT_MAPPINGS).length).toBe(27);
     expect(
       Object.fromEntries(
         Object.entries(PLAY_ACHIEVEMENT_MAPPINGS).map(([id, mapping]) => [id, mapping.playGamesId]),
@@ -522,8 +523,90 @@ describe('AchievementService', () => {
     expect(PLAY_ACHIEVEMENT_MAPPINGS['profile.campaigner'].isIncremental).toBeFalse();
     expect(ACHIEVEMENTS.find((achievement) => achievement.id === 'profile.campaigner')?.name)
       .toBe('War Tested');
+    expect(ACHIEVEMENTS.find((achievement) => achievement.id === 'war.battle_assassin')?.name)
+      .toBe('Against the Odds');
     expect(ACHIEVEMENTS.find((achievement) => achievement.id === 'war.marathon')?.description)
       .toContain('42 turns');
+  });
+
+  it('unlocks both war.assassin and war.battle_assassin when player 2 defeats opponent Ace in Battle', () => {
+    eventBus.emit({ type: 'battle_started', turnNumber: 4, layerRound: 1 });
+
+    eventBus.emit({
+      type: 'battle_cards_revealed',
+      turnNumber: 4,
+      layerRound: 1,
+      playerChosenCard: cardTwo,
+      opponentChosenCard: cardAce,
+      comparison: ComparisonResult.PLAYER_WINS,
+      winner: PlayerType.PLAYER,
+      selection: {
+        layerRound: 1,
+        playerCard: cardTwo,
+        opponentCard: cardAce,
+        playerCardId: cardTwo.id,
+        opponentCardId: cardAce.id,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        specialRule: true,
+      },
+      specialRule: true,
+      message: '2♠ assassinated A♥.',
+    });
+
+    expect(service.isUnlocked('war.assassin')).toBeTrue();
+    expect(service.isUnlocked('war.battle_assassin')).toBeTrue();
+
+    // Toasts are deferred during Battle until battle_presentation_complete
+    expect(service.latestUnlock()).toBeNull();
+
+    eventBus.emit({ type: 'battle_presentation_complete', turnNumber: 4 });
+    expect(service.latestUnlock()).not.toBeNull();
+  });
+
+  it('unlocks war.assassin but NOT war.battle_assassin when 2 defeats Ace in regular clash', () => {
+    eventBus.emit({
+      type: 'clash_resolved',
+      turnNumber: 1,
+      playerCard: cardTwo,
+      opponentCard: cardAce,
+      comparison: ComparisonResult.PLAYER_WINS,
+      winner: PlayerType.PLAYER,
+      specialRule: true,
+      message: '2♠ assassinated A♥!',
+    });
+
+    expect(service.isUnlocked('war.assassin')).toBeTrue();
+    expect(service.isUnlocked('war.battle_assassin')).toBeFalse();
+  });
+
+  it('does not unlock war.battle_assassin when opponent 2 defeats player Ace in Battle', () => {
+    eventBus.emit({ type: 'battle_started', turnNumber: 5, layerRound: 1 });
+
+    eventBus.emit({
+      type: 'battle_cards_revealed',
+      turnNumber: 5,
+      layerRound: 1,
+      playerChosenCard: cardAce,
+      opponentChosenCard: cardTwo,
+      comparison: ComparisonResult.OPPONENT_WINS,
+      winner: PlayerType.OPPONENT,
+      selection: {
+        layerRound: 1,
+        playerCard: cardAce,
+        opponentCard: cardTwo,
+        playerCardId: cardAce.id,
+        opponentCardId: cardTwo.id,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        specialRule: true,
+      },
+      specialRule: true,
+      message: 'Opponent 2 defeated your Ace.',
+    });
+
+    expect(service.isUnlocked('war.assassin')).toBeFalse();
+    expect(service.isUnlocked('war.battle_assassin')).toBeFalse();
   });
 
   it('unlocks the first casualty from any real Boneyard loss', () => {

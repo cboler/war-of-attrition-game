@@ -46,12 +46,30 @@
   - Upon conclusion of War 3, the final remaining reserve count is archived in the completed `CampaignHistoryEntry`.
   - The subsequent Campaign initializes fresh with `mode: 'standard'` and `ordersSelected: false`, allowing the player to select new Campaign Orders.
 
+### C. Total War (`total_war`)
+
+- **Description**: The Campaign outcome is determined solely by signed cumulative card differential across all three Wars. Every card matters, even in defeat.
+- **Gameplay within Wars**: Standard War of Attrition mechanics (deck count bounds reinforcements).
+- **Scoring & Outcome Derivation**:
+  - Final outcome is calculated strictly from the sum of signed margins across all 3 Wars:
+    - `differential > 0` => Campaign Victory
+    - `differential < 0` => Campaign Defeat
+    - `differential === 0` => Campaign Draw
+  - Individual War records (wins/losses/ties) are preserved truthfully for statistics, career records, and Hall of Valor.
+- **War-End Presentation**:
+  - For Wars 1 & 2 (and the War phase of War 3), the table presentation foregrounds signed differential (`War differential: +7`, `Cumulative Campaign differential: +11`) rather than headlining a final victory or defeat.
+  - Upon War 3 completion, the final verdict is clearly stated as differential-based (e.g. `Total War Campaign Victory · Final Differential: +11`).
+- **Table & Seat Badging**:
+  - Player table seat displays running cumulative differential (`TOTAL WAR · DIFF +8`).
+- **Token Rewards**:
+  - 1 token for Campaign Victory + 1 bonus token for positive differential (2 tokens max, matching standard economy).
+
 ---
 
 ## 3. Data Models & Domain Contracts
 
 ```typescript
-export type CampaignModeId = 'standard' | 'limited_reserves';
+export type CampaignModeId = 'standard' | 'limited_reserves' | 'total_war';
 
 export interface LimitedReservesCampaignState {
   readonly initialReserves: number;    // Exactly 5
@@ -71,7 +89,7 @@ export interface CampaignHistoryEntry {
   readonly campaignId: string;
   readonly completedAt: string;
   readonly commanderId?: OpponentCommanderId;
-  readonly mode?: CampaignModeId;
+  readonly mode: CampaignModeId;
   readonly remainingReserves?: number;
   readonly outcome: 'victory' | 'defeat' | 'draw';
   readonly wins: number;
@@ -86,13 +104,15 @@ export interface CampaignHistoryEntry {
 ### Pure Rule Functions
 
 - `canHumanReinforce(campaign: ActiveCampaign, deckCount: number): boolean`
-  - Returns `deckCount > 0` for `standard`.
+  - Returns `deckCount > 0` for `standard` and `total_war`.
   - Returns `deckCount > 0 && (campaign.limitedReserves?.remainingReserves ?? 0) > 0` for `limited_reserves`.
-- `getHumanReserves(campaign: ActiveCampaign): number | null`
-  - Returns `null` for `standard`.
-  - Returns `remainingReserves` (clamped `0..5`) for `limited_reserves`.
+- `getHumanReserves(campaign: ActiveCampaign): { remaining: number; max: number } | null`
+  - Returns `null` for `standard` and `total_war`.
+  - Returns `{ remaining, max }` for `limited_reserves`.
 - `isLimitedReservesMode(campaign: ActiveCampaign): boolean`
   - Returns `campaign.mode === 'limited_reserves'`.
+- `isTotalWarMode(campaign: ActiveCampaign): boolean`
+  - Returns `campaign.mode === 'total_war'`.
 
 ---
 
@@ -100,16 +120,16 @@ export interface CampaignHistoryEntry {
 
 ### 1. Campaign Orders Briefing Modal (`CampaignOrdersDialogComponent`)
 - Displayed before War 1 begins when `ordersSelected === false`.
-- Thematic military briefing interface with gold trim, dark green felt styling, opposing commander profile, and clear radio selection between *Standard Campaign* and *Limited Reserves*.
+- Thematic military briefing interface with gold trim, dark green felt styling, opposing commander profile, and clear selection between *Standard Campaign*, *Limited Reserves*, and *Total War*.
 - Accessible with full keyboard navigation (`Tab`, `Space`, `Enter`, arrow keys) and ARIA attributes.
 
-### 2. Tabletop Reserves Badge (`PlayerSeatComponent`)
-- Rendered on the player's seat during active play when `activeCampaignMode === 'limited_reserves'`.
-- Displays `RESERVES 5 / 5` with gold borders and ivory lettering.
-- Changes to a high-contrast warning badge (`RESERVES 0 / 5`) when reserves are exhausted.
+### 2. Tabletop Badges (`PlayerSeatComponent`)
+- Rendered on the player's seat during active play:
+  - When `activeCampaignMode === 'limited_reserves'`: Displays `RESERVES 5 / 5` or `RESERVES 0 / 5`.
+  - When `activeCampaignMode === 'total_war'`: Displays running differential `TOTAL WAR · DIFF +8`.
 
 ### 3. Career & Profile Dialog (`ProfileDialogComponent`)
-- Displays the active Campaign Orders and reserve tally under the Current Campaign overview tab.
+- Displays the active Campaign Orders and reserve / differential tallies under the Current Campaign overview tab.
 
 ---
 
@@ -117,6 +137,7 @@ export interface CampaignHistoryEntry {
 
 - Telemetry context includes `campaign_mode` across all domain events (`war_started`, `turn_started`, `comparison_resolved`, `reinforcement_offered`, `reinforcement_decision`, `reinforcement_resolved`, `battle_resolved`, `settlement_resolved`, `game_resolved`, `game_abandoned`, `campaign_resolved`).
 - `campaign_resolved` records include:
-  - `campaign_mode: 'standard' | 'limited_reserves'`
+  - `campaign_mode: 'standard' | 'limited_reserves' | 'total_war'`
   - `remaining_reserves: number` (when `limited_reserves`)
+  - `final_differential: number`
 - All events strictly maintain GA4 parameter budget limits (<= 25 parameters per custom event).

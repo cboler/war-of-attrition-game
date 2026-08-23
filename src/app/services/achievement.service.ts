@@ -213,6 +213,7 @@ export class AchievementService {
           event.selection.winner === PlayerType.PLAYER
         ) {
           this.unlock('war.assassin', event.turnNumber);
+          this.unlock('war.battle_assassin', event.turnNumber);
         }
         break;
 

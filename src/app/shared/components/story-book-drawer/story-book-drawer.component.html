@@ -114,6 +114,78 @@
                       }
                     </div>
                   }
+
+                  @if (entry.comparison; as comp) {
+                    <div
+                      class="node-combat-math"
+                      [class.is-expanded]="isComparisonExpanded(entry.id)">
+                      <button
+                        type="button"
+                        class="combat-math-trigger"
+                        [attr.aria-expanded]="isComparisonExpanded(entry.id)"
+                        [attr.aria-controls]="'combat-math-' + entry.id"
+                        [attr.aria-label]="'Combat math explanation for turn ' + entry.turnNumber"
+                        (click)="toggleComparisonExpanded(entry.id)">
+                        <mat-icon aria-hidden="true">calculate</mat-icon>
+                        <span class="trigger-label">Combat Math</span>
+                        <span class="trigger-formula" aria-hidden="true">{{ comp.formulaText }}</span>
+                        <mat-icon class="expand-chevron" aria-hidden="true">
+                          {{ isComparisonExpanded(entry.id) ? 'expand_less' : 'expand_more' }}
+                        </mat-icon>
+                      </button>
+
+                      <div
+                        class="combat-math-breakdown"
+                        [id]="'combat-math-' + entry.id"
+                        role="region"
+                        [attr.aria-label]="'Combat power breakdown for turn ' + entry.turnNumber">
+                        @if (comp.specialOverride) {
+                          <div class="math-row">
+                            <span class="math-label">Base Power:</span>
+                            <span class="math-val">{{ comp.base }}</span>
+                          </div>
+                          <div class="math-row">
+                            <span class="math-label">Opponent:</span>
+                            <span class="math-val">{{ comp.opposingRank }} ({{ comp.opposingBase }})</span>
+                          </div>
+                          <div class="math-special-badge">Special Rule</div>
+                          <p class="math-special-title">2 defeats Ace</p>
+                          <p class="math-special-desc">Assassination Rule · Normal Power comparison is overridden.</p>
+                        } @else if (comp.state === 'tie') {
+                          <div class="math-row">
+                            <span class="math-label">Base Power:</span>
+                            <span class="math-val">{{ comp.base }}</span>
+                          </div>
+                          <div class="math-row">
+                            <span class="math-label">Opposing Power:</span>
+                            <span class="math-val">{{ comp.opposingBase }}</span>
+                          </div>
+                          <p class="math-formula-line">{{ comp.base }} vs {{ comp.opposingBase }}</p>
+                          <p class="math-result-line tie">Equal Power → Battle</p>
+                        } @else if (comp.state === 'winner') {
+                          <div class="math-row">
+                            <span class="math-label">Base Power:</span>
+                            <span class="math-val">{{ comp.base }}</span>
+                          </div>
+                          <div class="math-row">
+                            <span class="math-label">Opposing Power:</span>
+                            <span class="math-val">{{ comp.opposingBase }}</span>
+                          </div>
+                          <p class="math-formula-line">{{ comp.base }} − {{ comp.opposingBase }} = {{ comp.current }} remaining</p>
+                        } @else {
+                          <div class="math-row">
+                            <span class="math-label">Base Power:</span>
+                            <span class="math-val">{{ comp.base }}</span>
+                          </div>
+                          <div class="math-row">
+                            <span class="math-label">Opposing Power:</span>
+                            <span class="math-val">{{ comp.opposingBase }}</span>
+                          </div>
+                          <p class="math-formula-line">{{ comp.base }} − {{ comp.opposingBase }} → Defeated</p>
+                        }
+                      </div>
+                    </div>
+                  }
                 </div>
 
                 @if (entry.badge) {

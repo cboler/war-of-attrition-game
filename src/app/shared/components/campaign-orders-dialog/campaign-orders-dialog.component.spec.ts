@@ -41,11 +41,12 @@ describe('CampaignOrdersDialogComponent', () => {
     expect(component.selectedMode()).toBe('standard');
   });
 
-  it('should render both campaign order options', () => {
+  it('should render all campaign order options', () => {
     const cards = fixture.nativeElement.querySelectorAll('.order-card');
-    expect(cards.length).toBe(2);
+    expect(cards.length).toBe(3);
     expect(cards[0].textContent).toContain('Standard Campaign');
     expect(cards[1].textContent).toContain('Limited Reserves');
+    expect(cards[2].textContent).toContain('Total War');
   });
 
   it('should allow selecting Limited Reserves mode', () => {
@@ -57,15 +58,24 @@ describe('CampaignOrdersDialogComponent', () => {
     expect(cards[1].classList).toContain('selected');
   });
 
+  it('should allow selecting Total War mode', () => {
+    const cards = fixture.nativeElement.querySelectorAll('.order-card');
+    cards[2].click();
+    fixture.detectChanges();
+
+    expect(component.selectedMode()).toBe('total_war');
+    expect(cards[2].classList).toContain('selected');
+  });
+
   it('should confirm orders and close dialog with selected mode', () => {
     const selectSpy = spyOn(progressionService, 'selectCampaignOrders').and.callThrough();
 
-    component.selectMode('limited_reserves');
+    component.selectMode('total_war');
     component.confirmOrders();
 
-    expect(selectSpy).toHaveBeenCalledWith('limited_reserves');
-    expect(dialogRefSpy.close).toHaveBeenCalledWith('limited_reserves');
-    expect(progressionService.activeCampaignMode()).toBe('limited_reserves');
-    expect(progressionService.remainingReserves()).toBe(5);
+    expect(selectSpy).toHaveBeenCalledWith('total_war');
+    expect(dialogRefSpy.close).toHaveBeenCalledWith('total_war');
+    expect(progressionService.activeCampaignMode()).toBe('total_war');
+    expect(progressionService.isTotalWar()).toBeTrue();
   });
 });

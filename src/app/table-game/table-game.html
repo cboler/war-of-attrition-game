@@ -430,6 +430,7 @@
       [defeatPopping]="controller.deckDefeatPopOwner() === player.PLAYER"
       [motionDisabled]="!settings.autoPlayAnimations()"
       [reserves]="playerReserves()"
+      [totalWarDifferential]="playerTotalWarDiff()"
       (deckActivated)="draw()"
     />
   </app-card-table>

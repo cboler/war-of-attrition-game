@@ -17,7 +17,7 @@ export type DeckColor = 'red' | 'black' | 'unknown';
 export type CampaignOutcome = 'victory' | 'defeat' | 'draw';
 export type CosmeticType = 'card_back' | 'profile_frame' | 'title' | 'table_treatment';
 export type CosmeticUnlockReason = 'default' | 'tokens' | 'achievement' | 'legacy_selected';
-export type CampaignModeId = 'standard' | 'limited_reserves';
+export type CampaignModeId = 'standard' | 'limited_reserves' | 'total_war';
 export const DEFAULT_CAMPAIGN_MODE_ID: CampaignModeId = 'standard';
 
 export interface CampaignWarRecord {
@@ -110,7 +110,7 @@ export interface CosmeticPurchaseResult {
 }
 
 export function isCampaignModeId(value: unknown): value is CampaignModeId {
-  return value === 'standard' || value === 'limited_reserves';
+  return value === 'standard' || value === 'limited_reserves' || value === 'total_war';
 }
 
 export function canHumanReinforce(campaign: ActiveCampaign, deckCount: number): boolean {
@@ -132,6 +132,10 @@ export function getHumanReserves(
 
 export function isLimitedReservesMode(campaign: ActiveCampaign): boolean {
   return campaign.mode === 'limited_reserves';
+}
+
+export function isTotalWarMode(campaign: ActiveCampaign): boolean {
+  return campaign.mode === 'total_war';
 }
 
 export function createProgressionId(prefix: 'campaign' | 'war' = 'campaign'): string {
@@ -301,7 +305,18 @@ export function summarizeCampaign(
   const losses = wars.filter(war => war.outcome === GameOutcome.OPPONENT_WIN).length;
   const ties = wars.length - wins - losses;
   const differential = wars.reduce((sum, war) => sum + war.margin, 0);
-  const outcome: CampaignOutcome = wins > losses ? 'victory' : losses > wins ? 'defeat' : 'draw';
+  const outcome: CampaignOutcome =
+    mode === 'total_war'
+      ? differential > 0
+        ? 'victory'
+        : differential < 0
+          ? 'defeat'
+          : 'draw'
+      : wins > losses
+        ? 'victory'
+        : losses > wins
+          ? 'defeat'
+          : 'draw';
   const tokensEarned = outcome === 'victory' ? 1 + (differential > 0 ? 1 : 0) : 0;
 
   return {

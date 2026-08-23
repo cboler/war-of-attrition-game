@@ -269,6 +269,36 @@ describe('CampaignProgressionService', () => {
       expect(service.consumeHumanReserve()).toBeTrue();
       expect(service.remainingReserves()).toBeNull();
     });
+
+    it('handles Total War mode selection and tracks running campaign differential', () => {
+      expect(service.isTotalWar()).toBeFalse();
+      expect(service.runningCampaignDifferential()).toBe(0);
+
+      const selected = service.selectCampaignOrders('total_war');
+      expect(selected).toBeTrue();
+      expect(service.ordersSelected()).toBeTrue();
+      expect(service.activeCampaignMode()).toBe('total_war');
+      expect(service.isTotalWar()).toBeTrue();
+      expect(service.isLimitedReserves()).toBeFalse();
+
+      // Record War 1: Won with 8 cards remaining (margin +8)
+      service.recordResolvedWar(war('tw-w1', GameOutcome.PLAYER_WIN, 8, 0));
+      expect(service.runningCampaignDifferential()).toBe(8);
+
+      // Record War 2: Lost with opponent having 3 cards remaining (margin -3)
+      service.recordResolvedWar(war('tw-w2', GameOutcome.OPPONENT_WIN, 0, 3));
+      expect(service.runningCampaignDifferential()).toBe(5);
+
+      // Record War 3: Lost with opponent having 1 card remaining (margin -1) -> Total Diff: +4
+      const result = service.recordResolvedWar(war('tw-w3', GameOutcome.OPPONENT_WIN, 0, 1));
+      expect(result.completedCampaign?.mode).toBe('total_war');
+      expect(result.completedCampaign?.wins).toBe(1);
+      expect(result.completedCampaign?.losses).toBe(2);
+      expect(result.completedCampaign?.differential).toBe(4);
+      expect(result.completedCampaign?.outcome).toBe('victory'); // Victory in Total War because differential > 0 (+4)
+      expect(result.completedCampaign?.tokensEarned).toBe(2); // 1 victory + 1 positive differential
+      expect(service.tokenBalance()).toBe(2);
+    });
   });
 });
 

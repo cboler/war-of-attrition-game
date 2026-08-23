@@ -4,6 +4,19 @@ import { ComparisonResult } from '../models/game-state.model';
 
 export { ComparisonResult } from '../models/game-state.model';
 
+export interface ComparisonExplanation {
+  readonly card: Card;
+  readonly opposingCard: Card;
+  readonly base: number;
+  readonly opposingBase: number;
+  readonly opposingRank: string;
+  readonly state: 'winner' | 'defeated' | 'tie';
+  readonly current: number;
+  readonly damage: number;
+  readonly specialOverride: boolean;
+  readonly formulaText: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -32,6 +45,70 @@ export class CardComparisonService {
     const hasAce = playerCard.rank === Rank.ACE || opponentCard.rank === Rank.ACE;
     const hasTwo = playerCard.rank === Rank.TWO || opponentCard.rank === Rank.TWO;
     return hasAce && hasTwo;
+  }
+
+  /**
+   * Canonical combat math / power explanation for a resolved public comparison.
+   */
+  explainComparison(
+    card: Card,
+    opposingCard: Card,
+    result?: ComparisonResult,
+    isSpecialRule?: boolean
+  ): ComparisonExplanation {
+    const resolvedResult = result ?? this.compareCards(card, opposingCard);
+    const specialOverride = isSpecialRule ?? this.isSpecialAceVsTwoRule(card, opposingCard);
+    const opposingRank = opposingCard.rank === Rank.ACE ? 'Ace' : opposingCard.rank;
+
+    if (resolvedResult === ComparisonResult.TIE) {
+      return {
+        card,
+        opposingCard,
+        base: card.value,
+        opposingBase: opposingCard.value,
+        opposingRank,
+        state: 'tie',
+        current: 0,
+        damage: -opposingCard.value,
+        specialOverride,
+        formulaText: `${card.value} vs ${opposingCard.value} · Equal Power → Battle`
+      };
+    }
+
+    const won = resolvedResult === ComparisonResult.PLAYER_WINS;
+    if (specialOverride) {
+      return {
+        card,
+        opposingCard,
+        base: card.value,
+        opposingBase: opposingCard.value,
+        opposingRank,
+        state: won ? 'winner' : 'defeated',
+        current: won ? card.value : 0,
+        damage: won ? 0 : -card.value,
+        specialOverride: true,
+        formulaText: '2 defeats Ace · Assassination Rule'
+      };
+    }
+
+    const current = won ? Math.max(1, card.value - opposingCard.value) : 0;
+    const damage = won ? -opposingCard.value : -opposingCard.value;
+    const formulaText = won
+      ? `${card.value} − ${opposingCard.value} = ${current} remaining`
+      : `${card.value} − ${opposingCard.value} → Defeated`;
+
+    return {
+      card,
+      opposingCard,
+      base: card.value,
+      opposingBase: opposingCard.value,
+      opposingRank,
+      state: won ? 'winner' : 'defeated',
+      current,
+      damage,
+      specialOverride: false,
+      formulaText
+    };
   }
 
   /**

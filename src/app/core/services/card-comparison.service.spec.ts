@@ -123,4 +123,75 @@ describe('CardComparisonService', () => {
       expect(result).toBe(card1);
     });
   });
+
+  describe('explainComparison', () => {
+    it('explains a standard winning comparison', () => {
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.KING); // 13
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.EIGHT); // 8
+
+      const explanation = service.explainComparison(playerCard, opponentCard);
+
+      expect(explanation.state).toBe('winner');
+      expect(explanation.base).toBe(13);
+      expect(explanation.opposingBase).toBe(8);
+      expect(explanation.current).toBe(5);
+      expect(explanation.specialOverride).toBe(false);
+      expect(explanation.formulaText).toBe('13 − 8 = 5 remaining');
+    });
+
+    it('explains a standard defeated comparison', () => {
+      const playerCard = new CardImpl(Suit.DIAMONDS, Rank.FOUR); // 4
+      const opponentCard = new CardImpl(Suit.CLUBS, Rank.SEVEN); // 7
+
+      const explanation = service.explainComparison(playerCard, opponentCard);
+
+      expect(explanation.state).toBe('defeated');
+      expect(explanation.base).toBe(4);
+      expect(explanation.opposingBase).toBe(7);
+      expect(explanation.current).toBe(0);
+      expect(explanation.specialOverride).toBe(false);
+      expect(explanation.formulaText).toBe('4 − 7 → Defeated');
+    });
+
+    it('explains a tie comparison', () => {
+      const card1 = new CardImpl(Suit.HEARTS, Rank.EIGHT);
+      const card2 = new CardImpl(Suit.SPADES, Rank.EIGHT);
+
+      const explanation = service.explainComparison(card1, card2);
+
+      expect(explanation.state).toBe('tie');
+      expect(explanation.base).toBe(8);
+      expect(explanation.opposingBase).toBe(8);
+      expect(explanation.formulaText).toContain('8 vs 8');
+      expect(explanation.formulaText).toContain('Equal Power → Battle');
+    });
+
+    it('explains 2 vs Ace special assassination rule (player 2 wins)', () => {
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.TWO);
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.ACE);
+
+      const explanation = service.explainComparison(playerCard, opponentCard);
+
+      expect(explanation.state).toBe('winner');
+      expect(explanation.base).toBe(2);
+      expect(explanation.opposingBase).toBe(14);
+      expect(explanation.opposingRank).toBe('Ace');
+      expect(explanation.specialOverride).toBe(true);
+      expect(explanation.formulaText).toContain('2 defeats Ace');
+      expect(explanation.formulaText).toContain('Assassination Rule');
+    });
+
+    it('explains Ace vs 2 special assassination rule (player Ace loses)', () => {
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.ACE);
+      const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO);
+
+      const explanation = service.explainComparison(playerCard, opponentCard);
+
+      expect(explanation.state).toBe('defeated');
+      expect(explanation.base).toBe(14);
+      expect(explanation.opposingBase).toBe(2);
+      expect(explanation.specialOverride).toBe(true);
+      expect(explanation.formulaText).toContain('2 defeats Ace');
+    });
+  });
 });

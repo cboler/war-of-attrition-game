@@ -63,6 +63,13 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     category: 'signature'
   },
   {
+    id: 'war.battle_assassin',
+    name: 'Against the Odds',
+    description: 'Win a Battle by defeating an opposing Ace with a 2.',
+    icon: 'flare',
+    category: 'battle'
+  },
+  {
     id: 'war.pyrrhic_victory',
     name: 'Pyrrhic Victory',
     description: 'Win the war with exactly 1 card remaining.',

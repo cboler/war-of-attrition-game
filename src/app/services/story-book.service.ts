@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Card } from '../core/models/card.model';
 import { GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { CardComparisonService, ComparisonExplanation } from '../core/services/card-comparison.service';
 import { GameEvent, GameEventBusService } from './game-event-bus.service';
 import { battleCasualtySummary, hiddenCardsReturn } from './table-copy';
 
@@ -25,11 +26,13 @@ export interface StoryBookEntry {
   readonly cards?: readonly Card[];
   readonly actor?: PlayerType;
   readonly badge?: 'victory' | 'defeat' | 'battle' | 'achievement' | 'challenge';
+  readonly comparison?: ComparisonExplanation;
 }
 
 @Injectable({ providedIn: 'root' })
 export class StoryBookService {
   private readonly eventBus = inject(GameEventBusService);
+  private readonly comparisonService = inject(CardComparisonService);
   private readonly entriesSignal = signal<readonly StoryBookEntry[]>([]);
   private entryCounter = 0;
 
@@ -66,6 +69,13 @@ export class StoryBookService {
               ? `${pCardStr} assassinated ${oCardStr}!`
               : `${oCardStr} assassinated ${pCardStr}!`;
 
+          const comparison = this.comparisonService.explainComparison(
+            event.playerCard,
+            event.opponentCard,
+            event.comparison,
+            event.specialRule
+          );
+
           this.addEntry({
             turnNumber: event.turnNumber,
             type: 'clash',
@@ -73,6 +83,7 @@ export class StoryBookService {
             text: narrative,
             cards: [event.playerCard, event.opponentCard],
             badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat',
+            comparison,
           });
         }
         break;
@@ -121,6 +132,17 @@ export class StoryBookService {
               : `Both opponent cards are now lost. ${origStr} holds.`;
         }
 
+        const isSpecialRule = this.comparisonService.isSpecialAceVsTwoRule(
+          event.reinforcementCard,
+          event.originalWinnerCard
+        );
+        const comparison = this.comparisonService.explainComparison(
+          event.reinforcementCard,
+          event.originalWinnerCard,
+          event.comparison,
+          isSpecialRule
+        );
+
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'challenge',
@@ -133,6 +155,7 @@ export class StoryBookService {
               : event.winner === PlayerType.OPPONENT
                 ? 'defeat'
                 : 'battle',
+          comparison,
         });
         break;
       }
@@ -160,7 +183,8 @@ export class StoryBookService {
         break;
 
       case 'battle_cards_revealed': {
-        const { layerRound, playerCard, opponentCard, winner } = event.selection;
+        const { layerRound, playerCard, opponentCard, winner, comparison: compResult, specialRule } =
+          event.selection;
         const pCardStr = this.formatCard(playerCard);
         const oCardStr = this.formatCard(opponentCard);
         let text = '';
@@ -171,6 +195,13 @@ export class StoryBookService {
         } else {
           text = `${pCardStr} tied ${oCardStr}. Recursive Battle continues!`;
         }
+
+        const comparison = this.comparisonService.explainComparison(
+          playerCard,
+          opponentCard,
+          compResult,
+          specialRule
+        );
 
         this.addEntry({
           turnNumber: event.turnNumber,
@@ -183,6 +214,7 @@ export class StoryBookService {
               ? 'victory'
               : 'defeat'
             : 'battle',
+          comparison,
         });
         break;
       }

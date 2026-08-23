@@ -22,6 +22,7 @@ import { CardComparisonService, ComparisonResult } from '../core/services/card-c
 import { AuthService } from '../core/services/auth.service';
 import { SettingsService } from '../core/services/settings.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
+import { CampaignModeId } from '../core/models/progression.model';
 import {
   PresentationSequenceCancelled,
   PresentationSequencerService,
@@ -109,6 +110,10 @@ export interface CurrentGameSummary {
   readonly opponentCardsRemaining: number;
   readonly isComeback: boolean;
   readonly maxDeficit: number;
+  readonly campaignMode?: CampaignModeId;
+  readonly warDifferential?: number;
+  readonly runningCampaignDifferential?: number;
+  readonly warIndex?: number;
 }
 
 export interface BattlefieldMessage {
@@ -1462,6 +1467,11 @@ export class GameControllerService {
     const pCardsRemaining = this.gameState.playerCardCount();
     const oCardsRemaining = this.gameState.opponentCardCount();
 
+    const warDifferential = pCardsRemaining - oCardsRemaining;
+    const isTotalWar = this.campaignProgression.isTotalWar();
+    const warIndex = this.campaignProgression.campaignWarIndex();
+    const runningCampaignDiff = this.campaignProgression.runningCampaignDifferential() + warDifferential;
+
     // Compile summary for table dialog
     const summary: CurrentGameSummary = {
       outcome,
@@ -1477,6 +1487,10 @@ export class GameControllerService {
       opponentCardsRemaining: oCardsRemaining,
       isComeback,
       maxDeficit: this.maxDeficitExperienced,
+      campaignMode: this.campaignProgression.activeCampaignMode(),
+      warDifferential,
+      runningCampaignDifferential: runningCampaignDiff,
+      warIndex,
     };
     this.gameSummarySignal.set(summary);
 
@@ -1544,14 +1558,40 @@ export class GameControllerService {
       this.currentWarId = '';
     }
 
-    if (outcome === GameOutcome.TIE) {
-      this.announce('The war ends in a true tie.');
-    } else if (outcome === GameOutcome.PLAYER_WIN) {
-      this.announce('The war is won.');
-      this.sound.playVictory();
+    if (isTotalWar) {
+      const signedWar = `${warDifferential >= 0 ? '+' : ''}${warDifferential}`;
+      const signedCamp = `${runningCampaignDiff >= 0 ? '+' : ''}${runningCampaignDiff}`;
+      if (warIndex < 3) {
+        this.announce(`War ${warIndex} complete · War Diff: ${signedWar} · Campaign: ${signedCamp}`);
+        if (warDifferential > 0) {
+          this.sound.playVictory();
+        } else if (warDifferential < 0) {
+          this.sound.playDefeat();
+        }
+      } else {
+        const finalMsg =
+          runningCampaignDiff > 0
+            ? `Total War Campaign Victory · Final Diff: ${signedCamp}`
+            : runningCampaignDiff < 0
+              ? `Total War Campaign Defeat · Final Diff: ${signedCamp}`
+              : `Total War Campaign Draw · Final Diff: ${signedCamp}`;
+        this.announce(finalMsg);
+        if (runningCampaignDiff > 0) {
+          this.sound.playVictory();
+        } else if (runningCampaignDiff < 0) {
+          this.sound.playDefeat();
+        }
+      }
     } else {
-      this.announce('The war is lost.');
-      this.sound.playDefeat();
+      if (outcome === GameOutcome.TIE) {
+        this.announce('The war ends in a true tie.');
+      } else if (outcome === GameOutcome.PLAYER_WIN) {
+        this.announce('The war is won.');
+        this.sound.playVictory();
+      } else {
+        this.announce('The war is lost.');
+        this.sound.playDefeat();
+      }
     }
     void this.tutorial.triggerStep(TutorialStep.FIRST_GAME_CONCLUSION);
   }

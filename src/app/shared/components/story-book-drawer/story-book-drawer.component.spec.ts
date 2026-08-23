@@ -309,4 +309,102 @@ describe('StoryBookDrawerComponent', () => {
     expect(document.activeElement).toBe(launcherBtn);
     document.body.removeChild(launcherBtn);
   }));
+
+  describe('Chronicle combat math display & interaction', () => {
+    const cardKing: Card = { id: 'c-k', suit: Suit.CLUBS, rank: Rank.KING, value: 13, isRed: false };
+    const cardEight: Card = { id: 'c-8', suit: Suit.DIAMONDS, rank: Rank.EIGHT, value: 8, isRed: true };
+    const cardTwo: Card = { id: 'c-2', suit: Suit.HEARTS, rank: Rank.TWO, value: 2, isRed: true };
+    const cardAce: Card = { id: 'c-a', suit: Suit.SPADES, rank: Rank.ACE, value: 14, isRed: false };
+
+    it('renders combat math trigger and toggles breakdown on click/tap', () => {
+      storyBook.addEntry({
+        turnNumber: 3,
+        type: 'challenge',
+        eyebrow: 'TURN 3 · RESOLUTION',
+        text: 'Card rescued. K♣ defeated 8♦.',
+        badge: 'victory',
+        comparison: {
+          card: cardKing,
+          opposingCard: cardEight,
+          base: 13,
+          opposingBase: 8,
+          opposingRank: '8',
+          state: 'winner',
+          current: 5,
+          damage: -8,
+          specialOverride: false,
+          formulaText: '13 − 8 = 5 remaining',
+        },
+      });
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const trigger = compiled.querySelector('.combat-math-trigger') as HTMLButtonElement;
+      expect(trigger).toBeTruthy();
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(trigger.textContent).toContain('13 − 8 = 5 remaining');
+
+      // Click to toggle expansion
+      trigger.click();
+      fixture.detectChanges();
+
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      const breakdown = compiled.querySelector('.combat-math-breakdown') as HTMLElement;
+      expect(breakdown).toBeTruthy();
+      expect(breakdown.textContent).toContain('Base Power:');
+      expect(breakdown.textContent).toContain('13');
+      expect(breakdown.textContent).toContain('Opposing Power:');
+      expect(breakdown.textContent).toContain('8');
+      expect(breakdown.textContent).toContain('13 − 8 = 5 remaining');
+
+      // Click again to collapse
+      trigger.click();
+      fixture.detectChanges();
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('displays 2 vs Ace assassination special rule breakdown correctly', () => {
+      storyBook.addEntry({
+        turnNumber: 4,
+        type: 'clash',
+        eyebrow: 'TURN 4 · SPECIAL FEAT',
+        text: '2♥ assassinated A♠!',
+        badge: 'victory',
+        comparison: {
+          card: cardTwo,
+          opposingCard: cardAce,
+          base: 2,
+          opposingBase: 14,
+          opposingRank: 'Ace',
+          state: 'winner',
+          current: 2,
+          damage: 0,
+          specialOverride: true,
+          formulaText: '2 defeats Ace · Assassination Rule',
+        },
+      });
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const breakdown = compiled.querySelector('.combat-math-breakdown') as HTMLElement;
+      expect(breakdown).toBeTruthy();
+      expect(breakdown.textContent).toContain('2 defeats Ace');
+      expect(breakdown.textContent).toContain('Special Rule');
+      expect(breakdown.textContent).toContain('Assassination Rule');
+    });
+
+    it('renders old or legacy entries without comparison metadata normally', () => {
+      storyBook.addEntry({
+        turnNumber: 1,
+        type: 'quip',
+        eyebrow: 'REACTION',
+        text: 'A legacy entry without comparison math',
+      });
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelectorAll('.story-node').length).toBe(1);
+      expect(compiled.querySelector('.node-combat-math')).toBeNull();
+    });
+  });
 });
