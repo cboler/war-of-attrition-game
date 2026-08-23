@@ -1,65 +1,63 @@
-# AdMob Configuration & Monetization Integration
+# AdMob Configuration & Monetization Architecture Notes
 
-This document outlines the AdMob integration for the **War of Attrition** Android application (Trusted Web Activity / Bubblewrap wrapper).
-
----
-
-## 1. Architecture & Policy Compliance
-
-- **Native Android Wrapper Only**: Advertisements are strictly integrated natively in `android/` via the Google Mobile Ads SDK (`play-services-ads`).
-- **Ad-Free Web Application**: The Angular application, PWA, and GitHub Pages web builds (`docs/`) are 100% ad-free. No web ad SDKs, scripts, or ad DOM containers exist in the web code.
-- **Top Anchored Banner**: A single small adaptive/standard banner is displayed at the top of the Android native frame.
-- **Graceful Collapse**: If an advertisement fails to load (e.g. offline, ad inventory unavailable), the ad container collapses/hides to prevent blank space and protect player ergonomics.
-- **Explicit Feature Gate**: Controlled via `ads_enabled` boolean resource (`resolveAdsEnabled()` in `android/app/build.gradle`).
+This document describes the status, experimental architecture, and configuration of the Google Mobile Ads (AdMob) scaffold for the **War of Attrition** Android application (Trusted Web Activity / Bubblewrap wrapper).
 
 ---
 
-## 2. Closed-Testing Build Status (`4.0.2`)
+## 1. Monetization Status: Intentionally Deferred
 
-For the closed-testing build:
-- **`ADS ENABLED = false`**: `resolveAdsEnabled()` defaults to `false`.
-- `MainActivity` does not instantiate or initialize `AdMobBannerBridge` or `MobileAds`.
-- No banner requests, test ads, or production ads are requested or displayed.
-- The AdMob bridge implementation and dependencies are preserved as a scaffold for future activation.
-
-To enable ads during local development or testing builds:
-- Set environment variable `ADS_ENABLED=true` or pass project property `-PADS_ENABLED=true` to Gradle.
+- **Monetization is Deferred**: The game is currently an ad-free experience. Monetization decisions are intentionally deferred pending future UX evaluation.
+- **Default Disabled (`ADS_ENABLED = false`)**: The native advertisement bridge is disabled by default in `android/app/build.gradle`.
+- **100% Ad-Free Web / PWA**: The Angular application, PWA, and GitHub Pages web builds (`docs/`) are completely ad-free. No web ad SDKs, scripts, or ad DOM containers exist in the web codebase.
+- **No Production Ads in Release Readiness**: Enabling production ads is explicitly out of scope for the current Google Play release-readiness milestone.
 
 ---
 
-## 3. Test Credentials (Active in Repository)
+## 2. Architecture & Technical Debt Assessment
 
-The repository is configured with Google's officially approved test IDs (used only when `ads_enabled` is explicitly enabled):
+### Experimental TWA Overlay Scaffold
+The existing implementation in `android/` (`AdMobBannerBridge.java`, `MainActivity.java`) represents an **experimental technical scaffold**, not a production-ready monetization architecture:
 
-| Key | Identifier | Purpose |
+1. **Trusted Web Activity Constraint**: In a TWA, the game viewport is rendered via Custom Tabs / Chrome runtime. Layering native Android Views (such as an `AdView` banner) over or above the TWA surface creates complex viewport sizing, gesture-handling, and responsive reflow issues.
+2. **Ergonomic Impact**: War of Attrition is an intensive card battle game requiring precise thumb reaches to the deck, stakes, drawers, and action buttons. A top-anchored or bottom-anchored banner risks obscuring tactical game elements across diverse device aspect ratios.
+3. **Conclusion**: The current native banner overlay scaffold should **not** be considered production-ready. Any future monetization strategy must undergo a fresh design review before activation.
+
+---
+
+## 3. Test Credentials & Build Configuration
+
+The Android application is configured exclusively with Google's official AdMob test identifiers:
+
+| Identifier Key | Value in Repository (`android/app/build.gradle`) | Purpose |
 |---|---|---|
-| **Test Application ID** | `ca-app-pub-3940256099942544~3347511713` | Declared in `AndroidManifest.xml` via `@string/admob_app_id` |
-| **Test Banner Ad Unit ID** | `ca-app-pub-3940256099942544/6300978111` | Loaded by `AdMobBannerBridge.java` via `@string/admob_banner_ad_unit_id` |
+| **Test Application ID** | `ca-app-pub-3940256099942544~3347511713` | Google official test app ID |
+| **Test Banner Ad Unit ID** | `ca-app-pub-3940256099942544/6300978111` | Google official test banner ad unit ID |
+
+### Gradle Implementation Details
+- In `android/app/build.gradle`:
+  ```groovy
+  def resolveAdsEnabled() {
+      def envVal = System.getenv("ADS_ENABLED")
+      if (envVal != null && !envVal.trim().isEmpty()) {
+          return Boolean.parseBoolean(envVal.trim())
+      }
+      def propVal = project.findProperty("ADS_ENABLED")
+      if (propVal != null && !propVal.toString().trim().isEmpty()) {
+          return Boolean.parseBoolean(propVal.toString().trim())
+      }
+      return false
+  }
+  ```
+- The build script sets `resValue "bool", "ads_enabled", resolveAdsEnabled().toString()`.
+- **Note on Environment Variables**: While `ADS_ENABLED` is dynamically evaluated, the test ad IDs (`admob_app_id` and `admob_banner_ad_unit_id`) are currently hardcoded as test strings in `build.gradle`. If production monetization is ever pursued in the future, `build.gradle` must be refactored to read production ad unit IDs from secure environment variables.
 
 ---
 
-## 4. Transitioning to Production Credentials
+## 4. `app-ads.txt` Reference (Future Requirement)
 
-When publishing production builds to Google Play:
-
-1. Create an AdMob account and set up a new Android Application: `War of Attrition (com.cboler.warofattrition)`.
-2. Create an **Anchored / Adaptive Banner Ad Unit**.
-3. Provide your production IDs via Gradle build properties or environment variables during release build:
-   - In `android/app/build.gradle`:
-     ```groovy
-     resValue "string", "admob_app_id", System.getenv("ADMOB_APP_ID") ?: "ca-app-pub-XXXXXXXXXX~YYYYYYYYYY"
-     resValue "string", "admob_banner_ad_unit_id", System.getenv("ADMOB_BANNER_AD_UNIT_ID") ?: "ca-app-pub-XXXXXXXXXX/ZZZZZZZZZZ"
-     ```
-
----
-
-## 4. `app-ads.txt` Setup for Developer Website
-
-To ensure ad revenue authorization and comply with Google Play / IAB standards:
-
-1. Host an `app-ads.txt` file at the root of the developer website domain registered in Google Play Console (`https://cboler.github.io/app-ads.txt`):
+If advertising is ever enabled in production in the future:
+1. Google Play and IAB standards require hosting an `app-ads.txt` file at the root of the registered developer domain (`https://cboler.github.io/app-ads.txt`):
    ```text
    google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
    ```
-2. Replace `pub-XXXXXXXXXXXXXXXX` with your verified Google AdMob publisher ID.
-3. Validate crawling in the Google AdMob dashboard under **Apps > Manage Apps > app-ads.txt**.
+2. The publisher ID must match the verified Google AdMob account.

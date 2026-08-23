@@ -1,154 +1,77 @@
-# War of Attrition Game Development Instructions
+# War of Attrition — Current Development Status
 
-## Project Overview
+## 1. Project State: Production Readiness / Final Polish
 
-This is the **War of Attrition** card game - a Progressive Web Application built with Angular and Angular Material. The project implements a two-player head-to-head card game following the comprehensive requirements in `war-of-attrition-requirements.md`.
+**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. The project is an Angular Progressive Web Application (PWA) packaged for Android via a Trusted Web Activity (TWA) and is currently in the **Production Readiness / Final Polish** phase, undergoing Google Play closed testing, device compatibility validation, and store presence preparation.
 
-**⚠️ IMPORTANT**: The `war-of-attrition-requirements.md` file is the single source of truth and should NEVER be modified. All development should reference this document.
+---
 
-## Current Development Status
+## 2. Completed Major Systems
 
-**📋 Progress Tracking**: All development progress is now centrally managed in `progress-data.json` and accessed via the `ProgressService`. This ensures consistency across all progress reporting.
+The core game and meta-progression architectures are fully implemented, tested, and active:
 
-The project has completed **Milestones 1-4** and is currently in **Milestone 5: Visual Polish & Animations** (50% complete).
+### Core Game Engine & Rules
+- **Physical Deck Model**: Standard 52-card deck divided by suit color (Red for Player, Black for Opponent) with immutable card definitions and independent shuffling.
+- **Card Comparison & Special Rule**: Truthful rank comparison logic with strict enforcement of the core rule: **2 defeats Ace** (the sole exception, non-challengeable).
+- **Turn Resolution Engine**: Complete lifecycle for normal clash draws, card awards, and deck exhaustion end conditions.
+- **Challenge / Reinforcement System**: Tactical decision flow allowing the losing side of a clash to commit one reinforcement card from their deck to counter the winning card.
+- **Recursive Battle System**: Multi-layer deadlock resolution for equal-rank clashes:
+  - Both players stake 3 new face-down cards per battle round.
+  - Blind cross-selection of the opposing champion.
+  - Layer recursion if champions tie.
+  - Privacy preservation: Winner recovers their own hidden battle cards face-down; defeated casualties are turned face-up into the public Boneyard.
 
-> **Note**: For detailed progress information, milestone breakdowns, and current status, refer to:
-> - **Central Progress Data**: `.github/instructions/progress-data.json`
-> - **Progress Service**: `src/app/services/progress.service.ts`
-> - **Live Progress Display**: Available in the running application
+### User Interface & Responsive Presentation
+- **Active Table UI (`TableGame`)**: The primary game view featuring a responsive tabletop layout with card playfield, stakes visualization, player seats with deck counters, and thumb action regions.
+- **Responsive Layout Engine**: Fully tailored viewports across three distinct responsive form factors:
+  - **Handheld Mobile Phone** (`<= 620px`): Single-column portrait stack optimized for one-thumb reachability.
+  - **Intermediate 7-Inch Tablet** (`620px - 820px`): Expanded portrait layout with side stakes, utility hub, and persistent telemetry affordances.
+  - **Widescreen 10-Inch Tablet & Desktop** (`>= 1100px`): Spacious multi-column tabletop grid.
+- **Visual Feedback & Power Badges**: Comparison power badges with explicit math breakdowns (`Base - Opposing = Remainder`), interactive combat tooltips, battlefield announcements, and situational quip reactions.
+- **Field Manual & Interactive Rule Demos**: In-game drawer (`StoryBookDrawerComponent`) containing a live match chronicle and interactive animated rule demonstrations (`RuleDemoComponent`).
+- **Boneyard Casualty Viewer**: Public casualty inspector displaying discard counts, deck thickness cues, and full discarded card inspection.
 
-### ✅ Milestone 1: Foundation & Setup (COMPLETED)
-- ✅ Basic Angular/PWA setup complete 
-- ✅ Theme toggle implemented with persistence
-- ✅ Routing structure (Game and Settings routes)
-- ✅ Responsive layout foundation
+### Progression, Personalization & Telemetry
+- **Commander Profile & Statistics**: Persistent local statistics tracking win rate, game durations, battle records, challenge success rates, and memorable card events (e.g. Ace assassinations, Juggernauts).
+- **Achievements System**: 15 tiered achievements with local persistence and scaffolded Play Games Services synchronization.
+- **Three-War Campaign Mode**: Multi-war campaign progression tracking match scores, cumulative card differentials, and career distinctions.
+- **Cosmetic Card Backings**: Token wallet and card-backing customization unlockable via campaign progression.
+- **Privacy-Compliant Telemetry**: Google Analytics 4 integration with explicit user consent prompts (`TelemetryConsentService`), denying tracking by default until granted, with zero analytics collected in test/screenshot modes.
 
-### ✅ Milestone 2: Core Game Engine (COMPLETED)
-- ✅ **Card and Deck Models**: Complete card interface and deck class with red/black separation
-- ✅ **Game State Management**: Angular signals-based state management service
-- ✅ **Card Comparison Logic**: Full implementation including special Ace vs 2 rule
-- ✅ **Turn Resolution Engine**: Complete turn, challenge, and battle resolution logic
-- ✅ **Comprehensive Test Suite**: 159 passing tests covering all game logic
+### Platform Packaging & Tooling
+- **Android TWA Wrapper**: Native Android application wrapper built with Google ChromeOS / Android Browser Helper, targeting Android 14+ (API 36).
+- **Automated Store Screenshots**: Deterministic Playwright Chromium test matrix capturing store-ready PNG screenshots across Phone (1080×1920), 7" Tablet (1200×1920), and 10" Tablet (2560×1600) with binary header validation.
+- **Automated CI/CD Workflows**: GitHub Actions for GitHub Pages deployment (`deploy.yml`), Android App Bundle generation (`build-android-bundle.yml`), and opt-in Store Screenshot generation (`generate-store-screenshots.yml`).
 
-### ✅ Milestone 3: Basic UI Components (COMPLETED)
-- ✅ **Game Board Layout**: Complete responsive game board implementation
-- ✅ **Card Component**: Full card display with animations and interactions
-- ✅ **Health Bar Component**: Color-coded health bars with damage animations
-- ✅ **Player Action Indicators**: Blue glow and visual cues for required actions
+---
 
-### ✅ Milestone 4: Game Mechanics Implementation (COMPLETED)
-- ✅ **Basic Turn Flow**: Complete turn-by-turn gameplay
-- ✅ **Challenge System**: Accept/decline challenge functionality
-- ✅ **Battle System**: Battle card selection and resolution
-- ✅ **Game End Conditions**: Win/lose detection and game completion
+## 3. Current Release-Readiness Priorities
 
-### 🔄 Milestone 5: Visual Polish & Animations (50% COMPLETE)
-**Completed**:
-- ✅ **Material Icons Implementation**: Navigation and theme toggle icons
-- ✅ **Enhanced Theme Toggle**: Lightbulb metaphor with lit/unlit states
+Remaining work is concentrated in validation, UX refinement, and store compliance:
 
-**In Progress**:
-- 🔄 **Card Animations**: Slide-in, flip, clash animations
-- 🔄 **Visual Effects**: Battle clash effects and health damage animations
-- 🔄 **Enhanced UI Polish**: Refined visual feedback system
+1. **Google Play Closed Testing Feedback**: Monitor closed-testing telemetry, crash reports, and player feedback.
+2. **Real-Device Form Factor Validation**: Test on physical Android devices ranging from compact phones to foldables and large tablets.
+3. **Animation Pacing & Touch Refinement**: Fine-tune transition timings and touch targets for rapid one-handed play.
+4. **Store Presence & Marketing Assets**: Maintain store screenshot packages, feature graphics, and localized store listing copy.
+5. **Accessibility (a11y) Verification**: Ensure full screen-reader announcements (ARIA live regions) and high-contrast compliance across dialogs.
+6. **Monetization Architecture Review**: Monetization remains intentionally deferred (`ADS_ENABLED=false`). Any future ad integration will require a dedicated UX evaluation.
 
-### 🎯 Next: Milestone 6: Settings & Customization
-Ready to implement:
-- Advanced settings menu enhancements
-- Multiple card backing options
-- Game statistics and analytics
-- Settings import/export functionality
+---
 
-See `development-milestones.md` for complete milestone and issue breakdown.
+## 4. Architectural & Design Decisions
 
-## Development Priorities
+### Fixed Dark / Felt Tabletop Presentation
+The application deliberately uses a **fixed dark green felt presentation**. In War of Attrition, the visual world is the card table itself. Conventional light/dark theme toggling does not fit this aesthetic and was intentionally removed.
 
-1. **Complete Milestone 1** - Finish foundation setup
-2. **Begin Milestone 2** - Core game engine development  
-3. **Follow milestone order** - Each milestone builds on the previous
+### Fidelity to Physical Card Play
+War of Attrition is designed to be fully playable with an ordinary, physical 52-card deck. Digital additions (animations, power badges, quip dialogue, campaign scoring, statistics) enhance presentation and progression, but do **not** alter standard card ranks or introduce fantasy card abilities.
 
-## Game Requirements Summary
+---
 
-Reference the full `war-of-attrition-requirements.md` for complete details. Key points:
+## 5. Future Candidates (Post-Release Backlog)
 
-### Core Game Mechanics
-- Two-player card game using standard 52-card deck
-- Red cards (Hearts/Diamonds) for Player, Black cards (Clubs/Spades) for Opponent
-- Special rule: 2 beats Ace (only exception to standard ranking)
-- Turn flow: click deck → draw cards → compare → resolve → repeat
-- Challenge system when losing
-- Battle system when cards tie
+The following concepts are preserved for post-release development and are documented in [`developer-docs/future-gameplay-ideas.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/future-gameplay-ideas.md):
 
-### UI Requirements
-- Head-to-head layout (Player bottom, Opponent top)
-- Health bars with color coding (Green→Yellow→Orange→Red)
-- Central "table" area for active cards
-- Blue glow for required player actions
-- Card animations (slide, flip, clash)
-- "Solitaire green" background
-- Multiple card backing options
-
-### Technical Requirements
-- Angular with Angular Material
-- Progressive Web App (PWA)
-- Fully responsive design
-- Standalone components preferred
-- Signals for state management
-
-## File Structure
-
-```
-src/app/
-├── app.ts                    # Main app component with theme toggle
-├── app.routes.ts            # Routing configuration
-├── game/                    # Game components
-├── settings/                # Settings components  
-├── core/                    # Core game logic
-│   ├── models/              # Data models (Card, Deck, GameState)
-│   └── services/            # Game logic services
-└── shared/                  # Shared components/services (future)
-```
-
-## Code Standards
-
-Use modern Angular best practices:
-- Standalone components (default)
-- Signal-based state management
-- Function-based inputs/outputs
-- OnPush change detection
-- Native control flow (@if, @for, @switch)
-- TypeScript strict mode
-- Single responsibility principle
-
-## Build & Development
-
-```bash
-npm install           # Install dependencies
-npm start            # Development server
-npm run build        # Production build to /docs
-npm test             # Unit tests
-```
-
-The application is deployed to GitHub Pages from the `/docs` directory.
-
-## Next Steps
-
-**Milestone 5 is 50% COMPLETE!** 🎉
-
-Significant progress has been made on Visual Polish & Animations:
-- ✅ Material Icons integration with navigation and theme controls
-- ✅ Enhanced theme toggle with lightbulb metaphor (lit/unlit states)
-- ✅ Local Material Icons font integration for offline functionality
-
-**Current focus for completing Milestone 5:**
-1. **Card Animations**: Implement slide-in, flip, and clash animations
-2. **Visual Effects**: Add battle clash effects and damage animations
-3. **Enhanced UI Polish**: Refine visual feedback system
-
-**Ready to proceed to Milestone 6: Settings & Customization:**
-1. Expand settings menu with advanced options
-2. Implement multiple card backing patterns
-3. Add game statistics and analytics
-4. Create settings import/export functionality
-
-All development should continue to follow the milestones outlined in `development-milestones.md` and requirements in `war-of-attrition-requirements.md`.
+- **Opponent AI Personalities**: Fair, non-cheating AI commanders with distinct risk thresholds (e.g., Quartermaster, Gambler, Analyst, Attritionist, Cornered General).
+- **Hall of Valor (Card Service Records)**: Persistent historical service records for individual physical-card identities (`hearts-Q`, `diamonds-2`, etc.) across multiple Wars.
+- **Alternate Rules Campaigns**: Campaign variants that adjust constraints without breaking standard physical card rules (Limited Reserves, Fog of War, No Retreat, Total War, Escalation).

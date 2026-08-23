@@ -4,9 +4,11 @@ This directory contains application-level controller services connecting domain 
 
 ## ⚙️ Service Index
 
-- [`game-controller.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/game-controller.service.ts) - Primary controller orchestrating deck clicks, challenge flows, opponent AI challenges, battle setups, and turn state resets.
-- [`progress.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/progress.service.ts) - Service loading progress tracking data from `.github/instructions/progress-data.json`.
-- [`game-demo.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/game-demo.service.ts) - Automated simulation service for running non-interactive game demos.
+- [`game-controller.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/game-controller.service.ts) - Primary controller orchestrating deck clicks, challenge flows, opponent AI challenges, battle setups, and presentation states.
+- [`story-book.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/story-book.service.ts) - Service recording tactical match chronicle entries and combat milestones.
+- [`table-reaction.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/table-reaction.service.ts) - Service generating situational quip reactions during clashes, challenges, and battles.
+- [`progress.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/progress.service.ts) - (Legacy) Service maintaining milestone development data for unrouted demo UI.
+- [`game-demo.service.ts`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/game-demo.service.ts) - (Legacy) Simulation service for unrouted demo UI.
 - [`Agent.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/src/app/services/Agent.md) - Subsystem technical reference for AI agents.
 
 ## 🔄 Interaction Guidelines

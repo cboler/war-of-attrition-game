@@ -1,130 +1,77 @@
-# War of Attrition Game Development Overview
+# War of Attrition — Documentation Index & Architecture
 
-## 📋 Project Documentation Structure
+## 📋 Documentation Hierarchy
 
-This project follows a structured approach to development planning and documentation:
+To ensure clarity for developers and automated coding agents, documentation in this repository is structured into three distinct tiers:
 
-### Core Documents
-1. **`war-of-attrition-requirements.md`** - 📜 **SINGLE SOURCE OF TRUTH**
-   - Complete functional and non-functional requirements
-   - Game rules and mechanics
-   - UI/UX specifications  
-   - User stories and EARS requirements
-   - **⚠️ NEVER MODIFY THIS FILE**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. AUTHORITATIVE SPECIFICATION                              │
+│    war-of-attrition-requirements.md                         │
+│    (Immutable rules, mechanics, and game requirements)      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────┐
+│ 2. CURRENT PROJECT STATUS                                   │
+│    current-development-status.md                            │
+│    (Live implementation state, priorities, design decisions)│
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────┐
+│ 3. HISTORICAL PLANNING & BACKLOG                            │
+│    - development-milestones.md (Historical planning)        │
+│    - developer-docs/future-gameplay-ideas.md (Backlog ideas)│
+└─────────────────────────────────────────────────────────────┘
+```
 
-2. **`development-milestones.md`** - 🏗️ **MILESTONE & ISSUE BREAKDOWN**
-   - 7 development milestones with clear goals
-   - Detailed issues for each milestone
-   - Acceptance criteria for all work items
-   - Current development status tracking
+### 1. Authoritative Specification
+- [`war-of-attrition-requirements.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/war-of-attrition-requirements.md) — **SINGLE SOURCE OF TRUTH** for all game rules, rank hierarchies, Battle resolution, and core requirements. **⚠️ NEVER MODIFY THIS FILE.**
 
-3. **`current-development-status.md`** - 📊 **PROJECT STATUS & GUIDANCE**
-   - Current development state assessment
-   - Immediate priorities and next steps
-   - Build and development instructions
-   - File structure overview
+### 2. Current Project State & Guidance
+- [`current-development-status.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/current-development-status.md) — Authoritative live status describing the **Production Readiness / Final Polish** phase, active systems, responsive layouts, and near-term priorities.
+- [`implementation-guidelines.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/implementation-guidelines.md) — Code quality standards, Angular conventions, signal state rules, and architecture guidelines.
 
-4. **`implementation-guidelines.md`** - 🛠️ **TECHNICAL IMPLEMENTATION GUIDE**
-   - Detailed implementation notes for each milestone
-   - Code architecture and structure guidance
-   - Technical specifications and examples
-   - Testing and performance guidelines
+### 3. Historical Planning References
+- [`development-milestones.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/development-milestones.md) — Historical milestone roadmap used during early development. Provided for context only; completion percentages in milestone documents are historical artifacts and do not supersede `current-development-status.md`.
+- [`developer-docs/future-gameplay-ideas.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/future-gameplay-ideas.md) — Post-release design concepts (AI Commander personalities, Hall of Valor card records, Alternate Rules Campaigns).
+
+---
 
 ## 🎯 Current State Summary
 
-**Project Phase**: Milestone 5 (Visual Polish & Animations) - 50% Complete
+- **Project Phase**: Production Readiness / Final Polish (Google Play closed testing, store asset generation, device validation).
+- **Active Table Route**: `src/app/table-game/` (`TableGame`) — Fully responsive across Mobile Phone (`<= 620px`), 7-inch Tablet (`620px - 820px`), and 10-inch Tabletop Grid (`>= 1100px`).
+- **Visual Design**: Fixed dark/green felt card table. (Theme toggling was intentionally removed as the visual world is the felt table itself).
+- **Automated Tests**: Comprehensive unit test suite (`npm test`) covering game logic, turns, challenges, recursive battles, and UI components.
+- **Store Screenshots**: Automated Playwright Chromium screenshot generation suite (`npm run screenshots:store`) with binary header validation (`npm run screenshots:validate`).
 
-**Completed Work**:
-- ✅ **Milestone 1**: Foundation & Setup - Angular 20 PWA, theme toggle, routing, responsive layout
-- ✅ **Milestone 2**: Core Game Engine - Complete card/deck models, game state management, card comparison logic, turn resolution engine
-- ✅ **Milestone 3**: Basic UI Components - Game board, card component, health bar, action indicators
-- ✅ **Milestone 4**: Game Mechanics Implementation - Turn flow, challenge system, battle system, win conditions
-- ✅ **Milestone 5 (Partial)**: Material Icons implementation, enhanced theme toggle
+---
 
-**Current Priorities**:
-1. 🔄 Card slide and flip animations
-2. 🔄 Battle clash visual effects
-3. 🔄 Health bar damage animations
-4. 🔄 Enhanced visual feedback system
+## 🚀 Development & Build Commands
 
-**Next Major Phase**: Milestone 6 (Settings & Customization)
-- Advanced settings menu
-- Card backing options
-- Game statistics
-- Export/import functionality
+```bash
+# Install dependencies
+npm install
 
-## 🏆 Development Milestones Overview
+# Start local dev server (http://localhost:4200/)
+npm start
 
-| Milestone | Goal | Status | Key Deliverables |
-|-----------|------|--------|------------------|
-| **1. Foundation & Setup** | Solid project foundation | ✅ **COMPLETED** | PWA setup, routing, themes, responsive layout |
-| **2. Core Game Engine** | Game logic implementation | ✅ **COMPLETED** | Card models, game state, comparison logic, 60 tests |
-| **3. Basic UI Components** | Core visual components | ✅ **COMPLETED** | Game board, cards, health bars, indicators |
-| **4. Game Mechanics** | Connect engine to UI | ✅ **COMPLETED** | Turn flow, challenges, battles, win conditions |
-| **5. Visual Polish** | Animations and effects | 🔄 **50% Complete** | Material icons, theme toggle, card animations (in progress) |
-| **6. Settings & Customization** | Player personalization | ❌ **Not Started** | Settings menu, card backings, discard viewer |
-| **7. Testing & Polish** | Quality assurance | ❌ **Not Started** | Performance, accessibility, edge case testing |
+# Run unit tests (headless)
+npm test -- --watch=false --browsers=ChromeHeadless
 
-## 📚 How to Use This Documentation
+# Run automated store screenshot generation
+npm run screenshots:store
 
-### For New Developers
-1. Start with `war-of-attrition-requirements.md` to understand the game
-2. Review `current-development-status.md` for project overview
-3. Check `development-milestones.md` for work breakdown
-4. Reference `implementation-guidelines.md` when implementing
+# Validate generated store screenshot artifacts
+npm run screenshots:validate
 
-### For Project Management
-- Use `development-milestones.md` to track progress
-- Convert issues to GitHub Issues/Project boards
-- Update status in `current-development-status.md` as work completes
-- Milestone completion should be clearly marked
+# Production build (outputs to /docs for GitHub Pages)
+npm run build
+```
 
-### For Development Work
-- Always reference requirements document for authoritative specs
-- Follow milestone order to ensure proper dependencies
-- Use implementation guidelines for technical decisions
-- Update documentation as the project evolves
+---
 
-## 🚀 Getting Started
-
-1. **Set up development environment**:
-   ```bash
-   git clone <repository>
-   cd war-of-attrition-game
-   npm install
-   ```
-
-2. **Review current state**:
-   ```bash
-   npm start  # Start development server
-   npm run build  # Test production build (outputs to /docs)
-   npm test -- --watch=false --browsers=ChromeHeadless  # Run 159 tests
-   ```
-
-3. **Current development focus** (Milestone 5):
-   - Continue Visual Polish & Animations work
-   - Implement card slide and flip animations
-   - Add battle clash visual effects
-   - Create health bar damage animations
-
-4. **Follow best practices**:
-   - Use Angular signals for state management
-   - Implement standalone components
-   - Write tests alongside implementation (159 tests currently passing)
-   - Maintain mobile-first responsive design
-
-## 📝 Documentation Maintenance
-
-- **Status updates**: Regularly update `current-development-status.md`
-- **Milestone tracking**: Mark completed issues in `development-milestones.md`
-- **Implementation notes**: Add learnings to `implementation-guidelines.md`
-- **Requirements**: NEVER modify `war-of-attrition-requirements.md`
-
-This documentation structure ensures clear development guidance while maintaining the integrity of the original requirements specification.
-
-## 🎮 Game Flow Diagram
-
-The following Mermaid diagram illustrates the complete game flow logic:
+## 🎮 Game Flow Diagram: War of Attrition
 
 ```mermaid
 ---
@@ -223,4 +170,71 @@ flowchart TD
     style resolveChallengeLoss fill:#E57373
     style resolveBattleWin fill:#2E7D32,color:#FFFFFF
     style resolveBattleLoss fill:#C62828,color:#FFFFFF
+```
+
+---
+
+## 🎮 Secondary Game: Cadillac / 31 (Concept)
+
+```mermaid
+flowchart TD
+    START["Start Cadillac / 31"] --> SETUP["4 seats<br/>Human + 3 AI"]
+    SETUP --> LIVES["Each player starts with 4 lives"]
+    LIVES --> DEAL["Shuffle deck<br/>Deal 3 cards to each player"]
+    DEAL --> DISCARD_START["Create face-up discard pile"]
+    DISCARD_START --> TURN["Active player's turn<br/>Proceed dealer-left"]
+
+    TURN --> ALIVE{"Player still has lives?"}
+    ALIVE -- No --> NEXT
+    ALIVE -- Yes --> HAS31{"Does player already hold 31?"}
+
+    HAS31 -- Yes --> DECLARE31["Declare 31 and reveal hand"]
+    DECLARE31 --> ALL_LOSE["Every OTHER active player loses 1 life"]
+    ALL_LOSE --> ELIMINATE
+
+    HAS31 -- No --> KNOCK_OR_PLAY{"Knock or take normal turn?"}
+
+    KNOCK_OR_PLAY -- Knock --> KNOCK["Knocker forfeits draw/discard<br/>Begin final-turn cycle"]
+    KNOCK --> FINAL_NEXT["Each other active player receives<br/>exactly 1 final turn"]
+
+    KNOCK_OR_PLAY -- Normal --> DRAW_CHOICE{"Draw from deck<br/>or face-up discard?"}
+    DRAW_CHOICE -- Deck --> DRAW_DECK["Draw top deck card"]
+    DRAW_CHOICE -- Discard --> DRAW_DISCARD["Take top face-up discard"]
+
+    DRAW_DECK --> FOUR["Hand temporarily contains 4 cards"]
+    DRAW_DISCARD --> FOUR
+    FOUR --> DISCARD["Choose 1 card to discard face-up"]
+    DISCARD --> AFTER_DRAW_31{"Hand now totals 31?"}
+
+    AFTER_DRAW_31 -- Yes --> DECLARE31
+    AFTER_DRAW_31 -- No --> NEXT["Advance to next active player"]
+    NEXT --> TURN
+
+    FINAL_NEXT --> FINAL_TURN["Final player draws from deck/discard<br/>then discards 1 card"]
+    FINAL_TURN --> FINAL31{"Did final-turn player make 31?"}
+    FINAL31 -- Yes --> DECLARE31
+    FINAL31 -- No --> MORE_FINAL{"More players still owed<br/>a final turn?"}
+    MORE_FINAL -- Yes --> FINAL_NEXT
+    MORE_FINAL -- No --> REVEAL["Reveal all active hands"]
+
+    REVEAL --> SCORE["Score each hand<br/>Best same-suit total<br/>Ace 11 · Face 10 · Other 5"]
+    SCORE --> LOWEST{"Determine lowest score"}
+
+    LOWEST --> KNOCKER_TIE{"Is knocker tied<br/>for lowest?"}
+    KNOCKER_TIE -- Yes --> KNOCKER_LOSS["Knocker loses 1 life"]
+    KNOCKER_TIE -- No --> LOW_TIE{"Multiple players tied<br/>for lowest?"}
+
+    LOW_TIE -- Yes --> TIED_LOSE["All tied-lowest players lose 1 life"]
+    LOW_TIE -- No --> LOW_LOSES["Lowest player loses 1 life"]
+
+    KNOCKER_LOSS --> ELIMINATE["Remove players at 0 lives"]
+    TIED_LOSE --> ELIMINATE
+    LOW_LOSES --> ELIMINATE
+
+    ELIMINATE --> WINNER{"Only 1 player remains?"}
+    WINNER -- Yes --> GAME_WIN["Remaining player wins Cadillac"]
+    WINNER -- No --> NEW_ROUND["Collect cards<br/>Shuffle / deal next round"]
+    NEW_ROUND --> DEAL
+
+    GAME_WIN --> END["Game Over"]
 ```

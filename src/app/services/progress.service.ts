@@ -38,6 +38,10 @@ export interface ProgressData {
   };
 }
 
+/**
+ * @deprecated Legacy development & demo milestone tracking infrastructure.
+ * Unused by the active TableGame application. Maintained as legacy technical debt.
+ */
 @Injectable({
   providedIn: 'root'
 })

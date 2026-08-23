@@ -139,15 +139,14 @@ flowchart TD
     GAME_TIE --> END
 ```
 
-## Development Progress
+## Development Status & Documentation
 
-**📋 Centralized Progress Tracking**: Development progress is now managed centrally to ensure consistency across all reporting locations:
+War of Attrition is in **Production Readiness / Final Polish** (Google Play closed testing, store asset automation, device validation).
 
-- **Progress Data**: `.github/instructions/progress-data.json` - Single source of truth for current status
-- **Progress Service**: `src/app/services/progress.service.ts` - Angular service for accessing progress data
-- **Live Display**: Progress information is displayed in the running application
-
-For detailed development status and next steps, see `.github/instructions/current-development-status.md`
+- **Current Implementation Status**: [`.github/instructions/current-development-status.md`](file:///.github/instructions/current-development-status.md) — Live status, active systems, and release priorities.
+- **Rules & Specification**: [`.github/instructions/war-of-attrition-requirements.md`](file:///.github/instructions/war-of-attrition-requirements.md) — Authoritative physical game rules and requirements.
+- **Documentation Index**: [`.github/instructions/README.md`](file:///.github/instructions/README.md) — Complete documentation hierarchy and development guides.
+- **Future Design Backlog**: [`developer-docs/future-gameplay-ideas.md`](file:///developer-docs/future-gameplay-ideas.md) — AI Commanders, Hall of Valor, and Alternate Rules Campaigns.
 
 # Cadillac / 31
 
