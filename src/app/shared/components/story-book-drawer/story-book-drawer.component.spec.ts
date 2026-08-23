@@ -437,7 +437,7 @@ describe('StoryBookDrawerComponent', () => {
       storyBook.addEntry({
         turnNumber: 1,
         type: 'clash',
-        eyebrow: 'TURN 1 · CLASH',
+        eyebrow: 'TURN 1 · SPECIAL FEAT',
         text: 'K♥ defeated 7♠',
         badge: 'victory',
         comparison: {
@@ -469,9 +469,10 @@ describe('StoryBookDrawerComponent', () => {
       const nodes = compiled.querySelectorAll('.story-node');
       expect(nodes.length).toBe(2);
 
-      // Node 1: Redacted text and suppressed combat math button
+      // Node 1: Redacted text, sanitized eyebrow, and suppressed combat math button
       expect(nodes[0].classList).toContain('fog-sealed');
-      expect(nodes[0].querySelector('.node-text')?.textContent).toContain('Assassination resolved under Fog of War.');
+      expect(nodes[0].querySelector('.node-text')?.textContent).toContain('Comparison resolved under Fog of War.');
+      expect(nodes[0].querySelector('.node-eyebrow')?.textContent).toBe('TURN 1 · CLASH');
       expect(nodes[0].querySelector('.combat-math-trigger')).toBeNull();
 
       // Node 2: Redacted casualty text and hidden casualty card strip
@@ -505,6 +506,7 @@ describe('StoryBookDrawerComponent', () => {
       const unsealedNodes = compiled.querySelectorAll('.story-node');
       expect(unsealedNodes[0].classList).not.toContain('fog-sealed');
       expect(unsealedNodes[0].querySelector('.node-text')?.textContent).toContain('K♥ defeated 7♠');
+      expect(unsealedNodes[0].querySelector('.node-eyebrow')?.textContent).toBe('TURN 1 · SPECIAL FEAT');
       expect(unsealedNodes[0].querySelector('.combat-math-trigger')).toBeTruthy();
 
       expect(unsealedNodes[1].classList).not.toContain('fog-sealed');

@@ -168,4 +168,299 @@ describe('game telemetry mapper', () => {
     expect(mapped?.parameters['reaction_category']).toBe('narrow_clash');
     expect(JSON.stringify(mapped)).not.toContain('possibly sensitive free text');
   });
+
+  describe('Campaign mode telemetry policies (Standard, Limited Reserves, Total War, Fog of War)', () => {
+    const playerCard = new CardImpl(Suit.HEARTS, Rank.ACE);
+    const opponentCard = new CardImpl(Suit.SPADES, Rank.TWO);
+    const decisiveCard = new CardImpl(Suit.DIAMONDS, Rank.KING);
+    const casualty = new CardImpl(Suit.CLUBS, Rank.QUEEN);
+
+    it('retains detailed card-ledger parameters for Standard, Limited Reserves, and Total War', () => {
+      const modes: Array<'standard' | 'limited_reserves' | 'total_war'> = [
+        'standard',
+        'limited_reserves',
+        'total_war'
+      ];
+
+      for (const mode of modes) {
+        const modeEnvelope: TelemetryEnvelope = { ...envelope, campaignMode: mode };
+
+        // 1. Clash
+        const clash = mapGameEventToTelemetry({
+          type: 'clash_resolved',
+          turnNumber: 1,
+          playerCard,
+          opponentCard,
+          comparison: ComparisonResult.OPPONENT_WINS,
+          winner: PlayerType.OPPONENT,
+          specialRule: true,
+          message: 'Opponent card survives.'
+        }, modeEnvelope);
+        expect(clash?.parameters['player_card_id']).toBe(playerCard.id);
+        expect(clash?.parameters['opponent_card_id']).toBe(opponentCard.id);
+        expect(clash?.parameters['player_card_rank']).toBe(Rank.ACE);
+        expect(clash?.parameters['opponent_card_rank']).toBe(Rank.TWO);
+
+        // 2. Casualty
+        const casualtyEvent = mapGameEventToTelemetry({
+          type: 'casualty_revealed',
+          turnNumber: 1,
+          source: 'clash',
+          card: casualty,
+          loser: PlayerType.PLAYER,
+          casualtyIndex: 1,
+          totalCasualties: 1,
+          decisiveCard
+        }, modeEnvelope);
+        expect(casualtyEvent?.parameters['card_id']).toBe(casualty.id);
+        expect(casualtyEvent?.parameters['card_rank']).toBe(Rank.QUEEN);
+        expect(casualtyEvent?.parameters['casualty_index']).toBe(1);
+        expect(casualtyEvent?.parameters['casualty_count']).toBe(1);
+        expect(casualtyEvent?.parameters['decisive_card_id']).toBe(decisiveCard.id);
+
+        // 3. Reinforcement decision and resolution
+        const reinforceAccepted = mapGameEventToTelemetry({
+          type: 'challenge_accepted',
+          turnNumber: 2,
+          challenger: PlayerType.PLAYER,
+          reinforcementCard: playerCard
+        }, modeEnvelope);
+        expect(reinforceAccepted?.parameters['reinforcement_id']).toBe(playerCard.id);
+        expect(reinforceAccepted?.parameters['reinforcement_rank']).toBe(Rank.ACE);
+
+        const cardTwo = new CardImpl(Suit.HEARTS, Rank.TWO);
+        const cardAce = new CardImpl(Suit.SPADES, Rank.ACE);
+        const reinforceResolved = mapGameEventToTelemetry({
+          type: 'challenge_resolved',
+          turnNumber: 2,
+          challenger: PlayerType.PLAYER,
+          originalBeatenCard: opponentCard,
+          reinforcementCard: cardTwo,
+          originalWinnerCard: cardAce,
+          comparison: ComparisonResult.PLAYER_WINS,
+          winner: PlayerType.PLAYER,
+          challengerWon: true,
+          savedTwo: true,
+          message: 'Card rescued.'
+        }, modeEnvelope);
+        expect(reinforceResolved?.parameters['reinforcement_id']).toBe(cardTwo.id);
+        expect(reinforceResolved?.parameters['original_card_id']).toBe(opponentCard.id);
+        expect(reinforceResolved?.parameters['opposing_card_id']).toBe(cardAce.id);
+        expect(reinforceResolved?.parameters['two_defeated_ace']).toBe(1);
+
+        // 4. Settlement
+        const settlement = mapGameEventToTelemetry({
+          type: 'settlement_resolved',
+          turnNumber: 3,
+          attribution: {
+            source: 'battle',
+            winner: PlayerType.PLAYER,
+            loser: PlayerType.OPPONENT,
+            decisiveCard,
+            casualties: [casualty],
+            battleDepth: 1
+          }
+        }, modeEnvelope);
+        expect(settlement?.parameters['decisive_card_id']).toBe(decisiveCard.id);
+        expect(settlement?.parameters['casualty_count']).toBe(1);
+        expect(settlement?.parameters['high_value_casualties']).toBe(1);
+      }
+    });
+
+    it('suppresses card-ledger and Boneyard reconstruction parameters during active Fog of War', () => {
+      const fogEnvelope: TelemetryEnvelope = { ...envelope, campaignMode: 'fog_of_war' };
+
+      // 1. Clash: retains comparison and winner, suppresses exact card IDs/ranks/values
+      const clash = mapGameEventToTelemetry({
+        type: 'clash_resolved',
+        turnNumber: 1,
+        playerCard,
+        opponentCard,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        specialRule: true,
+        message: 'Opponent card survives.'
+      }, fogEnvelope);
+      expect(clash?.parameters['campaign_mode']).toBe('fog_of_war');
+      expect(clash?.parameters['stage']).toBe('clash');
+      expect(clash?.parameters['comparison']).toBe(ComparisonResult.OPPONENT_WINS);
+      expect(clash?.parameters['winner']).toBe(PlayerType.OPPONENT);
+      expect(clash?.parameters['special_rule']).toBe('two_beats_ace');
+      expect(clash?.parameters['player_card_id']).toBeUndefined();
+      expect(clash?.parameters['player_card_rank']).toBeUndefined();
+      expect(clash?.parameters['player_card_suit']).toBeUndefined();
+      expect(clash?.parameters['player_card_value']).toBeUndefined();
+      expect(clash?.parameters['opponent_card_id']).toBeUndefined();
+      expect(clash?.parameters['opponent_card_rank']).toBeUndefined();
+      expect(clash?.parameters['value_gap']).toBeUndefined();
+      expect(clash?.parameters['close_victory']).toBeUndefined();
+
+      // 2. Casualty: retains source and owner, suppresses card identity, index, and total count
+      const casualtyEvent = mapGameEventToTelemetry({
+        type: 'casualty_revealed',
+        turnNumber: 1,
+        source: 'clash',
+        card: casualty,
+        loser: PlayerType.PLAYER,
+        casualtyIndex: 1,
+        totalCasualties: 1,
+        decisiveCard
+      }, fogEnvelope);
+      expect(casualtyEvent?.name).toBe('card_eliminated');
+      expect(casualtyEvent?.parameters['source']).toBe('clash');
+      expect(casualtyEvent?.parameters['card_owner']).toBe(PlayerType.PLAYER);
+      expect(casualtyEvent?.parameters['card_id']).toBeUndefined();
+      expect(casualtyEvent?.parameters['card_rank']).toBeUndefined();
+      expect(casualtyEvent?.parameters['casualty_index']).toBeUndefined();
+      expect(casualtyEvent?.parameters['casualty_count']).toBeUndefined();
+      expect(casualtyEvent?.parameters['decisive_card_id']).toBeUndefined();
+      expect(casualtyEvent?.parameters['high_value']).toBeUndefined();
+
+      // 3. Reinforcement: suppresses card identities and rank-revealing causal flags
+      const reinforceAccepted = mapGameEventToTelemetry({
+        type: 'challenge_accepted',
+        turnNumber: 2,
+        challenger: PlayerType.PLAYER,
+        reinforcementCard: playerCard
+      }, fogEnvelope);
+      expect(reinforceAccepted?.parameters['actor']).toBe(PlayerType.PLAYER);
+      expect(reinforceAccepted?.parameters['choice']).toBe('accepted');
+      expect(reinforceAccepted?.parameters['reinforcement_id']).toBeUndefined();
+      expect(reinforceAccepted?.parameters['reinforcement_rank']).toBeUndefined();
+
+      const reinforceResolved = mapGameEventToTelemetry({
+        type: 'challenge_resolved',
+        turnNumber: 2,
+        challenger: PlayerType.PLAYER,
+        originalBeatenCard: opponentCard,
+        reinforcementCard: playerCard,
+        originalWinnerCard: decisiveCard,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        challengerWon: true,
+        savedTwo: true,
+        message: 'Card rescued.'
+      }, fogEnvelope);
+      expect(reinforceResolved?.parameters['challenger']).toBe(PlayerType.PLAYER);
+      expect(reinforceResolved?.parameters['comparison']).toBe(ComparisonResult.PLAYER_WINS);
+      expect(reinforceResolved?.parameters['outcome']).toBe('success');
+      expect(reinforceResolved?.parameters['reinforcement_id']).toBeUndefined();
+      expect(reinforceResolved?.parameters['original_card_id']).toBeUndefined();
+      expect(reinforceResolved?.parameters['opposing_card_id']).toBeUndefined();
+      expect(reinforceResolved?.parameters['two_defeated_ace']).toBeUndefined();
+      expect(reinforceResolved?.parameters['rescued_two']).toBeUndefined();
+      expect(reinforceResolved?.parameters['ace_rescued_two']).toBeUndefined();
+
+      // 4. Battle reveal and resolution
+      const battleReveal = mapGameEventToTelemetry({
+        type: 'battle_cards_revealed',
+        turnNumber: 5,
+        layerRound: 1,
+        playerChosenCard: playerCard,
+        opponentChosenCard: opponentCard,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        specialRule: false,
+        message: 'Champions clash.',
+        selection: {
+          layerRound: 1,
+          playerCard,
+          opponentCard,
+          playerCardId: playerCard.id,
+          opponentCardId: opponentCard.id,
+          comparison: ComparisonResult.PLAYER_WINS,
+          winner: PlayerType.PLAYER,
+          specialRule: false
+        }
+      }, fogEnvelope);
+      expect(battleReveal?.parameters['stage']).toBe('battle');
+      expect(battleReveal?.parameters['battle_depth']).toBe(1);
+      expect(battleReveal?.parameters['player_card_id']).toBeUndefined();
+      expect(battleReveal?.parameters['opponent_card_id']).toBeUndefined();
+
+      const battleResolved = mapGameEventToTelemetry({
+        type: 'battle_resolved',
+        turnNumber: 5,
+        outcome: {
+          winner: PlayerType.PLAYER,
+          loser: PlayerType.OPPONENT,
+          battleDepth: 1,
+          selection: {
+            layerRound: 1,
+            playerCard,
+            opponentCard,
+            playerCardId: playerCard.id,
+            opponentCardId: opponentCard.id,
+            comparison: ComparisonResult.PLAYER_WINS,
+            winner: PlayerType.PLAYER,
+            specialRule: false
+          },
+          casualties: [casualty],
+          casualtyIds: [casualty.id],
+          selectedPlayerChampion: playerCard,
+          selectedOpponentChampion: opponentCard,
+          hiddenWinnerCount: 1,
+          publicWinnerCount: 1,
+          playerCardsAtStakeCount: 2,
+          opponentCardsAtStakeCount: 2,
+          finalPlayerDeckCount: 22,
+          finalOpponentDeckCount: 19,
+          finalBoneyardCount: 9
+        }
+      }, fogEnvelope);
+      expect(battleResolved?.parameters['winner']).toBe(PlayerType.PLAYER);
+      expect(battleResolved?.parameters['player_champion_id']).toBeUndefined();
+      expect(battleResolved?.parameters['opponent_champion_id']).toBeUndefined();
+      expect(battleResolved?.parameters['casualty_count']).toBeUndefined();
+      expect(battleResolved?.parameters['hidden_winner_count']).toBeUndefined();
+
+      // 5. Settlement
+      const settlement = mapGameEventToTelemetry({
+        type: 'settlement_resolved',
+        turnNumber: 5,
+        attribution: {
+          source: 'battle',
+          winner: PlayerType.PLAYER,
+          loser: PlayerType.OPPONENT,
+          decisiveCard,
+          casualties: [casualty],
+          battleDepth: 1
+        }
+      }, fogEnvelope);
+      expect(settlement?.parameters['source']).toBe('battle');
+      expect(settlement?.parameters['winner']).toBe(PlayerType.PLAYER);
+      expect(settlement?.parameters['decisive_card_id']).toBeUndefined();
+      expect(settlement?.parameters['casualty_count']).toBeUndefined();
+      expect(settlement?.parameters['high_value_casualties']).toBeUndefined();
+    });
+
+    it('transmits complete aggregate telemetry when a Fog of War War and Campaign conclude', () => {
+      const fogEnvelope: TelemetryEnvelope = { ...envelope, campaignMode: 'fog_of_war' };
+
+      const warResolved = mapGameEventToTelemetry({
+        type: 'game_resolved',
+        turnNumber: 30,
+        outcome: GameOutcome.PLAYER_WIN,
+        turns: 30,
+        playerCardsRemaining: 14,
+        opponentCardsRemaining: 0,
+        maxDeficitExperienced: 2,
+        isComeback: false,
+        battlesCount: 2,
+        playerReinforcementsSent: 3,
+        playerDeckColor: DeckColor.BLACK
+      }, fogEnvelope);
+
+      expect(warResolved?.name).toBe('war_resolved');
+      expect(warResolved?.parameters['campaign_mode']).toBe('fog_of_war');
+      expect(warResolved?.parameters['outcome']).toBe(GameOutcome.PLAYER_WIN);
+      expect(warResolved?.parameters['turns']).toBe(30);
+      expect(warResolved?.parameters['player_remaining']).toBe(14);
+      expect(warResolved?.parameters['opponent_remaining']).toBe(0);
+      expect(warResolved?.parameters['attrition_differential']).toBe(14);
+      expect(warResolved?.parameters['battles']).toBe(2);
+      expect(warResolved?.parameters['player_reinforcements']).toBe(3);
+      expect(Object.keys(warResolved?.parameters ?? {}).length).toBeLessThanOrEqual(25);
+    });
+  });
 });

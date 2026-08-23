@@ -167,3 +167,11 @@ export interface CampaignHistoryEntry {
   - `remaining_reserves: number` (when `limited_reserves`)
   - `final_differential: number`
 - All events strictly maintain GA4 parameter budget limits (<= 25 parameters per custom event).
+
+### Fog of War Telemetry Policy
+- **Information Boundary Principle**: *Fog of War removes player-facing and routine diagnostic information channels; because the game executes locally, it is not intended as a cryptographic anti-cheat boundary.*
+- **Mapper-Level Redaction During Active War**:
+  - While a `fog_of_war` War is unresolved, GA4 `window.dataLayer` event payloads suppress card-ledger parameters (exact card IDs, ranks, suits, values, casualty indexes/counts, decisive card IDs, and high-value indicators) to prevent telemetry from functioning as an accidental retrospective memory ledger.
+  - Useful non-identifying analytical metrics are retained (`event_type`, `turn_number`, `stage`, `winner`, `comparison_result`, `battle_depth`, `actor`, `choice`, `outcome`, `special_rule`, `campaign_mode`).
+- **Post-War Transmission**:
+  - Once the War is resolved (`war_resolved`, `campaign_resolved`), complete aggregate statistics (final remaining counts, margin, differential, turns, battles, comebacks) transmit normally because the Fog seal has officially lifted.

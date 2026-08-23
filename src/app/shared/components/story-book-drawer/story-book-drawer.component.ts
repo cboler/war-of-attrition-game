@@ -122,7 +122,7 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
     }
     switch (entry.type) {
       case 'clash':
-        return 'Assassination resolved under Fog of War.';
+        return 'Comparison resolved under Fog of War.';
       case 'challenge':
         if (entry.text.includes('committed')) {
           return 'Reinforcement committed under Fog of War.';
@@ -169,6 +169,9 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
     }
     if (entry.eyebrow?.includes('VALOR CITATION')) {
       return 'VALOR CITATION · SEALED';
+    }
+    if (entry.eyebrow?.includes('SPECIAL FEAT') || entry.eyebrow?.includes('ASSASSINATION')) {
+      return entry.turnNumber ? `TURN ${entry.turnNumber} · CLASH` : 'CLASH';
     }
     return entry.eyebrow ?? '';
   }

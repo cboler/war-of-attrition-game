@@ -12,6 +12,7 @@ export function mapGameEventToTelemetry(
   envelope: TelemetryEnvelope
 ): TelemetryRecord | null {
   const common = commonParameters(envelope, event.turnNumber);
+  const isFog = envelope.campaignMode === 'fog_of_war';
 
   switch (event.type) {
     // beginWar() owns the one canonical start record; the domain event exists
@@ -26,13 +27,15 @@ export function mapGameEventToTelemetry(
       return record('comparison_resolved', {
         ...common,
         stage: 'clash',
-        ...cardParameters('player_card', event.playerCard),
-        ...cardParameters('opponent_card', event.opponentCard),
+        ...(isFog ? {} : {
+          ...cardParameters('player_card', event.playerCard),
+          ...cardParameters('opponent_card', event.opponentCard),
+          value_gap: event.specialRule ? 0 : Math.abs(event.playerCard.value - event.opponentCard.value),
+          close_victory: !event.specialRule && Math.abs(event.playerCard.value - event.opponentCard.value) === 1 ? 1 : 0
+        }),
         comparison: event.comparison,
         winner: event.winner ?? 'tie',
-        special_rule: event.specialRule ? 'two_beats_ace' : 'none',
-        value_gap: event.specialRule ? 0 : Math.abs(event.playerCard.value - event.opponentCard.value),
-        close_victory: !event.specialRule && Math.abs(event.playerCard.value - event.opponentCard.value) === 1 ? 1 : 0
+        special_rule: event.specialRule ? 'two_beats_ace' : 'none'
       });
 
     case 'challenge_offered':
@@ -46,7 +49,7 @@ export function mapGameEventToTelemetry(
         ...common,
         actor: event.challenger,
         choice: 'accepted',
-        ...cardParameters('reinforcement', event.reinforcementCard)
+        ...(isFog ? {} : cardParameters('reinforcement', event.reinforcementCard))
       });
 
     case 'challenge_conceded':
@@ -61,18 +64,20 @@ export function mapGameEventToTelemetry(
       return record('reinforcement_resolved', {
         ...common,
         challenger: event.challenger,
-        ...compactCardParameters('original_card', event.originalBeatenCard),
-        ...compactCardParameters('reinforcement', event.reinforcementCard),
-        ...compactCardParameters('opposing_card', event.originalWinnerCard),
+        ...(isFog ? {} : {
+          ...compactCardParameters('original_card', event.originalBeatenCard),
+          ...compactCardParameters('reinforcement', event.reinforcementCard),
+          ...compactCardParameters('opposing_card', event.originalWinnerCard),
+          rescued_two: event.originalBeatenCard?.rank === Rank.TWO && event.challengerWon ? 1 : 0,
+          ace_rescued_two: event.originalBeatenCard?.rank === Rank.TWO &&
+            event.reinforcementCard.rank === Rank.ACE && event.challengerWon ? 1 : 0,
+          two_defeated_ace: isTwoVersusAce(
+            event.reinforcementCard.rank,
+            event.originalWinnerCard.rank,
+          ) && event.winner !== null ? 1 : 0
+        }),
         comparison: event.comparison,
         outcome: event.winner === null ? 'battle' : event.challengerWon ? 'success' : 'failure',
-        rescued_two: event.originalBeatenCard?.rank === Rank.TWO && event.challengerWon ? 1 : 0,
-        ace_rescued_two: event.originalBeatenCard?.rank === Rank.TWO &&
-          event.reinforcementCard.rank === Rank.ACE && event.challengerWon ? 1 : 0,
-        two_defeated_ace: isTwoVersusAce(
-          event.reinforcementCard.rank,
-          event.originalWinnerCard.rank,
-        ) && event.winner !== null ? 1 : 0,
         escalated_to_battle: event.winner === null ? 1 : 0
       });
 
@@ -95,17 +100,19 @@ export function mapGameEventToTelemetry(
         ...common,
         stage: 'battle',
         battle_depth: event.selection.layerRound,
-        ...cardParameters('player_card', event.selection.playerCard),
-        ...cardParameters('opponent_card', event.selection.opponentCard),
+        ...(isFog ? {} : {
+          ...cardParameters('player_card', event.selection.playerCard),
+          ...cardParameters('opponent_card', event.selection.opponentCard),
+          value_gap: event.selection.specialRule ? 0 : Math.abs(
+            event.selection.playerCard.value - event.selection.opponentCard.value
+          ),
+          close_victory: !event.selection.specialRule && Math.abs(
+            event.selection.playerCard.value - event.selection.opponentCard.value
+          ) === 1 ? 1 : 0
+        }),
         comparison: event.selection.comparison,
         winner: event.selection.winner ?? 'tie',
-        special_rule: event.selection.specialRule ? 'two_beats_ace' : 'none',
-        value_gap: event.selection.specialRule ? 0 : Math.abs(
-          event.selection.playerCard.value - event.selection.opponentCard.value
-        ),
-        close_victory: !event.selection.specialRule && Math.abs(
-          event.selection.playerCard.value - event.selection.opponentCard.value
-        ) === 1 ? 1 : 0
+        special_rule: event.selection.specialRule ? 'two_beats_ace' : 'none'
       });
 
     case 'battle_continues':
@@ -115,12 +122,14 @@ export function mapGameEventToTelemetry(
       return record('card_eliminated', {
         ...common,
         source: event.source ?? 'unknown',
-        ...cardParameters('card', event.card),
         card_owner: event.loser,
-        casualty_index: event.casualtyIndex,
-        casualty_count: event.totalCasualties,
-        high_value: isHighValue(event.card.rank) ? 1 : 0,
-        ...compactCardParameters('decisive_card', event.decisiveCard)
+        ...(isFog ? {} : {
+          ...cardParameters('card', event.card),
+          casualty_index: event.casualtyIndex,
+          casualty_count: event.totalCasualties,
+          high_value: isHighValue(event.card.rank) ? 1 : 0,
+          ...compactCardParameters('decisive_card', event.decisiveCard)
+        })
       });
 
     case 'battle_resolved': {
@@ -130,12 +139,14 @@ export function mapGameEventToTelemetry(
         battle_depth: outcome.battleDepth,
         winner: outcome.winner,
         loser: outcome.loser,
-        ...compactCardParameters('player_champion', outcome.selection?.playerCard),
-        ...compactCardParameters('opponent_champion', outcome.selection?.opponentCard),
+        ...(isFog ? {} : {
+          ...compactCardParameters('player_champion', outcome.selection?.playerCard),
+          ...compactCardParameters('opponent_champion', outcome.selection?.opponentCard),
+          casualty_count: outcome.casualties.length,
+          hidden_winner_count: outcome.hiddenWinnerCount
+        }),
         ...optionalParameter('comparison', outcome.selection?.comparison),
         special_rule: outcome.selection?.specialRule ? 1 : 0,
-        casualty_count: outcome.casualties.length,
-        hidden_winner_count: outcome.hiddenWinnerCount,
         cards_at_stake: outcome.playerCardsAtStakeCount,
         player_cards_after: outcome.finalPlayerDeckCount,
         opponent_cards_after: outcome.finalOpponentDeckCount
@@ -148,11 +159,13 @@ export function mapGameEventToTelemetry(
         source: event.attribution.source,
         winner: event.attribution.winner,
         loser: event.attribution.loser,
-        ...cardParameters('decisive_card', event.attribution.decisiveCard),
-        casualty_count: event.attribution.casualties.length,
         battle_depth: event.attribution.battleDepth,
-        high_value_casualties: event.attribution.casualties
-          .filter(card => isHighValue(card.rank)).length
+        ...(isFog ? {} : {
+          ...cardParameters('decisive_card', event.attribution.decisiveCard),
+          casualty_count: event.attribution.casualties.length,
+          high_value_casualties: event.attribution.casualties
+            .filter(card => isHighValue(card.rank)).length
+        })
       });
 
     case 'cards_returned':
@@ -166,7 +179,7 @@ export function mapGameEventToTelemetry(
     case 'cards_sent_to_boneyard':
       return record('cards_sent_to_boneyard', {
         ...common,
-        casualty_count: event.cards.length
+        ...(isFog ? {} : { casualty_count: event.cards.length })
       });
 
     case 'achievement_unlocked':
