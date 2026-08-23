@@ -115,6 +115,7 @@ export class ScreenshotStateLoader {
         });
 
         context.controller.loadFixtureState({
+          commander: 'quartermaster',
           phase: PresentationState.CLASH_RESOLUTION,
           message: 'King of Hearts defeats 10 of Clubs (+3).',
           battlefieldMessages: [
@@ -155,7 +156,7 @@ export class ScreenshotStateLoader {
           turnsPlayed: 6,
           reaction: {
             speaker: PlayerType.OPPONENT,
-            message: 'A solid strike, Commander.',
+            message: 'Acceptable losses. The reserve holds.',
             category: 'narrow_clash'
           }
         });
@@ -193,6 +194,7 @@ export class ScreenshotStateLoader {
         });
 
         context.controller.loadFixtureState({
+          commander: 'gambler',
           phase: PresentationState.PLAYER_CHALLENGE_DECISION,
           message: 'Your 5 is beaten by 10. Send reinforcement?',
           battlefieldMessages: [
@@ -288,6 +290,7 @@ export class ScreenshotStateLoader {
         });
 
         context.controller.loadFixtureState({
+          commander: 'analyst',
           phase: PresentationState.PLAYER_TARGET_SELECTION,
           message: 'Choose a foe champion to reveal.',
           battlefieldMessages: [
@@ -331,6 +334,7 @@ export class ScreenshotStateLoader {
         });
 
         context.controller.loadFixtureState({
+          commander: 'attritionist',
           phase: PresentationState.READY,
           message: 'Your deck is ready.',
           turnsPlayed: 15
@@ -358,6 +362,7 @@ export class ScreenshotStateLoader {
         });
 
         context.controller.loadFixtureState({
+          commander: 'quartermaster',
           phase: PresentationState.READY,
           message: 'Your deck is ready.',
           turnsPlayed: 5
@@ -452,6 +457,7 @@ export class ScreenshotStateLoader {
         });
 
         context.controller.loadFixtureState({
+          commander: 'cornered-general',
           phase: PresentationState.GAME_OVER,
           message: 'VICTORY! The opponent deck is exhausted.',
           battlefieldMessages: [

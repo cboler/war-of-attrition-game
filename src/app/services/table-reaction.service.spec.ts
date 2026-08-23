@@ -60,7 +60,7 @@ describe('TableReactionService', () => {
     });
     expect(reaction).toEqual({
       speaker: PlayerType.OPPONENT,
-      message: 'The little card had one job.',
+      message: 'An irregular casualty. We adjust the ledger.',
       category: 'special_clash',
     });
   });
@@ -91,7 +91,7 @@ describe('TableReactionService', () => {
 
     expect(reaction).toEqual({
       speaker: PlayerType.OPPONENT,
-      message: 'The cavalry arrived.',
+      message: 'That one was worth saving.',
       category: 'rescue',
     });
   });
@@ -117,8 +117,50 @@ describe('TableReactionService', () => {
       PlayerType.OPPONENT,
       [card(Rank.SEVEN), card(Rank.FOUR)],
       { battleDepth: 3 },
+      'quartermaster'
     );
 
-    expect(reaction?.message).toBe('That Battle went deep.');
+    expect(reaction?.message).toBe('Too many supplies expended on one deadlock.');
+  });
+
+  describe('Commander Dialogue Personality Customization', () => {
+    it('uses Gambler-specific lines when Gambler loses to 2 vs Ace', () => {
+      randomValues = [0.1, 0];
+      const reaction = service.forClash({
+        playerCard: card(Rank.TWO),
+        opponentCard: card(Rank.ACE),
+        winner: PlayerType.PLAYER,
+        specialRule: true,
+      }, 'gambler');
+
+      expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
+      expect(reaction?.message).toBe('Now that is a lucky pull.');
+    });
+
+    it('uses Analyst-specific lines when Analyst loses to 2 vs Ace', () => {
+      randomValues = [0.1, 0];
+      const reaction = service.forClash({
+        playerCard: card(Rank.TWO),
+        opponentCard: card(Rank.ACE),
+        winner: PlayerType.PLAYER,
+        specialRule: true,
+      }, 'analyst');
+
+      expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
+      expect(reaction?.message).toBe('The probability of that exception was documented.');
+    });
+
+    it('uses Attritionist-specific lines when Attritionist suffers battle casualty', () => {
+      randomValues = [0.1, 0];
+      const reaction = service.forBattleLoss(
+        PlayerType.OPPONENT,
+        [card(Rank.ACE)],
+        {},
+        'attritionist'
+      );
+
+      expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
+      expect(reaction?.message).toBe('An Ace fallen, but the line remains.');
+    });
   });
 });

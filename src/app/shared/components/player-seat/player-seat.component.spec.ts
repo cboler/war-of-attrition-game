@@ -39,4 +39,14 @@ describe('PlayerSeatComponent', () => {
     expect(badge.textContent.trim()).toBe('1');
     expect(fixture.nativeElement.querySelectorAll('.pop-fragments i').length).toBe(6);
   });
+
+  it('renders optional title when provided', () => {
+    fixture.componentRef.setInput('name', 'The Quartermaster');
+    fixture.componentRef.setInput('title', 'Conservative Logistics');
+    fixture.detectChanges();
+
+    const titleEl = fixture.nativeElement.querySelector('.seat-title');
+    expect(titleEl).toBeTruthy();
+    expect(titleEl.textContent.trim()).toBe('Conservative Logistics');
+  });
 });

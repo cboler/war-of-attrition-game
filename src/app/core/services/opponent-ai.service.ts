@@ -1,5 +1,11 @@
 import { InjectionToken, Injectable, inject } from '@angular/core';
 import { Card, Rank } from '../models/card.model';
+import {
+  DEFAULT_COMMANDER_ID,
+  OpponentCommander,
+  OpponentCommanderId,
+  getCommander
+} from '../models/commander.model';
 import { CardComparisonService, ComparisonResult } from './card-comparison.service';
 
 export const AI_RANDOM = new InjectionToken<() => number>('AI_RANDOM', {
@@ -16,6 +22,8 @@ export interface OpponentChallengeContext {
   readonly ownCardPool: readonly Card[];
   /** Revealed table cards and Boneyard cards only. Never either hidden draw order. */
   readonly publicCards: readonly Card[];
+  /** The active commander defining this opponent's strategic weights and heuristics. */
+  readonly commander?: OpponentCommander | OpponentCommanderId;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -23,25 +31,37 @@ export class OpponentAIService {
   private readonly random = inject(AI_RANDOM);
   private readonly comparison = inject(CardComparisonService);
 
-  shouldChallenge(cardAtRisk: Card, context?: OpponentChallengeContext): boolean {
-    const score = this.challengeScore(cardAtRisk, context);
-    if (score >= 80) return true;
-    if (score < 20) return false;
+  shouldChallenge(
+    cardAtRisk: Card,
+    context?: OpponentChallengeContext,
+    commanderOverride?: OpponentCommander | OpponentCommanderId
+  ): boolean {
+    const commander = this.resolveCommander(commanderOverride ?? context?.commander);
+    const strategy = commander.strategy;
+    const score = this.challengeScore(cardAtRisk, context, commander);
 
-    const probability = score >= 60
-      ? 0.82
-      : score >= 40
-        ? 0.38 + ((score - 40) / 20) * 0.32
-        : 0.12;
+    if (score >= strategy.autoAcceptScore) return true;
+    if (score < strategy.autoRejectScore) return false;
+
+    const bandSpan = Math.max(1, strategy.autoAcceptScore - strategy.autoRejectScore);
+    const progress = (score - strategy.autoRejectScore) / bandSpan;
+    const baseProb = 0.15 + progress * 0.70;
+    const probability = Math.max(0.05, Math.min(0.95, baseProb * strategy.gambleBandMultiplier));
     return this.random() < probability;
   }
 
-  challengeScore(cardAtRisk: Card, context?: OpponentChallengeContext): number {
+  challengeScore(
+    cardAtRisk: Card,
+    context?: OpponentChallengeContext,
+    commanderOverride?: OpponentCommander | OpponentCommanderId
+  ): number {
+    const commander = this.resolveCommander(commanderOverride ?? context?.commander);
+    const strategy = commander.strategy;
     const ownDeckCount = context?.ownDeckCount ?? 0;
     const cardValue = this.strategicValue(cardAtRisk.rank);
 
     // Valuable cards deserve defense; expendable low cards normally do not.
-    let score = cardValue * 0.68;
+    let score = cardValue * strategy.cardValueWeight;
 
     if (context) {
       // A physical player knows the original cards of their color and can
@@ -59,24 +79,29 @@ export class OpponentAIService {
         const winRate = wins / outcomes.length;
         const tieRate = ties / outcomes.length;
         const canSupportBattle = ownDeckCount >= 4;
-        score += winRate * 34;
-        score += tieRate * (canSupportBattle ? 10 : -22);
+        score += winRate * strategy.winRateWeight;
+        score += tieRate * (canSupportBattle ? strategy.supportedTieWeight : strategy.unsupportedTiePenalty);
 
         const averageStrength = candidates.reduce(
           (total, card) => total + this.strategicValue(card.rank),
           0
         ) / candidates.length;
-        score += (averageStrength - 45) * 0.08;
+        score += (averageStrength - 45) * strategy.candidatePoolStrengthWeight;
 
         // Drawing the tying reinforcement leaves three new cards to fund a
         // Battle. Unsupported ties are materially worse than clean wins.
         if (!canSupportBattle && ties > 0) score -= 8;
       }
 
+      // Reserve depth penalty (e.g., for Attritionist preserving Battle capacity)
+      if (ownDeckCount > 0 && ownDeckCount < 5 && strategy.reserveDepletionPenalty > 0) {
+        score -= strategy.reserveDepletionPenalty;
+      }
+
       // The same card becomes more precious as elimination approaches.
-      if (ownDeckCount <= 3) score += 38;
-      else if (ownDeckCount <= 6) score += 27;
-      else if (ownDeckCount <= 10) score += 14;
+      if (ownDeckCount <= 3) score += strategy.desperationWeights.severe;
+      else if (ownDeckCount <= 6) score += strategy.desperationWeights.moderate;
+      else if (ownDeckCount <= 10) score += strategy.desperationWeights.mild;
     }
 
     return Math.max(0, Math.min(100, Math.round(score)));
@@ -88,6 +113,12 @@ export class OpponentAIService {
       throw new Error('Battle target selection requires at least one card');
     }
     return Math.min(cardCount - 1, Math.floor(this.random() * cardCount));
+  }
+
+  private resolveCommander(commander?: OpponentCommander | OpponentCommanderId): OpponentCommander {
+    if (typeof commander === 'string') return getCommander(commander);
+    if (commander && typeof commander === 'object' && 'strategy' in commander) return commander;
+    return getCommander(DEFAULT_COMMANDER_ID);
   }
 
   private strategicValue(rank: Rank): number {
@@ -108,3 +139,4 @@ export class OpponentAIService {
     }
   }
 }
+

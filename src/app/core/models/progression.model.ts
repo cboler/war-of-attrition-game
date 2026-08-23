@@ -1,4 +1,10 @@
 import { GameOutcome } from './game-state.model';
+import {
+  COMMANDER_IDS,
+  DEFAULT_COMMANDER_ID,
+  isCommanderId,
+  OpponentCommanderId
+} from './commander.model';
 
 export const CAMPAIGN_PROGRESSION_SCHEMA_VERSION = 1;
 export const WARS_PER_CAMPAIGN = 3;
@@ -21,11 +27,13 @@ export interface CampaignWarRecord {
 
 export interface ActiveCampaign {
   readonly campaignId: string;
+  readonly commanderId: OpponentCommanderId;
   readonly wars: readonly CampaignWarRecord[];
 }
 
 export interface CampaignHistoryEntry {
   readonly campaignId: string;
+  readonly commanderId?: OpponentCommanderId;
   readonly wars: readonly CampaignWarRecord[];
   readonly wins: number;
   readonly losses: number;
@@ -96,9 +104,20 @@ export function createProgressionId(prefix: 'campaign' | 'war' = 'campaign'): st
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
+export function deriveFallbackCommanderId(campaignId: unknown): OpponentCommanderId {
+  if (typeof campaignId !== 'string' || !campaignId) return DEFAULT_COMMANDER_ID;
+  let hash = 0;
+  for (let i = 0; i < campaignId.length; i++) {
+    hash = (hash * 31 + campaignId.charCodeAt(i)) | 0;
+  }
+  const index = Math.abs(hash) % COMMANDER_IDS.length;
+  return COMMANDER_IDS[index];
+}
+
 export function createDefaultCampaignProgression(
   selectedCardBackingId = DEFAULT_CARD_BACKING_ID,
-  now = new Date().toISOString()
+  now = new Date().toISOString(),
+  initialCommanderId: OpponentCommanderId = DEFAULT_COMMANDER_ID
 ): CampaignProgression {
   const selected = normalizeCosmeticId(selectedCardBackingId) || DEFAULT_CARD_BACKING_ID;
   const defaultUnlock: CosmeticUnlock = {
@@ -123,6 +142,7 @@ export function createDefaultCampaignProgression(
     schemaVersion: CAMPAIGN_PROGRESSION_SCHEMA_VERSION,
     currentCampaign: {
       campaignId: createProgressionId('campaign'),
+      commanderId: initialCommanderId,
       wars: []
     },
     recentCampaigns: [],
@@ -147,6 +167,10 @@ export function normalizeCampaignProgression(
   }
 
   const rawCurrent = isRecord(value['currentCampaign']) ? value['currentCampaign'] : null;
+  const rawCampaignId = normalizeId(rawCurrent?.['campaignId']) || createProgressionId('campaign');
+  const commanderId = isCommanderId(rawCurrent?.['commanderId'])
+    ? rawCurrent['commanderId']
+    : deriveFallbackCommanderId(rawCampaignId);
   const currentWars = normalizeWars(rawCurrent?.['wars']).slice(0, WARS_PER_CAMPAIGN - 1);
   const recentCampaigns = normalizeCampaignHistory(value['recentCampaigns']).slice(-MAX_CAMPAIGN_HISTORY);
   const storedUnlocks = normalizeUnlocks(value['unlockedCosmetics']);
@@ -171,7 +195,8 @@ export function normalizeCampaignProgression(
   return {
     schemaVersion: CAMPAIGN_PROGRESSION_SCHEMA_VERSION,
     currentCampaign: {
-      campaignId: normalizeId(rawCurrent?.['campaignId']) || createProgressionId('campaign'),
+      campaignId: rawCampaignId,
+      commanderId,
       wars: currentWars
     },
     recentCampaigns,
@@ -197,7 +222,8 @@ export function calculateWarMargin(input: ResolvedWarInput): number {
 
 export function summarizeCampaign(
   campaignId: string,
-  wars: readonly CampaignWarRecord[]
+  wars: readonly CampaignWarRecord[],
+  commanderId?: OpponentCommanderId
 ): CampaignHistoryEntry {
   if (wars.length !== WARS_PER_CAMPAIGN) {
     throw new Error(`A Campaign requires exactly ${WARS_PER_CAMPAIGN} resolved Wars.`);
@@ -212,6 +238,7 @@ export function summarizeCampaign(
 
   return {
     campaignId,
+    commanderId,
     wars: [...wars],
     wins,
     losses,
@@ -229,12 +256,14 @@ function normalizeCampaignHistory(value: unknown): CampaignHistoryEntry[] {
   for (const candidate of value) {
     if (!isRecord(candidate)) continue;
     const campaignId = normalizeId(candidate['campaignId']);
+    const commanderId = isCommanderId(candidate['commanderId']) ? candidate['commanderId'] : undefined;
     const wars = normalizeWars(candidate['wars']);
     if (!campaignId || wars.length !== WARS_PER_CAMPAIGN) continue;
-    history.push(summarizeCampaign(campaignId, wars));
+    history.push(summarizeCampaign(campaignId, wars, commanderId));
   }
   return history;
 }
+
 
 function normalizeWars(value: unknown): CampaignWarRecord[] {
   if (!Array.isArray(value)) return [];

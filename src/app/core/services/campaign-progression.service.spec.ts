@@ -125,6 +125,31 @@ describe('CampaignProgressionService', () => {
     expect(service.progression().recentCampaigns.length).toBe(MAX_CAMPAIGN_HISTORY);
     expect(service.progression().recentCampaigns[0].wars[0].warId).toBe('history-2-0');
   });
+
+  describe('Commander Campaign Lifecycle', () => {
+    it('persists the commander throughout all 3 Wars of a Campaign and rotates on completion', () => {
+      const initialCommanderId = service.currentCampaign().commanderId;
+      expect(service.currentCommander().id).toBe(initialCommanderId);
+
+      // War 1
+      service.recordResolvedWar(war('c-war-1', GameOutcome.PLAYER_WIN, 4, 0));
+      expect(service.currentCampaign().commanderId).toBe(initialCommanderId);
+      expect(service.currentCommander().id).toBe(initialCommanderId);
+
+      // War 2
+      service.recordResolvedWar(war('c-war-2', GameOutcome.PLAYER_WIN, 2, 0));
+      expect(service.currentCampaign().commanderId).toBe(initialCommanderId);
+
+      // War 3 (Completes campaign)
+      const result = service.recordResolvedWar(war('c-war-3', GameOutcome.PLAYER_WIN, 6, 0));
+      expect(result.completedCampaign?.commanderId).toBe(initialCommanderId);
+
+      const nextCommanderId = service.currentCampaign().commanderId;
+      expect(nextCommanderId).not.toBe(initialCommanderId);
+      expect(service.currentCommander().id).toBe(nextCommanderId);
+      expect(service.currentCampaign().wars.length).toBe(0);
+    });
+  });
 });
 
 function war(

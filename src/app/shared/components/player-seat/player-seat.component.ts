@@ -18,6 +18,9 @@ import { CardComponent } from '../card/card.component';
         <span class="status-dot" [class.thinking]="thinking()" aria-hidden="true"></span>
         <div>
           <strong>{{ name() }}</strong>
+          @if (title()) {
+            <span class="seat-title">{{ title() }}</span>
+          }
           <span>{{ cardCount() }} cards<span class="at-risk">{{ dangerLabel() }}</span></span>
         </div>
       </div>
@@ -68,6 +71,7 @@ import { CardComponent } from '../card/card.component';
 })
 export class PlayerSeatComponent {
   name = input.required<string>();
+  title = input<string | null>(null);
   position = input<'top' | 'right' | 'bottom' | 'left'>('bottom');
   cardCount = input(0);
   cardsAtRisk = input(0);
@@ -77,6 +81,7 @@ export class PlayerSeatComponent {
   deckHand = input<'right' | 'left'>('right');
   defeatPopping = input(false);
   motionDisabled = input(false);
+
   deckActivated = output<void>();
 
   protected dangerLabel = computed(() =>

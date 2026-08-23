@@ -7,6 +7,12 @@ import {
   PlayerType,
 } from '../core/models/game-state.model';
 import { Card, Rank } from '../core/models/card.model';
+import {
+  DEFAULT_COMMANDER_ID,
+  OpponentCommander,
+  OpponentCommanderId,
+  getCommander,
+} from '../core/models/commander.model';
 import type { PublicBattleResolution } from '../core/models/game-events.model';
 import { GameStateService } from '../core/services/game-state.service';
 import { OpponentAIService } from '../core/services/opponent-ai.service';
@@ -153,6 +159,7 @@ export class GameControllerService {
   private readonly presentationStepSkippedPhaseSignal = signal<PresentationState | null>(null);
   private readonly holdPlayerFinalBadgeSignal = signal(false);
   private readonly holdOpponentFinalBadgeSignal = signal(false);
+  private readonly fixtureCommanderSignal = signal<OpponentCommander | null>(null);
   private messageCounter = 0;
 
   // Active game telemetry
@@ -187,6 +194,9 @@ export class GameControllerService {
   readonly presentationState = this.phase.asReadonly();
   readonly tableMessage = this.gameMessage.asReadonly();
   readonly tableReaction = this.reaction.asReadonly();
+  readonly opponentCommander = computed<OpponentCommander>(
+    () => this.fixtureCommanderSignal() ?? this.campaignProgression.currentCommander()
+  );
   readonly opponentPointerIndex = this.opponentPointer.asReadonly();
   readonly cardsMovingToBoneyard = this.movingToBoneyardIds.asReadonly();
   readonly cardsReturningHome = this.returningHomeIds.asReadonly();
@@ -205,6 +215,7 @@ export class GameControllerService {
     const count = this.gameState.opponentCardCount();
     return count === 0 && this.holdOpponentFinalBadgeSignal() ? 1 : count;
   });
+
 
   readonly visibleBoneyardCards = computed(() => {
     const withheld = new Set(this.withheldBoneyardIds());
@@ -391,6 +402,7 @@ export class GameControllerService {
     this.holdPlayerFinalBadgeSignal.set(false);
     this.holdOpponentFinalBadgeSignal.set(false);
     this.gameSummarySignal.set(null);
+    this.fixtureCommanderSignal.set(null);
     this.storyBook.clear();
 
     // Reset active game telemetry
@@ -426,6 +438,7 @@ export class GameControllerService {
     const warContext = this.telemetry.beginWar({
       playerDeckColor: this.gameState.currentPlayerDeckColor,
       startType: didAbandon ? 'restart' : 'new',
+      commanderId: this.opponentCommander().id,
     });
     this.currentWarId = warContext.warId;
     this.eventBus.emit({
@@ -551,7 +564,11 @@ export class GameControllerService {
       this.phase.set(PresentationState.CLASH_RESOLUTION);
       this.sound.playCardLand();
 
-      const result = this.turnResolution.resolveTurn(playerCard, opponentCard);
+      const result = this.turnResolution.resolveTurn(
+        playerCard,
+        opponentCard,
+        this.opponentCommander(),
+      );
       this.withholdBoneyard(result);
       const specialRule = this.comparison.isSpecialAceVsTwoRule(playerCard, opponentCard);
       this.resolveComparison(playerCard, opponentCard, result.result, specialRule);
@@ -573,12 +590,15 @@ export class GameControllerService {
       });
       if (result.winner) {
         this.speakReaction(
-          this.reactions.forClash({
-            playerCard,
-            opponentCard,
-            winner: result.winner,
-            specialRule,
-          }),
+          this.reactions.forClash(
+            {
+              playerCard,
+              opponentCard,
+              winner: result.winner,
+              specialRule,
+            },
+            this.opponentCommander(),
+          ),
         );
       }
 
@@ -692,13 +712,16 @@ export class GameControllerService {
           savedTwo,
         });
         this.speakReaction(
-          this.reactions.forChallengeResolution({
-            challenger: PlayerType.PLAYER,
-            originalBeatenCard: turn.playerCard,
-            reinforcementCard: reinforcement,
-            originalWinnerCard: turn.opponentCard,
-            challengerWon,
-          }),
+          this.reactions.forChallengeResolution(
+            {
+              challenger: PlayerType.PLAYER,
+              originalBeatenCard: turn.playerCard,
+              reinforcementCard: reinforcement,
+              originalWinnerCard: turn.opponentCard,
+              challengerWon,
+            },
+            this.opponentCommander(),
+          ),
         );
       }
 
@@ -829,18 +852,21 @@ export class GameControllerService {
         originalBeatenCard: turn.opponentCard,
         comparison: challengeResult.result,
         winner: challengeResult.winner,
-        challengerWon: challengeResult.winner === PlayerType.OPPONENT,
+      challengerWon: challengeResult.winner === PlayerType.OPPONENT,
         message: challengeResult.message,
         savedTwo: false,
       });
       this.speakReaction(
-        this.reactions.forChallengeResolution({
-          challenger: PlayerType.OPPONENT,
-          originalBeatenCard: turn.opponentCard,
-          reinforcementCard: reinforcement,
-          originalWinnerCard: turn.playerCard,
-          challengerWon: challengeResult.winner === PlayerType.OPPONENT,
-        }),
+        this.reactions.forChallengeResolution(
+          {
+            challenger: PlayerType.OPPONENT,
+            originalBeatenCard: turn.opponentCard,
+            reinforcementCard: reinforcement,
+            originalWinnerCard: turn.playerCard,
+            challengerWon: challengeResult.winner === PlayerType.OPPONENT,
+          },
+          this.opponentCommander(),
+        ),
       );
     }
 
@@ -1048,14 +1074,19 @@ export class GameControllerService {
 
     // A casualty-specific quip is safe only after every losing card is public.
     const career = this.authService.userStats();
-    const reaction = this.reactions.forBattleLoss(loser, casualties, {
-      decisiveCard: result.settlementAttribution?.decisiveCard,
-      battleDepth: outcome.battleDepth,
-      winnerBattleStreak:
-        winner === PlayerType.PLAYER
-          ? career.currentBattleWinStreak + 1
-          : career.currentBattleLossStreak + 1,
-    });
+    const reaction = this.reactions.forBattleLoss(
+      loser,
+      casualties,
+      {
+        decisiveCard: result.settlementAttribution?.decisiveCard,
+        battleDepth: outcome.battleDepth,
+        winnerBattleStreak:
+          winner === PlayerType.PLAYER
+            ? career.currentBattleWinStreak + 1
+            : career.currentBattleLossStreak + 1,
+      },
+      this.opponentCommander(),
+    );
     this.speakReaction(reaction);
 
     this.eventBus.emit({
@@ -1631,6 +1662,7 @@ export class GameControllerService {
     readonly reaction?: TableReaction | null;
     readonly turnsPlayed?: number;
     readonly pendingHumanTargetId?: string | null;
+    readonly commander?: OpponentCommander | OpponentCommanderId | null;
   }): void {
     this.sequencer.cancel();
     this.phase.set(state.phase);
@@ -1644,5 +1676,14 @@ export class GameControllerService {
     this.reaction.set(state.reaction ?? null);
     this.turnsPlayed = state.turnsPlayed ?? 1;
     this.pendingHumanTargetId.set(state.pendingHumanTargetId ?? null);
+    if (state.commander !== undefined) {
+      this.fixtureCommanderSignal.set(
+        state.commander
+          ? typeof state.commander === 'string'
+            ? getCommander(state.commander)
+            : state.commander
+          : null
+      );
+    }
   }
 }

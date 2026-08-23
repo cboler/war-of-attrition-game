@@ -180,6 +180,7 @@ export function mapGameEventToTelemetry(
     case 'game_resolved':
       return record('war_resolved', {
         ...common,
+        ...(envelope.commanderId ? { commander_id: envelope.commanderId } : {}),
         outcome: event.outcome,
         turns: event.turns,
         player_remaining: event.playerCardsRemaining,
@@ -206,6 +207,7 @@ export function mapGameEventToTelemetry(
         : event.lastDecision;
       return record('war_abandoned', {
         ...common,
+        ...(envelope.commanderId ? { commander_id: envelope.commanderId } : {}),
         abandonment_type: 'explicit',
         abandonment_action: abandonmentAction,
         player_deck_count: event.playerDeckCount,
@@ -253,6 +255,7 @@ export function mapProgressionEventToTelemetry(
       campaign_id: campaign.campaignId,
       war_id: campaign.wars[campaign.wars.length - 1].warId,
       campaign_war_index: 3,
+      ...(campaign.commanderId ? { commander_id: campaign.commanderId } : {}),
       event_seq: eventSeq,
       outcome: campaign.outcome,
       wins: campaign.wins,

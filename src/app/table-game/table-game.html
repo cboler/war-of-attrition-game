@@ -12,7 +12,8 @@
   <app-card-table>
     <app-player-seat
       table-seat-top
-      name="Opponent"
+      [name]="controller.opponentCommander().name"
+      [title]="controller.opponentCommander().title"
       position="top"
       [cardCount]="controller.opponentDeckDisplayCount()"
       [cardsAtRisk]="controller.opponentCardsAtRisk()"

@@ -32,9 +32,10 @@ The core game and meta-progression architectures are fully implemented, tested, 
 - **Boneyard Casualty Viewer**: Public casualty inspector displaying discard counts, deck thickness cues, and full discarded card inspection.
 
 ### Progression, Personalization & Telemetry
+- **Opponent Commanders & AI Personalities**: Parameterized decision engine in `OpponentAIService` powering five distinct fair-play archetypes (The Quartermaster, The Gambler, The Analyst, The Attritionist, The Cornered General) with contextual dialogue in `TableReactionService`, persistent campaign-level assignment, rotation without immediate repeat, table seat presentation, and telemetry integration. See [`developer-docs/opponent-commanders.md`](../../developer-docs/opponent-commanders.md).
 - **Commander Profile & Statistics**: Persistent local statistics tracking win rate, game durations, battle records, challenge success rates, and memorable card events (e.g. Ace assassinations, Juggernauts).
 - **Achievements System**: 15 tiered achievements with local persistence and scaffolded Play Games Services synchronization.
-- **Three-War Campaign Mode**: Multi-war campaign progression tracking match scores, cumulative card differentials, and career distinctions.
+- **Three-War Campaign Mode**: Multi-war campaign progression tracking match scores, cumulative card differentials, opposing commander records, and career distinctions.
 - **Cosmetic Card Backings**: Token wallet and card-backing customization unlockable via campaign progression.
 - **Privacy-Compliant Telemetry**: Google Analytics 4 integration with explicit user consent prompts (`TelemetryConsentService`), denying tracking by default until granted, with zero analytics collected in test/screenshot modes.
 
@@ -64,14 +65,13 @@ Remaining work is concentrated in validation, UX refinement, and store complianc
 The application deliberately uses a **fixed dark green felt presentation**. In War of Attrition, the visual world is the card table itself. Conventional light/dark theme toggling does not fit this aesthetic and was intentionally removed.
 
 ### Fidelity to Physical Card Play
-War of Attrition is designed to be fully playable with an ordinary, physical 52-card deck. Digital additions (animations, power badges, quip dialogue, campaign scoring, statistics) enhance presentation and progression, but do **not** alter standard card ranks or introduce fantasy card abilities.
+War of Attrition is designed to be fully playable with an ordinary, physical 52-card deck. Digital additions (animations, power badges, quip dialogue, campaign scoring, statistics, opponent commanders) enhance presentation and progression, but do **not** alter standard card ranks, manipulate hidden deck orders, or introduce fantasy card abilities.
 
 ---
 
 ## 5. Future Candidates (Post-Release Backlog)
 
-The following concepts are preserved for post-release development and are documented in [`developer-docs/future-gameplay-ideas.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/future-gameplay-ideas.md):
+The following concepts are preserved for post-release development and are documented in [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md):
 
-- **Opponent AI Personalities**: Fair, non-cheating AI commanders with distinct risk thresholds (e.g., Quartermaster, Gambler, Analyst, Attritionist, Cornered General).
 - **Hall of Valor (Card Service Records)**: Persistent historical service records for individual physical-card identities (`hearts-Q`, `diamonds-2`, etc.) across multiple Wars.
 - **Alternate Rules Campaigns**: Campaign variants that adjust constraints without breaking standard physical card rules (Limited Reserves, Fog of War, No Retreat, Total War, Escalation).

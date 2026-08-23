@@ -1,5 +1,6 @@
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { OpponentCommanderId } from '../core/models/commander.model';
 import { GameEvent } from '../core/models/game-events.model';
 import {
   GAME_TELEMETRY_SCHEMA_VERSION,
@@ -22,6 +23,7 @@ export interface BeginWarTelemetryInput {
   readonly campaignId?: string;
   readonly campaignWarIndex?: 1 | 2 | 3;
   readonly playerDeckColor?: DeckColor;
+  readonly commanderId?: OpponentCommanderId;
   readonly startType?: 'new' | 'restart' | 'resume';
 }
 
@@ -77,7 +79,8 @@ export class GameTelemetryService {
       warId: requestedWarId || createProgressionId('war'),
       campaignId: normalizeContextId(input.campaignId) || activeCampaign.campaignId,
       campaignWarIndex: input.campaignWarIndex ?? this.progressionService.campaignWarIndex(),
-      playerDeckColor: input.playerDeckColor ?? 'unknown'
+      playerDeckColor: input.playerDeckColor ?? 'unknown',
+      commanderId: input.commanderId ?? activeCampaign.commanderId
     };
     this.warContextSignal.set(context);
     this.eventSequence = 0;
@@ -154,6 +157,7 @@ export class GameTelemetryService {
       war_id: context.warId,
       campaign_id: context.campaignId,
       campaign_war_index: context.campaignWarIndex,
+      ...(context.commanderId ? { commander_id: context.commanderId } : {}),
       event_seq: eventSeq
     };
   }

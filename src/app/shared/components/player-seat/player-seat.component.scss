@@ -30,6 +30,14 @@
 .identity strong,
 .identity span { display: block; }
 .identity strong { color: #fffaf0; font: 650 clamp(0.85rem, 1.2vw, 1rem)/1.1 Georgia, serif; letter-spacing: 0.04em; }
+.identity .seat-title {
+  font-size: clamp(0.62rem, 0.8vw, 0.7rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd54f;
+  margin-top: 1px;
+  font-weight: 600;
+}
 .identity span { margin-top: 3px; font-size: clamp(0.68rem, 0.9vw, 0.76rem); letter-spacing: 0.05em; text-transform: uppercase; color: rgba(248, 241, 226, 0.72); }
 .identity .at-risk { display: inline; color: #ffd54f; font-weight: 600; }
 

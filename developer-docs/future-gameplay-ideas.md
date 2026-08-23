@@ -14,29 +14,15 @@ This document catalogs future design concepts and backlog ideas for **War of Att
 ---
 
 ## 1. Nearer-Term Post-Release Candidates
+ 
+### A. Opponent Commanders & AI Personalities (Graduated to Implemented System)
 
-### A. Opponent Commanders & AI Personalities
+> **Status**: Fully implemented. See [`developer-docs/opponent-commanders.md`](./opponent-commanders.md) for the active architecture, strategy weights, campaign rotation, dialogue pools, and telemetry integration.
 
-**Concept**:
-Introduce named AI commanders who share the exact same underlying rules engine and fair public-information model, but apply distinct strategic weights, risk tolerances, and behavioral heuristics.
-
-**Key Rule — No Cheating**:
-Opponent commanders must **never** inspect hidden deck order or cheat hidden information. They must make decisions using only publicly observable information available to a physical player at the table (own visible card, opponent visible card, public Boneyard casualties, known cards remaining in play).
-
-**Commander Archetypes**:
-1. **The Quartermaster**:
-   - Highly conservative. Avoids burning high-value cards on speculative challenges unless necessary to prevent critical deck bleed.
-2. **The Gambler**:
-   - High risk tolerance. Readily accepts marginal reinforcement odds and frequently challenges mid-rank losses (5–9) to seize momentum.
-3. **The Analyst**:
-   - Pure probability engine. Heavily weights exact public casualty ratios in the Boneyard to calculate real-time reinforcement success odds.
-4. **The Attritionist**:
-   - Long-term deck depth strategist. Focuses on preserving battle reserves (ensuring at least 4+ cards in deck) and avoids depleting resources before potential deadlocks.
-5. **The Cornered General**:
-   - Adaptive desperation. Plays textbook strategy at full strength, but becomes increasingly aggressive with challenges as its deck approaches exhaustion.
-
-**Campaign Integration**:
-Facing the same commander across a full Three-War Campaign creates a strategic narrative, allowing human players to recognize, adapt to, and exploit the opponent's tendencies across successive Wars.
+**Core Principles Maintained**:
+- **Strict Fair Play & No Cheating**: Opponent commanders strictly obey standard physical card rules and never inspect hidden cards or manipulate deck order.
+- **5 Canonical Archetypes**: The Quartermaster, The Gambler, The Analyst, The Attritionist, and The Cornered General.
+- **Campaign Persistence & Rotation**: Continuous multi-war opponent identity per Campaign with rotation preventing immediate repeat.
 
 ---
 

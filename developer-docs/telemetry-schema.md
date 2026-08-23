@@ -31,7 +31,7 @@ A measurement ID is public client configuration, not an API credential. Do not a
 
 Every canonical gameplay record contains:
 
-`schema_version`, `ruleset_version`, `app_version`, `war_id`, `campaign_id`, `campaign_war_index`, and `event_seq`.
+`schema_version`, `ruleset_version`, `app_version`, `war_id`, `campaign_id`, `campaign_war_index`, `commander_id` (when present), and `event_seq`.
 
 Game-bus records also include `turn_number`. Strings are capped at 100 characters, names/keys follow GA4 naming limits, non-finite values are rejected, and no more than 25 parameters are transmitted per event. Do not register high-cardinality War/Campaign IDs as GA custom dimensions; retain them for BigQuery analysis.
 

@@ -100,4 +100,68 @@ describe('OpponentAIService strategy', () => {
       'Battle target selection requires at least one card'
     );
   });
+
+  describe('Commander Archetype Divergence', () => {
+    it('Gambler has a broader gamble band and lower acceptance threshold than Quartermaster', () => {
+      const quartermaster = service['resolveCommander']('quartermaster');
+      const gambler = service['resolveCommander']('gambler');
+
+      expect(gambler.strategy.autoAcceptScore).toBeLessThan(quartermaster.strategy.autoAcceptScore);
+      expect(gambler.strategy.autoRejectScore).toBeLessThan(quartermaster.strategy.autoRejectScore);
+      expect(gambler.strategy.gambleBandMultiplier).toBeGreaterThan(quartermaster.strategy.gambleBandMultiplier);
+    });
+
+    it('Cornered General gains significant desperation bonus when low on cards', () => {
+      const atRisk = card(Rank.SEVEN, Suit.SPADES);
+      const opposing = card(Rank.NINE, Suit.HEARTS);
+
+      const healthyGeneralScore = service.challengeScore(atRisk, {
+        ...context(opposing, 15),
+        commander: 'cornered-general'
+      });
+      const desperateGeneralScore = service.challengeScore(atRisk, {
+        ...context(opposing, 3),
+        commander: 'cornered-general'
+      });
+
+      expect(desperateGeneralScore).toBeGreaterThan(healthyGeneralScore + 20);
+    });
+
+    it('Analyst heavily reacts to shifts in candidate pool probability', () => {
+      const opposing = card(Rank.TEN, Suit.HEARTS);
+      const weakUnavailable = ownCardPool.filter(c =>
+        [Rank.THREE, Rank.FOUR, Rank.FIVE].includes(c.rank)
+      );
+      const strongUnavailable = ownCardPool.filter(c =>
+        [Rank.ACE, Rank.KING, Rank.QUEEN].includes(c.rank)
+      );
+
+      const analystHighOdds = service.challengeScore(card(Rank.EIGHT), {
+        ...context(opposing, 12, weakUnavailable),
+        commander: 'analyst'
+      });
+      const analystLowOdds = service.challengeScore(card(Rank.EIGHT), {
+        ...context(opposing, 12, strongUnavailable),
+        commander: 'analyst'
+      });
+
+      expect(analystHighOdds - analystLowOdds).toBeGreaterThanOrEqual(15);
+    });
+
+    it('Attritionist penalizes challenges when reserves cannot sustain subsequent Battles', () => {
+      const atRisk = card(Rank.FOUR, Suit.SPADES);
+      const opposing = card(Rank.EIGHT, Suit.HEARTS);
+
+      const scoreWithReserves = service.challengeScore(atRisk, {
+        ...context(opposing, 10),
+        commander: 'attritionist'
+      });
+      const scoreDepleted = service.challengeScore(atRisk, {
+        ...context(opposing, 4),
+        commander: 'attritionist'
+      });
+
+      expect(scoreDepleted).toBeLessThan(scoreWithReserves);
+    });
+  });
 });

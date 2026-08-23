@@ -3,6 +3,10 @@ import { Subject } from 'rxjs';
 import { AuthService } from './auth.service';
 import { CARD_BACKING_OPTIONS } from '../models/settings.model';
 import {
+  getCommander,
+  selectNextCommander
+} from '../models/commander.model';
+import {
   CampaignHistoryEntry,
   CampaignProgression,
   CampaignWarRecord,
@@ -39,6 +43,9 @@ export class CampaignProgressionService {
   readonly events$ = this.eventSubject.asObservable();
   readonly progression = computed(() => this.authService.activeProfile().progression);
   readonly currentCampaign = computed(() => this.progression().currentCampaign);
+  readonly currentCommander = computed(() =>
+    getCommander(this.currentCampaign().commanderId)
+  );
   readonly campaignWarIndex = computed<1 | 2 | 3>(() =>
     Math.min(WARS_PER_CAMPAIGN, this.currentCampaign().wars.length + 1) as 1 | 2 | 3
   );
@@ -81,7 +88,11 @@ export class CampaignProgressionService {
 
     const candidateWars = [...current.currentCampaign.wars, war];
     const completedCampaign = candidateWars.length === WARS_PER_CAMPAIGN
-      ? summarizeCampaign(current.currentCampaign.campaignId, candidateWars)
+      ? summarizeCampaign(
+          current.currentCampaign.campaignId,
+          candidateWars,
+          current.currentCampaign.commanderId
+        )
       : null;
     const progression = this.authService.updateActiveProfileProgression(previous => {
       if (previous.processedWarIds.includes(warId)) return previous;
@@ -98,11 +109,18 @@ export class CampaignProgressionService {
         };
       }
 
-      const completed = summarizeCampaign(previous.currentCampaign.campaignId, wars);
+      const completed = summarizeCampaign(
+        previous.currentCampaign.campaignId,
+        wars,
+        previous.currentCampaign.commanderId
+      );
+      const nextCommanderId = selectNextCommander(previous.currentCampaign.commanderId);
+
       return {
         ...previous,
         currentCampaign: {
           campaignId: createProgressionId('campaign'),
+          commanderId: nextCommanderId,
           wars: []
         },
         recentCampaigns: [...previous.recentCampaigns, completed]
@@ -113,6 +131,7 @@ export class CampaignProgressionService {
         processedWarIds
       };
     });
+
 
     if (completedCampaign) {
       const stats = this.authService.userStats();

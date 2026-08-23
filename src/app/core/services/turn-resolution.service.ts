@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Card } from '../models/card.model';
+import { OpponentCommander, OpponentCommanderId } from '../models/commander.model';
 import {
   BattleOutcome,
   BattleSelectionOutcome,
@@ -41,7 +42,11 @@ export class TurnResolutionService {
   private readonly comparison = inject(CardComparisonService);
   private readonly opponentAI = inject(OpponentAIService);
 
-  resolveTurn(playerCard: Card, opponentCard: Card): TurnResult {
+  resolveTurn(
+    playerCard: Card,
+    opponentCard: Card,
+    commander?: OpponentCommander | OpponentCommanderId
+  ): TurnResult {
     this.requireCurrentCards(playerCard, opponentCard);
     const result = this.comparison.compareCards(playerCard, opponentCard);
     const special = this.comparison.isSpecialAceVsTwoRule(playerCard, opponentCard);
@@ -57,7 +62,9 @@ export class TurnResolutionService {
           ownDeckCount: this.gameState.currentOpponentDeck.count,
           ownCardPool: this.gameState.assignedCardPool(PlayerType.OPPONENT),
           publicCards: this.publicInformation(),
+          commander,
         });
+
       if (opponentChallenges) {
         this.gameState.setPhase(GamePhase.CHALLENGE);
         return this.result({

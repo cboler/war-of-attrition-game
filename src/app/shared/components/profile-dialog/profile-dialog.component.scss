@@ -523,6 +523,36 @@ mat-divider {
   letter-spacing: 0.16em;
 }
 
+.campaign-commander-callout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(228, 191, 114, 0.2);
+  border-radius: 6px;
+
+  .commander-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(247, 240, 225, 0.55);
+    font-weight: 700;
+  }
+
+  strong {
+    color: #ffd54f;
+    font-size: 0.88rem;
+    font-family: Georgia, serif;
+  }
+
+  small {
+    color: rgba(247, 240, 225, 0.75);
+    font-size: 0.7rem;
+    line-height: 1.25;
+  }
+}
+
 .token-balance {
   display: grid;
   grid-template-columns: auto auto;

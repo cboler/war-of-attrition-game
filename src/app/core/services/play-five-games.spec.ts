@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { GamePhase, PlayerType } from '../models/game-state.model';
+import { COMMANDER_IDS } from '../models/commander.model';
 import { GameStateService } from './game-state.service';
 import { TurnResolutionService } from './turn-resolution.service';
 
@@ -13,8 +14,9 @@ describe('deterministic engine simulation harness', () => {
     resolver = TestBed.inject(TurnResolutionService);
   });
 
-  it('plays five complete games without duplicating or destroying a card', () => {
-    for (let game = 0; game < 5; game++) {
+  it('plays complete games against all 5 commander archetypes without duplicating or destroying a card', () => {
+    for (let index = 0; index < COMMANDER_IDS.length; index++) {
+      const commanderId = COMMANDER_IDS[index];
       gameState.initializeGame();
       let hands = 0;
 
@@ -22,7 +24,7 @@ describe('deterministic engine simulation harness', () => {
         hands += 1;
         const { playerCard, opponentCard } = gameState.startTurn();
         if (!playerCard || !opponentCard) break;
-        let result = resolver.resolveTurn(playerCard, opponentCard);
+        let result = resolver.resolveTurn(playerCard, opponentCard, commanderId);
 
         if (result.canChallenge) {
           const defend = playerCard.value >= 10 && gameState.playerCardCount() > 0;
@@ -44,8 +46,8 @@ describe('deterministic engine simulation harness', () => {
             break;
           }
           result = resolver.resolveBattleSelection(
-            layer.opponentCards[(hands + game) % 3].id,
-            layer.playerCards[(hands + game + 1) % 3].id,
+            layer.opponentCards[(hands + index) % 3].id,
+            layer.playerCards[(hands + index + 1) % 3].id,
           );
           if (result.pendingBattleSettlement && result.battleOutcome) {
             resolver.finalizeBattle(result.battleOutcome, result.nextPhase === GamePhase.GAME_OVER);
@@ -54,14 +56,15 @@ describe('deterministic engine simulation harness', () => {
 
         const report = gameState.cardConservationReport();
         expect(report.valid)
-          .withContext(`game ${game + 1}, hand ${hands}: ${JSON.stringify(report)}`)
+          .withContext(`commander ${commanderId}, hand ${hands}: ${JSON.stringify(report)}`)
           .toBeTrue();
       }
 
       expect(gameState.currentPhase)
-        .withContext(`game ${game + 1} exceeded hand limit`)
+        .withContext(`commander ${commanderId} exceeded hand limit`)
         .toBe(GamePhase.GAME_OVER);
       expect(gameState.cardConservationReport().valid).toBeTrue();
     }
   });
 });
+
