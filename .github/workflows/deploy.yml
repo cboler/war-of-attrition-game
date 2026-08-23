@@ -36,6 +36,7 @@ jobs:
       run: npm run build:prod
       env:
         GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
 
     - name: Upload Pages artifact
       if: github.ref == 'refs/heads/main'
