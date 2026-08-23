@@ -1,6 +1,6 @@
 # Gameplay telemetry schema and owner setup
 
-Status: schema version `1`, ruleset version `2026.08.1`.
+Status: schema version `1`, ruleset version `2026.08.2`.
 
 Gameplay telemetry is implemented behind `GameTelemetryService`. The service consumes the typed `GameEventBusService` and profile-progression events, maps them through an explicit scalar whitelist, and sends them through the replaceable `TelemetryTransport` interface. There are no direct analytics calls in gameplay controllers.
 
@@ -22,7 +22,7 @@ Gameplay telemetry is implemented behind `GameTelemetryService`. The service con
 | --- | --- |
 | `GA4_MEASUREMENT_ID` | Public GA4 web-stream measurement ID; empty means no-op. |
 | `APP_VERSION` | Canonical deployed app version included in each record. |
-| `RULESET_VERSION` | Queryable rules version; defaults to `2026.08.1`. |
+| `RULESET_VERSION` | Queryable rules version; defaults to `2026.08.2`. |
 | `GOOGLE_CLIENT_ID` | Existing Google Identity configuration; never included in telemetry. |
 
 A measurement ID is public client configuration, not an API credential. Do not add a Google service-account key, Analytics Admin credential, BigQuery key, or other secret to the web bundle.

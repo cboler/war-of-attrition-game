@@ -2,7 +2,7 @@
 
 ## 1. Project State: Production Readiness / Final Polish
 
-**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. The project is an Angular Progressive Web Application (PWA) packaged for Android via a Trusted Web Activity (TWA) and is currently in the **Production Readiness / Final Polish** phase, undergoing Google Play closed testing, device compatibility validation, and store presence preparation.
+**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. The project is an Angular Progressive Web Application (PWA) packaged for Android via a Trusted Web Activity (TWA) and is currently at version 4.2.0 (Android versionCode 40200) in the **Production Readiness / Final Polish** phase, undergoing Google Play closed testing, device compatibility validation, and store presence preparation.
 
 ---
 
@@ -34,7 +34,7 @@ The core game and meta-progression architectures are fully implemented, tested, 
 ### Progression, Personalization & Telemetry
 - **Opponent Commanders & AI Personalities**: Parameterized decision engine in `OpponentAIService` powering five distinct fair-play archetypes (The Quartermaster, The Gambler, The Analyst, The Attritionist, The Cornered General) with contextual dialogue in `TableReactionService`, persistent campaign-level assignment, rotation without immediate repeat, table seat presentation, and telemetry integration. See [`developer-docs/opponent-commanders.md`](../../developer-docs/opponent-commanders.md).
 - **Commander Profile & Statistics**: Persistent local statistics tracking win rate, game durations, battle records, challenge success rates, and memorable card events (e.g. Ace assassinations, Juggernauts).
-- **Achievements System**: 28 tiered achievements with local persistence (including "Against the Odds" for winning a Battle via 2-defeats-Ace) and scaffolded Play Games Services synchronization for the 27 Google Play IDs.
+- **Achievements System**: 28 tiered achievements with local persistence (including "Against the Odds" / `war.battle_assassin` for winning a Battle via 2-defeats-Ace, intentionally local-only pending final Play achievement reconciliation) and scaffolded Play Games Services synchronization for the 27 Google Play IDs.
 - **Hall of Valor (Card Service Records)**: Persistent historical service records for individual physical-card identities across multiple Wars, fully implemented in version 4.1.0 (Roll of Honor, card detail ledgers, Juggernaut Citations at 5-streak threshold, notable rivalries, Field Manual integration). See [`developer-docs/hall-of-valor.md`](../../developer-docs/hall-of-valor.md).
 - **Three-War Campaign & Alternate Rules**: Multi-war campaign progression tracking match scores, cumulative card differentials, opposing commander records, and career distinctions. Includes the **Campaign Orders** briefing interface before War 1, **Limited Reserves** (5 cross-war reinforcements with zero-reserve auto-concession), **Total War** (cumulative signed card differential scoring with differential-first presentation and seat badging), and **Fog of War** (sealed Boneyard, redacted active Chronicle math, and sealed Hall records during active fighting). See [`developer-docs/alternate-rules-campaigns.md`](../../developer-docs/alternate-rules-campaigns.md).
 - **Cosmetic Card Backings**: Token wallet and card-backing customization unlockable via campaign progression.

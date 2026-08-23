@@ -10,7 +10,7 @@ try {
 const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
 const ga4MeasurementId = process.env.GA4_MEASUREMENT_ID || '';
 const appVersion = process.env.APP_VERSION || process.env.npm_package_version || packageVersion || '0.0.0';
-const rulesetVersion = process.env.RULESET_VERSION || '2026.08.1';
+const rulesetVersion = process.env.RULESET_VERSION || '2026.08.2';
 
 const stringLiteral = value => JSON.stringify(String(value));
 
