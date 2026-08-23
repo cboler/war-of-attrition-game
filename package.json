@@ -11,7 +11,9 @@
     "build:prod": "node scripts/set-env.js && ng build --configuration production --base-href /war-of-attrition-game/ && npm run move-build-files",
     "move-build-files": "node scripts/move-build-files.js",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "screenshots:store": "playwright test",
+    "screenshots:validate": "node scripts/validate-screenshots.js"
   },
   "prettier": {
     "printWidth": 100,
@@ -46,6 +48,7 @@
     "@angular/build": "^20.1.6",
     "@angular/cli": "^20.1.6",
     "@angular/compiler-cli": "^20.1.0",
+    "@playwright/test": "^1.62.1",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.8.0",
     "karma": "~6.4.0",

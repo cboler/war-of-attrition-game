@@ -13,6 +13,10 @@ import {
   TableCardView,
   battleAnnouncementFor
 } from '../services/game-controller.service';
+import { MatDialog } from '@angular/material/dialog';
+import { AuthService } from '../core/services/auth.service';
+import { StoryBookService } from '../services/story-book.service';
+import { ScreenshotStateLoader } from '../core/services/screenshot-state-loader';
 import { CardComponent } from '../shared/components/card/card.component';
 import { ComparisonStrengthComponent } from '../shared/components/comparison-strength/comparison-strength.component';
 import { GameOverSummaryComponent } from '../shared/components/game-over-summary/game-over-summary.component';
@@ -44,6 +48,9 @@ export class TableGame implements OnInit {
   protected readonly settings = inject(SettingsService);
   protected readonly achievements = inject(AchievementService);
   protected readonly tutorial = inject(TutorialService);
+  protected readonly auth = inject(AuthService);
+  protected readonly storyBook = inject(StoryBookService);
+  protected readonly dialog = inject(MatDialog);
   protected readonly state = PresentationState;
   protected readonly player = PlayerType;
   protected readonly boneyardOpen = signal(false);
@@ -87,6 +94,22 @@ export class TableGame implements OnInit {
   });
 
   ngOnInit(): void {
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const sceneParam = searchParams?.get('scene') || searchParams?.get('screenshot_scene');
+    if (sceneParam) {
+      ScreenshotStateLoader.loadScene(sceneParam, {
+        controller: this.controller,
+        gameState: this.gameState,
+        settings: this.settings,
+        auth: this.auth,
+        storyBook: this.storyBook,
+        dialog: this.dialog,
+        boneyardOpen: this.boneyardOpen,
+        storyBookOpen: this.storyBookOpen,
+        manualReferenceCard: this.manualReferenceCard
+      });
+      return;
+    }
     this.controller.ensureGameStarted();
   }
 

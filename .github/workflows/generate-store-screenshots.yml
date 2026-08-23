@@ -1,0 +1,58 @@
+name: Generate Google Play Store Screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Optional release tag / version label (e.g. v4.0.4)'
+        required: false
+        type: string
+
+jobs:
+  generate-screenshots:
+    name: Generate and Validate Play Store Screenshots
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium with System Dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate Play Store Screenshots
+        run: npm run screenshots:store
+        env:
+          CI: 'true'
+
+      - name: Validate Generated Screenshot Artifacts
+        run: npm run screenshots:validate
+
+      - name: Upload Google Play Store Screenshots Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-play-store-screenshots
+          path: store-assets/screenshots/
+          retention-days: 14
+
+      - name: Upload Playwright Diagnostics on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-diagnostics
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

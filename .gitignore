@@ -33,6 +33,9 @@ yarn-error.log
 .sass-cache/
 /connect.lock
 /coverage
+/playwright-report/
+/test-results/
+/store-assets/screenshots/**/*.png
 /libpeerconnection.log
 testem.log
 /typings

@@ -1617,4 +1617,32 @@ export class GameControllerService {
     this.announce('The table was reset after an invalid game state.');
     this.replaceGame(false);
   }
+
+  /**
+   * Directly sets presentation state for deterministic testing / store screenshot generation.
+   */
+  loadFixtureState(state: {
+    readonly phase: PresentationState;
+    readonly message: string;
+    readonly battlefieldMessages?: readonly BattlefieldMessage[];
+    readonly presentedTurn?: ActiveTurn | null;
+    readonly comparisonPresentation?: ComparisonPresentation | null;
+    readonly gameSummary?: CurrentGameSummary | null;
+    readonly reaction?: TableReaction | null;
+    readonly turnsPlayed?: number;
+    readonly pendingHumanTargetId?: string | null;
+  }): void {
+    this.sequencer.cancel();
+    this.phase.set(state.phase);
+    this.gameMessage.set(state.message);
+    this.battlefieldMessagesSignal.set(
+      state.battlefieldMessages ?? [{ id: ++this.messageCounter, text: state.message }]
+    );
+    this.presentedTurn.set(state.presentedTurn ?? null);
+    this.comparisonPresentationSignal.set(state.comparisonPresentation ?? null);
+    this.gameSummarySignal.set(state.gameSummary ?? null);
+    this.reaction.set(state.reaction ?? null);
+    this.turnsPlayed = state.turnsPlayed ?? 1;
+    this.pendingHumanTargetId.set(state.pendingHumanTargetId ?? null);
+  }
 }

@@ -538,4 +538,31 @@ export class GameStateService {
     if (outcome === GameOutcome.OPPONENT_WIN) return PlayerType.OPPONENT;
     return null;
   }
+
+  /**
+   * Directly sets internal game state for deterministic testing / store screenshot generation.
+   */
+  loadFixtureState(state: {
+    readonly playerDeckCards: readonly Card[];
+    readonly opponentDeckCards: readonly Card[];
+    readonly playerDeckColor?: DeckColor;
+    readonly discardCards?: readonly Card[];
+    readonly phase?: GamePhase;
+    readonly turnNumber?: number;
+    readonly activeTurn?: ActiveTurn | null;
+    readonly winner?: PlayerType | null;
+    readonly outcome?: GameOutcome | null;
+  }): void {
+    this.playerDeck.set(new Deck([...state.playerDeckCards]));
+    this.opponentDeck.set(new Deck([...state.opponentDeckCards]));
+    if (state.playerDeckColor) {
+      this.playerDeckColor.set(state.playerDeckColor);
+    }
+    this.discardPile.set(state.discardCards ?? []);
+    this.gamePhase.set(state.phase ?? GamePhase.NORMAL);
+    this.turnNumber.set(state.turnNumber ?? 1);
+    this.activeTurn.set(state.activeTurn ?? null);
+    this.winner.set(state.winner ?? null);
+    this.outcome.set(state.outcome ?? null);
+  }
 }

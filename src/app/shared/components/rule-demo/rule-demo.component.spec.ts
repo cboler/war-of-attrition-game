@@ -12,9 +12,27 @@ describe('RuleDemoComponent', () => {
   let component: RuleDemoComponent;
 
   beforeEach(async () => {
+    spyOn(globalThis, 'matchMedia').and.callFake(
+      (query: string) =>
+        ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false
+        }) as unknown as MediaQueryList
+    );
+
     await TestBed.configureTestingModule({
       imports: [RuleDemoComponent, NoopAnimationsModule]
     }).compileComponents();
+
+    const settings = TestBed.inject(SettingsService);
+    settings.setAutoPlayAnimations(true);
+    settings.setSoundEnabled(true);
 
     fixture = TestBed.createComponent(RuleDemoComponent);
     fixture.componentRef.setInput('rule', 'ranks');
