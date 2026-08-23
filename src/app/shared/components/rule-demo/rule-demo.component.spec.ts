@@ -4,6 +4,8 @@ import { RuleDemoComponent } from './rule-demo.component';
 import { GameEventBusService } from '../../../services/game-event-bus.service';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { SettingsService } from '../../../core/services/settings.service';
+import { SoundService } from '../../../core/services/sound.service';
 
 describe('RuleDemoComponent', () => {
   let fixture: ComponentFixture<RuleDemoComponent>;
@@ -40,6 +42,32 @@ describe('RuleDemoComponent', () => {
     fixture.detectChanges();
     expect(component.frameIndex()).toBe(0);
   });
+
+  it('plays tutorial cues while sound effects are enabled', fakeAsync(() => {
+    const sound = TestBed.inject(SoundService);
+    const draw = spyOn(sound, 'playCardDraw');
+    const positiveResolution = spyOn(sound, 'playPositiveResolution');
+
+    component.replay();
+    tick(950);
+
+    expect(draw).toHaveBeenCalledTimes(1);
+    expect(positiveResolution).toHaveBeenCalledTimes(1);
+  }));
+
+  it('does not play tutorial cues while sound effects are disabled', fakeAsync(() => {
+    const settings = TestBed.inject(SettingsService);
+    const sound = TestBed.inject(SoundService);
+    const draw = spyOn(sound, 'playCardDraw');
+    const positiveResolution = spyOn(sound, 'playPositiveResolution');
+    settings.setSoundEnabled(false);
+
+    component.replay();
+    tick(950);
+
+    expect(draw).not.toHaveBeenCalled();
+    expect(positiveResolution).not.toHaveBeenCalled();
+  }));
 
   it('emits closed and never publishes a gameplay event', fakeAsync(() => {
     const eventBus = TestBed.inject(GameEventBusService);

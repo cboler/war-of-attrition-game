@@ -22,20 +22,7 @@ describe('SettingsService', () => {
 
   it('should initialize with default settings', () => {
     expect(service.currentSettings()).toEqual(DEFAULT_SETTINGS);
-    expect(service.theme()).toBe('auto');
     expect(service.deckHand()).toBe('right');
-  });
-
-  describe('Theme management', () => {
-    it('should update theme to dark', () => {
-      service.setTheme('dark');
-      expect(service.theme()).toBe('dark');
-    });
-
-    it('should update theme to light', () => {
-      service.setTheme('light');
-      expect(service.theme()).toBe('light');
-    });
   });
 
   describe('Handedness management', () => {
@@ -117,19 +104,16 @@ describe('SettingsService', () => {
   describe('Settings management', () => {
     it('should update partial settings', () => {
       service.updateSettings({
-        theme: 'dark',
         deckHand: 'left',
         soundEnabled: false
       });
 
-      expect(service.theme()).toBe('dark');
       expect(service.deckHand()).toBe('left');
       expect(service.soundEnabled()).toBe(false);
       expect(service.selectedCardBacking()).toBe(DEFAULT_SETTINGS.selectedCardBacking);
     });
 
     it('should reset all settings', () => {
-      service.setTheme('dark');
       service.setDeckHand('left');
       service.setSoundEnabled(false);
       progression.unlockCardBacking('classic-red', 'achievement');

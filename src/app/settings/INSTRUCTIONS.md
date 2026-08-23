@@ -12,6 +12,6 @@ This directory contains the settings configuration component and user preference
 ## 🎨 Feature Responsibilities
 
 1. **Card Back Customization**: Allows selection between classic, modern, geometric, and custom card back patterns.
-2. **Animation Settings**: Toggle fast animations or reduced motion for performance/accessibility.
-3. **Sound & Theme Preferences**: Manages game board theme selection.
+2. **Animation Settings**: Choose animation speed and automatic playback for comfort and performance.
+3. **Sound & Control Preferences**: Manages sound effects, deck handedness, turn counter, card details, and tutorial guidance.
 4. **Persistence**: Syncs settings changes with `SettingsService` for `localStorage` persistence.

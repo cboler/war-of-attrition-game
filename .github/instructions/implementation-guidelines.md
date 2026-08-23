@@ -201,7 +201,6 @@ interface AppSettings {
   cardBacking: string;
   soundEnabled: boolean;
   animationSpeed: 'slow' | 'normal' | 'fast';
-  theme: 'light' | 'dark' | 'auto';
 }
 ```
 

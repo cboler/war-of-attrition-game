@@ -19,7 +19,6 @@ export class SettingsService {
 
   // Public readonly signals
   readonly currentSettings = this.settings.asReadonly();
-  readonly theme = computed(() => this.currentSettings().theme);
   readonly deckHand = computed(() => this.currentSettings().deckHand);
   readonly selectedCardBacking = this.progressionService.selectedCardBackingId;
   readonly animationSpeed = computed(() => this.currentSettings().animationSpeed);
@@ -61,11 +60,6 @@ export class SettingsService {
   resetSettings(): void {
     this.progressionService.selectCardBacking(DEFAULT_SETTINGS.selectedCardBacking);
     this.settings.set({ ...DEFAULT_SETTINGS });
-  }
-
-  // Theme management
-  setTheme(theme: 'light' | 'dark' | 'auto'): void {
-    this.updateSettings({ theme });
   }
 
   // Handedness management
@@ -117,8 +111,8 @@ export class SettingsService {
     try {
       const stored = localStorage.getItem(APP_LOCAL_STORAGE_KEYS.settings);
       if (stored) {
-        const parsed = JSON.parse(stored);
-        return { ...DEFAULT_SETTINGS, ...parsed };
+        const { theme: _legacyTheme, ...storedSettings } = JSON.parse(stored) as Partial<AppSettings> & { theme?: unknown };
+        return { ...DEFAULT_SETTINGS, ...storedSettings };
       }
     } catch (error) {
       console.warn('Failed to load settings from localStorage:', error);

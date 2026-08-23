@@ -59,13 +59,15 @@ import { MatDividerModule } from '@angular/material/divider';
                 are submitted to Google Play Games Services to update your Google Play Games account and XP.
               </li>
               <li>
-                <strong>Gameplay State & Preferences:</strong> User settings (theme selection, sound effects, animation speed, and card backings) 
+                <strong>Gameplay State & Preferences:</strong> User settings (deck handedness, sound effects, animation speed, and card backings)
                 are saved exclusively in local storage.
               </li>
               <li>
-                <strong>Optional Gameplay Analytics:</strong> When a release has Google Analytics configured and you grant analytics consent,
-                the game may send pseudonymous gameplay events such as outcomes, turn counts, public card comparisons, Campaign summaries,
-                and cosmetic unlocks. These records use random War/Campaign identifiers and version fields; they do not use your local or Google profile ID.
+                <strong>Optional Anonymized Gameplay Statistics:</strong> When a release has Google Analytics configured and you grant analytics consent,
+                the game sends anonymized gameplay statistics, including War outcomes and abandonment, turn and deck totals, Battle depth and casualties,
+                reinforcement decisions, public card ranks, suits, and comparisons, Campaign summaries, and cosmetic unlocks. These records use random,
+                game-scoped War/Campaign identifiers, event sequence numbers, and version fields; they do not include your name, email address, profile ID,
+                Google account ID, or avatar URL.
               </li>
             </ul>
           </section>
@@ -76,7 +78,7 @@ import { MatDividerModule } from '@angular/material/divider';
             <ul>
               <li><strong>Google Identity Services:</strong> Authentication and profile display (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>).</li>
               <li><strong>Google Play Games Services:</strong> Leaderboards and achievement synchronization on Android (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Play Terms</a>).</li>
-              <li><strong>Google Analytics:</strong> Consent-gated pseudonymous gameplay telemetry when configured. Google may process online identifiers and technical information under its terms (<a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses partner data</a>).</li>
+              <li><strong>Google Analytics:</strong> Consent-gated anonymized gameplay statistics when configured. Google may process online identifiers and technical information under its terms (<a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses partner data</a>).</li>
             </ul>
           </section>
 

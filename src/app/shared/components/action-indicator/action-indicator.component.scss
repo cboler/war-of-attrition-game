@@ -3,7 +3,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(33, 150, 243, 0.95);
+  background: rgba(33, 150, 243, 0.98);
   color: white;
   padding: 16px 24px;
   border-radius: 12px;
@@ -14,7 +14,7 @@
   visibility: hidden;
   transition: all 0.3s ease-in-out;
   border: 2px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
 
   @media (max-width: 599px) {
     padding: 12px 20px;
@@ -34,17 +34,17 @@
 
   // Different types have different colors
   &.type-click {
-    background: rgba(33, 150, 243, 0.95);
+    background: rgba(33, 150, 243, 0.98);
     border-color: rgba(33, 150, 243, 0.3);
   }
 
   &.type-select {
-    background: rgba(156, 39, 176, 0.95);
+    background: rgba(156, 39, 176, 0.98);
     border-color: rgba(156, 39, 176, 0.3);
   }
 
   &.type-challenge {
-    background: rgba(255, 152, 0, 0.95);
+    background: rgba(255, 152, 0, 0.98);
     border-color: rgba(255, 152, 0, 0.3);
     animation: challenge-indicator-pulse 1.5s infinite;
   }
@@ -149,22 +149,5 @@
   50% {
     opacity: 0.5;
     transform: scale(1.1);
-  }
-}
-
-// Dark theme support
-:host ::ng-deep .dark-theme .action-indicator {
-  backdrop-filter: blur(6px);
-  
-  &.type-click {
-    background: rgba(33, 150, 243, 0.98);
-  }
-
-  &.type-select {
-    background: rgba(156, 39, 176, 0.98);
-  }
-
-  &.type-challenge {
-    background: rgba(255, 152, 0, 0.98);
   }
 }

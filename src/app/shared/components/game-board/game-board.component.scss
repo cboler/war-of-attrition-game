@@ -7,7 +7,7 @@
   min-height: 480px;
   height: calc(100vh - 80px);
   margin: 0 auto;
-  background: radial-gradient(circle at 50% 45%, #236b28 0%, #155219 65%, #0a330e 100%);
+  background: radial-gradient(circle at 50% 45%, #1b4d1f 0%, #0e3012 65%, #051a07 100%);
   color: white;
   overflow: hidden;
   position: relative;
@@ -279,9 +279,4 @@
     transform: scale(1.08);
     box-shadow: 0 6px 25px rgba(99, 102, 241, 0.8);
   }
-}
-
-// Dark theme support
-:host ::ng-deep .dark-theme .game-board {
-  background: radial-gradient(circle at 50% 45%, #1b4d1f 0%, #0e3012 65%, #051a07 100%);
 }

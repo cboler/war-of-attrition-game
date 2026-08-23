@@ -352,42 +352,26 @@
         aria-labelledby="profile-tab-settings">
         <section class="settings-section" aria-labelledby="preferences-title">
           <div class="section-heading">
-            <h3 id="preferences-title" class="section-subtitle">Preferences · Appearance & Controls</h3>
-            <p>Adjust the table for your display, motion comfort, and preferred thumb.</p>
+            <h3 id="preferences-title" class="section-subtitle">Preferences · Controls</h3>
+            <p>Adjust the table for motion comfort and your preferred thumb.</p>
           </div>
-          <div class="settings-fields">
-            <mat-form-field appearance="outline">
-              <mat-label>Theme</mat-label>
-              <mat-select [value]="settings.theme()" (selectionChange)="settings.setTheme($event.value)">
-                <mat-option value="dark">Dark</mat-option>
-                <mat-option value="light">Light</mat-option>
-                <mat-option value="auto">System</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Deck Hand</mat-label>
-              <mat-select [value]="settings.deckHand()" (selectionChange)="settings.setDeckHand($event.value)">
-                <mat-option value="right">Right-handed</mat-option>
-                <mat-option value="left">Left-handed</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Animation Speed</mat-label>
-              <mat-select [value]="settings.animationSpeed()" (selectionChange)="settings.setAnimationSpeed($event.value)">
-                <mat-option value="slow">Slow</mat-option>
-                <mat-option value="normal">Normal</mat-option>
-                <mat-option value="fast">Fast</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-
           <div class="settings-toggles">
             <mat-slide-toggle [checked]="settings.soundEnabled()" (change)="settings.setSoundEnabled($event.checked)">Sound</mat-slide-toggle>
             <mat-slide-toggle [checked]="settings.autoPlayAnimations()" (change)="settings.setAutoPlayAnimations($event.checked)">Animations</mat-slide-toggle>
             <mat-slide-toggle [checked]="settings.showTurnCounter()" (change)="settings.setShowTurnCounter($event.checked)">Turn counter</mat-slide-toggle>
             <mat-slide-toggle [checked]="settings.showCardDetails()" (change)="settings.setShowCardDetails($event.checked)">Card details</mat-slide-toggle>
             <mat-slide-toggle [checked]="settings.tutorialEnabled()" (change)="settings.setTutorialEnabled($event.checked)">Tutorial guidance</mat-slide-toggle>
+            <mat-slide-toggle [checked]="settings.deckHand() === 'left'" (change)="settings.setDeckHand($event.checked ? 'left' : 'right')">Left-handed layout</mat-slide-toggle>
           </div>
+
+          <fieldset class="animation-speed-setting">
+            <legend class="setting-control-label">Animation speed</legend>
+            <mat-radio-group [value]="settings.animationSpeed()" (change)="settings.setAnimationSpeed($event.value)">
+              <mat-radio-button value="slow">Slow</mat-radio-button>
+              <mat-radio-button value="normal">Normal</mat-radio-button>
+              <mat-radio-button value="fast">Fast</mat-radio-button>
+            </mat-radio-group>
+          </fieldset>
         </section>
 
         <section class="settings-section requisitions-section" aria-labelledby="requisitions-title">

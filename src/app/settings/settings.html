@@ -36,27 +36,15 @@
               <mat-divider></mat-divider>
             }
 
-            <!-- Ergonomics & Appearance -->
+            <!-- Ergonomics -->
             <div class="setting-section">
-              <h3>Appearance & Controls</h3>
-              <mat-form-field appearance="outline">
-                <mat-label>Theme</mat-label>
-                <mat-select [value]="settingsService.theme()" 
-                           (selectionChange)="settingsService.setTheme($event.value)">
-                  <mat-option value="dark">Dark Theme (Default)</mat-option>
-                  <mat-option value="light">Light Theme</mat-option>
-                  <mat-option value="auto">Auto (System)</mat-option>
-                </mat-select>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Deck Hand</mat-label>
-                <mat-select [value]="settingsService.deckHand()" 
-                           (selectionChange)="settingsService.setDeckHand($event.value)">
-                  <mat-option value="right">Right-handed (Default)</mat-option>
-                  <mat-option value="left">Left-handed</mat-option>
-                </mat-select>
-              </mat-form-field>
+              <h3>Controls</h3>
+              <div class="toggle-setting">
+                <mat-slide-toggle [checked]="settingsService.deckHand() === 'left'"
+                                 (change)="settingsService.setDeckHand($event.checked ? 'left' : 'right')">
+                  Left-handed layout
+                </mat-slide-toggle>
+              </div>
             </div>
 
             <mat-divider></mat-divider>
@@ -64,16 +52,16 @@
             <!-- Game Preferences -->
             <div class="setting-section">
               <h3>Game Preferences</h3>
-              
-              <mat-form-field appearance="outline">
-                <mat-label>Animation Speed</mat-label>
-                <mat-select [value]="settingsService.animationSpeed()" 
-                           (selectionChange)="settingsService.setAnimationSpeed($event.value)">
-                  <mat-option value="slow">Slow</mat-option>
-                  <mat-option value="normal">Normal</mat-option>
-                  <mat-option value="fast">Fast</mat-option>
-                </mat-select>
-              </mat-form-field>
+
+              <fieldset class="radio-setting">
+                <legend class="setting-control-label">Animation Speed</legend>
+                <mat-radio-group [value]="settingsService.animationSpeed()"
+                                 (change)="settingsService.setAnimationSpeed($event.value)">
+                  <mat-radio-button value="slow">Slow</mat-radio-button>
+                  <mat-radio-button value="normal">Normal</mat-radio-button>
+                  <mat-radio-button value="fast">Fast</mat-radio-button>
+                </mat-radio-group>
+              </fieldset>
 
               <div class="toggle-setting">
                 <mat-slide-toggle [checked]="settingsService.soundEnabled()"

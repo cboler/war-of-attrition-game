@@ -140,6 +140,17 @@ describe('ProfileDialogComponent', () => {
     expect(root.querySelectorAll('.backing-option').length).toBe(settingsService.cardBackingOptions().length);
   });
 
+  it('uses a handedness switch and animation-speed radio group in settings', () => {
+    component.activeTab.set('settings');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.settings-toggles')?.textContent).toContain('Left-handed layout');
+    expect(root.querySelector('.animation-speed-setting')?.tagName).toBe('FIELDSET');
+    expect(root.querySelector('.animation-speed-setting legend')?.textContent).toContain('Animation speed');
+    expect(root.querySelectorAll('.animation-speed-setting mat-radio-button').length).toBe(3);
+  });
+
   it('surfaces the new rescue, Battle-streak, and Juggernaut career records', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Battle streaks');

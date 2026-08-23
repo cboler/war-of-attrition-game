@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -36,23 +36,6 @@ export class App {
   protected readonly profileButtonLabel = computed(
     () => `Open profile for ${this.activeProfile().name}; career records, achievements, and settings`
   );
-
-  constructor() {
-    effect(() => {
-      const theme = this.settingsService.theme();
-      this.applyTheme(theme);
-    });
-  }
-
-  private applyTheme(theme: 'light' | 'dark' | 'auto'): void {
-    if (typeof document === 'undefined') return;
-    const isDark = theme === 'dark' || (theme === 'auto' && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
-    if (isDark) {
-      document.body.classList.add('dark-theme');
-    } else {
-      document.body.classList.remove('dark-theme');
-    }
-  }
 
   protected openProfileDialog(): void {
     this.dialog.open(ProfileDialogComponent, {

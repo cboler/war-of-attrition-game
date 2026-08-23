@@ -154,6 +154,39 @@
   }
 }
 
+.radio-setting {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 16px;
+  min-inline-size: 0;
+  border: 1px solid rgba(228, 191, 114, 0.28);
+  border-radius: 6px;
+  padding: 8px 12px 10px;
+
+  .setting-control-label {
+    padding-inline: 4px;
+    color: rgba(247, 240, 225, 0.82);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  mat-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 16px;
+  }
+
+  ::ng-deep .mdc-label {
+    color: #f7f0e1 !important;
+    font-size: 0.88rem;
+  }
+}
+
 .card-backing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

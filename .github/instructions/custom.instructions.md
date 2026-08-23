@@ -39,10 +39,7 @@ This project is an Angular progressive web application that's hosted in GitHub p
 
 
 \## UI guidelines
-
-
-
-\- A toggle is provided to switch between light and dark mode.
+\- The application uses a fixed dark presentation.
 
 \- Application should have a modern and clean design.
 

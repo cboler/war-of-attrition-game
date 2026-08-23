@@ -125,7 +125,7 @@ export interface DiscardedCardInfo {
       justify-content: center;
       height: 300px;
       text-align: center;
-      color: rgba(0, 0, 0, 0.6);
+      color: rgba(255, 255, 255, 0.6);
       
       .empty-icon {
         font-size: 64px;
@@ -154,12 +154,12 @@ export interface DiscardedCardInfo {
 
     .sort-info {
       padding: 8px 16px;
-      background: rgba(0, 0, 0, 0.03);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       text-align: center;
       
       small {
-        color: rgba(0, 0, 0, 0.6);
+        color: rgba(255, 255, 255, 0.6);
         font-size: 0.75em;
       }
     }
@@ -179,12 +179,12 @@ export interface DiscardedCardInfo {
       gap: 16px;
       padding: 12px;
       border-radius: 8px;
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      background-color: rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background-color: rgba(255, 255, 255, 0.02);
       transition: all 0.2s ease;
       
       &:hover {
-        background-color: rgba(0, 0, 0, 0.04);
+        background-color: rgba(255, 255, 255, 0.04);
       }
       
       &.lost-by-player {
@@ -236,7 +236,7 @@ export interface DiscardedCardInfo {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-top: 1px solid rgba(0, 0, 0, 0.12);
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
     }
 
     @media (max-width: 599px) {
@@ -260,34 +260,6 @@ export interface DiscardedCardInfo {
       }
     }
 
-    // Dark theme support
-    :host-context(.dark-theme) {
-      .card-item {
-        border-color: rgba(255, 255, 255, 0.12);
-        background-color: rgba(255, 255, 255, 0.02);
-        
-        &:hover {
-          background-color: rgba(255, 255, 255, 0.04);
-        }
-      }
-      
-      .empty-state {
-        color: rgba(255, 255, 255, 0.6);
-      }
-      
-      .dialog-actions {
-        border-top-color: rgba(255, 255, 255, 0.12);
-      }
-      
-      .sort-info {
-        background: rgba(255, 255, 255, 0.03);
-        border-bottom-color: rgba(255, 255, 255, 0.08);
-        
-        small {
-          color: rgba(255, 255, 255, 0.6);
-        }
-      }
-    }
   `]
 })
 export class DiscardPileViewerComponent {

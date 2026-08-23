@@ -14,6 +14,7 @@ import {
 import { MatIconModule } from '@angular/material/icon';
 import { Card, Rank, Suit } from '../../../core/models/card.model';
 import { SettingsService } from '../../../core/services/settings.service';
+import { SoundService } from '../../../core/services/sound.service';
 import { CardComponent } from '../card/card.component';
 
 export type RuleDemoKind =
@@ -279,6 +280,7 @@ const RULE_DEMOS: Readonly<Record<RuleDemoKind, RuleDemoDefinition>> = {
 })
 export class RuleDemoComponent implements AfterViewInit {
   private readonly settings = inject(SettingsService);
+  private readonly sound = inject(SoundService);
   private readonly destroyRef = inject(DestroyRef);
   private timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -316,6 +318,7 @@ export class RuleDemoComponent implements AfterViewInit {
       return;
     }
 
+    this.playFrameSound(this.frame());
     this.playing.set(true);
     this.scheduleNextFrame();
   }
@@ -338,6 +341,7 @@ export class RuleDemoComponent implements AfterViewInit {
       }
 
       this.frameIndex.update(index => index + 1);
+  this.playFrameSound(this.frame());
       this.scheduleNextFrame();
     }, 950);
   }
@@ -345,6 +349,7 @@ export class RuleDemoComponent implements AfterViewInit {
   private finish(): void {
     this.clearTimer();
     this.frameIndex.set(this.demo().frames.length - 1);
+    this.playFrameSound(this.frame());
     this.playing.set(false);
   }
 
@@ -358,5 +363,40 @@ export class RuleDemoComponent implements AfterViewInit {
   private motionEnabled(): boolean {
     const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     return this.settings.autoPlayAnimations() && !reducedMotion;
+  }
+
+  private playFrameSound(frame: RuleDemoFrame): void {
+    if (!this.settings.soundEnabled()) return;
+
+    if (frame.rightInBoneyard) {
+      this.sound.playBoneyard();
+      return;
+    }
+
+    if (frame.leftFaceDown || frame.rightFaceDown) {
+      this.sound.playCardDraw();
+      return;
+    }
+
+    if (frame.leftGlow === 'blue' && frame.rightGlow === 'blue') {
+      this.sound.playClash();
+      return;
+    }
+
+    if (frame.leftGlow === 'green') {
+      if (this.rule() === 'battle') {
+        this.sound.playBattleVictory();
+      } else {
+        this.sound.playPositiveResolution();
+      }
+      return;
+    }
+
+    if (frame.rightGlow === 'green') {
+      this.sound.playNegativeResolution();
+      return;
+    }
+
+    this.sound.playCardDraw();
   }
 }

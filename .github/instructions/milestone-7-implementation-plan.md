@@ -343,10 +343,6 @@ These issues affect user experience and application quality.
      color: var(--mdc-theme-on-surface);
      background: var(--mdc-theme-surface);
      
-     &[data-theme="dark"] {
-       color: #ffffff;
-       background: #1e1e1e;
-     }
    }
    ```
 
@@ -358,10 +354,10 @@ These issues affect user experience and application quality.
 3. **Improve demo UI:**
    - Better typography for readability
    - Proper contrast ratios
-   - Consistent theming with app
+   - Consistent visual styling with the app
 
 4. **Testing:**
-   - Test demo in both light and dark modes
+   - Test demo in the fixed dark presentation
    - Verify no console errors
    - Test demo functionality
 
