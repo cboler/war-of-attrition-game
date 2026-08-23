@@ -7,7 +7,7 @@ import {
   TelemetryEnvelope,
   WarTelemetryContext
 } from '../core/models/telemetry.model';
-import { DeckColor, createProgressionId } from '../core/models/progression.model';
+import { CampaignModeId, DeckColor, createProgressionId } from '../core/models/progression.model';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { GameEventBusService } from './game-event-bus.service';
 import { mapGameEventToTelemetry, mapProgressionEventToTelemetry } from './game-telemetry.mapper';
@@ -24,6 +24,7 @@ export interface BeginWarTelemetryInput {
   readonly campaignWarIndex?: 1 | 2 | 3;
   readonly playerDeckColor?: DeckColor;
   readonly commanderId?: OpponentCommanderId;
+  readonly campaignMode?: CampaignModeId;
   readonly startType?: 'new' | 'restart' | 'resume';
 }
 
@@ -80,7 +81,8 @@ export class GameTelemetryService {
       campaignId: normalizeContextId(input.campaignId) || activeCampaign.campaignId,
       campaignWarIndex: input.campaignWarIndex ?? this.progressionService.campaignWarIndex(),
       playerDeckColor: input.playerDeckColor ?? 'unknown',
-      commanderId: input.commanderId ?? activeCampaign.commanderId
+      commanderId: input.commanderId ?? activeCampaign.commanderId,
+      campaignMode: input.campaignMode ?? activeCampaign.mode
     };
     this.warContextSignal.set(context);
     this.eventSequence = 0;
@@ -157,6 +159,7 @@ export class GameTelemetryService {
       war_id: context.warId,
       campaign_id: context.campaignId,
       campaign_war_index: context.campaignWarIndex,
+      campaign_mode: context.campaignMode ?? 'standard',
       ...(context.commanderId ? { commander_id: context.commanderId } : {}),
       event_seq: eventSeq
     };

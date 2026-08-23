@@ -1,0 +1,70 @@
+<div class="campaign-orders-dialog" role="dialog" aria-labelledby="campaign-orders-title">
+  <header class="dialog-header">
+    <div class="header-content">
+      <span class="eyebrow">CAMPAIGN ORDERS · RULES OF ENGAGEMENT</span>
+      <h2 id="campaign-orders-title">Field Command Briefing</h2>
+      <div class="commander-briefing" aria-label="Campaign opposing commander">
+        <span class="briefing-label">OPPOSING FORCE:</span>
+        <strong class="commander-name">{{ commander().name }}</strong>
+        <span class="commander-title">({{ commander().title }})</span>
+      </div>
+    </div>
+  </header>
+
+  <mat-dialog-content class="dialog-content">
+    <p class="dialog-intro">
+      Choose the strategic orders governing your three-War Campaign. Your selection is locked for all three Wars of this Campaign.
+    </p>
+
+    <div
+      class="orders-grid"
+      role="radiogroup"
+      aria-label="Campaign rules of engagement options">
+      @for (option of options; track option.id) {
+        <button
+          type="button"
+          class="order-card"
+          [class.selected]="selectedMode() === option.id"
+          role="radio"
+          [attr.aria-checked]="selectedMode() === option.id"
+          [attr.aria-label]="option.title + ' — ' + option.tag"
+          (click)="selectMode(option.id)">
+          <div class="card-radio-indicator" aria-hidden="true">
+            <span class="radio-dot" [class.checked]="selectedMode() === option.id"></span>
+          </div>
+
+          <div class="card-body">
+            <div class="card-title-row">
+              <strong class="card-title">{{ option.title }}</strong>
+              <span class="card-tag">{{ option.tag }}</span>
+            </div>
+
+            <p class="card-desc">{{ option.description }}</p>
+
+            <div class="rule-box">
+              <span class="rule-icon" aria-hidden="true">⚔️</span>
+              <span class="rule-text">{{ option.ruleSummary }}</span>
+            </div>
+
+            <div class="quota-badge">
+              <span class="quota-label">Reinforcements:</span>
+              <strong class="quota-val">{{ option.reinforcementPolicy }}</strong>
+            </div>
+          </div>
+        </button>
+      }
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions" align="end">
+    <button
+      mat-flat-button
+      type="button"
+      class="confirm-orders-btn"
+      (click)="confirmOrders()"
+      aria-label="Confirm selected campaign orders and begin War 1">
+      <mat-icon aria-hidden="true">military_tech</mat-icon>
+      <span>Issue Orders & Engage</span>
+    </button>
+  </mat-dialog-actions>
+</div>

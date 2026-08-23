@@ -551,6 +551,33 @@ mat-divider {
     font-size: 0.7rem;
     line-height: 1.25;
   }
+
+  .campaign-orders-callout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(228, 191, 114, 0.15);
+    flex-wrap: wrap;
+
+    strong {
+      color: #fffaf0;
+      font-size: 0.8rem;
+    }
+
+    .reserve-pill {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(229, 193, 117, 0.15);
+      border: 1px solid rgba(229, 193, 117, 0.35);
+      color: #e5c175;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+  }
 }
 
 .token-balance {

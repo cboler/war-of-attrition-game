@@ -22,6 +22,15 @@ import { CardComponent } from '../card/card.component';
             <span class="seat-title">{{ title() }}</span>
           }
           <span>{{ cardCount() }} cards<span class="at-risk">{{ dangerLabel() }}</span></span>
+          @if (reserves(); as res) {
+            <span
+              class="reserve-badge"
+              [class.reserve-exhausted]="res.remaining === 0"
+              [attr.aria-label]="'Reserves: ' + res.remaining + ' of ' + res.max + ' remaining'">
+              <span class="reserve-label">RESERVES</span>
+              <strong class="reserve-count">{{ res.remaining }} / {{ res.max }}</strong>
+            </span>
+          }
         </div>
       </div>
 
@@ -81,6 +90,7 @@ export class PlayerSeatComponent {
   deckHand = input<'right' | 'left'>('right');
   defeatPopping = input(false);
   motionDisabled = input(false);
+  reserves = input<{ remaining: number; max: number } | null>(null);
 
   deckActivated = output<void>();
 

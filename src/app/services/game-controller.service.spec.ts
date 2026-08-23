@@ -520,4 +520,57 @@ describe('GameControllerService presentation integration', () => {
     expect(resolvedEvent.outcome).toBe(GameOutcome.PLAYER_WIN);
     expect(resolvedEvent.survivingPlayerCardIds.length).toBeGreaterThan(0);
   });
+
+  describe('Limited Reserves gameplay integration', () => {
+    it('consumes a reserve upon human challenge commitment and chronicles exhaustion when reaching 0', fakeAsync(() => {
+      settings.setAutoPlayAnimations(false);
+      progression.selectCampaignOrders('limited_reserves');
+      expect(progression.remainingReserves()).toBe(5);
+
+      spyOn(comparison, 'compareCards').and.returnValues(
+        ComparisonResult.OPPONENT_WINS,
+        ComparisonResult.PLAYER_WINS,
+      );
+      spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+
+      controller.playerDrawCard();
+      flushMicrotasks();
+      tick(650);
+      flushMicrotasks();
+
+      expect(controller.presentationState()).toBe(PresentationState.PLAYER_CHALLENGE_DECISION);
+
+      // Player accepts challenge
+      controller.handleChallenge(true);
+      flushMicrotasks();
+      tick(1000);
+      flush();
+
+      expect(progression.remainingReserves()).toBe(4);
+    }));
+
+    it('automatically concedes beaten clash without offering challenge when reserves are exhausted', fakeAsync(() => {
+      settings.setAutoPlayAnimations(false);
+      progression.selectCampaignOrders('limited_reserves');
+
+      // Exhaust all 5 reserves
+      for (let i = 0; i < 5; i++) {
+        progression.consumeHumanReserve();
+      }
+      expect(progression.remainingReserves()).toBe(0);
+
+      spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
+      spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+      spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+
+      controller.playerDrawCard();
+      flushMicrotasks();
+      tick(650);
+      flushMicrotasks();
+
+      // Because reserves are 0, player is NOT offered challenge decision
+      expect(controller.presentationState()).not.toBe(PresentationState.PLAYER_CHALLENGE_DECISION);
+      flush();
+    }));
+  });
 });

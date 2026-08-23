@@ -8,9 +8,15 @@ import {
 } from '../models/commander.model';
 import {
   CampaignHistoryEntry,
+  CampaignModeId,
   CampaignProgression,
   CampaignWarRecord,
+  LIMITED_RESERVES_INITIAL_COUNT,
+  LimitedReservesCampaignState,
   calculateWarMargin,
+  canHumanReinforce,
+  getHumanReserves,
+  isLimitedReservesMode,
   CosmeticPurchaseResult,
   CosmeticUnlock,
   CosmeticUnlockReason,
@@ -46,6 +52,18 @@ export class CampaignProgressionService {
   readonly currentCommander = computed(() =>
     getCommander(this.currentCampaign().commanderId)
   );
+  readonly activeCampaignMode = computed<CampaignModeId>(() => this.currentCampaign().mode);
+  readonly ordersSelected = computed<boolean>(() => this.currentCampaign().ordersSelected);
+  readonly isLimitedReserves = computed<boolean>(() => isLimitedReservesMode(this.currentCampaign()));
+  readonly limitedReserves = computed<LimitedReservesCampaignState | null>(() =>
+    this.currentCampaign().limitedReserves ?? null
+  );
+  readonly remainingReserves = computed<number | null>(() =>
+    this.limitedReserves()?.remainingReserves ?? null
+  );
+  readonly initialReserves = computed<number | null>(() =>
+    this.limitedReserves()?.initialReserves ?? null
+  );
   readonly campaignWarIndex = computed<1 | 2 | 3>(() =>
     Math.min(WARS_PER_CAMPAIGN, this.currentCampaign().wars.length + 1) as 1 | 2 | 3
   );
@@ -58,6 +76,77 @@ export class CampaignProgressionService {
       .filter(unlock => unlock.cosmeticType === 'card_back')
       .map(unlock => unlock.cosmeticId)
   );
+
+  /**
+   * Authoritative check whether the human player is permitted to reinforce.
+   */
+  canHumanReinforce(deckCount: number): boolean {
+    return canHumanReinforce(this.currentCampaign(), deckCount);
+  }
+
+  /**
+   * Confirms the Campaign Orders (rules of engagement) for the active Campaign.
+   * Only permitted before War 1 begins.
+   */
+  selectCampaignOrders(mode: CampaignModeId): boolean {
+    const current = this.currentCampaign();
+    if (current.wars.length > 0) {
+      return false; // Mode is immutable once Campaign play has begun.
+    }
+
+    const limitedReserves: LimitedReservesCampaignState | undefined =
+      mode === 'limited_reserves'
+        ? {
+            initialReserves: LIMITED_RESERVES_INITIAL_COUNT,
+            remainingReserves: LIMITED_RESERVES_INITIAL_COUNT
+          }
+        : undefined;
+
+    this.authService.updateActiveProfileProgression(previous => ({
+      ...previous,
+      currentCampaign: {
+        ...previous.currentCampaign,
+        mode,
+        ordersSelected: true,
+        ...(limitedReserves ? { limitedReserves } : {})
+      }
+    }));
+    return true;
+  }
+
+  /**
+   * Authoritative point of human reserve consumption.
+   * Decrements remaining reserves by exactly 1 when Limited Reserves is active.
+   */
+  consumeHumanReserve(): boolean {
+    const current = this.currentCampaign();
+    if (current.mode !== 'limited_reserves') {
+      return true; // Standard Campaign has no reserve pool limit.
+    }
+
+    const currentReserves = current.limitedReserves?.remainingReserves ?? 0;
+    if (currentReserves <= 0) {
+      return false;
+    }
+
+    this.authService.updateActiveProfileProgression(previous => {
+      if (previous.currentCampaign.mode !== 'limited_reserves') return previous;
+      const lr = previous.currentCampaign.limitedReserves;
+      if (!lr || lr.remainingReserves <= 0) return previous;
+
+      return {
+        ...previous,
+        currentCampaign: {
+          ...previous.currentCampaign,
+          limitedReserves: {
+            ...lr,
+            remainingReserves: lr.remainingReserves - 1
+          }
+        }
+      };
+    });
+    return true;
+  }
 
   recordResolvedWar(input: ResolvedWarInput): RecordResolvedWarResult {
     const warId = input.warId.trim().slice(0, 128);
@@ -91,7 +180,9 @@ export class CampaignProgressionService {
       ? summarizeCampaign(
           current.currentCampaign.campaignId,
           candidateWars,
-          current.currentCampaign.commanderId
+          current.currentCampaign.commanderId,
+          current.currentCampaign.mode,
+          current.currentCampaign.limitedReserves?.remainingReserves
         )
       : null;
     const progression = this.authService.updateActiveProfileProgression(previous => {
@@ -112,7 +203,9 @@ export class CampaignProgressionService {
       const completed = summarizeCampaign(
         previous.currentCampaign.campaignId,
         wars,
-        previous.currentCampaign.commanderId
+        previous.currentCampaign.commanderId,
+        previous.currentCampaign.mode,
+        previous.currentCampaign.limitedReserves?.remainingReserves
       );
       const nextCommanderId = selectNextCommander(previous.currentCampaign.commanderId);
 
@@ -121,6 +214,8 @@ export class CampaignProgressionService {
         currentCampaign: {
           campaignId: createProgressionId('campaign'),
           commanderId: nextCommanderId,
+          mode: 'standard',
+          ordersSelected: false,
           wars: []
         },
         recentCampaigns: [...previous.recentCampaigns, completed]

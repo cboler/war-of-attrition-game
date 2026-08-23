@@ -439,6 +439,7 @@ export class GameControllerService {
       playerDeckColor: this.gameState.currentPlayerDeckColor,
       startType: didAbandon ? 'restart' : 'new',
       commanderId: this.opponentCommander().id,
+      campaignMode: this.campaignProgression.activeCampaignMode(),
     });
     this.currentWarId = warContext.warId;
     this.eventBus.emit({
@@ -446,6 +447,19 @@ export class GameControllerService {
       turnNumber: 0,
       playerDeckColor: this.gameState.currentPlayerDeckColor,
     });
+    if (
+      this.campaignProgression.isLimitedReserves() &&
+      this.campaignProgression.campaignWarIndex() === 1
+    ) {
+      this.storyBook.addEntry({
+        turnNumber: 0,
+        type: 'challenge',
+        eyebrow: 'CAMPAIGN ORDERS',
+        title: 'Limited Reserves',
+        text: 'Campaign initiated under Limited Reserves. 5 reinforcement reserves allocated for all three Wars.',
+        badge: 'challenge',
+      });
+    }
   }
 
   playerDrawCard(): boolean {
@@ -617,7 +631,7 @@ export class GameControllerService {
   private async playPlayerChallenge(accept: boolean): Promise<void> {
     const version = this.sequencer.begin();
     try {
-      if (!accept) {
+      if (!accept || !this.campaignProgression.canHumanReinforce(this.gameState.playerCardCount())) {
         const result = this.turnResolution.resolveChallengeConcession(PlayerType.PLAYER);
         this.announce(result.message);
         this.eventBus.emit({
@@ -638,6 +652,22 @@ export class GameControllerService {
         const result = this.turnResolution.resolveChallengeConcession(PlayerType.PLAYER);
         await this.playOrdinarySettlement(result, version);
         return;
+      }
+
+      // Authoritative point of human reserve consumption
+      this.campaignProgression.consumeHumanReserve();
+      if (
+        this.campaignProgression.isLimitedReserves() &&
+        this.campaignProgression.remainingReserves() === 0
+      ) {
+        this.storyBook.addEntry({
+          turnNumber: this.turnsPlayed,
+          type: 'challenge',
+          eyebrow: 'LIMITED RESERVES',
+          title: 'Reserves Depleted',
+          text: 'Final reinforcement reserve committed. Reinforcements are exhausted for the remainder of this Campaign.',
+          badge: 'challenge',
+        });
       }
 
       this.syncPresentedTurn();
@@ -739,6 +769,21 @@ export class GameControllerService {
     }
 
     if (result.canChallenge) {
+      if (!this.campaignProgression.canHumanReinforce(this.gameState.playerCardCount())) {
+        const concession = this.turnResolution.resolveChallengeConcession(PlayerType.PLAYER);
+        this.announce('Reserves exhausted. The position must be conceded.');
+        this.eventBus.emit({
+          type: 'challenge_conceded',
+          turnNumber: this.turnsPlayed,
+          loser: PlayerType.PLAYER,
+          winner: PlayerType.OPPONENT,
+          message: 'Reserves exhausted. The position must be conceded.',
+        });
+        await this.sequencer.pause(350, version);
+        await this.playOrdinarySettlement(concession, version);
+        return;
+      }
+
       this.phase.set(PresentationState.PLAYER_CHALLENGE_DECISION);
       this.announce('Your card is beaten. Reinforcement would replace it in the next clash.');
       this.eventBus.emit({

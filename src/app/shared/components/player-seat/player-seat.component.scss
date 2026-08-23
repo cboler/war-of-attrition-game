@@ -41,6 +41,45 @@
 .identity span { margin-top: 3px; font-size: clamp(0.68rem, 0.9vw, 0.76rem); letter-spacing: 0.05em; text-transform: uppercase; color: rgba(248, 241, 226, 0.72); }
 .identity .at-risk { display: inline; color: #ffd54f; font-weight: 600; }
 
+.reserve-badge {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px !important;
+  padding: 2px 7px;
+  background: rgba(20, 48, 38, 0.85);
+  border: 1px solid rgba(229, 193, 117, 0.45);
+  border-radius: 4px;
+  font-size: clamp(0.64rem, 0.8vw, 0.72rem) !important;
+  letter-spacing: 0.06em;
+  color: #e5c175 !important;
+  line-height: 1.2;
+
+  .reserve-label {
+    opacity: 0.8;
+    font-size: 0.6rem !important;
+    font-weight: 600;
+    margin: 0 !important;
+  }
+
+  .reserve-count {
+    font-weight: 700;
+    color: #fffaf0 !important;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  &.reserve-exhausted {
+    border-color: rgba(239, 68, 68, 0.6);
+    background: rgba(60, 20, 20, 0.85);
+    color: #f87171 !important;
+
+    .reserve-count {
+      color: #fca5a5 !important;
+    }
+  }
+}
+
 .status-dot {
   width: 9px;
   height: 9px;

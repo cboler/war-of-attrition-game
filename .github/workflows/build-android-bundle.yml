@@ -9,11 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       version_code:
-        description: 'Override Android Version Code (optional positive integer, e.g. 40002)'
+        description: 'Override Android Version Code (optional positive integer, e.g. 40100)'
         required: false
         type: string
       version_name:
-        description: 'Override Android Version Name (optional string, e.g. 4.0.2)'
+        description: 'Override Android Version Name (optional string, e.g. 4.1.0)'
         required: false
         type: string
 
@@ -39,14 +39,14 @@ jobs:
           elif [ "${{ github.ref_type }}" = "tag" ]; then
             RAW_NAME="${{ github.ref_name }}"
           else
-            RAW_NAME="4.0.2"
+            RAW_NAME="4.1.0"
           fi
 
           # Strip leading 'v' or 'V'
           CLEAN_VER=$(echo "$RAW_NAME" | sed 's/^[vV]//')
 
           # Use a packed semantic-version code, so every patch/minor release
-          # advances Play's integer version code (for example, 4.0.2 -> 40002).
+          # advances Play's integer version code (for example, 4.1.0 -> 40100).
           if [[ "$CLEAN_VER" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             FINAL_NAME="$CLEAN_VER"
             MAJOR_NUM="${BASH_REMATCH[1]}"
@@ -58,10 +58,10 @@ jobs:
             MINOR_NUM="0"
             PATCH_NUM="0"
           else
-            FINAL_NAME="4.0.2"
+            FINAL_NAME="4.1.0"
             MAJOR_NUM="4"
-            MINOR_NUM="0"
-            PATCH_NUM="2"
+            MINOR_NUM="1"
+            PATCH_NUM="0"
           fi
 
           # 2. Determine Version Code (Integer)

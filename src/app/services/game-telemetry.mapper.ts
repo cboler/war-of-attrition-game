@@ -67,7 +67,6 @@ export function mapGameEventToTelemetry(
         comparison: event.comparison,
         outcome: event.winner === null ? 'battle' : event.challengerWon ? 'success' : 'failure',
         rescued_two: event.originalBeatenCard?.rank === Rank.TWO && event.challengerWon ? 1 : 0,
-        rescued_ace: event.originalBeatenCard?.rank === Rank.ACE && event.challengerWon ? 1 : 0,
         ace_rescued_two: event.originalBeatenCard?.rank === Rank.TWO &&
           event.reinforcementCard.rank === Rank.ACE && event.challengerWon ? 1 : 0,
         two_defeated_ace: isTwoVersusAce(
@@ -137,8 +136,7 @@ export function mapGameEventToTelemetry(
         special_rule: outcome.selection?.specialRule ? 1 : 0,
         casualty_count: outcome.casualties.length,
         hidden_winner_count: outcome.hiddenWinnerCount,
-        player_cards_at_stake: outcome.playerCardsAtStakeCount,
-        opponent_cards_at_stake: outcome.opponentCardsAtStakeCount,
+        cards_at_stake: outcome.playerCardsAtStakeCount,
         player_cards_after: outcome.finalPlayerDeckCount,
         opponent_cards_after: outcome.finalOpponentDeckCount
       });
@@ -256,7 +254,9 @@ export function mapProgressionEventToTelemetry(
       campaign_id: campaign.campaignId,
       war_id: campaign.wars[campaign.wars.length - 1].warId,
       campaign_war_index: 3,
+      campaign_mode: campaign.mode ?? 'standard',
       ...(campaign.commanderId ? { commander_id: campaign.commanderId } : {}),
+      ...(campaign.remainingReserves !== undefined ? { remaining_reserves: campaign.remainingReserves } : {}),
       event_seq: eventSeq,
       outcome: campaign.outcome,
       wins: campaign.wins,
@@ -292,6 +292,7 @@ function commonParameters(envelope: TelemetryEnvelope, turnNumber: number): Tele
     war_id: envelope.warId,
     campaign_id: envelope.campaignId,
     campaign_war_index: envelope.campaignWarIndex,
+    campaign_mode: envelope.campaignMode ?? 'standard',
     event_seq: envelope.eventSeq,
     turn_number: turnNumber
   };

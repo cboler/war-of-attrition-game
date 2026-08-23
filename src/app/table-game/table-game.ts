@@ -24,6 +24,8 @@ import { CardTableComponent } from '../shared/components/card-table/card-table.c
 import { PlayerSeatComponent } from '../shared/components/player-seat/player-seat.component';
 import { StoryBookDrawerComponent } from '../shared/components/story-book-drawer/story-book-drawer.component';
 import { TutorialOverlayComponent } from '../shared/components/tutorial-overlay/tutorial-overlay.component';
+import { CampaignProgressionService } from '../core/services/campaign-progression.service';
+import { CampaignOrdersDialogComponent } from '../shared/components/campaign-orders-dialog/campaign-orders-dialog.component';
 
 @Component({
   selector: 'app-table-game',
@@ -50,6 +52,7 @@ export class TableGame implements OnInit {
   protected readonly tutorial = inject(TutorialService);
   protected readonly auth = inject(AuthService);
   protected readonly storyBook = inject(StoryBookService);
+  protected readonly progression = inject(CampaignProgressionService);
   protected readonly dialog = inject(MatDialog);
   protected readonly state = PresentationState;
   protected readonly player = PlayerType;
@@ -84,6 +87,13 @@ export class TableGame implements OnInit {
     return battleAnnouncementFor(round);
   });
 
+  protected readonly playerReserves = computed(() => {
+    if (!this.progression.isLimitedReserves()) return null;
+    const remaining = this.progression.remainingReserves() ?? 0;
+    const max = this.progression.initialReserves() ?? 5;
+    return { remaining, max };
+  });
+
   protected readonly boneyardThicknessClass = computed(() => {
     const count = this.controller.visibleBoneyardCount();
     if (count === 0) return 'boneyard-0';
@@ -110,7 +120,25 @@ export class TableGame implements OnInit {
       });
       return;
     }
+
     this.controller.ensureGameStarted();
+    if (!this.progression.ordersSelected() && this.progression.campaignWarIndex() === 1) {
+      this.openCampaignOrdersDialog();
+    }
+  }
+
+  protected openCampaignOrdersDialog(): void {
+    const dialogRef = this.dialog.open(CampaignOrdersDialogComponent, {
+      panelClass: 'themed-dialog-panel',
+      disableClose: true,
+      autoFocus: true,
+      width: '94vw',
+      maxWidth: '580px'
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      this.controller.ensureGameStarted();
+    });
   }
 
   protected draw(): void {

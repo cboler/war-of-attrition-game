@@ -429,6 +429,7 @@
       [quip]="playerQuip()"
       [defeatPopping]="controller.deckDefeatPopOwner() === player.PLAYER"
       [motionDisabled]="!settings.autoPlayAnimations()"
+      [reserves]="playerReserves()"
       (deckActivated)="draw()"
     />
   </app-card-table>

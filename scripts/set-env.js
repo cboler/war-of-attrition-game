@@ -1,9 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 
+let packageVersion = '';
+try {
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
+  packageVersion = pkg.version || '';
+} catch (e) {}
+
 const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
 const ga4MeasurementId = process.env.GA4_MEASUREMENT_ID || '';
-const appVersion = process.env.APP_VERSION || process.env.npm_package_version || '0.0.0';
+const appVersion = process.env.APP_VERSION || process.env.npm_package_version || packageVersion || '0.0.0';
 const rulesetVersion = process.env.RULESET_VERSION || '2026.08.1';
 
 const stringLiteral = value => JSON.stringify(String(value));

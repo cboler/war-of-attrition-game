@@ -205,6 +205,26 @@ describe('GameTelemetryService', () => {
     expect(campaignRecord?.parameters['final_differential']).toBe(7);
     expect(campaignRecord?.parameters['tokens_earned']).toBe(2);
     expect(campaignRecord?.parameters['token_balance_after']).toBe(2);
+    expect(campaignRecord?.parameters['campaign_mode']).toBe('standard');
+  });
+
+  it('emits campaign_mode and remaining_reserves for Limited Reserves Campaign', () => {
+    progression.selectCampaignOrders('limited_reserves');
+    progression.consumeHumanReserve();
+    progression.consumeHumanReserve();
+
+    service.beginWar({ warId: 'lr-war-3', playerDeckColor: DeckColor.RED });
+    progression.recordResolvedWar(war('lr-war-1', GameOutcome.PLAYER_WIN, 4, 0));
+    progression.recordResolvedWar(war('lr-war-2', GameOutcome.PLAYER_WIN, 3, 0));
+    progression.recordResolvedWar(war('lr-war-3', GameOutcome.PLAYER_WIN, 2, 0));
+
+    const campaignRecord = transport.records.find(record => record.name === 'campaign_resolved');
+    expect(campaignRecord).toBeTruthy();
+    expect(campaignRecord?.parameters['campaign_mode']).toBe('limited_reserves');
+    expect(campaignRecord?.parameters['remaining_reserves']).toBe(3);
+
+    const warStarted = transport.records.find(record => record.name === 'war_started');
+    expect(warStarted?.parameters['campaign_mode']).toBe('limited_reserves');
   });
 });
 

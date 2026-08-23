@@ -150,6 +150,86 @@ describe('CampaignProgressionService', () => {
       expect(service.currentCampaign().wars.length).toBe(0);
     });
   });
+
+  describe('Campaign Orders & Limited Reserves', () => {
+    it('initializes a new profile with ordersSelected: false and default standard mode', () => {
+      expect(service.activeCampaignMode()).toBe('standard');
+      expect(service.ordersSelected()).toBeFalse();
+      expect(service.isLimitedReserves()).toBeFalse();
+      expect(service.limitedReserves()).toBeNull();
+      expect(service.remainingReserves()).toBeNull();
+    });
+
+    it('selects Limited Reserves mode and initializes exactly 5 reserves', () => {
+      const selected = service.selectCampaignOrders('limited_reserves');
+      expect(selected).toBeTrue();
+      expect(service.activeCampaignMode()).toBe('limited_reserves');
+      expect(service.ordersSelected()).toBeTrue();
+      expect(service.isLimitedReserves()).toBeTrue();
+      expect(service.remainingReserves()).toBe(5);
+      expect(service.initialReserves()).toBe(5);
+    });
+
+    it('rejects changing campaign orders once War 1 has begun', () => {
+      service.selectCampaignOrders('limited_reserves');
+      service.recordResolvedWar(war('locked-war-1', GameOutcome.PLAYER_WIN, 4, 0));
+
+      const attemptedChange = service.selectCampaignOrders('standard');
+      expect(attemptedChange).toBeFalse();
+      expect(service.activeCampaignMode()).toBe('limited_reserves');
+    });
+
+    it('authoritatively decrements reserves and prevents reinforcement when exhausted', () => {
+      service.selectCampaignOrders('limited_reserves');
+
+      expect(service.canHumanReinforce(10)).toBeTrue();
+      expect(service.consumeHumanReserve()).toBeTrue();
+      expect(service.remainingReserves()).toBe(4);
+
+      expect(service.consumeHumanReserve()).toBeTrue(); // 3
+      expect(service.consumeHumanReserve()).toBeTrue(); // 2
+      expect(service.consumeHumanReserve()).toBeTrue(); // 1
+      expect(service.consumeHumanReserve()).toBeTrue(); // 0
+      expect(service.remainingReserves()).toBe(0);
+
+      // When exhausted, cannot consume or reinforce even with full deck
+      expect(service.consumeHumanReserve()).toBeFalse();
+      expect(service.canHumanReinforce(10)).toBeFalse();
+      expect(service.remainingReserves()).toBe(0);
+    });
+
+    it('persists remaining reserves across War 1, War 2, and War 3', () => {
+      service.selectCampaignOrders('limited_reserves');
+
+      // Consume 2 reserves during War 1
+      service.consumeHumanReserve();
+      service.consumeHumanReserve();
+      expect(service.remainingReserves()).toBe(3);
+
+      // Record War 1 resolution
+      service.recordResolvedWar(war('lr-w1', GameOutcome.PLAYER_WIN, 3, 0));
+      expect(service.remainingReserves()).toBe(3);
+      expect(service.activeCampaignMode()).toBe('limited_reserves');
+
+      // Consume 1 reserve during War 2
+      service.consumeHumanReserve();
+      expect(service.remainingReserves()).toBe(2);
+
+      // Record War 2 resolution
+      service.recordResolvedWar(war('lr-w2', GameOutcome.OPPONENT_WIN, 0, 4));
+      expect(service.remainingReserves()).toBe(2);
+
+      // Record War 3 resolution (completes campaign)
+      const result = service.recordResolvedWar(war('lr-w3', GameOutcome.PLAYER_WIN, 5, 0));
+      expect(result.completedCampaign?.mode).toBe('limited_reserves');
+      expect(result.completedCampaign?.remainingReserves).toBe(2);
+
+      // Next campaign begins fresh with standard mode and unselected orders
+      expect(service.activeCampaignMode()).toBe('standard');
+      expect(service.ordersSelected()).toBeFalse();
+      expect(service.remainingReserves()).toBeNull();
+    });
+  });
 });
 
 function war(

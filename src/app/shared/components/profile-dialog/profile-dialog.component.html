@@ -107,6 +107,13 @@
             <span class="commander-label">Opposing Commander:</span>
             <strong>{{ progression.currentCommander().name }} ({{ progression.currentCommander().title }})</strong>
             <small>{{ progression.currentCommander().description }}</small>
+            <div class="campaign-orders-callout">
+              <span class="commander-label">Campaign Orders:</span>
+              <strong>{{ progression.isLimitedReserves() ? 'Limited Reserves' : 'Standard Campaign' }}</strong>
+              @if (progression.isLimitedReserves()) {
+                <span class="reserve-pill">Reserves: {{ progression.remainingReserves() }} / {{ progression.initialReserves() }}</span>
+              }
+            </div>
           </div>
 
           <div

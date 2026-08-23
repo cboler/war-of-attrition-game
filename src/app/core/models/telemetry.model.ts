@@ -1,5 +1,5 @@
 import { OpponentCommanderId } from './commander.model';
-import { DeckColor } from './progression.model';
+import { CampaignModeId, DeckColor } from './progression.model';
 
 export const GAME_TELEMETRY_SCHEMA_VERSION = 1;
 
@@ -23,6 +23,7 @@ export interface WarTelemetryContext {
   readonly campaignWarIndex: 1 | 2 | 3;
   readonly playerDeckColor: DeckColor;
   readonly commanderId?: OpponentCommanderId;
+  readonly campaignMode?: CampaignModeId;
 }
 
 export interface TelemetryEnvelope extends WarTelemetryContext {

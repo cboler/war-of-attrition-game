@@ -16,6 +16,7 @@ import {
 } from '../services/game-controller.service';
 import { Card, Rank, Suit } from '../core/models/card.model';
 import { PlayerType } from '../core/models/game-state.model';
+import { MatDialog } from '@angular/material/dialog';
 import { TableGame } from './table-game';
 
 describe('TableGame presentation', () => {
@@ -25,6 +26,7 @@ describe('TableGame presentation', () => {
   let settings: SettingsService;
   let achievements: AchievementService;
   let storyBook: StoryBookService;
+  let dialog: MatDialog;
 
   beforeEach(async () => {
     localStorage.clear();
@@ -40,11 +42,15 @@ describe('TableGame presentation', () => {
     comparison = TestBed.inject(CardComparisonService);
     achievements = TestBed.inject(AchievementService);
     storyBook = TestBed.inject(StoryBookService);
+    dialog = TestBed.inject(MatDialog);
     fixture = TestBed.createComponent(TableGame);
     fixture.detectChanges();
   });
 
-  afterEach(() => settings.resetSettings());
+  afterEach(() => {
+    dialog.closeAll();
+    settings.resetSettings();
+  });
 
   function continuePastReadableHold(): void {
     flushMicrotasks();

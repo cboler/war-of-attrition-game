@@ -11,11 +11,14 @@ export const WARS_PER_CAMPAIGN = 3;
 export const MAX_CAMPAIGN_HISTORY = 20;
 export const MAX_PROCESSED_WAR_IDS = 256;
 export const DEFAULT_CARD_BACKING_ID = 'classic-blue';
+export const LIMITED_RESERVES_INITIAL_COUNT = 5;
 
 export type DeckColor = 'red' | 'black' | 'unknown';
 export type CampaignOutcome = 'victory' | 'defeat' | 'draw';
 export type CosmeticType = 'card_back' | 'profile_frame' | 'title' | 'table_treatment';
 export type CosmeticUnlockReason = 'default' | 'tokens' | 'achievement' | 'legacy_selected';
+export type CampaignModeId = 'standard' | 'limited_reserves';
+export const DEFAULT_CAMPAIGN_MODE_ID: CampaignModeId = 'standard';
 
 export interface CampaignWarRecord {
   readonly warId: string;
@@ -25,15 +28,24 @@ export interface CampaignWarRecord {
   readonly completedAt: string;
 }
 
+export interface LimitedReservesCampaignState {
+  readonly initialReserves: number;
+  readonly remainingReserves: number;
+}
+
 export interface ActiveCampaign {
   readonly campaignId: string;
   readonly commanderId: OpponentCommanderId;
+  readonly mode: CampaignModeId;
+  readonly ordersSelected: boolean;
   readonly wars: readonly CampaignWarRecord[];
+  readonly limitedReserves?: LimitedReservesCampaignState;
 }
 
 export interface CampaignHistoryEntry {
   readonly campaignId: string;
   readonly commanderId?: OpponentCommanderId;
+  readonly mode: CampaignModeId;
   readonly wars: readonly CampaignWarRecord[];
   readonly wins: number;
   readonly losses: number;
@@ -42,6 +54,7 @@ export interface CampaignHistoryEntry {
   readonly outcome: CampaignOutcome;
   readonly tokensEarned: number;
   readonly completedAt: string;
+  readonly remainingReserves?: number;
 }
 
 export interface CosmeticUnlock {
@@ -96,6 +109,31 @@ export interface CosmeticPurchaseResult {
   readonly tokenBalance: number;
 }
 
+export function isCampaignModeId(value: unknown): value is CampaignModeId {
+  return value === 'standard' || value === 'limited_reserves';
+}
+
+export function canHumanReinforce(campaign: ActiveCampaign, deckCount: number): boolean {
+  if (deckCount <= 0) return false;
+  if (campaign.mode === 'limited_reserves') {
+    return (campaign.limitedReserves?.remainingReserves ?? 0) > 0;
+  }
+  return true;
+}
+
+export function getHumanReserves(
+  campaign: ActiveCampaign
+): { remaining: number; max: number } | null {
+  if (campaign.mode !== 'limited_reserves') return null;
+  const initial = campaign.limitedReserves?.initialReserves ?? LIMITED_RESERVES_INITIAL_COUNT;
+  const remaining = campaign.limitedReserves?.remainingReserves ?? 0;
+  return { remaining, max: initial };
+}
+
+export function isLimitedReservesMode(campaign: ActiveCampaign): boolean {
+  return campaign.mode === 'limited_reserves';
+}
+
 export function createProgressionId(prefix: 'campaign' | 'war' = 'campaign'): string {
   const randomUuid = globalThis.crypto?.randomUUID?.();
   if (randomUuid) {
@@ -143,6 +181,8 @@ export function createDefaultCampaignProgression(
     currentCampaign: {
       campaignId: createProgressionId('campaign'),
       commanderId: initialCommanderId,
+      mode: 'standard',
+      ordersSelected: false,
       wars: []
     },
     recentCampaigns: [],
@@ -183,6 +223,29 @@ export function normalizeCampaignProgression(
     unlock.cosmeticType === 'card_back' && unlock.cosmeticId === storedSelected
   ) ? storedSelected : legacySelection;
 
+  const mode: CampaignModeId = isCampaignModeId(rawCurrent?.['mode'])
+    ? rawCurrent['mode']
+    : 'standard';
+
+  // Legacy campaigns with already started wars are treated as orders confirmed.
+  // Fresh/unstarted campaigns default to ordersSelected: false to trigger the briefing.
+  const ordersSelected: boolean = typeof rawCurrent?.['ordersSelected'] === 'boolean'
+    ? rawCurrent['ordersSelected']
+    : currentWars.length > 0;
+
+  let limitedReserves: LimitedReservesCampaignState | undefined;
+  if (mode === 'limited_reserves') {
+    const rawLr = isRecord(rawCurrent?.['limitedReserves']) ? rawCurrent['limitedReserves'] : null;
+    const initial = LIMITED_RESERVES_INITIAL_COUNT;
+    const remaining = rawLr && rawLr['remainingReserves'] !== undefined
+      ? Math.min(initial, nonNegativeInteger(rawLr['remainingReserves']))
+      : LIMITED_RESERVES_INITIAL_COUNT;
+    limitedReserves = {
+      initialReserves: initial,
+      remainingReserves: remaining
+    };
+  }
+
   const discoveredWarIds = [
     ...currentWars.map(war => war.warId),
     ...recentCampaigns.flatMap(campaign => campaign.wars.map(war => war.warId))
@@ -197,7 +260,10 @@ export function normalizeCampaignProgression(
     currentCampaign: {
       campaignId: rawCampaignId,
       commanderId,
-      wars: currentWars
+      mode,
+      ordersSelected,
+      wars: currentWars,
+      ...(limitedReserves ? { limitedReserves } : {})
     },
     recentCampaigns,
     tokenBalance: nonNegativeInteger(value['tokenBalance']),
@@ -223,7 +289,9 @@ export function calculateWarMargin(input: ResolvedWarInput): number {
 export function summarizeCampaign(
   campaignId: string,
   wars: readonly CampaignWarRecord[],
-  commanderId?: OpponentCommanderId
+  commanderId?: OpponentCommanderId,
+  mode: CampaignModeId = 'standard',
+  remainingReserves?: number
 ): CampaignHistoryEntry {
   if (wars.length !== WARS_PER_CAMPAIGN) {
     throw new Error(`A Campaign requires exactly ${WARS_PER_CAMPAIGN} resolved Wars.`);
@@ -239,6 +307,7 @@ export function summarizeCampaign(
   return {
     campaignId,
     commanderId,
+    mode,
     wars: [...wars],
     wins,
     losses,
@@ -246,7 +315,8 @@ export function summarizeCampaign(
     differential,
     outcome,
     tokensEarned,
-    completedAt: wars[wars.length - 1].completedAt
+    completedAt: wars[wars.length - 1].completedAt,
+    ...(remainingReserves !== undefined ? { remainingReserves } : {})
   };
 }
 
@@ -257,13 +327,16 @@ function normalizeCampaignHistory(value: unknown): CampaignHistoryEntry[] {
     if (!isRecord(candidate)) continue;
     const campaignId = normalizeId(candidate['campaignId']);
     const commanderId = isCommanderId(candidate['commanderId']) ? candidate['commanderId'] : undefined;
+    const mode: CampaignModeId = isCampaignModeId(candidate['mode']) ? candidate['mode'] : 'standard';
     const wars = normalizeWars(candidate['wars']);
     if (!campaignId || wars.length !== WARS_PER_CAMPAIGN) continue;
-    history.push(summarizeCampaign(campaignId, wars, commanderId));
+    const remainingReserves = candidate['remainingReserves'] !== undefined
+      ? nonNegativeInteger(candidate['remainingReserves'])
+      : undefined;
+    history.push(summarizeCampaign(campaignId, wars, commanderId, mode, remainingReserves));
   }
   return history;
 }
-
 
 function normalizeWars(value: unknown): CampaignWarRecord[] {
   if (!Array.isArray(value)) return [];
