@@ -46,8 +46,49 @@ The game's established tabletop aesthetic is intentional and foundational:
 
 The characters and world lore treat the stakes of international cheesemaking rivalries with total, uncompromising military gravity.
 
-- **Do not** turn every button, menu heading, rule description, or system name into a cheese pun.
-- **The joke is the contrast**: Dignified, formal military framing applied with absolute commitment to passionate cheesemakers, affineurs, and dairy aristocrats waging war over tradition and craft.
+### Wordplay, Puns & Layered Humor
+Cheese-related puns, culinary wordplay, linguistic jokes, double meanings, historical allusions, absurd technical terminology, and deliberately groan-inducing jokes are a core, intentional part of *War of Attrition's* voice. Cheese humor should **not** be rationed or treated as a scarce commodity.
+
+The crucial design distinction is **where** that humor appears:
+
+1. **The Formal Interaction Layer (Straight-Faced UI)**:
+   - Core controls, interactive buttons, rules reference headings, and mechanics must remain clear, dignified, and legible:
+     - `Challenge`
+     - `Reinforcement`
+     - `Battle`
+     - `Boneyard`
+     - `Field Manual`
+     - `Campaign`
+     - `Rules of Engagement`
+   - *Do not* compromise usability by renaming primary game controls into cheese gags.
+
+2. **The Writing Layer (Playful, Layered & Sharp)**:
+   - Writing across all narrative surfaces may be abundant with wit, puns, and wordplay:
+     - Opponent dialogue and contextual situational quips
+     - Character biographies and rivalry descriptions
+     - Campaign dispatches and pre-war briefings
+     - *Chronicle* combat entries and *Field Manual* lore snippets
+     - Achievement names and unlock descriptions
+     - Cosmetic titles and item descriptions
+     - Loading copy, interstitial notices, and victory/defeat reactions
+
+### The Layered Humor Principle
+The game appreciates humor that functions on multiple levels—dead-serious treatment of ridiculous institutions, verbal wit, and rich worldbuilding hidden directly inside comedic dialogue.
+
+A well-crafted joke should ideally perform more than one job at once:
+- Provoke a laugh or a good-natured groan;
+- Deepen the characterization of the speaker (their ego, pedantry, or obsession);
+- Establish or explain an intense historical rivalry;
+- Imply broader political or culinary lore in the setting;
+- Reward players who possess real-world cheese or historical knowledge;
+- Foreshadow upcoming campaign events;
+- Reinforce the absurdly committed gravity of the world.
+
+### The Operational Maxims
+
+> **"The UI does not wink. The writers may."**
+
+> **"Use as many cheese puns as we can Muenster—without letting them curdle usability."**
 
 ---
 
@@ -77,12 +118,12 @@ Humor may incorporate strong accents (including deliberately phonetic written di
 
 ---
 
-## 4. Story Direction — Intentionally Light
+## 4. Story & Worldbuilding — Historical & Pseudo-Historical Inspiration
 
 *War of Attrition* will eventually feature a simple Campaign narrative connecting its commanders, but it must never become a slow, dialogue-heavy visual novel.
 
 ### Narrative Design Principles
-1. **Momentum First**: Narrative provides motivation and flavor without interrupting the rhythm of card play.
+1. **Momentum First**: Narrative provides motivation and flavor without interrupting the crisp rhythm of card play.
 2. **Where Story Lives**:
    - Opponent introductions and pre-war briefings
    - Character portraits and contextual situational quips
@@ -90,11 +131,123 @@ Humor may incorporate strong accents (including deliberately phonetic written di
    - Post-match victory and defeat reactions
    - Lore snippets in the *Field Manual* and *Chronicle*
 3. **Quick Onboarding**: A new player should understand the premise within seconds.
-4. **Historical Inspiration Deferred**: Real-world historical cheesemaking disputes, guild rivalries, and folklore provide rich inspiration, but deep historical research and the specific inciting incident are explicitly deferred to a dedicated narrative milestone.
+
+### Fictional Pseudo-History in a Medieval / Early-Modern Fantasy World
+The canonical world is a **fictional medieval / early-modern European-flavored fantasy setting**, presented through the visual grammar of late-16-bit / early-32-bit JRPGs (drawing inspiration from the design language of early *Suikoden* and 2D *Final Fantasy*, without copying copyrighted settings, characters, plots, sprites, or dialogue).
+
+The game's history should be **fictional pseudo-history assembled from the shapes of real cheesemaking absurdities**, rather than a literal retelling of a single historical war. This gives the game freedom to invent its own nations, guilds, treaties, charters, feuds, cheese fairs, monasteries, appellations, dynasties, and catastrophes while allowing knowledgeable players to recognize affectionate historical echoes.
+
+### Primary Story Inspiration: French & Swiss Gruyère-Style Disputes
+The strongest current inspiration for the eventual inciting conflict is the rich class of real-world disputes surrounding **French and Swiss Gruyère traditions, naming, provenance, standards, and protected identity**.
+
+The dramatic and comedic core to draw from:
+- Two neighboring cheesemaking traditions, both claiming ancient legitimacy and ancestral rights;
+- Bitter arguments over who may rightfully claim an ancient protected name;
+- Provenance and geographical origin treated as matters of sovereign national pride;
+- Minute differences in production methods and specifications elevated to diplomatic crises;
+- Regulatory standards treated with the zeal of sacred religious dogma;
+- The inherent comedy of characters who are technically precise, historically aggrieved, completely justified in their own eyes, and monumentally petty all at once.
+
+> **Key Real-World Technical Echo for Inspiration**:
+> In protected specifications, French Gruyère (IGP) explicitly calls for characteristic eye/hole formation (*"ouvertures de la taille d'un pois à une cerise"*), whereas Swiss Le Gruyère (AOP) maintains a distinct tradition with a blind, closed texture without holes.
+> 
+> This exact type of minute, technically rigorous, yet deeply consequential distinction is what the fictional setting can exaggerate into centuries of international grievance.
+
+#### Exploratory Story Ingredients *(Not Settled Plot Points)*:
+- An ancient royal appellation or protected guild name granted by a long-dead emperor;
+- Rival factions interpreting opposing clauses of a centuries-old monastic charter;
+- Disputed alpine pasture borders and transhumance grazing routes;
+- Accusations of counterfeit rinds or illicit milk blending;
+- A diplomatic insult delivered at a prestigious grand cheese fair;
+- A controversial judging decision by a corrupt or partisan tasting tribunal;
+- Incompatible definitions of correct rind mold, hole formation, curd temperature, or maturation cellars;
+- A minor dispute that no reasonable ruler would escalate into a war—and which therefore sparks an all-out international conflict.
+
+### Secondary Cultural Inspiration: Cheese-Rolling Rituals (Cooper's Hill Echoes)
+The famous English tradition of the **Cooper's Hill Cheese-Rolling** in Gloucestershire—where competitors hurdle down a perilous gradient in pursuit of an eight-pound wheel of Double Gloucester—serves as a secondary cultural touchstone.
+
+Rather than serving as the main war trigger, this tradition illustrates how real cheese customs can inspire:
+- A martial coming-of-age ritual or regional athletic tournament;
+- An eccentric English-region cultural festival;
+- An opponent's proud battle anecdote or boast;
+- Campaign interstitial color, *Field Manual* lore, or achievement references;
+- The comedic effect of characters treating an obviously reckless cheese-rolling contest as an ancient, dignified, and solemn institution.
+
+### The Tyromancy Bridge: Historical Divination to Fantasy Reality
+**Tyromancy**—the divination of the future through the coagulation, curds, holes, sweating, patterns, and mold of cheese—is a genuine historical divination practice recorded from antiquity through medieval Europe.
+
+The Tyromancer embodies the overarching worldbuilding formula for *War of Attrition*:
+
+> **"Take something genuinely present in cheese history, folklore, trade, law, ritual, or craft, then push it one step sideways into sincere fantasy worldbuilding."**
+
+The Tyromancer operates as an earnest mystic whose curd readings and rind portents are taken with utmost tactical gravity by commanders.
+
+### Rejection of Modern 20th-Century Settings
+The core narrative and visual identity explicitly **reject** 20th-century industrial conflicts (such as the 1960s Tillamook dairy cooperative disputes) as canonical story direction. Mid-century American corporate/commercial aesthetics clash with the established medieval/early-modern JRPG fantasy visual direction and are not part of the game's foundation.
 
 ---
 
-## 5. Visual North Star
+## 5. Contextual Links, Sources & Trivia-Layer Humor
+
+*War of Attrition* freely incorporates real cheesemaking terminology, historical parallels, folklore, legal oddities, culinary traditions, and obscure references where they strengthen character or worldbuilding.
+
+When useful, the game may provide optional links to reputable contextual sources, including Wikipedia for broad reference material and more authoritative primary or institutional sources where appropriate.
+
+### The Context Principle
+
+> **"Provide context, not punchline annotations."**
+
+The goal is **not** to explain the joke. The goal is to give curious players an effortless path to discover that the joke, terminology, or absurd historical premise has a real-world basis.
+
+- The surface-level writing must always remain funny and enjoyable without following any link.
+- Optional source links reward player curiosity with historical context, obscure cheesemaking terminology, regional traditions, legal/appellation disputes, folklore, strange real events, etymology, or useful trivia.
+
+### The Three-Layer Joke Architecture
+Whenever possible, references should create layered humor:
+1. **Layer 1 (The Surface)**: The line works on its own as character dialogue, banter, or narrative flavor.
+2. **Layer 2 (The In-Joke)**: Knowledgeable players recognize the historical or culinary allusion immediately.
+3. **Layer 3 (The Discovery)**: Curious players follow the optional source link and discover that the most ridiculous, bizarre detail is actually historically true.
+
+This turns research itself into an extension of the joke.
+
+### Suitable Linked Concepts & Terminology *(Examples)*
+- **Tyromancy**: Ancient and medieval divination by cheese.
+- **Affineur**: The specialized craft and philosophy of cheese aging and maturation.
+- **Protected Designation / Appellation Systems**: AOP, AOC, IGP, and PDO regulatory frameworks.
+- **Gruyère Naming & Production Disputes**: Cross-border specification feuds (holes vs. blind texture).
+- **Cooper's Hill Cheese-Rolling**: Perilous historical downhill races in Gloucestershire.
+- **Washed-Rind Cheeses & Bacterial Culturing**: Brevibacterium linens and pungent monastery traditions.
+- **Morbier**: The historical vegetable ash dividing line between morning and evening curds.
+- **Rennet & Coagulation**: Chymosin enzymes, cardoon thistles, and milk-clotting biochemistry.
+- **Regional Customs & Historical Cheese Riots**: Nottingham Cheese Riots (1766), trade disputes, and tax revolts.
+
+### Where Links Belong (and Where They Do Not)
+- **Do NOT** interrupt core gameplay with mandatory educational popups or intrusive dialogs.
+- **Do NOT** link ordinary or common words.
+- **Where Links Naturally Belong**:
+  - *Field Manual* entries and lore appendices
+  - *Chronicle* event details and historical notes
+  - Commander biographies and rivalry descriptions
+  - Glossary-style term popovers in the lore viewer
+  - Campaign historical dispatches and interstitial briefings
+  - Cosmetic item names and unlock lore
+  - Optional, subtle info affordances adjacent to specialized terminology
+
+### Source Philosophy & Scholarly Framing
+The project prefers citing sources with dignity:
+- **Wikipedia**: For approachable, broad reference and discovery.
+- **Official Records, Museums, Universities & Historical Societies**: When legal or historical precision matters (e.g., official protected-designation specifications).
+- **Primary / Institutional Documents**: For specific technical or historical claims.
+
+The UI should not feel like citation clutter. Rather, it should feel like **discovering footnotes in a very serious military history written about an extremely unserious cheese war**.
+
+### The Desired Outcome
+
+> **"The player learns something that might actually help on trivia night, without the game ever stopping to explain why the joke was funny."**
+
+---
+
+## 6. Visual North Star
 
 The future visual identity draws inspiration from the **visual grammar of late-16-bit and early-32-bit tactical JRPGs** (such as *Suikoden II* and 2D *Final Fantasy* titles).
 
@@ -112,7 +265,7 @@ This is an homage to readability, charm, and economy of presentation—**not** a
 
 ---
 
-## 6. Character Portraits & Dialogue
+## 7. Character Portraits & Dialogue
 
 Opponent dialogue in the table UI will eventually be paired with an expressive 2D character portrait.
 
@@ -127,7 +280,7 @@ Opponent dialogue in the table UI will eventually be paired with an expressive 2
 
 ---
 
-## 7. Visualized Card Clashes & Battle Staging
+## 8. Visualized Card Clashes & Battle Staging
 
 A key visual ambition is the dramatization of card clashes through small battlefield unit encounters.
 
@@ -143,7 +296,7 @@ A key visual ambition is the dramatization of card clashes through small battlef
 
 ---
 
-## 8. Rank-to-Unit Visual Language
+## 9. Rank-to-Unit Visual Language
 
 To make card clashes intuitive, card ranks map to consistent military unit archetypes:
 
@@ -180,7 +333,7 @@ The core rule where a **2 defeats an Ace** receives special visual treatment:
 
 ---
 
-## 9. Suit-Specific Armies (Canonical Long-Term Direction)
+## 10. Suit-Specific Armies (Canonical Long-Term Direction)
 
 In the default visual theme, each of the four card suits represents a distinctive faction with its own visual flair, color palette, and cultural military tradition.
 
@@ -198,7 +351,7 @@ $$\text{Army Theme} + \text{Suit} + \text{Rank Archetype} \longrightarrow \text{
 
 ---
 
-## 10. Alternate Army Themes & Cosmetics
+## 11. Alternate Army Themes & Cosmetics
 
 The visual architecture will eventually support interchangeable cosmetic army themes that reskin the default suit armies.
 
@@ -208,13 +361,14 @@ The visual architecture will eventually support interchangeable cosmetic army th
 - **Undead / Gothic**: Skeletal infantry, vampiric cavalry, necromancer Queens, lich Kings.
 - **Clockwork / Steampunk**: Brass automatons, steam knights, alchemical Queens.
 - **Seasonal & Sci-Fi**: Winter solstice, neon retro-future, or cosmic factions.
+- **Speculative Distant Themes**: Highly speculative, non-priority visual skins (such as a mid-century dairy cooperative motif) remain distant cosmetic possibilities only and do not alter the canonical medieval/early-modern fantasy setting.
 
 ### Strict Cosmetic Principle
 Cosmetic themes **never** alter card values, combat odds, AI logic, or gameplay mechanics. They are purely visual expressions of personal style.
 
 ---
 
-## 11. Card Backs & Cosmetic Progression
+## 12. Card Backs & Cosmetic Progression
 
 Card backs represent an accessible, highly visible cosmetic category earned or unlocked through non-pay-to-win gameplay tokens.
 
@@ -232,7 +386,7 @@ Tasteful, elegant patterns celebrating the world's cheese obsession:
 
 ---
 
-## 12. Multiplayer as a Long-Term Horizon
+## 13. Multiplayer as a Long-Term Horizon
 
 Multiplayer is a long-term design horizon rather than immediate release scope. However, all visual and cosmetic systems must remain compatible with future head-to-head human play:
 
@@ -241,9 +395,37 @@ Multiplayer is a long-term design horizon rather than immediate release scope. H
 
 ---
 
-## 13. Scope Discipline & Roadmap Tiers
+## 14. Scope Discipline & Canon Categorization
 
-To protect time-to-release, design ambitions are structured into clear developmental tiers:
+To maintain creative clarity and protect time-to-release, all creative decisions are explicitly categorized into three distinct levels of certainty:
+
+### 1. Settled Creative Principles *(Authoritative & Binding)*
+- **Tonal Contrast**: Straight-faced military UI framing an absurdly serious international cheese war.
+- **Humor Philosophy**: Abundant layered puns, linguistic wit, and multi-level jokes (*"The UI does not wink. The writers may."* / *"Use as many cheese puns as we can Muenster—without letting them curdle usability."*).
+- **Contextual Sourcing & Footnotes**: Real cheesemaking terminology and history linked unobtrusively (*"Provide context, not punchline annotations"*); jokes never paused for explanations.
+- **Physical Deck Fidelity**: Strict 52-card physical integrity; zero pay-to-win, stat modifiers, or superpowers.
+- **Visual Grammar**: 16/32-bit tactical JRPG-inspired pixel/portrait staging; readable at mobile scale (`<= 620px`).
+- **Mechanical Separation**: 5 parameterized AI strategy models in code remain immutable; fictional personalities map onto them.
+- **Rank Archetypes**: Consistent military formations (Infantry, Cavalry Jacks, Caster Queens, Swordsman Kings, General Aces, and the signature 2-vs-Ace assassination sequence).
+- **Cosmetics Policy**: Purely visual presentation (card backs, army themes, portraits); strict prohibition against unauthorized third-party trade dress.
+
+### 2. Strong Current Direction *(Settled Thematic Framework)*
+- **Fictional Setting**: A fictional medieval / early-modern European fantasy world (drawing JRPG aesthetic cues, not documentary realism).
+- **Primary Narrative Anchor**: French and Swiss Gruyère-style provenance, standards, and naming disputes as the dramatic blueprint for the central war.
+- **Cultural Folklore Echoes**: Real cheese traditions (such as Cooper's Hill cheese rolling) used as flavor for festivals, rituals, and anecdotes.
+- **Tyromancy**: Real historical cheese divination used as a sincere bridge between cheese lore and fantasy worldbuilding.
+- **Default Suit Armies**: Four distinct suit-based military traditions (Disciplined Spades, Chivalric Hearts, Gilded Diamonds, Rugged Clubs).
+
+### 3. Exploratory Ingredients *(Subject to Future Creative Pass; Not Final Canon)*
+- Specific names of fictional countries, borders, or dynasties;
+- Specific names of charters, treaties, or the inciting prize cheese wheel;
+- Specific commander roster names (e.g., *Marcel de Brie* remains a directional concept);
+- Specific campaign plot beats, cutscene scripts, or dialogue lines;
+- The final official title of the cheese conflict.
+
+---
+
+## 15. Roadmap Tiers & Milestones
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
