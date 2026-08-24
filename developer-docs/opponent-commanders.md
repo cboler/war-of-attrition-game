@@ -2,6 +2,14 @@
 
 Status: Implemented in core gameplay, campaign progression, table presentation, and telemetry.
 
+> [!NOTE]
+> **Creative Direction & Character Evolution**
+> The titles and generic labels in this document (*The Quartermaster*, *The Gambler*, *The Analyst*, *The Attritionist*, *The Cornered General*) describe the **implemented AI strategy layer and behavioral archetypes**.
+> 
+> As defined in [`developer-docs/north-star.md`](./north-star.md), future fictional opponent identities will be richer named characters (e.g. passionate international cheesemakers and affineurs) whose personalities and visual presentation map directly onto these established strategy archetypes.
+> 
+> The current generic names should **not** be treated as immutable creative canon, but the underlying parameterized AI strategy architecture and fair-play math remain authoritative.
+
 ## 1. Physical 52-Card Deck Integrity & Fair Play
 
 *War of Attrition* is designed to be physically playable with an ordinary 52-card deck. Opponent commanders strictly respect that identity:

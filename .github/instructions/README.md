@@ -18,9 +18,10 @@ To ensure clarity for developers and automated coding agents, documentation in t
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
-│ 3. HISTORICAL PLANNING & BACKLOG                            │
-│    - development-milestones.md (Historical planning)        │
+│ 3. CREATIVE DIRECTION, BACKLOG & HISTORICAL PLANNING        │
+│    - developer-docs/north-star.md (Creative North Star)     │
 │    - developer-docs/future-gameplay-ideas.md (Backlog ideas)│
+│    - development-milestones.md (Historical planning)        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -31,9 +32,10 @@ To ensure clarity for developers and automated coding agents, documentation in t
 - [`current-development-status.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/current-development-status.md) — Authoritative live status describing the **Production Readiness / Final Polish** phase, active systems, responsive layouts, and near-term priorities.
 - [`implementation-guidelines.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/implementation-guidelines.md) — Code quality standards, Angular conventions, signal state rules, and architecture guidelines.
 
-### 3. Historical Planning References
+### 3. Creative Direction & Backlog References
+- [`developer-docs/north-star.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/north-star.md) — **CREATIVE NORTH STAR** establishing thematic world identity (The War of Cheesemakers), JRPG-inspired visual grammar, suit-specific armies, and cosmetic principles.
+- [`developer-docs/future-gameplay-ideas.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/future-gameplay-ideas.md) — Backlog design concepts, concrete UX observations, and candidate campaign variants.
 - [`development-milestones.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/development-milestones.md) — Historical milestone roadmap used during early development. Provided for context only; completion percentages in milestone documents are historical artifacts and do not supersede `current-development-status.md`.
-- [`developer-docs/future-gameplay-ideas.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/future-gameplay-ideas.md) — Post-release design concepts (AI Commander personalities, Hall of Valor card records, Alternate Rules Campaigns).
 
 ---
 
