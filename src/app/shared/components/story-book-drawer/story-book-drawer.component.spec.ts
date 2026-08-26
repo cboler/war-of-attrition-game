@@ -424,6 +424,10 @@ describe('StoryBookDrawerComponent', () => {
 
   describe('Fog of War Chronicle and Hall of Valor sealing', () => {
     it('redacts Chronicle narrative text, suppresses combat math and casualty strips during active War, and reveals upon GAME_OVER', () => {
+      authService.updateActiveProfileProgression(p => ({
+        ...p,
+        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war']
+      }));
       progressionService.selectCampaignOrders('fog_of_war');
       gameState.setPhase(GamePhase.NORMAL);
       fixture.detectChanges();

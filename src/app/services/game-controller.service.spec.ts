@@ -5,6 +5,7 @@ import {
   GameEvent,
 } from '../core/models/game-events.model';
 import { DeckColor, GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { AuthService } from '../core/services/auth.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { CardComparisonService, ComparisonResult } from '../core/services/card-comparison.service';
 import { GameStateService } from '../core/services/game-state.service';
@@ -29,11 +30,13 @@ describe('GameControllerService presentation integration', () => {
   let eventBus: GameEventBusService;
   let storyBook: StoryBookService;
   let progression: CampaignProgressionService;
+  let auth: AuthService;
   let sound: SoundService;
 
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({});
+    auth = TestBed.inject(AuthService);
     controller = TestBed.inject(GameControllerService);
     gameState = TestBed.inject(GameStateService);
     comparison = TestBed.inject(CardComparisonService);
@@ -564,6 +567,13 @@ describe('GameControllerService presentation integration', () => {
   });
 
   describe('Limited Reserves gameplay integration', () => {
+    beforeEach(() => {
+      auth.updateActiveProfileProgression(p => ({
+        ...p,
+        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war']
+      }));
+    });
+
     it('consumes a reserve upon human challenge commitment and chronicles exhaustion when reaching 0', fakeAsync(() => {
       settings.setAutoPlayAnimations(false);
       progression.selectCampaignOrders('limited_reserves');
@@ -622,14 +632,16 @@ describe('GameControllerService presentation integration', () => {
       expect(progression.remainingReserves()).toBe(3);
 
       const campaignIdBefore = progression.currentCampaign().campaignId;
-      const commanderBefore = progression.currentCampaign().commanderId;
+      const commanderBefore = progression.currentCommanderId();
+      const scheduleBefore = progression.currentCampaign().commanderSchedule;
       const warsBefore = progression.currentCampaign().wars.length;
 
       // Player restarts the active War
       controller.startNewGame('restart');
 
       expect(progression.currentCampaign().campaignId).toBe(campaignIdBefore);
-      expect(progression.currentCampaign().commanderId).toBe(commanderBefore);
+      expect(progression.currentCommanderId()).toBe(commanderBefore);
+      expect(progression.currentCampaign().commanderSchedule).toEqual(scheduleBefore);
       expect(progression.activeCampaignMode()).toBe('limited_reserves');
       expect(progression.remainingReserves()).toBe(3);
       expect(progression.currentCampaign().wars.length).toBe(warsBefore);
@@ -642,13 +654,15 @@ describe('GameControllerService presentation integration', () => {
       expect(progression.remainingReserves()).toBe(4);
 
       const campaignIdBefore = progression.currentCampaign().campaignId;
-      const commanderBefore = progression.currentCampaign().commanderId;
+      const commanderBefore = progression.currentCommanderId();
+      const scheduleBefore = progression.currentCampaign().commanderSchedule;
 
       // Player abandons the active War
       controller.startNewGame('abandon');
 
       expect(progression.currentCampaign().campaignId).toBe(campaignIdBefore);
-      expect(progression.currentCampaign().commanderId).toBe(commanderBefore);
+      expect(progression.currentCommanderId()).toBe(commanderBefore);
+      expect(progression.currentCampaign().commanderSchedule).toEqual(scheduleBefore);
       expect(progression.activeCampaignMode()).toBe('limited_reserves');
       expect(progression.remainingReserves()).toBe(4);
       expect(progression.currentCampaign().wars.length).toBe(0);

@@ -10,10 +10,13 @@ import { AuthService } from '../core/services/auth.service';
 import { GameEventBusService } from './game-event-bus.service';
 import { HallOfValorService } from './hall-of-valor.service';
 
+import { CampaignProgressionService } from '../core/services/campaign-progression.service';
+
 describe('HallOfValorService', () => {
   let service: HallOfValorService;
   let eventBus: GameEventBusService;
   let authService: AuthService;
+  let progression: CampaignProgressionService;
 
   const cardH2 = new CardImpl(Suit.HEARTS, Rank.TWO);
   const cardHK = new CardImpl(Suit.HEARTS, Rank.KING);
@@ -26,11 +29,12 @@ describe('HallOfValorService', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({
-      providers: [HallOfValorService, GameEventBusService, AuthService]
+      providers: [HallOfValorService, GameEventBusService, AuthService, CampaignProgressionService]
     });
     service = TestBed.inject(HallOfValorService);
     eventBus = TestBed.inject(GameEventBusService);
     authService = TestBed.inject(AuthService);
+    progression = TestBed.inject(CampaignProgressionService);
   });
 
   afterEach(() => {
@@ -280,6 +284,7 @@ describe('HallOfValorService', () => {
     expect(service.getRecord(cardHK.id)?.juggernautCitations).toBe(1);
     expect(emittedEvent).not.toBeNull();
     expect(emittedEvent.description).toContain('5 consecutive decisive victories');
+    expect(emittedEvent.commanderId).toBe('quartermaster');
 
     // 6th win in same War -> Still 1 citation (at most one per War)
     makeWin(18);

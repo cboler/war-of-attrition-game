@@ -29,6 +29,10 @@ describe('CampaignOrdersDialogComponent', () => {
     component = fixture.componentInstance;
     progressionService = TestBed.inject(CampaignProgressionService);
     authService = TestBed.inject(AuthService);
+    authService.updateActiveProfileProgression(p => ({
+      ...p,
+      unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war']
+    }));
     fixture.detectChanges();
   });
 

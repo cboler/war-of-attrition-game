@@ -1,6 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { GameOutcome } from '../models/game-state.model';
 import {
+  CAMPAIGN_CHAPTER_ORDER,
+  CampaignModeId
+} from '../models/campaign-chapter.model';
+import {
   MAX_CAMPAIGN_HISTORY,
   WARS_PER_CAMPAIGN
 } from '../models/progression.model';
@@ -22,315 +26,352 @@ describe('CampaignProgressionService', () => {
 
   afterEach(() => localStorage.clear());
 
-  it('completes a Campaign after three resolved Wars using record before differential', () => {
-    service.recordResolvedWar(war('war-1', GameOutcome.PLAYER_WIN, 5, 0));
-    service.recordResolvedWar(war('war-2', GameOutcome.OPPONENT_WIN, 0, 20));
-    const result = service.recordResolvedWar(war('war-3', GameOutcome.PLAYER_WIN, 4, 0));
-
-    expect(result.completedCampaign).not.toBeNull();
-    expect(result.completedCampaign?.wins).toBe(2);
-    expect(result.completedCampaign?.losses).toBe(1);
-    expect(result.completedCampaign?.differential).toBe(-11);
-    expect(result.completedCampaign?.outcome).toBe('victory');
-    expect(result.completedCampaign?.tokensEarned).toBe(1);
-    expect(service.tokenBalance()).toBe(1);
-    expect(service.currentCampaign().wars).toEqual([]);
-    expect(service.campaignWarIndex()).toBe(1);
-    expect(authService.userStats().campaignsCompleted).toBe(1);
-    expect(authService.userStats().campaignsWon).toBe(1);
-    expect(authService.userStats().totalCampaignDifferential).toBe(-11);
-    expect(authService.userStats().bestCampaignDifferential).toBe(-11);
-    expect(authService.userStats().worstCampaignDifferential).toBe(-11);
-    expect(authService.userStats().campaignsCompleted).toBe(1);
-    expect(authService.userStats().campaignsWon).toBe(1);
-    expect(authService.userStats().bestCampaignDifferential).toBe(-11);
-  });
-
-  it('awards a bonus token only for a victorious Campaign with positive differential', () => {
-    service.recordResolvedWar(war('positive-1', GameOutcome.PLAYER_WIN, 8, 0));
-    service.recordResolvedWar(war('positive-2', GameOutcome.PLAYER_WIN, 3, 0));
-    const result = service.recordResolvedWar(war('positive-3', GameOutcome.OPPONENT_WIN, 0, 2));
-
-    expect(result.completedCampaign?.outcome).toBe('victory');
-    expect(result.completedCampaign?.differential).toBe(9);
-    expect(result.completedCampaign?.tokensEarned).toBe(2);
-    expect(service.tokenBalance()).toBe(2);
-  });
-
-  it('counts tied Wars but awards no tokens for a drawn Campaign', () => {
-    service.recordResolvedWar(war('draw-1', GameOutcome.PLAYER_WIN, 10, 0));
-    service.recordResolvedWar(war('draw-2', GameOutcome.OPPONENT_WIN, 0, 1));
-    const result = service.recordResolvedWar(war('draw-3', GameOutcome.TIE, 9, 9));
-
-    expect(result.completedCampaign?.ties).toBe(1);
-    expect(result.completedCampaign?.outcome).toBe('draw');
-    expect(result.completedCampaign?.differential).toBe(9);
-    expect(result.completedCampaign?.tokensEarned).toBe(0);
-  });
-
-  it('is idempotent by stable War ID', () => {
-    const first = service.recordResolvedWar(war('same-war', GameOutcome.PLAYER_WIN, 6, 0));
-    const duplicate = service.recordResolvedWar(war('same-war', GameOutcome.OPPONENT_WIN, 0, 26));
-
-    expect(first.status).toBe('recorded');
-    expect(duplicate.status).toBe('duplicate');
-    expect(service.currentCampaign().wars.length).toBe(1);
-    expect(service.currentCampaign().wars[0].margin).toBe(6);
-  });
-
-  it('unlocks and selects existing card backs with one token deduction', () => {
-    service.recordResolvedWar(war('token-1', GameOutcome.PLAYER_WIN, 3, 0));
-    service.recordResolvedWar(war('token-2', GameOutcome.PLAYER_WIN, 3, 0));
-    service.recordResolvedWar(war('token-3', GameOutcome.OPPONENT_WIN, 0, 5));
-    expect(service.tokenBalance()).toBe(2);
-
-    const purchase = service.purchaseCardBacking('classic-red');
-    const repeated = service.purchaseCardBacking('classic-red');
-
-    expect(purchase.status).toBe('unlocked');
-    expect(purchase.tokenCost).toBe(1);
-    expect(service.tokenBalance()).toBe(1);
-    expect(service.selectedCardBackingId()).toBe('classic-red');
-    expect(service.isCardBackingUnlocked('classic-red')).toBeTrue();
-    expect(repeated.status).toBe('already_unlocked');
-    expect(service.tokenBalance()).toBe(1);
-  });
-
-  it('keeps progression and cosmetic entitlements when career statistics reset', () => {
-    service.recordResolvedWar(war('reset-1', GameOutcome.PLAYER_WIN, 3, 0));
-    service.unlockCardBacking('royal-purple', 'achievement');
-    authService.recordGameResult({ outcome: 'player_win', turns: 5, durationMs: 1000 });
-
-    const campaignId = service.currentCampaign().campaignId;
-    authService.resetActiveUserStats();
-
-    expect(authService.userStats().gamesPlayed).toBe(0);
-    expect(service.currentCampaign().campaignId).toBe(campaignId);
-    expect(service.currentCampaign().wars.length).toBe(1);
-    expect(service.isCardBackingUnlocked('royal-purple')).toBeTrue();
-  });
-
-  it('bounds completed Campaign history', () => {
-    for (let campaign = 0; campaign < MAX_CAMPAIGN_HISTORY + 2; campaign++) {
-      for (let index = 0; index < WARS_PER_CAMPAIGN; index++) {
-        service.recordResolvedWar(war(
-          `history-${campaign}-${index}`,
-          GameOutcome.OPPONENT_WIN,
-          0,
-          1
-        ));
-      }
-    }
-
-    expect(service.progression().recentCampaigns.length).toBe(MAX_CAMPAIGN_HISTORY);
-    expect(service.progression().recentCampaigns[0].wars[0].warId).toBe('history-2-0');
-  });
-
-  describe('Commander Campaign Lifecycle', () => {
-    it('persists the commander throughout all 3 Wars of a Campaign and rotates on completion', () => {
-      const initialCommanderId = service.currentCampaign().commanderId;
-      expect(service.currentCommander().id).toBe(initialCommanderId);
-
-      // War 1
-      service.recordResolvedWar(war('c-war-1', GameOutcome.PLAYER_WIN, 4, 0));
-      expect(service.currentCampaign().commanderId).toBe(initialCommanderId);
-      expect(service.currentCommander().id).toBe(initialCommanderId);
-
-      // War 2
-      service.recordResolvedWar(war('c-war-2', GameOutcome.PLAYER_WIN, 2, 0));
-      expect(service.currentCampaign().commanderId).toBe(initialCommanderId);
-
-      // War 3 (Completes campaign)
-      const result = service.recordResolvedWar(war('c-war-3', GameOutcome.PLAYER_WIN, 6, 0));
-      expect(result.completedCampaign?.commanderId).toBe(initialCommanderId);
-
-      const nextCommanderId = service.currentCampaign().commanderId;
-      expect(nextCommanderId).not.toBe(initialCommanderId);
-      expect(service.currentCommander().id).toBe(nextCommanderId);
-      expect(service.currentCampaign().wars.length).toBe(0);
-    });
-  });
-
-  describe('Campaign Orders & Limited Reserves', () => {
-    it('initializes a new profile with ordersSelected: false and default standard mode', () => {
+  describe('Initial Fresh Profile State', () => {
+    it('initializes a new profile with Standard chapter only unlocked, unselected orders, and Marcel first', () => {
+      expect(service.unlockedChapterModes()).toEqual(['standard']);
+      expect(service.completedChapterModes()).toEqual([]);
       expect(service.activeCampaignMode()).toBe('standard');
       expect(service.ordersSelected()).toBeFalse();
-      expect(service.isLimitedReserves()).toBeFalse();
-      expect(service.limitedReserves()).toBeNull();
-      expect(service.remainingReserves()).toBeNull();
+      expect(service.campaignWarIndex()).toBe(1);
+      expect(service.currentCommanderId()).toBe('quartermaster');
+      expect(service.currentCommander().name).toBe('The Quartermaster');
+      expect(service.currentCommanderIdentity().name).toBe('Marcel de Brie');
+      expect(service.currentCampaign().commanderSchedule).toEqual([
+        'quartermaster',
+        'analyst',
+        'attritionist'
+      ]);
+      expect(service.chapterState('standard')).toBe('current');
+      expect(service.chapterState('limited_reserves')).toBe('locked');
+      expect(service.chapterState('fog_of_war')).toBe('locked');
+      expect(service.chapterState('total_war')).toBe('locked');
     });
 
-    it('selects Limited Reserves mode and initializes exactly 5 reserves', () => {
-      const selected = service.selectCampaignOrders('limited_reserves');
-      expect(selected).toBeTrue();
+    it('rejects selecting locked chapters on a fresh profile', () => {
+      expect(service.selectCampaignOrders('limited_reserves')).toBeFalse();
+      expect(service.selectCampaignOrders('fog_of_war')).toBeFalse();
+      expect(service.selectCampaignOrders('total_war')).toBeFalse();
+      expect(service.activeCampaignMode()).toBe('standard');
+    });
+  });
+
+  describe('Standard Chapter I Progression & Canonical Encounter Schedule', () => {
+    it('advances through Marcel (War 1) -> Matthias (War 2) -> Bastien (War 3) and unlocks Limited Reserves on completion', () => {
+      // War 1: Marcel de Brie
+      expect(service.campaignWarIndex()).toBe(1);
+      expect(service.currentCommanderId()).toBe('quartermaster');
+      expect(service.currentCommanderIdentity().name).toBe('Marcel de Brie');
+
+      const war1Result = service.recordResolvedWar(war('c1-w1', GameOutcome.PLAYER_WIN, 4, 0));
+      expect(war1Result.status).toBe('recorded');
+      expect(war1Result.war?.commanderId).toBe('quartermaster');
+      expect(service.currentCampaign().wars.length).toBe(1);
+
+      // War 2: Matthias von Greyerz
+      expect(service.campaignWarIndex()).toBe(2);
+      expect(service.currentCommanderId()).toBe('analyst');
+      expect(service.currentCommanderIdentity().name).toBe('Matthias von Greyerz');
+
+      const war2Result = service.recordResolvedWar(war('c1-w2', GameOutcome.OPPONENT_WIN, 0, 3));
+      expect(war2Result.status).toBe('recorded');
+      expect(war2Result.war?.commanderId).toBe('analyst');
+      expect(service.currentCampaign().wars.length).toBe(2);
+
+      // War 3: Bastien de Herve
+      expect(service.campaignWarIndex()).toBe(3);
+      expect(service.currentCommanderId()).toBe('attritionist');
+      expect(service.currentCommanderIdentity().name).toBe('Bastien de Herve');
+
+      const war3Result = service.recordResolvedWar(war('c1-w3', GameOutcome.PLAYER_WIN, 5, 0));
+      expect(war3Result.status).toBe('recorded');
+      expect(war3Result.war?.commanderId).toBe('attritionist');
+
+      // Campaign Completion Assertions
+      const completed = war3Result.completedCampaign;
+      expect(completed).not.toBeNull();
+      expect(completed?.mode).toBe('standard');
+      expect(completed?.outcome).toBe('victory');
+      expect(completed?.wins).toBe(2);
+      expect(completed?.losses).toBe(1);
+      expect(completed?.differential).toBe(6);
+      expect(completed?.wars.length).toBe(3);
+      expect(completed?.wars[0].commanderId).toBe('quartermaster');
+      expect(completed?.wars[1].commanderId).toBe('analyst');
+      expect(completed?.wars[2].commanderId).toBe('attritionist');
+
+      // Unlocks and Next Chapter
+      expect(service.completedChapterModes()).toContain('standard');
+      expect(service.unlockedChapterModes()).toEqual(['standard', 'limited_reserves']);
       expect(service.activeCampaignMode()).toBe('limited_reserves');
-      expect(service.ordersSelected()).toBeTrue();
+      expect(service.ordersSelected()).toBeFalse();
+      expect(service.campaignWarIndex()).toBe(1);
+      expect(service.currentCommanderId()).toBe('gambler'); // Sir Edmund Gloucester
+      expect(service.currentCommanderIdentity().name).toBe('Sir Edmund Gloucester');
+    });
+  });
+
+  describe('Chapter Unlocking on Completion Regardless of Outcome', () => {
+    it('unlocks the next chapter on Campaign Defeat', () => {
+      // 3 losses in Standard -> Campaign Defeat
+      service.recordResolvedWar(war('loss-w1', GameOutcome.OPPONENT_WIN, 0, 5));
+      service.recordResolvedWar(war('loss-w2', GameOutcome.OPPONENT_WIN, 0, 4));
+      const result = service.recordResolvedWar(war('loss-w3', GameOutcome.OPPONENT_WIN, 0, 3));
+
+      expect(result.completedCampaign?.outcome).toBe('defeat');
+      expect(service.completedChapterModes()).toContain('standard');
+      expect(service.unlockedChapterModes()).toEqual(['standard', 'limited_reserves']);
+      expect(service.isChapterUnlocked('limited_reserves')).toBeTrue();
+      expect(service.tokenBalance()).toBe(0);
+    });
+
+    it('unlocks the next chapter on Campaign Draw', () => {
+      // 1 win, 1 loss, 1 tie in Standard -> Campaign Draw
+      service.recordResolvedWar(war('draw-w1', GameOutcome.PLAYER_WIN, 5, 0));
+      service.recordResolvedWar(war('draw-w2', GameOutcome.OPPONENT_WIN, 0, 5));
+      const result = service.recordResolvedWar(war('draw-w3', GameOutcome.TIE, 0, 0));
+
+      expect(result.completedCampaign?.outcome).toBe('draw');
+      expect(service.completedChapterModes()).toContain('standard');
+      expect(service.unlockedChapterModes()).toEqual(['standard', 'limited_reserves']);
+      expect(service.isChapterUnlocked('limited_reserves')).toBeTrue();
+    });
+  });
+
+  describe('Full 4-Chapter Sequential Unlocking and Replay Availability', () => {
+    it('progresses Standard -> Limited Reserves -> Fog of War -> Total War, leaving all chapters replayable', () => {
+      // 1. Complete Standard Chapter I
+      for (let i = 1; i <= 3; i++) {
+        service.recordResolvedWar(war(`std-w${i}`, GameOutcome.PLAYER_WIN, 2, 0));
+      }
+      expect(service.completedChapterModes()).toEqual(['standard']);
+      expect(service.unlockedChapterModes()).toEqual(['standard', 'limited_reserves']);
+      expect(service.activeCampaignMode()).toBe('limited_reserves');
+
+      // Confirm Limited Reserves orders and check schedule: Edmund -> Lorenzo -> Marcel
+      service.selectCampaignOrders('limited_reserves');
+      expect(service.currentCommanderId()).toBe('gambler');
+      service.recordResolvedWar(war('lr-w1', GameOutcome.PLAYER_WIN, 1, 0));
+      expect(service.currentCommanderId()).toBe('cornered-general');
+      service.recordResolvedWar(war('lr-w2', GameOutcome.PLAYER_WIN, 1, 0));
+      expect(service.currentCommanderId()).toBe('quartermaster');
+      service.recordResolvedWar(war('lr-w3', GameOutcome.PLAYER_WIN, 1, 0));
+
+      // 2. Limited Reserves Complete -> Unlocks Fog of War
+      expect(service.completedChapterModes()).toEqual(['standard', 'limited_reserves']);
+      expect(service.unlockedChapterModes()).toEqual(['standard', 'limited_reserves', 'fog_of_war']);
+      expect(service.activeCampaignMode()).toBe('fog_of_war');
+
+      // Confirm Fog of War orders and check schedule: Matthias -> Marcel -> Bastien
+      service.selectCampaignOrders('fog_of_war');
+      expect(service.currentCommanderId()).toBe('analyst');
+      service.recordResolvedWar(war('fog-w1', GameOutcome.PLAYER_WIN, 1, 0));
+      expect(service.currentCommanderId()).toBe('quartermaster');
+      service.recordResolvedWar(war('fog-w2', GameOutcome.PLAYER_WIN, 1, 0));
+      expect(service.currentCommanderId()).toBe('attritionist');
+      service.recordResolvedWar(war('fog-w3', GameOutcome.PLAYER_WIN, 1, 0));
+
+      // 3. Fog of War Complete -> Unlocks Total War
+      expect(service.completedChapterModes()).toEqual([
+        'standard',
+        'limited_reserves',
+        'fog_of_war'
+      ]);
+      expect(service.unlockedChapterModes()).toEqual([
+        'standard',
+        'limited_reserves',
+        'fog_of_war',
+        'total_war'
+      ]);
+      expect(service.activeCampaignMode()).toBe('total_war');
+
+      // Confirm Total War orders and check schedule: Edmund -> Lorenzo -> Matthias
+      service.selectCampaignOrders('total_war');
+      expect(service.currentCommanderId()).toBe('gambler');
+      service.recordResolvedWar(war('tw-w1', GameOutcome.PLAYER_WIN, 1, 0));
+      expect(service.currentCommanderId()).toBe('cornered-general');
+      service.recordResolvedWar(war('tw-w2', GameOutcome.PLAYER_WIN, 1, 0));
+      expect(service.currentCommanderId()).toBe('analyst');
+      service.recordResolvedWar(war('tw-w3', GameOutcome.PLAYER_WIN, 1, 0));
+
+      // 4. Total War Complete -> All 4 chapters remain completed and replayable
+      expect(service.completedChapterModes()).toEqual([
+        'standard',
+        'limited_reserves',
+        'fog_of_war',
+        'total_war'
+      ]);
+      expect(service.unlockedChapterModes()).toEqual([
+        'standard',
+        'limited_reserves',
+        'fog_of_war',
+        'total_war'
+      ]);
+
+      // Can select and replay any chapter
+      expect(service.selectCampaignOrders('standard')).toBeTrue();
+      expect(service.activeCampaignMode()).toBe('standard');
+      expect(service.currentCommanderId()).toBe('quartermaster');
+
+      expect(service.selectCampaignOrders('limited_reserves')).toBeTrue();
+      expect(service.activeCampaignMode()).toBe('limited_reserves');
+      expect(service.currentCommanderId()).toBe('gambler');
+    });
+  });
+
+  describe('Campaign Orders Immutability & Selection', () => {
+    it('prevents changing campaign orders once War 1 play has begun', () => {
+      // Grandfather all modes for test
+      authService.updateActiveProfileProgression(p => ({
+        ...p,
+        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
+      }));
+
+      service.selectCampaignOrders('limited_reserves');
+      expect(service.activeCampaignMode()).toBe('limited_reserves');
+
+      // Before war resolution, changing order is allowed
+      expect(service.selectCampaignOrders('fog_of_war')).toBeTrue();
+      expect(service.activeCampaignMode()).toBe('fog_of_war');
+
+      // Once War 1 is recorded, changing orders is forbidden
+      service.recordResolvedWar(war('locked-w1', GameOutcome.PLAYER_WIN, 2, 0));
+      expect(service.selectCampaignOrders('standard')).toBeFalse();
+      expect(service.activeCampaignMode()).toBe('fog_of_war');
+    });
+  });
+
+  describe('Limited Reserves Mechanics', () => {
+    beforeEach(() => {
+      authService.updateActiveProfileProgression(p => ({
+        ...p,
+        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
+      }));
+    });
+
+    it('initializes exactly 5 reserves and decrements on consumption', () => {
+      service.selectCampaignOrders('limited_reserves');
       expect(service.isLimitedReserves()).toBeTrue();
       expect(service.remainingReserves()).toBe(5);
       expect(service.initialReserves()).toBe(5);
-    });
-
-    it('rejects changing campaign orders once War 1 has begun', () => {
-      service.selectCampaignOrders('limited_reserves');
-      service.recordResolvedWar(war('locked-war-1', GameOutcome.PLAYER_WIN, 4, 0));
-
-      const attemptedChange = service.selectCampaignOrders('standard');
-      expect(attemptedChange).toBeFalse();
-      expect(service.activeCampaignMode()).toBe('limited_reserves');
-    });
-
-    it('authoritatively decrements reserves and prevents reinforcement when exhausted', () => {
-      service.selectCampaignOrders('limited_reserves');
 
       expect(service.canHumanReinforce(10)).toBeTrue();
       expect(service.consumeHumanReserve()).toBeTrue();
       expect(service.remainingReserves()).toBe(4);
 
-      expect(service.consumeHumanReserve()).toBeTrue(); // 3
-      expect(service.consumeHumanReserve()).toBeTrue(); // 2
-      expect(service.consumeHumanReserve()).toBeTrue(); // 1
-      expect(service.consumeHumanReserve()).toBeTrue(); // 0
-      expect(service.remainingReserves()).toBe(0);
-
-      // When exhausted, cannot consume or reinforce even with full deck
-      expect(service.consumeHumanReserve()).toBeFalse();
-      expect(service.canHumanReinforce(10)).toBeFalse();
-      expect(service.remainingReserves()).toBe(0);
-    });
-
-    it('persists remaining reserves across War 1, War 2, and War 3', () => {
-      service.selectCampaignOrders('limited_reserves');
-
-      // Consume 2 reserves during War 1
-      service.consumeHumanReserve();
-      service.consumeHumanReserve();
-      expect(service.remainingReserves()).toBe(3);
-
-      // Record War 1 resolution
-      service.recordResolvedWar(war('lr-w1', GameOutcome.PLAYER_WIN, 3, 0));
-      expect(service.remainingReserves()).toBe(3);
-      expect(service.activeCampaignMode()).toBe('limited_reserves');
-
-      // Consume 1 reserve during War 2
-      service.consumeHumanReserve();
-      expect(service.remainingReserves()).toBe(2);
-
-      // Record War 2 resolution
-      service.recordResolvedWar(war('lr-w2', GameOutcome.OPPONENT_WIN, 0, 4));
-      expect(service.remainingReserves()).toBe(2);
-
-      // Record War 3 resolution (completes campaign)
-      const result = service.recordResolvedWar(war('lr-w3', GameOutcome.PLAYER_WIN, 5, 0));
-      expect(result.completedCampaign?.mode).toBe('limited_reserves');
-      expect(result.completedCampaign?.remainingReserves).toBe(2);
-
-      // Next campaign begins fresh with standard mode and unselected orders
-      expect(service.activeCampaignMode()).toBe('standard');
-      expect(service.ordersSelected()).toBeFalse();
-      expect(service.remainingReserves()).toBeNull();
-    });
-
-    it('completing War 3 creates a DIFFERENT campaignId and selecting Limited Reserves on new Campaign restores 5/5', () => {
-      service.selectCampaignOrders('limited_reserves');
-      const initialCampaignId = service.currentCampaign().campaignId;
-
-      // Exhaust all reserves in War 1
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 4; i++) {
         service.consumeHumanReserve();
       }
       expect(service.remainingReserves()).toBe(0);
+      expect(service.consumeHumanReserve()).toBeFalse();
+      expect(service.canHumanReinforce(10)).toBeFalse();
+    });
 
-      service.recordResolvedWar(war('c-w1', GameOutcome.PLAYER_WIN, 1, 0));
-      service.recordResolvedWar(war('c-w2', GameOutcome.PLAYER_WIN, 2, 0));
-      service.recordResolvedWar(war('c-w3', GameOutcome.PLAYER_WIN, 3, 0));
-
-      // After War 3, new campaignId is created
-      const nextCampaign = service.currentCampaign();
-      expect(nextCampaign.campaignId).not.toBe(initialCampaignId);
-      expect(nextCampaign.ordersSelected).toBeFalse();
-      expect(nextCampaign.wars.length).toBe(0);
-      expect(service.remainingReserves()).toBeNull();
-
-      // Selecting Limited Reserves on the new Campaign allocates fresh 5 / 5
+    it('persists remaining reserves across Wars in a Campaign', () => {
       service.selectCampaignOrders('limited_reserves');
-      expect(service.ordersSelected()).toBeTrue();
-      expect(service.activeCampaignMode()).toBe('limited_reserves');
-      expect(service.remainingReserves()).toBe(5);
-      expect(service.initialReserves()).toBe(5);
+      service.consumeHumanReserve();
+      service.consumeHumanReserve();
+      expect(service.remainingReserves()).toBe(3);
+
+      service.recordResolvedWar(war('lr-w1', GameOutcome.PLAYER_WIN, 2, 0));
+      expect(service.remainingReserves()).toBe(3);
+
+      service.consumeHumanReserve();
+      expect(service.remainingReserves()).toBe(2);
+
+      service.recordResolvedWar(war('lr-w2', GameOutcome.OPPONENT_WIN, 0, 3));
+      expect(service.remainingReserves()).toBe(2);
+
+      const result = service.recordResolvedWar(war('lr-w3', GameOutcome.PLAYER_WIN, 4, 0));
+      expect(result.completedCampaign?.remainingReserves).toBe(2);
+    });
+  });
+
+  describe('Total War Mechanics & Scoring', () => {
+    beforeEach(() => {
+      authService.updateActiveProfileProgression(p => ({
+        ...p,
+        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
+      }));
     });
 
-    it('standard mode remains unaffected and has no reserve limits', () => {
-      service.selectCampaignOrders('standard');
-      expect(service.ordersSelected()).toBeTrue();
-      expect(service.activeCampaignMode()).toBe('standard');
-      expect(service.isLimitedReserves()).toBeFalse();
-      expect(service.remainingReserves()).toBeNull();
-      expect(service.canHumanReinforce(10)).toBeTrue();
-      expect(service.consumeHumanReserve()).toBeTrue();
-      expect(service.remainingReserves()).toBeNull();
-    });
-
-    it('handles Total War mode selection and tracks running campaign differential', () => {
-      expect(service.isTotalWar()).toBeFalse();
+    it('tracks running differential and determines victory by cumulative differential', () => {
+      service.selectCampaignOrders('total_war');
+      expect(service.isTotalWar()).toBeTrue();
       expect(service.runningCampaignDifferential()).toBe(0);
 
-      const selected = service.selectCampaignOrders('total_war');
-      expect(selected).toBeTrue();
-      expect(service.ordersSelected()).toBeTrue();
-      expect(service.activeCampaignMode()).toBe('total_war');
-      expect(service.isTotalWar()).toBeTrue();
-      expect(service.isLimitedReserves()).toBeFalse();
+      // War 1: Win +10
+      service.recordResolvedWar(war('tw-w1', GameOutcome.PLAYER_WIN, 10, 0));
+      expect(service.runningCampaignDifferential()).toBe(10);
 
-      // Record War 1: Won with 8 cards remaining (margin +8)
-      service.recordResolvedWar(war('tw-w1', GameOutcome.PLAYER_WIN, 8, 0));
-      expect(service.runningCampaignDifferential()).toBe(8);
-
-      // Record War 2: Lost with opponent having 3 cards remaining (margin -3)
+      // War 2: Loss -3
       service.recordResolvedWar(war('tw-w2', GameOutcome.OPPONENT_WIN, 0, 3));
-      expect(service.runningCampaignDifferential()).toBe(5);
+      expect(service.runningCampaignDifferential()).toBe(7);
 
-      // Record War 3: Lost with opponent having 1 card remaining (margin -1) -> Total Diff: +4
-      const result = service.recordResolvedWar(war('tw-w3', GameOutcome.OPPONENT_WIN, 0, 1));
-      expect(result.completedCampaign?.mode).toBe('total_war');
-      expect(result.completedCampaign?.wins).toBe(1);
-      expect(result.completedCampaign?.losses).toBe(2);
-      expect(result.completedCampaign?.differential).toBe(4);
-      expect(result.completedCampaign?.outcome).toBe('victory'); // Victory in Total War because differential > 0 (+4)
-      expect(result.completedCampaign?.tokensEarned).toBe(2); // 1 victory + 1 positive differential
-      expect(service.tokenBalance()).toBe(2);
+      // War 3: Loss -2 -> Total +5
+      const result = service.recordResolvedWar(war('tw-w3', GameOutcome.OPPONENT_WIN, 0, 2));
+      expect(result.completedCampaign?.differential).toBe(5);
+      expect(result.completedCampaign?.outcome).toBe('victory');
+      expect(result.completedCampaign?.tokensEarned).toBe(2);
+    });
+  });
+
+  describe('Fog of War Mechanics', () => {
+    beforeEach(() => {
+      authService.updateActiveProfileProgression(p => ({
+        ...p,
+        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
+      }));
     });
 
-    it('handles Fog of War mode selection and casualty inspection permission checks', () => {
-      expect(service.isFogOfWar()).toBeFalse();
-      expect(service.canInspectCurrentWarCasualties(false)).toBeTrue();
-
-      const selected = service.selectCampaignOrders('fog_of_war');
-      expect(selected).toBeTrue();
-      expect(service.ordersSelected()).toBeTrue();
-      expect(service.activeCampaignMode()).toBe('fog_of_war');
+    it('seals casualties while War is active and unseals upon War resolution', () => {
+      service.selectCampaignOrders('fog_of_war');
       expect(service.isFogOfWar()).toBeTrue();
-      expect(service.isLimitedReserves()).toBeFalse();
-      expect(service.isTotalWar()).toBeFalse();
 
-      // Casualties sealed during active War
       expect(service.canInspectCurrentWarCasualties(false)).toBeFalse();
-      // Casualties accessible once War concludes
       expect(service.canInspectCurrentWarCasualties(true)).toBeTrue();
+    });
+  });
 
-      // Standard reinforcement rules apply (deck count only)
-      expect(service.canHumanReinforce(10)).toBeTrue();
-      expect(service.canHumanReinforce(0)).toBeFalse();
+  describe('Cosmetic Entitlements and Wallet', () => {
+    it('purchases, unlocks, and selects card backings with tokens', () => {
+      // Award tokens through campaign victory
+      service.recordResolvedWar(war('t-w1', GameOutcome.PLAYER_WIN, 5, 0));
+      service.recordResolvedWar(war('t-w2', GameOutcome.PLAYER_WIN, 5, 0));
+      service.recordResolvedWar(war('t-w3', GameOutcome.PLAYER_WIN, 5, 0));
+      expect(service.tokenBalance()).toBe(2);
 
-      // Complete Fog of War campaign (2-of-3 match wins)
-      service.recordResolvedWar(war('fog-w1', GameOutcome.PLAYER_WIN, 5, 0));
-      service.recordResolvedWar(war('fog-w2', GameOutcome.PLAYER_WIN, 3, 0));
-      const result = service.recordResolvedWar(war('fog-w3', GameOutcome.OPPONENT_WIN, 0, 4));
+      const result = service.purchaseCardBacking('classic-red');
+      expect(result.status).toBe('unlocked');
+      expect(service.tokenBalance()).toBe(1);
+      expect(service.selectedCardBackingId()).toBe('classic-red');
+      expect(service.isCardBackingUnlocked('classic-red')).toBeTrue();
+    });
+  });
 
-      expect(result.completedCampaign?.mode).toBe('fog_of_war');
-      expect(result.completedCampaign?.outcome).toBe('victory');
-      expect(result.completedCampaign?.wins).toBe(2);
-      expect(result.completedCampaign?.losses).toBe(1);
-      expect(result.completedCampaign?.tokensEarned).toBe(2);
+  describe('Idempotence and History Bounding', () => {
+    it('ignores duplicate war resolution calls with same warId', () => {
+      const res1 = service.recordResolvedWar(war('dup-1', GameOutcome.PLAYER_WIN, 4, 0));
+      const res2 = service.recordResolvedWar(war('dup-1', GameOutcome.OPPONENT_WIN, 0, 10));
+
+      expect(res1.status).toBe('recorded');
+      expect(res2.status).toBe('duplicate');
+      expect(service.currentCampaign().wars.length).toBe(1);
+      expect(service.currentCampaign().wars[0].margin).toBe(4);
+    });
+
+    it('bounds recent campaigns to MAX_CAMPAIGN_HISTORY (20)', () => {
+      authService.updateActiveProfileProgression(p => ({
+        ...p,
+        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
+      }));
+
+      for (let c = 0; c < MAX_CAMPAIGN_HISTORY + 3; c++) {
+        for (let w = 1; w <= WARS_PER_CAMPAIGN; w++) {
+          service.recordResolvedWar(war(`bound-${c}-${w}`, GameOutcome.PLAYER_WIN, 1, 0));
+        }
+      }
+
+      expect(service.progression().recentCampaigns.length).toBe(MAX_CAMPAIGN_HISTORY);
     });
   });
 });

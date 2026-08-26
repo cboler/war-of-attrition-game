@@ -557,6 +557,11 @@ describe('TableGame presentation', () => {
 
     it('seals Boneyard button and drawer during active Fog of War, then unseals upon game over', fakeAsync(() => {
       const progressionService = TestBed.inject(CampaignProgressionService);
+      const authService = TestBed.inject(AuthService);
+      authService.updateActiveProfileProgression(p => ({
+        ...p,
+        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war']
+      }));
       progressionService.selectCampaignOrders('fog_of_war');
       fixture.detectChanges();
 

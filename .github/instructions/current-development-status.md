@@ -98,33 +98,29 @@ The documentation pass establishes creative decisions; it does not imply they ar
 
 | Area | Implemented now | Settled next state |
 | --- | --- | --- |
-| Commander mechanics | Five generic-named fair-play strategy records | Same IDs and strategies, mapped to the five canonical named characters |
-| Commander schedule/history | One `ActiveCampaign.commanderId`; War records omit identity; completed history names one commander | Authored commander per War, current identity derived from the encounter, and truthful three-opponent Campaign history |
-| Dialogue | Fixed event pools per commander | Small chapter/War/commander/event-aware data layer implementing the curated bank; no RPG dialogue engine |
-| Campaign availability | All four modes selectable immediately | Chapter completion unlocks the next mode; no victory or monetization gate |
-| Narrative persistence | Campaign history and gameplay progression only | Minimal chapter completion/unlock state and only necessary major flags |
-| Field Manual / Chronicle | In-memory tactical War feed plus Hall, Rules, and contextual Card Reference | Progressive commander dossiers and short archival fragments without compromising truthful combat history |
-| Historical links | Creative direction only | Optional contextual links in suitable lore surfaces |
-| Table animation | Card movement, Battle layers, sequencing, skip/speed/motion controls | Rank-to-unit clash visualization while cards remain visible and authoritative |
+| Commander mechanics & identities | Five named characters (Marcel, Edmund, Matthias, Bastien, Lorenzo) mapped to strategy IDs | Same IDs and strategies, active in runtime and tests |
+| Commander schedule/history | Schema v2 authored per-War schedule, dynamic current encounter resolution, truthful 3-opponent Campaign history | Fully active in progression model, services, telemetry, and Hall of Valor |
+| Dialogue & narrative foundation | Chapter-I authored dialogue bank, transitions, and progressive dossier dataset with `NarrativeResolverService` | Sprint 1 UI presentation (dialogue banners, transition screens, Field Manual dossier tab) |
+| Campaign chapter availability | Schema v2 chapter progression: Standard → Limited Reserves → Fog of War → Total War, unlocked on Campaign completion | Chapter unlock UI cues in Campaign Orders dialog |
+| Narrative persistence & migration | Schema v2 persistence with full v1 migration, legacy grandfathering, and reload determinism | Unlocked dossiers and story progress persisted cleanly |
+| Field Manual / Dossiers | In-memory tactical Chronicle + Hall + Rules + Card Reference; progressive dossier unlock logic verified in resolver | UI presentation of commander dossier tab and table-header deep link |
+| Table animation | Card movement, Battle layers, sequencing, skip/speed/motion controls | Sprint 2 rank-to-unit clash visualization while cards remain visible and authoritative |
 
 The private mouse/hay cause in [`narrative-canon.md`](../../developer-docs/narrative-canon.md) is writer knowledge. It must not simply appear as an early player-facing explanation.
 
 ---
 
-## 4. Remaining Substantial Sprint 1 — Progressive Narrative Unveiling
+## 4. Remaining Substantial Sprint 1 — Narrative UI & Presentation
 
-Implementation scope:
+The architectural foundation for Sprint 1 is complete and stabilized (Schema v2, authored schedules, chapter progression, Chapter-I narrative bank, resolver service, and full test matrix).
 
-- Map canonical names, titles, factions, biographies, beliefs, omissions, and relationships onto the existing strategy IDs.
-- Implement the authored per-War sequence: Marcel/Matthias/Bastien; Edmund/Lorenzo/Marcel; Matthias/Marcel/Bastien; Edmund/Lorenzo/Matthias. Preserve actual commander identity in every War record and Campaign history.
-- Implement **Standard → Limited Reserves → Fog of War → Total War** chapter availability.
-- Unlock the next chapter after a completed Three-War Campaign regardless of outcome; retain unlocked chapters for replay.
-- Add a backward-compatible progression schema migration. Preserve active Campaign mode/resources/history, infer reached chapters where possible, and grandfather legacy access where the old schema cannot prove what the player previously used.
-- Add concise pre-Campaign/pre-War framing, completion reactions, mode-aware commander lines, Field Manual lore fragments, and contextual sources.
-- Make the top-table opponent identity a keyboard/touch-accessible deep link to an evolving Field Manual dossier that improves its historiography as chapters progress.
-- Extend dialogue data only enough to filter by commander, campaign mode/chapter, broad progression, event, and a very small set of major flags if necessary.
-- Keep repeated play fast; narrative access is not gated by skill, tokens, achievements, purchases, advertising, or monetization.
-- Add focused unit, migration, and presentation tests plus documentation updates.
+Remaining UI/presentation scope for Sprint 1:
+
+- Implement commander dossier UI and progressive disclosure presentation in the Field Manual drawer.
+- Implement table-header commander identity deep link / touch interaction to open the active dossier.
+- Present Chapter-I dialogue lines and encounter framing during table gameplay.
+- Present chapter transition cards/modals between campaign stages.
+- Add focused UI and accessibility tests for newly added narrative presentation components.
 
 Out of scope for Sprint 1:
 

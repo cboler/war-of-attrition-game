@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { CAMPAIGN_CHAPTER_ORDER } from '../core/models/campaign-chapter.model';
 import { CardImpl, Rank, Suit } from '../core/models/card.model';
-import { DeckColor, GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { DeckColor, GameOutcome, GamePhase, PlayerType } from '../core/models/game-state.model';
 import { TelemetryRecord } from '../core/models/telemetry.model';
 import { AuthService } from '../core/services/auth.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
@@ -37,6 +38,7 @@ describe('GameTelemetryService', () => {
         AuthService,
         CampaignProgressionService,
         GameEventBusService,
+        TelemetryConsentService,
         GameTelemetryService,
         { provide: GAME_TELEMETRY_TRANSPORT, useValue: transport },
         {
@@ -50,6 +52,10 @@ describe('GameTelemetryService', () => {
       ]
     });
     authService = TestBed.inject(AuthService);
+    authService.updateActiveProfileProgression(p => ({
+      ...p,
+      unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
+    }));
     progression = TestBed.inject(CampaignProgressionService);
     eventBus = TestBed.inject(GameEventBusService);
     consent = TestBed.inject(TelemetryConsentService);
@@ -257,6 +263,68 @@ describe('GameTelemetryService', () => {
 
     const warStarted = transport.records.find(record => record.name === 'war_started');
     expect(warStarted?.parameters['campaign_mode']).toBe('fog_of_war');
+  });
+
+  it('reports actual current War commander_id on war_started, war_resolved, and war_abandoned', () => {
+    // War 1 against Marcel
+    service.beginWar({ warId: 'telemetry-w1', playerDeckColor: DeckColor.RED });
+    const startRecord = transport.records.find(r => r.name === 'war_started');
+    expect(startRecord?.parameters['commander_id']).toBe('quartermaster');
+
+    // War 1 resolved
+    eventBus.emit({
+      type: 'game_resolved',
+      turnNumber: 15,
+      outcome: GameOutcome.PLAYER_WIN,
+      turns: 15,
+      playerCardsRemaining: 4,
+      opponentCardsRemaining: 0,
+      maxDeficitExperienced: 0,
+      isComeback: false,
+      battlesCount: 1,
+      playerReinforcementsSent: 1,
+      playerDeckColor: DeckColor.RED
+    });
+
+    const warResolvedRecord = transport.records.find(r => r.name === 'war_resolved');
+    expect(warResolvedRecord?.parameters['commander_id']).toBe('quartermaster');
+
+    // War abandoned against Matthias (War 2)
+    service.beginWar({
+      warId: 'telemetry-w2',
+      playerDeckColor: DeckColor.RED,
+      commanderId: 'analyst',
+      campaignWarIndex: 2
+    });
+    eventBus.emit({
+      type: 'game_abandoned',
+      turnNumber: 5,
+      turnsPlayed: 5,
+      playerDeckCount: 10,
+      opponentDeckCount: 15,
+      playerCardsAtStakeCount: 0,
+      opponentCardsAtStakeCount: 0,
+      playerCardDeficit: 5,
+      gamePhase: GamePhase.NORMAL,
+      battleDepth: 0
+    });
+
+    const abandonedRecord = transport.records.find(r => r.name === 'war_abandoned');
+    expect(abandonedRecord?.parameters['commander_id']).toBe('analyst');
+  });
+
+  it('reports distinct per-War commander IDs in campaign_resolved record', () => {
+    service.beginWar({ warId: 'std-war-3', playerDeckColor: DeckColor.RED });
+
+    progression.recordResolvedWar(war('std-war-1', GameOutcome.PLAYER_WIN, 4, 0));
+    progression.recordResolvedWar(war('std-war-2', GameOutcome.PLAYER_WIN, 3, 0));
+    progression.recordResolvedWar(war('std-war-3', GameOutcome.PLAYER_WIN, 2, 0));
+
+    const campaignRecord = transport.records.find(r => r.name === 'campaign_resolved');
+    expect(campaignRecord).toBeTruthy();
+    expect(campaignRecord?.parameters['war_1_commander_id']).toBe('quartermaster');
+    expect(campaignRecord?.parameters['war_2_commander_id']).toBe('analyst');
+    expect(campaignRecord?.parameters['war_3_commander_id']).toBe('attritionist');
   });
 });
 

@@ -88,9 +88,9 @@ export class NarrativeResolverService {
     record: CommanderDossierRecord,
     progression: CampaignProgression
   ): boolean {
-    const completedCampaign = progression.recentCampaigns.some(
-      campaign => campaign.mode === record.unlock.mode
-    );
+    const completedCampaign =
+      progression.completedChapterModes.includes(record.unlock.mode) ||
+      progression.recentCampaigns.some(campaign => campaign.mode === record.unlock.mode);
     if (completedCampaign) return true;
 
     const active = progression.currentCampaign;
