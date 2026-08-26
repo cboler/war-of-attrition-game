@@ -1,6 +1,7 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { OpponentCommanderId } from '../core/models/commander.model';
 import {
+  CAMPAIGN_CHAPTER_ORDER,
   CampaignModeId,
   CampaignWarIndex
 } from '../core/models/campaign-chapter.model';
@@ -18,6 +19,42 @@ import {
   CHAPTER_ONE_DOSSIERS,
   CHAPTER_ONE_TRANSITIONS
 } from './chapter-one-narrative.data';
+import {
+  CHAPTER_TWO_DIALOGUE,
+  CHAPTER_TWO_DOSSIERS,
+  CHAPTER_TWO_TRANSITIONS
+} from './chapter-two-narrative.data';
+import {
+  CHAPTER_THREE_DIALOGUE,
+  CHAPTER_THREE_DOSSIERS,
+  CHAPTER_THREE_TRANSITIONS
+} from './chapter-three-narrative.data';
+import {
+  CHAPTER_FOUR_DIALOGUE,
+  CHAPTER_FOUR_DOSSIERS,
+  CHAPTER_FOUR_TRANSITIONS
+} from './chapter-four-narrative.data';
+
+export const ALL_AUTHORED_DIALOGUE: readonly AuthoredDialogueRecord[] = [
+  ...CHAPTER_ONE_DIALOGUE,
+  ...CHAPTER_TWO_DIALOGUE,
+  ...CHAPTER_THREE_DIALOGUE,
+  ...CHAPTER_FOUR_DIALOGUE
+];
+
+export const ALL_NARRATIVE_TRANSITIONS: readonly NarrativeTransitionRecord[] = [
+  ...CHAPTER_ONE_TRANSITIONS,
+  ...CHAPTER_TWO_TRANSITIONS,
+  ...CHAPTER_THREE_TRANSITIONS,
+  ...CHAPTER_FOUR_TRANSITIONS
+];
+
+export const ALL_COMMANDER_DOSSIERS: readonly CommanderDossierRecord[] = [
+  ...CHAPTER_ONE_DOSSIERS,
+  ...CHAPTER_TWO_DOSSIERS,
+  ...CHAPTER_THREE_DOSSIERS,
+  ...CHAPTER_FOUR_DOSSIERS
+];
 
 export interface NarrativeDialogueContext {
   readonly commanderId: OpponentCommanderId;
@@ -49,7 +86,7 @@ export class NarrativeResolverService {
 
   dialogueFor(context: NarrativeDialogueContext): AuthoredDialogueRecord | null {
     const excluded = new Set(context.excludeIds ?? []);
-    return CHAPTER_ONE_DIALOGUE.find(record =>
+    return ALL_AUTHORED_DIALOGUE.find(record =>
       record.commanderId === context.commanderId &&
       record.mode === context.mode &&
       record.warIndex === context.warIndex &&
@@ -63,7 +100,7 @@ export class NarrativeResolverService {
     mode: CampaignModeId,
     placement: NarrativeTransitionPlacement
   ): NarrativeTransitionRecord | null {
-    return CHAPTER_ONE_TRANSITIONS.find(record =>
+    return ALL_NARRATIVE_TRANSITIONS.find(record =>
       record.mode === mode && record.placement === placement
     ) ?? null;
   }
@@ -72,7 +109,7 @@ export class NarrativeResolverService {
     commanderId: OpponentCommanderId,
     progression: CampaignProgression = this.progression.progression()
   ): readonly CommanderDossierRecord[] {
-    return CHAPTER_ONE_DOSSIERS.filter(record =>
+    return ALL_COMMANDER_DOSSIERS.filter(record =>
       record.commanderId === commanderId && this.isDossierRecordUnlocked(record, progression)
     );
   }
@@ -94,6 +131,18 @@ export class NarrativeResolverService {
     if (completedCampaign) return true;
 
     const active = progression.currentCampaign;
-    return active.mode === record.unlock.mode && active.wars.length >= record.unlock.completedWars;
+    const activeIndex = CAMPAIGN_CHAPTER_ORDER.indexOf(active.mode);
+    const recordIndex = CAMPAIGN_CHAPTER_ORDER.indexOf(record.unlock.mode);
+
+    if (activeIndex > recordIndex) return true;
+
+    if (active.mode === record.unlock.mode) {
+      if (record.unlock.completedWars === 0) {
+        return active.mode === 'standard' || active.ordersSelected || active.wars.length > 0;
+      }
+      return active.wars.length >= record.unlock.completedWars;
+    }
+
+    return false;
   }
 }

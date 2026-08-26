@@ -7,9 +7,29 @@ import {
   CHAPTER_ONE_DOSSIERS,
   CHAPTER_ONE_TRANSITIONS
 } from './chapter-one-narrative.data';
-import { NarrativeResolverService } from './narrative-resolver.service';
+import {
+  CHAPTER_TWO_DIALOGUE,
+  CHAPTER_TWO_DOSSIERS,
+  CHAPTER_TWO_TRANSITIONS
+} from './chapter-two-narrative.data';
+import {
+  CHAPTER_THREE_DIALOGUE,
+  CHAPTER_THREE_DOSSIERS,
+  CHAPTER_THREE_TRANSITIONS
+} from './chapter-three-narrative.data';
+import {
+  CHAPTER_FOUR_DIALOGUE,
+  CHAPTER_FOUR_DOSSIERS,
+  CHAPTER_FOUR_TRANSITIONS
+} from './chapter-four-narrative.data';
+import {
+  ALL_AUTHORED_DIALOGUE,
+  ALL_COMMANDER_DOSSIERS,
+  ALL_NARRATIVE_TRANSITIONS,
+  NarrativeResolverService
+} from './narrative-resolver.service';
 
-describe('NarrativeResolverService & Chapter-I Data Foundation', () => {
+describe('NarrativeResolverService & Four-Chapter Data Architecture', () => {
   let resolver: NarrativeResolverService;
   let progression: CampaignProgressionService;
   let authService: AuthService;
@@ -26,280 +46,250 @@ describe('NarrativeResolverService & Chapter-I Data Foundation', () => {
 
   afterEach(() => localStorage.clear());
 
-  describe('Chapter-I Data Integrity & Uniqueness', () => {
-    it('contains unique IDs across all dialogue, transition, and dossier records', () => {
-      const dialogueIds = CHAPTER_ONE_DIALOGUE.map(d => d.id);
-      expect(new Set(dialogueIds).size).toBe(dialogueIds.length);
+  describe('Four-Chapter Data Integrity, Exact Counts & Uniqueness', () => {
+    it('contains exact authored record counts across all chapters', () => {
+      // Exactly 16 records per encounter, 48 per chapter, 192 total
+      expect(CHAPTER_ONE_DIALOGUE.length).toBe(48);
+      expect(CHAPTER_TWO_DIALOGUE.length).toBe(48);
+      expect(CHAPTER_THREE_DIALOGUE.length).toBe(48);
+      expect(CHAPTER_FOUR_DIALOGUE.length).toBe(48);
+      expect(ALL_AUTHORED_DIALOGUE.length).toBe(192);
 
-      const transitionIds = CHAPTER_ONE_TRANSITIONS.map(t => t.id);
-      expect(new Set(transitionIds).size).toBe(transitionIds.length);
+      // Exactly 4 transitions per chapter (Orders, War 1->2, War 2->3, Campaign Complete), 16 total
+      expect(CHAPTER_ONE_TRANSITIONS.length).toBe(4);
+      expect(CHAPTER_TWO_TRANSITIONS.length).toBe(4);
+      expect(CHAPTER_THREE_TRANSITIONS.length).toBe(4);
+      expect(CHAPTER_FOUR_TRANSITIONS.length).toBe(4);
+      expect(ALL_NARRATIVE_TRANSITIONS.length).toBe(16);
 
-      const dossierIds = CHAPTER_ONE_DOSSIERS.map(d => d.id);
-      expect(new Set(dossierIds).size).toBe(dossierIds.length);
+      // Dossiers: 6 (Ch I) + 6 (Ch II) + 7 (Ch III) + 5 (Ch IV) = 24 total
+      expect(CHAPTER_ONE_DOSSIERS.length).toBe(6);
+      expect(CHAPTER_TWO_DOSSIERS.length).toBe(6);
+      expect(CHAPTER_THREE_DOSSIERS.length).toBe(7);
+      expect(CHAPTER_FOUR_DOSSIERS.length).toBe(5);
+      expect(ALL_COMMANDER_DOSSIERS.length).toBe(24);
     });
 
-    it('attaches valid reveal IDs to narrative data', () => {
-      const introMarcel = CHAPTER_ONE_DIALOGUE.find(d => d.id === 'C1W1-MAR-01');
-      expect(introMarcel?.revealIds).toEqual(['R01', 'R05']);
+    it('contains strictly unique IDs across all dialogue, transition, and dossier records', () => {
+      const dialogueIds = ALL_AUTHORED_DIALOGUE.map(d => d.id);
+      expect(new Set(dialogueIds).size).toBe(192);
 
-      const contextMarcel = CHAPTER_ONE_DIALOGUE.find(d => d.id === 'C1W1-MAR-02');
-      expect(contextMarcel?.revealIds).toEqual(['R02', 'R06', 'R07', 'R08', 'R09']);
+      const transitionIds = ALL_NARRATIVE_TRANSITIONS.map(t => t.id);
+      expect(new Set(transitionIds).size).toBe(16);
 
-      const transition1 = CHAPTER_ONE_TRANSITIONS.find(t => t.id === 'TR-C1-01');
-      expect(transition1?.revealIds).toEqual(['R01', 'R02', 'R06']);
+      const dossierIds = ALL_COMMANDER_DOSSIERS.map(d => d.id);
+      expect(new Set(dossierIds).size).toBe(24);
+    });
+
+    it('attaches valid reveal IDs to narrative data across all chapters', () => {
+      // Chapter I sample
+      const c1IntroMarcel = ALL_AUTHORED_DIALOGUE.find(d => d.id === 'C1W1-MAR-01');
+      expect(c1IntroMarcel?.revealIds).toEqual(['R01', 'R05']);
+
+      // Chapter II sample
+      const c2IntroEdmund = ALL_AUTHORED_DIALOGUE.find(d => d.id === 'C2W1-EDM-01');
+      expect(c2IntroEdmund?.revealIds).toEqual(['R10']);
+      const c2Transition4 = ALL_NARRATIVE_TRANSITIONS.find(t => t.id === 'TR-C2-04');
+      expect(c2Transition4?.revealIds).toEqual(['R18', 'R19']);
+
+      // Chapter III sample
+      const c3IntroMatthias = ALL_AUTHORED_DIALOGUE.find(d => d.id === 'C3W1-MAT-01');
+      expect(c3IntroMatthias?.revealIds).toEqual(['R20']);
+      const c3Transition2 = ALL_NARRATIVE_TRANSITIONS.find(t => t.id === 'TR-C3-02');
+      expect(c3Transition2?.revealIds).toEqual(['R20', 'R22', 'R23', 'R24']);
+
+      // Chapter IV sample
+      const c4IntroEdmund = ALL_AUTHORED_DIALOGUE.find(d => d.id === 'C4W1-EDM-01');
+      expect(c4IntroEdmund?.revealIds).toEqual(['R27']);
+      const c4Transition4 = ALL_NARRATIVE_TRANSITIONS.find(t => t.id === 'TR-C4-04');
+      expect(c4Transition4?.revealIds).toEqual(['R29', 'R30', 'R37']);
     });
   });
 
-  describe('Authored Encounter Alignment for Chapter I', () => {
-    it('resolves Marcel dialogue only for Standard War 1', () => {
-      const valid = resolver.dialogueFor({
-        commanderId: 'quartermaster',
-        mode: 'standard',
-        warIndex: 1,
-        event: 'introduction',
-        chapterCompleted: false
-      });
-      expect(valid).not.toBeNull();
-      expect(valid?.id).toBe('C1W1-MAR-01');
-      expect(valid?.text).toContain('Mont-Rouge');
+  describe('Authored Encounter Alignment Across All 12 Canonical Wars', () => {
+    const canonicalSchedule = [
+      { mode: 'standard' as const, warIndex: 1 as const, commanderId: 'quartermaster' as const, introId: 'C1W1-MAR-01' },
+      { mode: 'standard' as const, warIndex: 2 as const, commanderId: 'analyst' as const, introId: 'C1W2-MAT-01' },
+      { mode: 'standard' as const, warIndex: 3 as const, commanderId: 'attritionist' as const, introId: 'C1W3-BAS-01' },
 
-      // Marcel queried in War 2 or in another mode returns null
-      const wrongWar = resolver.dialogueFor({
-        commanderId: 'quartermaster',
-        mode: 'standard',
-        warIndex: 2,
-        event: 'introduction',
-        chapterCompleted: false
-      });
-      expect(wrongWar).toBeNull();
+      { mode: 'limited_reserves' as const, warIndex: 1 as const, commanderId: 'gambler' as const, introId: 'C2W1-EDM-01' },
+      { mode: 'limited_reserves' as const, warIndex: 2 as const, commanderId: 'cornered-general' as const, introId: 'C2W2-LOR-01' },
+      { mode: 'limited_reserves' as const, warIndex: 3 as const, commanderId: 'quartermaster' as const, introId: 'C2W3-MAR-01' },
 
-      const wrongMode = resolver.dialogueFor({
+      { mode: 'fog_of_war' as const, warIndex: 1 as const, commanderId: 'analyst' as const, introId: 'C3W1-MAT-01' },
+      { mode: 'fog_of_war' as const, warIndex: 2 as const, commanderId: 'quartermaster' as const, introId: 'C3W2-MAR-01' },
+      { mode: 'fog_of_war' as const, warIndex: 3 as const, commanderId: 'attritionist' as const, introId: 'C3W3-BAS-01' },
+
+      { mode: 'total_war' as const, warIndex: 1 as const, commanderId: 'gambler' as const, introId: 'C4W1-EDM-01' },
+      { mode: 'total_war' as const, warIndex: 2 as const, commanderId: 'cornered-general' as const, introId: 'C4W2-LOR-01' },
+      { mode: 'total_war' as const, warIndex: 3 as const, commanderId: 'analyst' as const, introId: 'C4W3-MAT-01' }
+    ];
+
+    it('resolves the exact authored introduction for every encounter', () => {
+      for (const enc of canonicalSchedule) {
+        const line = resolver.dialogueFor({
+          commanderId: enc.commanderId,
+          mode: enc.mode,
+          warIndex: enc.warIndex,
+          event: 'introduction',
+          chapterCompleted: false
+        });
+        expect(line).not.toBeNull();
+        expect(line?.id).toBe(enc.introId);
+      }
+    });
+
+    it('returns null when querying an unassigned commander for a mode and warIndex', () => {
+      // In Chapter II War 1, opponent is Edmund ('gambler'). Querying Marcel ('quartermaster') must return null.
+      const wrong = resolver.dialogueFor({
         commanderId: 'quartermaster',
         mode: 'limited_reserves',
         warIndex: 1,
         event: 'introduction',
         chapterCompleted: false
       });
-      expect(wrongMode).toBeNull();
-    });
-
-    it('resolves Matthias dialogue only for Standard War 2', () => {
-      const valid = resolver.dialogueFor({
-        commanderId: 'analyst',
-        mode: 'standard',
-        warIndex: 2,
-        event: 'introduction',
-        chapterCompleted: false
-      });
-      expect(valid).not.toBeNull();
-      expect(valid?.id).toBe('C1W2-MAT-01');
-      expect(valid?.text).toContain('Correction one');
-
-      const wrongWar = resolver.dialogueFor({
-        commanderId: 'analyst',
-        mode: 'standard',
-        warIndex: 1,
-        event: 'introduction',
-        chapterCompleted: false
-      });
-      expect(wrongWar).toBeNull();
-    });
-
-    it('resolves Bastien dialogue only for Standard War 3', () => {
-      const valid = resolver.dialogueFor({
-        commanderId: 'attritionist',
-        mode: 'standard',
-        warIndex: 3,
-        event: 'introduction',
-        chapterCompleted: false
-      });
-      expect(valid).not.toBeNull();
-      expect(valid?.id).toBe('C1W3-BAS-01');
-      expect(valid?.text).toContain('blind wheel opened seven eyes');
-
-      const wrongWar = resolver.dialogueFor({
-        commanderId: 'attritionist',
-        mode: 'standard',
-        warIndex: 2,
-        event: 'introduction',
-        chapterCompleted: false
-      });
-      expect(wrongWar).toBeNull();
+      expect(wrong).toBeNull();
     });
   });
 
   describe('Availability & Replay Filtering', () => {
-    it('returns first_play dialogue on first playthrough and replay dialogue on replay', () => {
-      // First play: C1W1-MAR-01 is first_play
+    it('returns first_play on first playthrough and replay lines on replay', () => {
+      // Chapter II War 1: C2W1-EDM-01 is first_play
       const firstPlayIntro = resolver.dialogueFor({
-        commanderId: 'quartermaster',
-        mode: 'standard',
+        commanderId: 'gambler',
+        mode: 'limited_reserves',
         warIndex: 1,
         event: 'introduction',
         chapterCompleted: false
       });
-      expect(firstPlayIntro?.id).toBe('C1W1-MAR-01');
+      expect(firstPlayIntro?.id).toBe('C2W1-EDM-01');
 
-      // Replay: introduction was first_play only -> returns null
       const replayIntro = resolver.dialogueFor({
-        commanderId: 'quartermaster',
-        mode: 'standard',
+        commanderId: 'gambler',
+        mode: 'limited_reserves',
         warIndex: 1,
         event: 'introduction',
         chapterCompleted: true
       });
       expect(replayIntro).toBeNull();
 
-      // Special clash: C1W1-MAR-03 has availability: 'replay'
-      const firstPlaySpecialClash = resolver.dialogueFor({
-        commanderId: 'quartermaster',
-        mode: 'standard',
+      // C2W1-EDM-05 has availability: 'replay'
+      const firstPlayRescue = resolver.dialogueFor({
+        commanderId: 'gambler',
+        mode: 'limited_reserves',
         warIndex: 1,
-        event: 'special_clash',
+        event: 'rescue',
         chapterCompleted: false
       });
-      expect(firstPlaySpecialClash).toBeNull();
+      expect(firstPlayRescue).toBeNull();
 
-      const replaySpecialClash = resolver.dialogueFor({
-        commanderId: 'quartermaster',
-        mode: 'standard',
+      const replayRescue = resolver.dialogueFor({
+        commanderId: 'gambler',
+        mode: 'limited_reserves',
         warIndex: 1,
-        event: 'special_clash',
+        event: 'rescue',
         chapterCompleted: true
       });
-      expect(replaySpecialClash?.id).toBe('C1W1-MAR-03');
-
-      // Any availability: narrow_clash is 'any'
-      const firstPlayNarrow = resolver.dialogueFor({
-        commanderId: 'quartermaster',
-        mode: 'standard',
-        warIndex: 1,
-        event: 'narrow_clash',
-        chapterCompleted: false
-      });
-      const replayNarrow = resolver.dialogueFor({
-        commanderId: 'quartermaster',
-        mode: 'standard',
-        warIndex: 1,
-        event: 'narrow_clash',
-        chapterCompleted: true
-      });
-      expect(firstPlayNarrow?.id).toBe('C1W1-MAR-04');
-      expect(replayNarrow?.id).toBe('C1W1-MAR-04');
+      expect(replayRescue?.id).toBe('C2W1-EDM-05');
     });
 
-    it('respects excludeIds to omit recently spoken line IDs', () => {
+    it('respects excludeIds to omit recently spoken lines', () => {
       const excluded = resolver.dialogueFor({
-        commanderId: 'quartermaster',
-        mode: 'standard',
+        commanderId: 'gambler',
+        mode: 'limited_reserves',
         warIndex: 1,
         event: 'narrow_clash',
         chapterCompleted: false,
-        excludeIds: ['C1W1-MAR-04']
+        excludeIds: ['C2W1-EDM-04']
       });
       expect(excluded).toBeNull();
     });
   });
 
-  describe('Current Context Derivation', () => {
-    it('dynamically looks up dialogue based on live progression signal', () => {
-      // Fresh profile: War 1 against Marcel
-      const intro = resolver.currentDialogue('introduction');
-      expect(intro?.id).toBe('C1W1-MAR-01');
+  describe('Narrative Transitions for All Four Chapters', () => {
+    it('retrieves all 16 transition records at their correct placements', () => {
+      const placements = ['orders', 'after_war_1', 'after_war_2', 'campaign_complete'] as const;
+      const modes = ['standard', 'limited_reserves', 'fog_of_war', 'total_war'] as const;
 
-      // Resolve War 1 -> Live context becomes War 2 against Matthias
-      progression.recordResolvedWar({
-        warId: 'live-w1',
-        outcome: GameOutcome.PLAYER_WIN,
-        playerCardsRemaining: 4,
-        opponentCardsRemaining: 0
-      });
-      const matthiasIntro = resolver.currentDialogue('introduction');
-      expect(matthiasIntro?.id).toBe('C1W2-MAT-01');
-
-      // Resolve War 2 -> Live context becomes War 3 against Bastien
-      progression.recordResolvedWar({
-        warId: 'live-w2',
-        outcome: GameOutcome.PLAYER_WIN,
-        playerCardsRemaining: 2,
-        opponentCardsRemaining: 0
-      });
-      const bastienIntro = resolver.currentDialogue('introduction');
-      expect(bastienIntro?.id).toBe('C1W3-BAS-01');
+      for (let c = 0; c < modes.length; c++) {
+        const mode = modes[c];
+        const chapterNum = c + 1;
+        for (let p = 0; p < placements.length; p++) {
+          const placement = placements[p];
+          const trans = resolver.transitionFor(mode, placement);
+          expect(trans).toBeTruthy();
+          expect(trans?.id).toBe(`TR-C${chapterNum}-0${p + 1}`);
+          expect(trans?.mode).toBe(mode);
+          expect(trans?.placement).toBe(placement);
+        }
+      }
     });
   });
 
-  describe('Narrative Transitions', () => {
-    it('retrieves transitions for all standard campaign placements', () => {
-      const orders = resolver.transitionFor('standard', 'orders');
-      expect(orders?.id).toBe('TR-C1-01');
-      expect(orders?.title).toBe('The Accord');
-
-      const afterWar1 = resolver.transitionFor('standard', 'after_war_1');
-      expect(afterWar1?.id).toBe('TR-C1-02');
-      expect(afterWar1?.title).toContain('Sealed Swiss Correction');
-
-      const afterWar2 = resolver.transitionFor('standard', 'after_war_2');
-      expect(afterWar2?.id).toBe('TR-C1-03');
-      expect(afterWar2?.title).toContain('Belgian Field Note');
-
-      const complete = resolver.transitionFor('standard', 'campaign_complete');
-      expect(complete?.id).toBe('TR-C1-04');
-      expect(complete?.title).toBe('Campaign Dispatch');
-    });
-  });
-
-  describe('Progressive Dossier Firewall and Unlocks', () => {
-    it('unlocks dossier entries strictly as the player reaches and completes Wars in Chapter I', () => {
-      // 0 Wars completed
-      const marcel0 = resolver.dossierFor('quartermaster');
-      expect(marcel0.map(d => d.id)).toEqual(['DOS-MAR-01']); // Overview only
+  describe('Progressive Dossier Progression', () => {
+    it('unlocks dossiers across the entire story without future disclosures', () => {
+      // 1. Initial State: Only Marcel has 1 entry (DOS-MAR-01)
+      expect(resolver.dossierFor('quartermaster').map(d => d.id)).toEqual(['DOS-MAR-01']);
       expect(resolver.dossierFor('analyst')).toEqual([]);
       expect(resolver.dossierFor('attritionist')).toEqual([]);
-
-      // Resolve War 1 (Marcel defeated)
-      progression.recordResolvedWar({
-        warId: 'dossier-w1',
-        outcome: GameOutcome.PLAYER_WIN,
-        playerCardsRemaining: 3,
-        opponentCardsRemaining: 0
-      });
-
-      const marcel1 = resolver.dossierFor('quartermaster');
-      expect(marcel1.map(d => d.id)).toEqual(['DOS-MAR-01', 'DOS-MAR-02']); // Overview + Mont-Rouge Record
-      const matthias1 = resolver.dossierFor('analyst');
-      expect(matthias1.map(d => d.id)).toEqual(['DOS-MAT-01']); // Matthias overview unlocked
-      expect(resolver.dossierFor('attritionist')).toEqual([]);
-
-      // Resolve War 2 (Matthias defeated)
-      progression.recordResolvedWar({
-        warId: 'dossier-w2',
-        outcome: GameOutcome.PLAYER_WIN,
-        playerCardsRemaining: 2,
-        opponentCardsRemaining: 0
-      });
-
-      const matthias2 = resolver.dossierFor('analyst');
-      expect(matthias2.map(d => d.id)).toEqual(['DOS-MAT-01', 'DOS-MAT-02']);
-      const bastien2 = resolver.dossierFor('attritionist');
-      expect(bastien2.map(d => d.id)).toEqual(['DOS-BAS-01']); // Bastien overview unlocked
-
-      // Resolve War 3 (Campaign Completed)
-      progression.recordResolvedWar({
-        warId: 'dossier-w3',
-        outcome: GameOutcome.PLAYER_WIN,
-        playerCardsRemaining: 5,
-        opponentCardsRemaining: 0
-      });
-
-      const bastienComplete = resolver.dossierFor('attritionist');
-      expect(bastienComplete.map(d => d.id)).toEqual(['DOS-BAS-01', 'DOS-BAS-02']); // Archived statement unlocked
-    });
-
-    it('prevents future-chapter content leaks and protects unreached dossiers on new campaigns', () => {
-      // In a fresh unstarted campaign, Edmund and Lorenzo (who have no Chapter 1 dossiers) return empty lists
       expect(resolver.dossierFor('gambler')).toEqual([]);
       expect(resolver.dossierFor('cornered-general')).toEqual([]);
+
+      // 2. Complete Chapter I
+      progression.selectCampaignOrders('standard');
+      progression.recordResolvedWar({ warId: 'w1', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 5, opponentCardsRemaining: 0 });
+      progression.recordResolvedWar({ warId: 'w2', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 5, opponentCardsRemaining: 0 });
+      progression.recordResolvedWar({ warId: 'w3', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 5, opponentCardsRemaining: 0 });
+
+      expect(resolver.dossierFor('quartermaster').map(d => d.id)).toEqual(['DOS-MAR-01', 'DOS-MAR-02']);
+      expect(resolver.dossierFor('analyst').map(d => d.id)).toEqual(['DOS-MAT-01', 'DOS-MAT-02']);
+      expect(resolver.dossierFor('attritionist').map(d => d.id)).toEqual(['DOS-BAS-01', 'DOS-BAS-02']);
+      expect(resolver.dossierFor('gambler')).toEqual([]);
+      expect(resolver.dossierFor('cornered-general')).toEqual([]);
+
+      // 3. Start Chapter II: War 1 against Edmund (0 wars completed in Ch2)
+      progression.selectCampaignOrders('limited_reserves');
+      expect(resolver.dossierFor('gambler').map(d => d.id)).toEqual(['DOS-EDM-01']); // Overview unlocked on first encounter
+      expect(resolver.dossierFor('cornered-general')).toEqual([]);
+
+      // Complete War 1 in Ch2
+      progression.recordResolvedWar({ warId: 'c2w1', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+      expect(resolver.dossierFor('gambler').map(d => d.id)).toEqual(['DOS-EDM-01', 'DOS-EDM-02']);
+      expect(resolver.dossierFor('cornered-general').map(d => d.id)).toEqual(['DOS-LOR-01']); // Lorenzo overview unlocked
+
+      // Complete War 2 in Ch2
+      progression.recordResolvedWar({ warId: 'c2w2', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 3, opponentCardsRemaining: 0 });
+      expect(resolver.dossierFor('cornered-general').map(d => d.id)).toEqual(['DOS-LOR-01', 'DOS-LOR-02']);
+
+      // Complete War 3 in Ch2 (Chapter II complete)
+      progression.recordResolvedWar({ warId: 'c2w3', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 3, opponentCardsRemaining: 0 });
+      expect(resolver.dossierFor('quartermaster').map(d => d.id)).toEqual(['DOS-MAR-01', 'DOS-MAR-02', 'DOS-MAR-03']);
+      expect(resolver.dossierFor('attritionist').map(d => d.id)).toEqual(['DOS-BAS-01', 'DOS-BAS-02', 'DOS-BAS-03']);
+
+      // 4. Complete Chapter III
+      progression.selectCampaignOrders('fog_of_war');
+      progression.recordResolvedWar({ warId: 'c3w1', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+      progression.recordResolvedWar({ warId: 'c3w2', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+      progression.recordResolvedWar({ warId: 'c3w3', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+
+      expect(resolver.dossierFor('analyst').map(d => d.id)).toEqual(['DOS-MAT-01', 'DOS-MAT-02', 'DOS-MAT-03', 'DOS-MAT-04']);
+      expect(resolver.dossierFor('quartermaster').map(d => d.id)).toEqual(['DOS-MAR-01', 'DOS-MAR-02', 'DOS-MAR-03', 'DOS-MAR-04']);
+      expect(resolver.dossierFor('gambler').map(d => d.id)).toEqual(['DOS-EDM-01', 'DOS-EDM-02', 'DOS-EDM-03']);
+      expect(resolver.dossierFor('cornered-general').map(d => d.id)).toEqual(['DOS-LOR-01', 'DOS-LOR-02', 'DOS-LOR-03']);
+      expect(resolver.dossierFor('attritionist').map(d => d.id)).toEqual(['DOS-BAS-01', 'DOS-BAS-02', 'DOS-BAS-03', 'DOS-BAS-04', 'DOS-BAS-05']);
+
+      // 5. Complete Chapter IV
+      progression.selectCampaignOrders('total_war');
+      progression.recordResolvedWar({ warId: 'c4w1', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+      progression.recordResolvedWar({ warId: 'c4w2', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+      progression.recordResolvedWar({ warId: 'c4w3', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+
+      // Final complete state across all 5 commanders
+      expect(resolver.dossierFor('quartermaster').map(d => d.id)).toEqual(['DOS-MAR-01', 'DOS-MAR-02', 'DOS-MAR-03', 'DOS-MAR-04', 'DOS-MAR-05']);
+      expect(resolver.dossierFor('analyst').map(d => d.id)).toEqual(['DOS-MAT-01', 'DOS-MAT-02', 'DOS-MAT-03', 'DOS-MAT-04', 'DOS-MAT-05']);
+      expect(resolver.dossierFor('gambler').map(d => d.id)).toEqual(['DOS-EDM-01', 'DOS-EDM-02', 'DOS-EDM-03', 'DOS-EDM-04']);
+      expect(resolver.dossierFor('cornered-general').map(d => d.id)).toEqual(['DOS-LOR-01', 'DOS-LOR-02', 'DOS-LOR-03', 'DOS-LOR-04']);
+      expect(resolver.dossierFor('attritionist').map(d => d.id)).toEqual(['DOS-BAS-01', 'DOS-BAS-02', 'DOS-BAS-03', 'DOS-BAS-04', 'DOS-BAS-05', 'DOS-BAS-06']);
     });
   });
 });

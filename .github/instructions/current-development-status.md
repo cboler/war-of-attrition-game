@@ -110,21 +110,22 @@ The private mouse/hay cause in [`narrative-canon.md`](../../developer-docs/narra
 
 ---
 
-## 4. Sprint 1 State — Chapter I Player-Facing Vertical Slice Complete
+## 4. Sprint 1 State — Four-Chapter Narrative Architecture Complete
 
-The Chapter I player-facing vertical slice is complete, tested, and verified end-to-end:
+Sprint 1 (Pass A & Pass B) is complete, tested, and verified end-to-end across all four chapters and twelve canonical encounters:
 
-- **Named Opponent Presentation**: Top seat renders active commander name (`Marcel de Brie`, `Matthias von Greyerz`, `Bastien de Herve`), title, and faction.
-- **Opponent Header Dossier Deep-Linking**: Interactive button on opponent identity with gold `:focus-visible` ring and keyboard/touch activation directly opens the Field Manual drawer to the active commander's dossier.
-- **Field Manual Commander Dossier Tab**: Dedicated `dossier` tab with commander switcher chip row, header summary, progressive records (Overview, Mont-Rouge Record, Archived Statement), evidence badges (`documented`, `attributed interpretation`, `prophetic metaphor`), and safe source links (`target="_blank" rel="noopener noreferrer"`).
-- **Authored Dialogue & Deduplication**: War-scoped in-memory deduplication in `TableReactionService` prioritizing Chapter I authored lines for introductions, results, and combat events.
-- **Campaign Orders Framing & Chapter Availability**: Canonical chapter order (Chapters I–IV), `TR-C1-01` ("The Accord") framing dispatch, and chapter unlock/lock state presentation.
-- **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-02`, `TR-C1-03`, `TR-C1-04`), resolution quotes, and dynamic next-war action buttons.
-- **Comprehensive Test Suite**: Full unit and integration suite green (517/517 tests passing), including `chapter-one-narrative-flow.spec.ts`.
+- **Named Opponent Presentation**: Top seat dynamically renders active commander name, title, and faction across all five commanders (`Marcel de Brie`, `Sir Edmund Gloucester`, `Matthias von Greyerz`, `Bastien de Herve`, `Lorenzo di Taleggio`).
+- **Opponent Header Dossier Deep-Linking**: Interactive button on opponent identity directly opens the Field Manual drawer to the active commander's progressive dossier.
+- **Field Manual Commander Dossier Tab**: Dedicated `dossier` tab with commander switcher chips, header summary, progressive records (Overview, Mont-Rouge Record, Known Associations, Campaign Notes, Archived Statement), evidence badges (`documented`, `attributed interpretation`, `prophetic metaphor`), and safe external source links.
+- **Complete Authored Dialogue Bank**: 192 authored dialogue records (48 per chapter, 16 per encounter) with first-play vs. Replay availability, trigger matching, in-memory deduplication, and evergreen fallback pools.
+- **Campaign Orders Framing & Chapter Availability**: Canonical chapter order (Chapters I–IV), `TR-C1-01` through `TR-C4-01` framing dispatches, and chapter unlock/lock state presentation.
+- **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-01` through `TR-C4-04`), resolution quotes, and dynamic next-war action buttons.
+- **Spoiler Firewall & Canonical Resolution**: Strict information boundaries across all four chapters; private Mont-Rouge mechanism (mouse/hay) safely protected; Chapter IV completes with the canonical resolution (`Matthias: “I never proved it.”` / `Marcel: “Non. Neither did I.”`) without an extraneous Bastien punchline.
+- **Comprehensive Test Suite**: Full unit and integration suite green (521/521 tests passing), including `chapter-one-narrative-flow.spec.ts`, `narrative-campaign-traversal.spec.ts` (12-War traversal & spoiler firewall), and `narrative-resolver.service.spec.ts`.
 
-Next steps for future passes:
-- Chapters II–IV authored narrative content integration.
+Next steps for future work:
 - Sprint 2 Clash Visualizations / Battlefield Animations.
+
 
 ---
 
