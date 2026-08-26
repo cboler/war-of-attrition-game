@@ -2,7 +2,7 @@
 
 Status: **Authoritative creative specification for writers and developers.**
 
-This document contains the objective history of the setting, including facts the player should not receive directly. It is the source of truth for narrative implementation. [`north-star.md`](./north-star.md) remains authoritative for tone and visual identity; [`opponent-commanders.md`](./opponent-commanders.md) remains authoritative for the implemented fair-play AI strategies; and [`alternate-rules-campaigns.md`](./alternate-rules-campaigns.md) remains authoritative for campaign mechanics.
+This document contains the objective history of the setting, including facts the player should not receive directly. It is the source of truth for narrative implementation. [`north-star.md`](./north-star.md) remains authoritative for tone and visual identity; [`opponent-commanders.md`](./opponent-commanders.md) remains authoritative for the implemented fair-play AI strategies; and [`alternate-rules-campaigns.md`](./alternate-rules-campaigns.md) remains authoritative for campaign mechanics. The implementation-ready reveal routing and authored encounter order live in [`narrative-disclosure-matrix.md`](./narrative-disclosure-matrix.md); final voice and curated copy live in [`commander-voice-bible.md`](./commander-voice-bible.md).
 
 > [!CAUTION]
 > The mouse, disturbed hay, and natural origin of the Witness Wheel's eyes are **private canon**. Do not state this answer in ordinary player-facing copy, especially in Chapters I or II. The story is designed to be reconstructed from sincere testimony, contradictions, records, prophecy, and optional real-world context.
@@ -172,6 +172,17 @@ The canonical order is:
 
 Each chapter is one completed Three-War Campaign in its corresponding mode. Completion—not victory—unlocks the next chapter. Narrative access must never depend on skill, tokens, purchases, achievements, advertising, or monetization. Once unlocked, a mode remains available for replay.
 
+For the canonical first-play progression, opponent identity is authored at the **War** level:
+
+| Chapter | War I | War II | War III |
+| --- | --- | --- | --- |
+| I — The Accord | Marcel de Brie | Matthias von Greyerz | Bastien de Herve |
+| II — The Closing Passes | Sir Edmund Gloucester | Lorenzo di Taleggio | Marcel de Brie |
+| III — The Blind Wheel | Matthias von Greyerz | Marcel de Brie | Bastien de Herve |
+| IV — The War of Attrition | Sir Edmund Gloucester | Lorenzo di Taleggio | Matthias von Greyerz |
+
+Do not preserve the current one-commander-per-Campaign implementation as a narrative constraint. Initial replays may reuse this schedule. Randomized replay scheduling is desirable only as a deferred pre-production polish pass after the canonical four-chapter progression has been completed at least once; first-play comprehension must not depend on random order.
+
 ### Chapter I — Standard Campaign: “The Accord”
 
 **Purpose:** Establish the surface story.
@@ -221,7 +232,7 @@ Required behavior:
 1. New profiles created under the narrative schema begin with Standard unlocked.
 2. Completing all three Wars of an unlocked chapter records completion and unlocks the next chapter regardless of wins, losses, ties, or Campaign outcome.
 3. Unlocked modes remain replayable. Narrative progression chooses availability, not a forced one-time mode sequence.
-4. An in-progress Campaign keeps its existing `mode`, commander, Wars, reserves, and selected-orders state through migration.
+4. An in-progress legacy Campaign keeps its existing `mode`, recorded Wars, reserves, selected-orders state, and current opponent identity through migration. Migration must not reroll the active opponent; new unplayed Wars can join the authored schedule only where doing so preserves continuity.
 5. Migration should infer the highest reached chapter from the active Campaign and `recentCampaigns`, then unlock that chapter and all prerequisites.
 6. Because the old schema offered every mode to every profile and has no reliable “previously viewed but never played” record, profiles that predate the narrative schema should be sensibly grandfathered rather than stripped of choices. The safest default is full four-mode access for demonstrably legacy profiles unless a reliable access signal is introduced before release.
 7. Do not infer narrative access from tokens, cosmetics, achievements, career win rate, or telemetry.
@@ -235,11 +246,11 @@ Use existing surfaces before adding new presentation systems:
 
 | Surface | Current implementation seam | Narrative use |
 | --- | --- | --- |
-| Commander identity | `OpponentCommander` registry, Campaign Orders, table seat, profile/telemetry | Name, title, short biography, faction, and chapter-aware characterization. |
+| Commander identity | `OpponentCommander` registry, Campaign Orders, table seat, profile/telemetry | Name, title, faction, chapter-aware characterization, and the actual opponent for the current War. The identity block should deep-link to the progressive dossier. |
 | Contextual reactions | `OpponentCommanderDialogue` + `TableReactionService` | Brief event- and mode-aware lines; silence remains the default. |
-| Campaign Orders | Pre-War-1 modal with all four modes | Chapter title, compact framing, lock/completion status, and mode resonance. |
+| Campaign Orders | Pre-War-1 modal with all four modes | Chapter title, compact framing, lock/completion status, mode resonance, and the three authored opponents in War order. |
 | Chronicle | `StoryBookService` in-memory tactical event feed | Short contextual fragments attached to meaningful events; do not obscure truthful combat records. |
-| Field Manual | `StoryBookDrawerComponent` tab architecture | Durable biographies, lore fragments, and optional source links. |
+| Field Manual | `StoryBookDrawerComponent` tab architecture | Progressive commander dossiers, durable lore/archival fragments, and optional source links. Dossiers improve historiography as chapters advance; they are not omniscient character sheets. |
 | Hall of Valor | Profile-persistent card service records in the Field Manual | Sparse flavor where a real card's history can echo campaign lore; never rewrite its statistics. |
 | War/Campaign resolution | Existing game-over and campaign progression events | One short reaction or dispatch; do not force long interstitials on replay. |
 | Achievements/cosmetics | Existing persistent descriptions and card backs | Optional historical fragments whose meaning changes after later chapters. |
@@ -248,11 +259,12 @@ The present dialogue contract is a fixed set of event pools and is not mode-awar
 
 - commander ID;
 - campaign mode/chapter;
+- War index in the authored encounter schedule;
 - broad chapter progression;
 - meaningful gameplay event;
 - optionally, prior chapter completion or a very small set of major narrative flags.
 
-Prefer keyed pools or filtered line records over a general-purpose branching dialogue engine. Narrative data must not gain access to hidden card information. Avoid persistent transcript logs, quest graphs, dialogue trees, affinity scores, or RPG statistics.
+Prefer keyed pools or filtered line records over a general-purpose branching dialogue engine. Narrative data must not gain access to hidden card information. Avoid persistent transcript logs, quest graphs, dialogue trees, affinity scores, or RPG statistics. Progressive dossier entries may add, supplement, or annotate a small historical record as evidence becomes available; their authored plan is in [`narrative-disclosure-matrix.md`](./narrative-disclosure-matrix.md).
 
 ## 9. Rabbit-Hole Plan
 

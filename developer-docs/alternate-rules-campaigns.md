@@ -24,6 +24,17 @@ The permanent mode IDs and intended chapter order are:
 
 Each chapter is a completed Three-War Campaign in its associated mode. See [`narrative-canon.md`](./narrative-canon.md) for chapter-specific may/must-not-reveal rules.
 
+The canonical first-play opponent schedule is authored per War:
+
+| Mode/chapter | War I | War II | War III |
+| --- | --- | --- | --- |
+| `standard` | Marcel de Brie | Matthias von Greyerz | Bastien de Herve |
+| `limited_reserves` | Sir Edmund Gloucester | Lorenzo di Taleggio | Marcel de Brie |
+| `fog_of_war` | Matthias von Greyerz | Marcel de Brie | Bastien de Herve |
+| `total_war` | Sir Edmund Gloucester | Lorenzo di Taleggio | Matthias von Greyerz |
+
+This is settled creative routing for Sprint 1. The current one-commander-per-Campaign schema is not a constraint to preserve. See [`narrative-disclosure-matrix.md`](./narrative-disclosure-matrix.md) for encounter beats and implementation implications.
+
 ### A. Standard Campaign (`standard`) — Chapter I, “The Accord”
 
 - **Rules:** Classic War of Attrition across a Three-War series.
@@ -94,7 +105,7 @@ The UI order and immediate availability are implementation reality, not the new 
 
 ### Backward-Compatible Migration
 
-- Preserve the active Campaign's ID, commander, mode, orders state, recorded Wars, and Limited Reserves count.
+- Preserve the active Campaign's ID, legacy current opponent, mode, orders state, recorded Wars, and Limited Reserves count. Do not reroll an in-progress opponent during migration.
 - Inspect active mode and `recentCampaigns` to infer the highest chapter played or completed, then include its prerequisites.
 - Preserve completed history and processed War IDs exactly through normalization.
 - The old schema gave every profile all four choices and did not record modes merely viewed or intended. Profiles known to predate the narrative schema should therefore be grandfathered conservatively—full access is safer than silently revoking an option a player previously had.
@@ -142,6 +153,8 @@ export interface CampaignHistoryEntry {
 
 `CampaignProgression` additionally stores schema version, recent Campaigns, tokens, cosmetic unlocks/selections, and processed War IDs. Chapter unlock data does not yet exist and should be introduced through an explicit schema bump in Sprint 1.
 
+The displayed interfaces are the current schema, not the Sprint 1 target. `CampaignWarRecord` must preserve the actual opponent commander; active commander selection must derive from the current authored War; and completed history must represent all three opponents accurately. A minimal schedule keyed by `mode + warIndex` is sufficient. Randomized replay scheduling remains deferred pre-production polish.
+
 ### Current Pure Rule Functions
 
 - `canHumanReinforce(campaign, deckCount)` requires a positive deck count and, only in Limited Reserves, a positive reserve count.
@@ -157,7 +170,7 @@ Do not change these mechanical meanings when adding chapter availability.
 
 ### Campaign Orders
 
-`CampaignOrdersDialogComponent` is a forced, non-dismissible pre-War-1 briefing with dark felt/gold styling, opposing commander name/title, four radio-card choices, rule summaries, and reinforcement policy. Sprint 1 should extend this surface rather than create a separate chapter-select application.
+`CampaignOrdersDialogComponent` is a forced, non-dismissible pre-War-1 briefing with dark felt/gold styling, one current campaign-level opposing commander name/title, four radio-card choices, rule summaries, and reinforcement policy. Sprint 1 should extend this surface rather than create a separate chapter-select application: show lock/completion/replay state and the three authored War opponents rather than implying one commander owns the Campaign.
 
 ### Table Badges
 

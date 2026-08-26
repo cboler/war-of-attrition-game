@@ -16,6 +16,8 @@ This directory contains specifications, architecture guides, and development sta
 - [`development-milestones.md`](./development-milestones.md) — Master roadmap used during early development milestones (historical reference).
 - [`progress-data.json`](./progress-data.json) — Legacy development metadata formerly used by unrouted demo components. Live status is tracked in `current-development-status.md`.
 - [`developer-docs/narrative-canon.md`](../../developer-docs/narrative-canon.md) — Private Mont-Rouge canon, five commander dossiers, four-chapter disclosure, and narrative migration contract.
+- [`developer-docs/narrative-disclosure-matrix.md`](../../developer-docs/narrative-disclosure-matrix.md) — Authored twelve-War narrative routing, progressive dossiers, callbacks, source map, audits, and Sprint 1 handoff.
+- [`developer-docs/commander-voice-bible.md`](../../developer-docs/commander-voice-bible.md) — Canonical commander voices and curated implementation-ready dialogue records.
 - [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — Remaining Narrative and Clash Visualization sprints plus later backlog.
 
 ## ⚠️ Requirements Alignment Checklist

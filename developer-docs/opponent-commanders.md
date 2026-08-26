@@ -2,7 +2,7 @@
 
 Status: **Five fair-play strategy assets are implemented. Canonical fictional identities are settled for Sprint 1 but are not yet reflected in production data.**
 
-The private biographies, knowledge/belief boundaries, and relationships live in [`narrative-canon.md`](./narrative-canon.md). This document describes the permanent mechanical layer and the exact boundary between current code and the named cast.
+The private biographies, knowledge/belief boundaries, and relationships live in [`narrative-canon.md`](./narrative-canon.md). The authored twelve-War routing lives in [`narrative-disclosure-matrix.md`](./narrative-disclosure-matrix.md), and final voice/copy lives in [`commander-voice-bible.md`](./commander-voice-bible.md). This document describes the permanent mechanical layer and the exact boundary between current code and the named cast.
 
 ## 1. Permanent Strategy IDs and Canonical Identities
 
@@ -78,6 +78,8 @@ The implemented model is relatively controlled while healthy and receives the sh
 5. **`normalizeCampaignProgression`** deterministically derives a commander from `campaignId` for legacy data missing `commanderId`, preventing reload rerolls.
 6. **Telemetry** carries `commander_id` in War/Campaign context without changing privacy guarantees.
 
+That campaign-level identity is an intentional Sprint 1 mismatch, not a narrative requirement. `CampaignWarRecord` does not retain commander identity, `currentCommander` derives from the Campaign, and completed history identifies only one commander. Sprint 1 must move active/persisted attribution to the War encounter and use the authored `chapter/mode + warIndex → commanderId` schedule. Randomized replay selection is deferred until after the canonical four-chapter first-play sequence has been completed at least once.
+
 ## 5. Current Dialogue Contract and Sprint 1 Extension
 
 `OpponentCommanderDialogue` currently holds pools for:
@@ -94,11 +96,14 @@ Sprint 1 should use the smallest data extension capable of selecting a line by:
 
 - commander;
 - campaign mode/chapter;
+- authored War index;
 - broad chapter progression;
 - relevant gameplay event;
 - optionally, prior chapter completion or a very small set of major narrative flags.
 
-A compact conditioned-line record or keyed pool overlay is sufficient. Do not build a branching RPG engine, persistent relationship system, quest graph, or unrestricted scripting language.
+A compact conditioned-line record or keyed pool overlay is sufficient. The present model declares concession and desperate-rescue pools, but `TableReactionService` does not emit them; introductions, War results, guaranteed resolution beats, and between-War transitions also need small reliable seams. Do not build a branching RPG engine, persistent relationship system, quest graph, or unrestricted scripting language.
+
+The complete preferred line bank, stable creative IDs, replay safety, and truthfulness classifications are in [`commander-voice-bible.md`](./commander-voice-bible.md). Required plot is carried by guaranteed surfaces and progressive dossiers as well as dialogue, so missing a sparse gameplay quip never breaks comprehension.
 
 ## 6. Character Relationship Boundary
 

@@ -6,6 +6,8 @@ Authoritative companions:
 
 - [`north-star.md`](./north-star.md) — tone, physical-deck fidelity, and visual grammar.
 - [`narrative-canon.md`](./narrative-canon.md) — private history, dossiers, chapters, and disclosure rules.
+- [`narrative-disclosure-matrix.md`](./narrative-disclosure-matrix.md) — Reveal Ledger, authored twelve-War routing, transitions, progressive dossiers, prophecies, callbacks, sources, and Sprint 1 seams.
+- [`commander-voice-bible.md`](./commander-voice-bible.md) — final voice rules and curated implementation-ready dialogue bank.
 - [`opponent-commanders.md`](./opponent-commanders.md) — implemented strategy layer and current dialogue seams.
 - [`alternate-rules-campaigns.md`](./alternate-rules-campaigns.md) — implemented mode mechanics and planned availability.
 - [`.github/instructions/current-development-status.md`](../.github/instructions/current-development-status.md) — authoritative implementation status.
@@ -14,7 +16,7 @@ Authoritative companions:
 
 The following graduated systems are in production code and should not be re-proposed:
 
-- Five fair-play commander strategy IDs in `commander.model.ts`, legal public-information decisions in `OpponentAIService`, persistent Campaign assignment/rotation, sparse reactions, and commander telemetry.
+- Five fair-play commander strategy IDs in `commander.model.ts`, legal public-information decisions in `OpponentAIService`, current one-commander-per-Campaign assignment/rotation, sparse reactions, and commander telemetry.
 - Hall of Valor card service records, Roll of Honor/detail views, Juggernaut Citations, rivalries, profile persistence, and Field Manual integration.
 - All four Campaign modes: Standard, Limited Reserves, Fog of War, and Total War.
 - Campaign Orders before War 1, Three-War history/scoring, tokens, cosmetic card-backing unlocks, and profile presentation.
@@ -36,10 +38,13 @@ This is the next substantial implementation sprint.
   - Bastien de Herve → `attritionist`
   - Lorenzo di Taleggio → `cornered-general`
 - Translate the private dossiers into concise player-facing names, titles, biographies, relationships, omissions, and distinct voices.
+- Implement the authored first-play War schedule: Marcel/Matthias/Bastien; Edmund/Lorenzo/Marcel; Matthias/Marcel/Bastien; Edmund/Lorenzo/Matthias.
+- Move commander identity and attribution to the War encounter, preserving the actual opponent in each War record and completed Campaign history.
 - Implement chapter availability in the order **Standard → Limited Reserves → Fog of War → Total War**.
 - Unlock the next chapter after a complete Three-War Campaign regardless of victory, defeat, or draw; retain every unlocked chapter for replay.
 - Add a versioned, backward-compatible progression migration that preserves active Campaigns and sensibly grandfathers legacy profiles that previously had all-mode access.
 - Add short pre-Campaign/pre-War framing, mode-aware table reactions, War/Campaign resolution reactions, and lore fragments.
+- Add progressive Field Manual commander dossiers and make the top-table opponent identity block a keyboard/touch-accessible deep link to the current dossier.
 - Use the existing Campaign Orders, Field Manual, Chronicle, Hall of Valor, achievements, card-back/item descriptions, and appropriate loading/interstitial surfaces.
 - Add optional, unobtrusive historical/scientific links following the source plan in [`narrative-canon.md`](./narrative-canon.md).
 - Persist only chapter unlock/completion state and any genuinely necessary major narrative flags.
@@ -48,6 +53,8 @@ This is the next substantial implementation sprint.
 ### Architectural Boundary
 
 The current `OpponentCommanderDialogue` is a set of event pools, and `TableReactionService` knows commander plus gameplay context but not mode or chapter. Extend this with a small conditioned-data shape. Do not create a general branching dialogue engine.
+
+The canonical schedule may be reused for initial replays. Randomized replay scheduling is deferred to pre-production polish after the player has completed all four canonical chapters at least once; do not weaken ordered first-play disclosure to make every line order-independent.
 
 The current Chronicle is an in-memory truthful tactical War feed. Narrative fragments may complement it, but Fog of War redaction, card identities, combat attribution, and Hall of Valor statistics must remain mechanically truthful.
 

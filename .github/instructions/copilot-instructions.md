@@ -11,6 +11,7 @@ This repository contains the **War of Attrition** card game - a Progressive Web 
 - **Architecture**: Signal-based reactive state management with standalone components
 - **Deployment**: GitHub Pages (hosted from `/docs`)
 - **Current Status**: Feature-complete core; Progressive Narrative Unveiling and Clash Visualization sprints remain before final release polish. See `current-development-status.md`.
+- **Narrative Sprint 1 Package**: `developer-docs/narrative-disclosure-matrix.md` and `developer-docs/commander-voice-bible.md` define the authored per-War schedule, progressive dossiers, and final creative copy. Do not invent a replacement story or randomize first-play commander order.
 - **Test Coverage**: Comprehensive automated unit test coverage across game logic, turns, challenges, recursive battles, and UI components
 
 ## Build and Development Commands

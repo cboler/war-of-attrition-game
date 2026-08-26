@@ -165,7 +165,7 @@ In objective private canon, no sabotage or betrayal occurred. Months earlier, a 
 > [!CAUTION]
 > The mouse/hay cause is private writer knowledge. It should be inferable from Chapter III fragments and optional sources, not stated as an ordinary early-game explanation.
 
-The four narrative chapters are **Standard: “The Accord” → Limited Reserves: “The Closing Passes” → Fog of War: “The Blind Wheel” → Total War: “The War of Attrition.”** Completion rather than victory unlocks the next chapter. Detailed chronology and disclosure limits live in [`narrative-canon.md`](./narrative-canon.md).
+The four narrative chapters are **Standard: “The Accord” → Limited Reserves: “The Closing Passes” → Fog of War: “The Blind Wheel” → Total War: “The War of Attrition.”** Completion rather than victory unlocks the next chapter. The first-play opponents are deliberately authored per War—Marcel/Matthias/Bastien; Edmund/Lorenzo/Marcel; Matthias/Marcel/Bastien; Edmund/Lorenzo/Matthias—rather than randomized or held constant for an entire Campaign. Detailed chronology and disclosure limits live in [`narrative-canon.md`](./narrative-canon.md); implementation-ready routing and copy live in [`narrative-disclosure-matrix.md`](./narrative-disclosure-matrix.md) and [`commander-voice-bible.md`](./commander-voice-bible.md).
 
 ### Secondary Cultural Inspiration: Cheese-Rolling Rituals (Cooper's Hill Echoes)
 The famous English tradition of the **Cooper's Hill Cheese-Rolling** in Gloucestershire—where competitors hurdle down a perilous gradient in pursuit of an eight-pound wheel of Double Gloucester—serves as a secondary cultural touchstone.
@@ -412,6 +412,8 @@ Multiplayer is a long-term design horizon rather than immediate release scope. H
 - **Mont-Rouge Canon**: No sabotage or betrayal occurred. The mouse/hay cause is private canon to be inferred rather than announced.
 - **Chapter Order**: Standard → Limited Reserves → Fog of War → Total War, unlocked by completion rather than victory and never by monetization.
 - **Narrative Form**: Fractured, environmental disclosure through existing or low-cost surfaces; no visual-novel conversion.
+- **Authored Encounter Form**: Canonical first play uses the settled twelve-War commander schedule; randomized replay is deferred until after the four chapters are complete.
+- **Progressive Dossiers**: The table identity area deep-links into compact Field Manual records that improve their historiography as evidence unlocks; no RPG character sheets.
 - **Rank Archetypes**: Consistent military formations (Infantry, Cavalry Jacks, Caster Queens, Swordsman Kings, General Aces, and the signature 2-vs-Ace assassination sequence).
 - **Clash Visualizations**: A first-class remaining sprint in which visible physical cards summon brief presentation-only battlefield encounters.
 - **Cosmetics Policy**: Purely visual presentation (card backs, army themes, portraits); strict prohibition against unauthorized third-party trade dress.
@@ -439,8 +441,9 @@ Barring newly discovered release-blocking defects, two substantial creative impl
 ### Sprint 1 — Progressive Narrative Unveiling
 
 - Replace generic presentation labels with the five canonical identities while retaining strategy IDs and math.
+- Move opponent identity to the authored War encounter and preserve all three opponents in Campaign history.
 - Implement chapter completion/unlocks, replay access, legacy migration, and minimal narrative state.
-- Add mode-aware reactions, compact Campaign/War framing, biographies, lore fragments, and contextual historical/scientific links.
+- Add chapter/War-aware reactions, compact Campaign/War framing, progressive commander dossiers, lore fragments, and contextual historical/scientific links.
 - Use the Field Manual, Chronicle, Campaign Orders, resolution surfaces, achievements, and cosmetics without building a visual novel.
 
 ### Sprint 2 — Clash Visualizations / Battlefield Animations

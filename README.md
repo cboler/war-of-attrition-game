@@ -147,6 +147,8 @@ War of Attrition has a feature-complete core. Two substantial creative sprints�
 - **Rules & Specification**: [`.github/instructions/war-of-attrition-requirements.md`](.github/instructions/war-of-attrition-requirements.md) — Authoritative physical game rules and requirements.
 - **Documentation Index**: [`.github/instructions/README.md`](.github/instructions/README.md) — Complete documentation hierarchy and development guides.
 - **Private Narrative Canon**: [`developer-docs/narrative-canon.md`](developer-docs/narrative-canon.md) — Mont-Rouge chronology, commander dossiers, chapter disclosure, and source plan.
+- **Narrative Disclosure Matrix**: [`developer-docs/narrative-disclosure-matrix.md`](developer-docs/narrative-disclosure-matrix.md) — Authored twelve-War sequence, Reveal Ledger, progressive dossier plan, transitions, callbacks, sources, audits, and Sprint 1 handoff.
+- **Commander Voice Bible**: [`developer-docs/commander-voice-bible.md`](developer-docs/commander-voice-bible.md) — Final voice guidance and curated implementation-ready dialogue bank.
 - **Remaining Sprints & Backlog**: [`developer-docs/future-gameplay-ideas.md`](developer-docs/future-gameplay-ideas.md) — Narrative Sprint 1, Clash Visualization Sprint 2, release polish, and later candidates.
 
 # Cadillac / 31

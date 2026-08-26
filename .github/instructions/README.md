@@ -21,6 +21,8 @@ To ensure clarity for developers and automated coding agents, documentation in t
 │ 3. CREATIVE DIRECTION, CANON & ROADMAP                      │
 │    - developer-docs/north-star.md (Creative North Star)     │
 │    - developer-docs/narrative-canon.md (Private canon)      │
+│    - developer-docs/narrative-disclosure-matrix.md          │
+│    - developer-docs/commander-voice-bible.md                │
 │    - developer-docs/future-gameplay-ideas.md (Roadmap)      │
 │    - development-milestones.md (Historical planning)        │
 └─────────────────────────────────────────────────────────────┘
@@ -36,6 +38,8 @@ To ensure clarity for developers and automated coding agents, documentation in t
 ### 3. Creative Direction & Backlog References
 - [`developer-docs/north-star.md`](../../developer-docs/north-star.md) — **CREATIVE NORTH STAR** establishing thematic world identity, tone, JRPG-inspired visual grammar, and cosmetic principles.
 - [`developer-docs/narrative-canon.md`](../../developer-docs/narrative-canon.md) — **PRIVATE WRITER CANON** for Mont-Rouge, commander dossiers, chapters, unlock philosophy, and source plan.
+- [`developer-docs/narrative-disclosure-matrix.md`](../../developer-docs/narrative-disclosure-matrix.md) — **SPRINT 1 CREATIVE ROUTING** with the Reveal Ledger, authored twelve-War order, progressive dossiers, transitions, callbacks, spoiler/truth audits, sources, and runtime handoff.
+- [`developer-docs/commander-voice-bible.md`](../../developer-docs/commander-voice-bible.md) — **CANONICAL VOICE & COPY** with relationship language, replay safety, and the curated twelve-encounter dialogue bank.
 - [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — Remaining Narrative and Clash Visualization sprints, release-polish concerns, and later candidates.
 - [`development-milestones.md`](./development-milestones.md) — Historical milestone roadmap used during early development. Completion percentages there do not supersede `current-development-status.md`.
 

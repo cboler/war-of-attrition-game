@@ -15,6 +15,8 @@ Authoritative creative references:
 
 - [`developer-docs/north-star.md`](../../developer-docs/north-star.md) — tone, physical-deck fidelity, and visual identity.
 - [`developer-docs/narrative-canon.md`](../../developer-docs/narrative-canon.md) — private Mont-Rouge canon, commander dossiers, chapter disclosure, and narrative migration contract.
+- [`developer-docs/narrative-disclosure-matrix.md`](../../developer-docs/narrative-disclosure-matrix.md) — authored twelve-War encounter order, Reveal Ledger, progressive dossier plan, transitions, callbacks, sources, and Sprint 1 handoff.
+- [`developer-docs/commander-voice-bible.md`](../../developer-docs/commander-voice-bible.md) — canonical voices and curated implementation-ready dialogue bank.
 - [`developer-docs/opponent-commanders.md`](../../developer-docs/opponent-commanders.md) — permanent AI strategy assets and current dialogue architecture.
 - [`developer-docs/alternate-rules-campaigns.md`](../../developer-docs/alternate-rules-campaigns.md) — implemented mode mechanics and planned chapter availability.
 - [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — the remaining two-sprint boundary and later backlog.
@@ -53,7 +55,7 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 
 ### Campaigns and Alternate Rules
 
-- Three-War Campaign progression, history, signed margins, token rewards, persistent opposing commander assignment, and commander rotation are implemented.
+- Three-War Campaign progression, history, signed margins, token rewards, one-commander-per-Campaign assignment, and post-Campaign commander rotation are implemented. That commander scope is a known Sprint 1 mismatch with the authored per-War narrative schedule.
 - The Campaign Orders modal is implemented and opens before War 1 when orders are unselected.
 - All four mechanical modes are implemented:
   - `standard`
@@ -97,10 +99,11 @@ The documentation pass establishes creative decisions; it does not imply they ar
 | Area | Implemented now | Settled next state |
 | --- | --- | --- |
 | Commander mechanics | Five generic-named fair-play strategy records | Same IDs and strategies, mapped to the five canonical named characters |
-| Dialogue | Fixed event pools per commander | Small mode/chapter/event-aware data layer; no RPG dialogue engine |
+| Commander schedule/history | One `ActiveCampaign.commanderId`; War records omit identity; completed history names one commander | Authored commander per War, current identity derived from the encounter, and truthful three-opponent Campaign history |
+| Dialogue | Fixed event pools per commander | Small chapter/War/commander/event-aware data layer implementing the curated bank; no RPG dialogue engine |
 | Campaign availability | All four modes selectable immediately | Chapter completion unlocks the next mode; no victory or monetization gate |
 | Narrative persistence | Campaign history and gameplay progression only | Minimal chapter completion/unlock state and only necessary major flags |
-| Chronicle | In-memory tactical War feed | May carry short contextual fragments without compromising truthful combat history |
+| Field Manual / Chronicle | In-memory tactical War feed plus Hall, Rules, and contextual Card Reference | Progressive commander dossiers and short archival fragments without compromising truthful combat history |
 | Historical links | Creative direction only | Optional contextual links in suitable lore surfaces |
 | Table animation | Card movement, Battle layers, sequencing, skip/speed/motion controls | Rank-to-unit clash visualization while cards remain visible and authoritative |
 
@@ -113,10 +116,12 @@ The private mouse/hay cause in [`narrative-canon.md`](../../developer-docs/narra
 Implementation scope:
 
 - Map canonical names, titles, factions, biographies, beliefs, omissions, and relationships onto the existing strategy IDs.
+- Implement the authored per-War sequence: Marcel/Matthias/Bastien; Edmund/Lorenzo/Marcel; Matthias/Marcel/Bastien; Edmund/Lorenzo/Matthias. Preserve actual commander identity in every War record and Campaign history.
 - Implement **Standard → Limited Reserves → Fog of War → Total War** chapter availability.
 - Unlock the next chapter after a completed Three-War Campaign regardless of outcome; retain unlocked chapters for replay.
 - Add a backward-compatible progression schema migration. Preserve active Campaign mode/resources/history, infer reached chapters where possible, and grandfather legacy access where the old schema cannot prove what the player previously used.
 - Add concise pre-Campaign/pre-War framing, completion reactions, mode-aware commander lines, Field Manual lore fragments, and contextual sources.
+- Make the top-table opponent identity a keyboard/touch-accessible deep link to an evolving Field Manual dossier that improves its historiography as chapters progress.
 - Extend dialogue data only enough to filter by commander, campaign mode/chapter, broad progression, event, and a very small set of major flags if necessary.
 - Keep repeated play fast; narrative access is not gated by skill, tokens, achievements, purchases, advertising, or monetization.
 - Add focused unit, migration, and presentation tests plus documentation updates.
@@ -125,6 +130,7 @@ Out of scope for Sprint 1:
 
 - A visual novel, quest system, dialogue tree engine, relationship meters, character combat stats, new AI strategies, magical abilities, or hidden-information access.
 - Full battlefield unit animation, sprite-army production, or the 2-vs-Ace assassination sequence; those belong to Sprint 2.
+- Randomized replay commander scheduling; defer it to pre-production polish after canonical four-chapter completion.
 
 ---
 
