@@ -1,12 +1,19 @@
 import { GameOutcome } from './game-state.model';
+import { isCommanderId, OpponentCommanderId } from './commander.model';
 import {
-  COMMANDER_IDS,
-  DEFAULT_COMMANDER_ID,
-  isCommanderId,
-  OpponentCommanderId
-} from './commander.model';
+  CAMPAIGN_CHAPTER_ORDER,
+  CampaignCommanderSchedule,
+  CampaignModeId,
+  CampaignWarIndex,
+  chapterPrerequisitesThrough,
+  getAuthoredCommanderId,
+  getAuthoredCommanderSchedule,
+  isCampaignModeId
+} from './campaign-chapter.model';
 
-export const CAMPAIGN_PROGRESSION_SCHEMA_VERSION = 1;
+export type { CampaignModeId, CampaignWarIndex } from './campaign-chapter.model';
+
+export const CAMPAIGN_PROGRESSION_SCHEMA_VERSION = 2;
 export const WARS_PER_CAMPAIGN = 3;
 export const MAX_CAMPAIGN_HISTORY = 20;
 export const MAX_PROCESSED_WAR_IDS = 256;
@@ -17,11 +24,11 @@ export type DeckColor = 'red' | 'black' | 'unknown';
 export type CampaignOutcome = 'victory' | 'defeat' | 'draw';
 export type CosmeticType = 'card_back' | 'profile_frame' | 'title' | 'table_treatment';
 export type CosmeticUnlockReason = 'default' | 'tokens' | 'achievement' | 'legacy_selected';
-export type CampaignModeId = 'standard' | 'limited_reserves' | 'total_war' | 'fog_of_war';
 export const DEFAULT_CAMPAIGN_MODE_ID: CampaignModeId = 'standard';
 
 export interface CampaignWarRecord {
   readonly warId: string;
+  readonly commanderId: OpponentCommanderId;
   readonly outcome: GameOutcome;
   readonly margin: number;
   readonly playerDeckColor: DeckColor;
@@ -35,16 +42,16 @@ export interface LimitedReservesCampaignState {
 
 export interface ActiveCampaign {
   readonly campaignId: string;
-  readonly commanderId: OpponentCommanderId;
   readonly mode: CampaignModeId;
   readonly ordersSelected: boolean;
   readonly wars: readonly CampaignWarRecord[];
+  /** Stable encounter snapshot. Reloads never reroll or reinterpret an active Campaign. */
+  readonly commanderSchedule: CampaignCommanderSchedule;
   readonly limitedReserves?: LimitedReservesCampaignState;
 }
 
 export interface CampaignHistoryEntry {
   readonly campaignId: string;
-  readonly commanderId?: OpponentCommanderId;
   readonly mode: CampaignModeId;
   readonly wars: readonly CampaignWarRecord[];
   readonly wins: number;
@@ -78,6 +85,8 @@ export interface CampaignProgression {
   readonly schemaVersion: typeof CAMPAIGN_PROGRESSION_SCHEMA_VERSION;
   readonly currentCampaign: ActiveCampaign;
   readonly recentCampaigns: readonly CampaignHistoryEntry[];
+  readonly unlockedChapterModes: readonly CampaignModeId[];
+  readonly completedChapterModes: readonly CampaignModeId[];
   readonly tokenBalance: number;
   readonly lifetimeTokensEarned: number;
   readonly lifetimeTokensSpent: number;
@@ -107,15 +116,6 @@ export interface CosmeticPurchaseResult {
   readonly cosmeticId: string;
   readonly tokenCost: number;
   readonly tokenBalance: number;
-}
-
-export function isCampaignModeId(value: unknown): value is CampaignModeId {
-  return (
-    value === 'standard' ||
-    value === 'limited_reserves' ||
-    value === 'total_war' ||
-    value === 'fog_of_war'
-  );
 }
 
 export function canHumanReinforce(campaign: ActiveCampaign, deckCount: number): boolean {
@@ -168,20 +168,9 @@ export function createProgressionId(prefix: 'campaign' | 'war' = 'campaign'): st
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
-export function deriveFallbackCommanderId(campaignId: unknown): OpponentCommanderId {
-  if (typeof campaignId !== 'string' || !campaignId) return DEFAULT_COMMANDER_ID;
-  let hash = 0;
-  for (let i = 0; i < campaignId.length; i++) {
-    hash = (hash * 31 + campaignId.charCodeAt(i)) | 0;
-  }
-  const index = Math.abs(hash) % COMMANDER_IDS.length;
-  return COMMANDER_IDS[index];
-}
-
 export function createDefaultCampaignProgression(
   selectedCardBackingId = DEFAULT_CARD_BACKING_ID,
-  now = new Date().toISOString(),
-  initialCommanderId: OpponentCommanderId = DEFAULT_COMMANDER_ID
+  now = new Date().toISOString()
 ): CampaignProgression {
   const selected = normalizeCosmeticId(selectedCardBackingId) || DEFAULT_CARD_BACKING_ID;
   const defaultUnlock: CosmeticUnlock = {
@@ -206,12 +195,14 @@ export function createDefaultCampaignProgression(
     schemaVersion: CAMPAIGN_PROGRESSION_SCHEMA_VERSION,
     currentCampaign: {
       campaignId: createProgressionId('campaign'),
-      commanderId: initialCommanderId,
       mode: 'standard',
       ordersSelected: false,
-      wars: []
+      wars: [],
+      commanderSchedule: getAuthoredCommanderSchedule('standard')
     },
     recentCampaigns: [],
+    unlockedChapterModes: ['standard'],
+    completedChapterModes: [],
     tokenBalance: 0,
     lifetimeTokensEarned: 0,
     lifetimeTokensSpent: 0,
@@ -225,19 +216,27 @@ export function createDefaultCampaignProgression(
 export function normalizeCampaignProgression(
   value: unknown,
   legacySelectedCardBackingId = DEFAULT_CARD_BACKING_ID,
-  now = new Date().toISOString()
+  now = new Date().toISOString(),
+  options: { readonly grandfatherLegacyAccess?: boolean } = {}
 ): CampaignProgression {
   const fallback = createDefaultCampaignProgression(legacySelectedCardBackingId, now);
   if (!isRecord(value)) {
-    return fallback;
+    return options.grandfatherLegacyAccess
+      ? { ...fallback, unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER] }
+      : fallback;
   }
 
+  const isLegacySchema = value['schemaVersion'] !== CAMPAIGN_PROGRESSION_SCHEMA_VERSION;
   const rawCurrent = isRecord(value['currentCampaign']) ? value['currentCampaign'] : null;
   const rawCampaignId = normalizeId(rawCurrent?.['campaignId']) || createProgressionId('campaign');
-  const commanderId = isCommanderId(rawCurrent?.['commanderId'])
+  const mode: CampaignModeId = isCampaignModeId(rawCurrent?.['mode'])
+    ? rawCurrent['mode']
+    : 'standard';
+  const legacyCommanderId = isCommanderId(rawCurrent?.['commanderId'])
     ? rawCurrent['commanderId']
-    : deriveFallbackCommanderId(rawCampaignId);
-  const currentWars = normalizeWars(rawCurrent?.['wars']).slice(0, WARS_PER_CAMPAIGN - 1);
+    : undefined;
+  const currentWars = normalizeWars(rawCurrent?.['wars'], mode, legacyCommanderId)
+    .slice(0, WARS_PER_CAMPAIGN - 1);
   const recentCampaigns = normalizeCampaignHistory(value['recentCampaigns']).slice(-MAX_CAMPAIGN_HISTORY);
   const storedUnlocks = normalizeUnlocks(value['unlockedCosmetics']);
   const legacySelection = normalizeCosmeticId(legacySelectedCardBackingId) || DEFAULT_CARD_BACKING_ID;
@@ -248,10 +247,6 @@ export function normalizeCampaignProgression(
   const selected = unlocks.some(unlock =>
     unlock.cosmeticType === 'card_back' && unlock.cosmeticId === storedSelected
   ) ? storedSelected : legacySelection;
-
-  const mode: CampaignModeId = isCampaignModeId(rawCurrent?.['mode'])
-    ? rawCurrent['mode']
-    : 'standard';
 
   // Legacy campaigns with already started wars are treated as orders confirmed.
   // Fresh/unstarted campaigns default to ordersSelected: false to trigger the briefing.
@@ -281,17 +276,44 @@ export function normalizeCampaignProgression(
     ...discoveredWarIds
   ]).slice(-MAX_PROCESSED_WAR_IDS);
 
+  const completedChapterModes = orderedModes([
+    ...normalizeModeArray(value['completedChapterModes']),
+    ...recentCampaigns.map(campaign => campaign.mode)
+  ]);
+  const reachedModes = [
+    mode,
+    ...recentCampaigns.map(campaign => campaign.mode),
+    ...completedChapterModes
+  ];
+  const inferredPrerequisites = reachedModes.flatMap(chapterPrerequisitesThrough);
+  const unlockedChapterModes = isLegacySchema || options.grandfatherLegacyAccess
+    ? [...CAMPAIGN_CHAPTER_ORDER]
+    : orderedModes([
+        'standard',
+        ...normalizeModeArray(value['unlockedChapterModes']),
+        ...inferredPrerequisites
+      ]);
+
+  const commanderSchedule = normalizeCommanderSchedule(
+    rawCurrent?.['commanderSchedule'],
+    mode,
+    isLegacySchema ? legacyCommanderId : undefined,
+    Math.min(WARS_PER_CAMPAIGN, currentWars.length + 1) as CampaignWarIndex
+  );
+
   return {
     schemaVersion: CAMPAIGN_PROGRESSION_SCHEMA_VERSION,
     currentCampaign: {
       campaignId: rawCampaignId,
-      commanderId,
       mode,
       ordersSelected,
       wars: currentWars,
+      commanderSchedule,
       ...(limitedReserves ? { limitedReserves } : {})
     },
     recentCampaigns,
+    unlockedChapterModes,
+    completedChapterModes,
     tokenBalance: nonNegativeInteger(value['tokenBalance']),
     lifetimeTokensEarned: nonNegativeInteger(value['lifetimeTokensEarned']),
     lifetimeTokensSpent: nonNegativeInteger(value['lifetimeTokensSpent']),
@@ -315,7 +337,6 @@ export function calculateWarMargin(input: ResolvedWarInput): number {
 export function summarizeCampaign(
   campaignId: string,
   wars: readonly CampaignWarRecord[],
-  commanderId?: OpponentCommanderId,
   mode: CampaignModeId = 'standard',
   remainingReserves?: number
 ): CampaignHistoryEntry {
@@ -343,7 +364,6 @@ export function summarizeCampaign(
 
   return {
     campaignId,
-    commanderId,
     mode,
     wars: [...wars],
     wins,
@@ -363,19 +383,25 @@ function normalizeCampaignHistory(value: unknown): CampaignHistoryEntry[] {
   for (const candidate of value) {
     if (!isRecord(candidate)) continue;
     const campaignId = normalizeId(candidate['campaignId']);
-    const commanderId = isCommanderId(candidate['commanderId']) ? candidate['commanderId'] : undefined;
     const mode: CampaignModeId = isCampaignModeId(candidate['mode']) ? candidate['mode'] : 'standard';
-    const wars = normalizeWars(candidate['wars']);
+    const legacyCommanderId = isCommanderId(candidate['commanderId'])
+      ? candidate['commanderId']
+      : undefined;
+    const wars = normalizeWars(candidate['wars'], mode, legacyCommanderId);
     if (!campaignId || wars.length !== WARS_PER_CAMPAIGN) continue;
     const remainingReserves = candidate['remainingReserves'] !== undefined
       ? nonNegativeInteger(candidate['remainingReserves'])
       : undefined;
-    history.push(summarizeCampaign(campaignId, wars, commanderId, mode, remainingReserves));
+    history.push(summarizeCampaign(campaignId, wars, mode, remainingReserves));
   }
   return history;
 }
 
-function normalizeWars(value: unknown): CampaignWarRecord[] {
+function normalizeWars(
+  value: unknown,
+  mode: CampaignModeId,
+  legacyCommanderId?: OpponentCommanderId
+): CampaignWarRecord[] {
   if (!Array.isArray(value)) return [];
   const wars: CampaignWarRecord[] = [];
   for (const candidate of value) {
@@ -385,6 +411,9 @@ function normalizeWars(value: unknown): CampaignWarRecord[] {
     if (!warId || !outcome) continue;
     wars.push({
       warId,
+      commanderId: isCommanderId(candidate['commanderId'])
+        ? candidate['commanderId']
+        : legacyCommanderId ?? getAuthoredCommanderId(mode, Math.min(3, wars.length + 1) as CampaignWarIndex),
       outcome,
       margin: finiteInteger(candidate['margin']),
       playerDeckColor: normalizeDeckColor(candidate['playerDeckColor']),
@@ -392,6 +421,38 @@ function normalizeWars(value: unknown): CampaignWarRecord[] {
     });
   }
   return wars;
+}
+
+function normalizeCommanderSchedule(
+  value: unknown,
+  mode: CampaignModeId,
+  legacyCommanderId: OpponentCommanderId | undefined,
+  currentWarIndex: CampaignWarIndex
+): CampaignCommanderSchedule {
+  const authored = [...getAuthoredCommanderSchedule(mode)] as [
+    OpponentCommanderId,
+    OpponentCommanderId,
+    OpponentCommanderId
+  ];
+  if (Array.isArray(value) && value.length === WARS_PER_CAMPAIGN) {
+    const stored = value.filter(isCommanderId);
+    if (stored.length === WARS_PER_CAMPAIGN) {
+      return [stored[0], stored[1], stored[2]];
+    }
+  }
+  if (legacyCommanderId) {
+    authored[currentWarIndex - 1] = legacyCommanderId;
+  }
+  return authored;
+}
+
+function normalizeModeArray(value: unknown): CampaignModeId[] {
+  return Array.isArray(value) ? value.filter(isCampaignModeId) : [];
+}
+
+function orderedModes(values: readonly CampaignModeId[]): CampaignModeId[] {
+  const unique = new Set(values);
+  return CAMPAIGN_CHAPTER_ORDER.filter(mode => unique.has(mode));
 }
 
 function normalizeUnlocks(value: unknown): CosmeticUnlock[] {

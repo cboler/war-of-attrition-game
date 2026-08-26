@@ -2,10 +2,14 @@ import { computed, inject, Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { AuthService } from './auth.service';
 import { CARD_BACKING_OPTIONS } from '../models/settings.model';
+import { getCommander } from '../models/commander.model';
+import { getCommanderIdentity } from '../models/commander-identity.model';
 import {
-  getCommander,
-  selectNextCommander
-} from '../models/commander.model';
+  CAMPAIGN_CHAPTER_ORDER,
+  CampaignWarIndex,
+  getAuthoredCommanderSchedule,
+  nextCampaignChapter
+} from '../models/campaign-chapter.model';
 import {
   CampaignHistoryEntry,
   CampaignModeId,
@@ -44,6 +48,8 @@ export type ProgressionDomainEvent =
       readonly tokenBalanceAfter: number;
     };
 
+export type CampaignChapterState = 'locked' | 'available' | 'current' | 'completed';
+
 @Injectable({ providedIn: 'root' })
 export class CampaignProgressionService {
   private readonly authService = inject(AuthService);
@@ -52,8 +58,17 @@ export class CampaignProgressionService {
   readonly events$ = this.eventSubject.asObservable();
   readonly progression = computed(() => this.authService.activeProfile().progression);
   readonly currentCampaign = computed(() => this.progression().currentCampaign);
+  readonly campaignWarIndex = computed<CampaignWarIndex>(() =>
+    Math.min(WARS_PER_CAMPAIGN, this.currentCampaign().wars.length + 1) as CampaignWarIndex
+  );
+  readonly currentCommanderId = computed(() =>
+    this.currentCampaign().commanderSchedule[this.campaignWarIndex() - 1]
+  );
   readonly currentCommander = computed(() =>
-    getCommander(this.currentCampaign().commanderId)
+    getCommander(this.currentCommanderId())
+  );
+  readonly currentCommanderIdentity = computed(() =>
+    getCommanderIdentity(this.currentCommanderId())
   );
   readonly activeCampaignMode = computed<CampaignModeId>(() => this.currentCampaign().mode);
   readonly ordersSelected = computed<boolean>(() => this.currentCampaign().ordersSelected);
@@ -72,9 +87,8 @@ export class CampaignProgressionService {
   readonly initialReserves = computed<number | null>(() =>
     this.limitedReserves()?.initialReserves ?? null
   );
-  readonly campaignWarIndex = computed<1 | 2 | 3>(() =>
-    Math.min(WARS_PER_CAMPAIGN, this.currentCampaign().wars.length + 1) as 1 | 2 | 3
-  );
+  readonly unlockedChapterModes = computed(() => this.progression().unlockedChapterModes);
+  readonly completedChapterModes = computed(() => this.progression().completedChapterModes);
   readonly tokenBalance = computed(() => this.progression().tokenBalance);
   readonly selectedCardBackingId = computed(() =>
     this.progression().selectedCosmetics.cardBackingId
@@ -99,13 +113,29 @@ export class CampaignProgressionService {
     return canInspectCasualties(this.activeCampaignMode(), isWarResolved);
   }
 
+  isChapterUnlocked(mode: CampaignModeId): boolean {
+    return this.unlockedChapterModes().includes(mode);
+  }
+
+  isChapterCompleted(mode: CampaignModeId): boolean {
+    return this.completedChapterModes().includes(mode);
+  }
+
+  chapterState(mode: CampaignModeId): CampaignChapterState {
+    if (!this.isChapterUnlocked(mode)) return 'locked';
+    if (this.currentCampaign().mode === mode && !this.currentCampaign().ordersSelected) {
+      return 'current';
+    }
+    return this.isChapterCompleted(mode) ? 'completed' : 'available';
+  }
+
   /**
    * Confirms the Campaign Orders (rules of engagement) for the active Campaign.
    * Only permitted before War 1 begins.
    */
   selectCampaignOrders(mode: CampaignModeId): boolean {
     const current = this.currentCampaign();
-    if (current.wars.length > 0) {
+    if (current.wars.length > 0 || !this.isChapterUnlocked(mode)) {
       return false; // Mode is immutable once Campaign play has begun.
     }
 
@@ -123,6 +153,8 @@ export class CampaignProgressionService {
         ...previous.currentCampaign,
         mode,
         ordersSelected: true,
+        commanderSchedule: getAuthoredCommanderSchedule(mode),
+        limitedReserves: undefined,
         ...(limitedReserves ? { limitedReserves } : {})
       }
     }));
@@ -184,6 +216,7 @@ export class CampaignProgressionService {
       : new Date().toISOString();
     const war: CampaignWarRecord = {
       warId,
+      commanderId: this.currentCommanderId(),
       outcome: input.outcome,
       margin: calculateWarMargin(input),
       playerDeckColor: input.playerDeckColor ?? 'unknown',
@@ -195,7 +228,6 @@ export class CampaignProgressionService {
       ? summarizeCampaign(
           current.currentCampaign.campaignId,
           candidateWars,
-          current.currentCampaign.commanderId,
           current.currentCampaign.mode,
           current.currentCampaign.limitedReserves?.remainingReserves
         )
@@ -218,23 +250,34 @@ export class CampaignProgressionService {
       const completed = summarizeCampaign(
         previous.currentCampaign.campaignId,
         wars,
-        previous.currentCampaign.commanderId,
         previous.currentCampaign.mode,
         previous.currentCampaign.limitedReserves?.remainingReserves
       );
-      const nextCommanderId = selectNextCommander(previous.currentCampaign.commanderId);
+      const completedChapterModes = CAMPAIGN_CHAPTER_ORDER.filter(mode =>
+        previous.completedChapterModes.includes(mode) || mode === completed.mode
+      );
+      const nextMode = nextCampaignChapter(completed.mode);
+      const newlyUnlockedMode = nextMode && !previous.unlockedChapterModes.includes(nextMode)
+        ? nextMode
+        : null;
+      const unlockedChapterModes = CAMPAIGN_CHAPTER_ORDER.filter(mode =>
+        previous.unlockedChapterModes.includes(mode) || mode === newlyUnlockedMode
+      );
+      const defaultNextMode = newlyUnlockedMode ?? completed.mode;
 
       return {
         ...previous,
         currentCampaign: {
           campaignId: createProgressionId('campaign'),
-          commanderId: nextCommanderId,
-          mode: 'standard',
+          mode: defaultNextMode,
           ordersSelected: false,
-          wars: []
+          wars: [],
+          commanderSchedule: getAuthoredCommanderSchedule(defaultNextMode)
         },
         recentCampaigns: [...previous.recentCampaigns, completed]
           .slice(-MAX_CAMPAIGN_HISTORY),
+        unlockedChapterModes,
+        completedChapterModes,
         tokenBalance: previous.tokenBalance + completed.tokensEarned,
         lifetimeTokensEarned:
           previous.lifetimeTokensEarned + completed.tokensEarned,

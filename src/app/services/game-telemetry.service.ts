@@ -81,7 +81,7 @@ export class GameTelemetryService {
       campaignId: normalizeContextId(input.campaignId) || activeCampaign.campaignId,
       campaignWarIndex: input.campaignWarIndex ?? this.progressionService.campaignWarIndex(),
       playerDeckColor: input.playerDeckColor ?? 'unknown',
-      commanderId: input.commanderId ?? activeCampaign.commanderId,
+      commanderId: input.commanderId ?? this.progressionService.currentCommanderId(),
       campaignMode: input.campaignMode ?? activeCampaign.mode
     };
     this.warContextSignal.set(context);

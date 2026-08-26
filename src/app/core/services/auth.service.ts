@@ -167,7 +167,9 @@ export class AuthService {
               statistics: { ...DEFAULT_STATISTICS, ...(p.statistics || {}) },
               progression: normalizeCampaignProgression(
                 p.progression,
-                p.progression ? DEFAULT_CARD_BACKING_ID : legacySelectedCardBacking
+                p.progression ? DEFAULT_CARD_BACKING_ID : legacySelectedCardBacking,
+                undefined,
+                { grandfatherLegacyAccess: !p.progression }
               ),
               hallOfValor: normalizeHallOfValor(p.hallOfValor)
             }));

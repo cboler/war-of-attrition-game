@@ -157,7 +157,7 @@ export class HallOfValorService {
           juggernautCitations: r.juggernautCitations + 1
         }));
 
-        const commanderId = this.campaignProgression?.currentCampaign()?.commanderId;
+        const commanderId = this.campaignProgression?.currentCommanderId();
         this.eventBus.emit({
           type: 'valor_citation_awarded',
           turnNumber,
