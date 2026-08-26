@@ -27,7 +27,12 @@ import { StoryBookEntry, StoryBookService } from '../../../services/story-book.s
 import { CardComponent } from '../card/card.component';
 import { RuleDemoComponent, RuleDemoKind } from '../rule-demo/rule-demo.component';
 
-type FieldManualTab = 'chronicle' | 'valor' | 'rules' | 'reference';
+import { OpponentCommanderId } from '../../../core/models/commander.model';
+import { CommanderIdentity, getCommanderIdentity } from '../../../core/models/commander-identity.model';
+import { CommanderDossierRecord } from '../../../core/models/narrative.model';
+import { NarrativeResolverService } from '../../../narrative/narrative-resolver.service';
+
+type FieldManualTab = 'chronicle' | 'valor' | 'rules' | 'dossier' | 'reference';
 
 interface RuleEntry {
   readonly id: RuleDemoKind;
@@ -96,13 +101,17 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   protected readonly hallOfValor = inject(HallOfValorService);
   protected readonly progression = inject(CampaignProgressionService, { optional: true });
   protected readonly gameState = inject(GameStateService, { optional: true });
+  protected readonly narrativeResolver = inject(NarrativeResolverService, { optional: true });
   protected readonly rules = RULE_ENTRIES;
   protected readonly activeTab = signal<FieldManualTab>('chronicle');
   protected readonly activeDemo = signal<RuleDemoKind | null>(null);
   protected readonly selectedValorCardId = signal<string | null>(null);
   protected readonly expandedComparisonEntryIds = signal<ReadonlySet<string>>(new Set());
+  protected readonly selectedCommanderId = signal<OpponentCommanderId>('quartermaster');
 
   readonly referenceCard = input<Card | null>(null);
+  readonly targetCommanderId = input<OpponentCommanderId | null>(null);
+  readonly initialTab = input<FieldManualTab | null>(null);
   readonly closed = output<void>();
 
   readonly isFogOfWarActive = computed<boolean>(() =>
@@ -112,9 +121,38 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
 
   protected readonly availableTabs = computed<readonly FieldManualTab[]>(() =>
     this.referenceCard()
-      ? ['chronicle', 'valor', 'rules', 'reference']
-      : ['chronicle', 'valor', 'rules']
+      ? ['chronicle', 'valor', 'rules', 'dossier', 'reference']
+      : ['chronicle', 'valor', 'rules', 'dossier']
   );
+
+  protected readonly unlockedCommanders = computed<readonly CommanderIdentity[]>(() => {
+    const all: OpponentCommanderId[] = [
+      'quartermaster',
+      'analyst',
+      'attritionist',
+      'gambler',
+      'cornered-general'
+    ];
+    if (!this.narrativeResolver) {
+      return [getCommanderIdentity('quartermaster')];
+    }
+    const list = all
+      .filter(id => (this.narrativeResolver?.dossierFor(id)?.length ?? 0) > 0)
+      .map(id => getCommanderIdentity(id));
+    return list.length > 0 ? list : [getCommanderIdentity('quartermaster')];
+  });
+
+  protected readonly activeCommanderIdentity = computed<CommanderIdentity>(() =>
+    getCommanderIdentity(this.selectedCommanderId())
+  );
+
+  protected readonly activeCommanderDossier = computed<readonly CommanderDossierRecord[]>(() =>
+    this.narrativeResolver?.dossierFor(this.selectedCommanderId()) ?? []
+  );
+
+  selectDossierCommander(commanderId: OpponentCommanderId): void {
+    this.selectedCommanderId.set(commanderId);
+  }
 
   protected entryText(entry: StoryBookEntry): string {
     if (!this.isFogOfWarActive()) {
@@ -223,6 +261,21 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
         this.activeDemo.set(null);
         this.selectedValorCardId.set(null);
         this.activeTab.set('reference');
+      }
+    });
+
+    effect(() => {
+      const target = this.targetCommanderId();
+      if (target) {
+        this.selectedCommanderId.set(target);
+        this.activeTab.set('dossier');
+      }
+    });
+
+    effect(() => {
+      const initial = this.initialTab();
+      if (initial) {
+        this.activeTab.set(initial);
       }
     });
   }

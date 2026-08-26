@@ -193,7 +193,9 @@ export type TableReactionCategory =
   | 'narrow_clash'
   | 'rescue'
   | 'failed_rescue'
-  | 'battle';
+  | 'battle'
+  | 'introduction'
+  | 'result';
 
 export interface QuipSpokenEvent extends BaseGameEvent {
   readonly type: 'quip_spoken';

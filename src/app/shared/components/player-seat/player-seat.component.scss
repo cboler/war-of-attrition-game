@@ -25,6 +25,48 @@
   gap: 10px;
   min-width: 110px;
   color: rgba(248, 241, 226, 0.82);
+  text-align: left;
+}
+
+.identity-button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+  user-select: none;
+
+  &:hover {
+    background: rgba(229, 193, 117, 0.12);
+    border-color: rgba(229, 193, 117, 0.35);
+
+    .dossier-icon {
+      color: #ffd54f;
+      transform: scale(1.08);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ffd54f;
+    outline-offset: 2px;
+    background: rgba(229, 193, 117, 0.15);
+    border-color: rgba(229, 193, 117, 0.5);
+  }
+}
+
+.identity-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dossier-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: rgba(229, 193, 117, 0.65);
+  transition: color 150ms ease, transform 150ms ease;
 }
 
 .identity strong,
@@ -37,6 +79,13 @@
   color: #ffd54f;
   margin-top: 1px;
   font-weight: 600;
+}
+.identity .seat-faction {
+  font-size: clamp(0.58rem, 0.75vw, 0.65rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(229, 193, 117, 0.78);
+  margin-top: 1px;
 }
 .identity span { margin-top: 3px; font-size: clamp(0.68rem, 0.9vw, 0.76rem); letter-spacing: 0.05em; text-transform: uppercase; color: rgba(248, 241, 226, 0.72); }
 .identity .at-risk { display: inline; color: #ffd54f; font-weight: 600; }

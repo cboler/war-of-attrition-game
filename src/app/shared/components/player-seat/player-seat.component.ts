@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 import { CardComponent } from '../card/card.component';
 
 @Component({
   selector: 'app-player-seat',
-  imports: [CommonModule, CardComponent],
+  imports: [CommonModule, MatIconModule, CardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -14,35 +15,82 @@ import { CardComponent } from '../card/card.component';
       [class.motion-disabled]="motionDisabled()"
       [attr.aria-label]="name() + ' seat'">
       
-      <div class="identity">
-        <span class="status-dot" [class.thinking]="thinking()" aria-hidden="true"></span>
-        <div>
-          <strong>{{ name() }}</strong>
-          @if (title()) {
-            <span class="seat-title">{{ title() }}</span>
-          }
-          <span>{{ cardCount() }} cards<span class="at-risk">{{ dangerLabel() }}</span></span>
-          @if (reserves(); as res) {
-            <span
-              class="reserve-badge"
-              [class.reserve-exhausted]="res.remaining === 0"
-              [attr.aria-label]="'Reserves: ' + res.remaining + ' of ' + res.max + ' remaining'">
-              <span class="reserve-label">RESERVES</span>
-              <strong class="reserve-count">{{ res.remaining }} / {{ res.max }}</strong>
-            </span>
-          }
-          @if (totalWarDifferential() !== null) {
-            <span
-              class="total-war-badge"
-              [class.diff-positive]="(totalWarDifferential() ?? 0) > 0"
-              [class.diff-negative]="(totalWarDifferential() ?? 0) < 0"
-              [attr.aria-label]="'Total War running differential: ' + ((totalWarDifferential() ?? 0) >= 0 ? '+' : '') + totalWarDifferential()">
-              <span class="total-war-label">TOTAL WAR</span>
-              <strong class="total-war-diff">DIFF {{ (totalWarDifferential() ?? 0) >= 0 ? '+' : '' }}{{ totalWarDifferential() }}</strong>
-            </span>
-          }
+      @if (dossierAccessible()) {
+        <button
+          type="button"
+          class="identity identity-button"
+          [attr.aria-label]="'View dossier for ' + name()"
+          (click)="dossierRequested.emit()">
+          <span class="status-dot" [class.thinking]="thinking()" aria-hidden="true"></span>
+          <div class="identity-details">
+            <div class="identity-name-row">
+              <strong>{{ name() }}</strong>
+              <mat-icon class="dossier-icon" aria-hidden="true">assignment_ind</mat-icon>
+            </div>
+            @if (title()) {
+              <span class="seat-title">{{ title() }}</span>
+            }
+            @if (faction()) {
+              <span class="seat-faction">{{ faction() }}</span>
+            }
+            <span>{{ cardCount() }} cards<span class="at-risk">{{ dangerLabel() }}</span></span>
+            @if (reserves(); as res) {
+              <span
+                class="reserve-badge"
+                [class.reserve-exhausted]="res.remaining === 0"
+                [attr.aria-label]="'Reserves: ' + res.remaining + ' of ' + res.max + ' remaining'">
+                <span class="reserve-label">RESERVES</span>
+                <strong class="reserve-count">{{ res.remaining }} / {{ res.max }}</strong>
+              </span>
+            }
+            @if (totalWarDifferential() !== null) {
+              <span
+                class="total-war-badge"
+                [class.diff-positive]="(totalWarDifferential() ?? 0) > 0"
+                [class.diff-negative]="(totalWarDifferential() ?? 0) < 0"
+                [attr.aria-label]="'Total War running differential: ' + ((totalWarDifferential() ?? 0) >= 0 ? '+' : '') + totalWarDifferential()">
+                <span class="total-war-label">TOTAL WAR</span>
+                <strong class="total-war-diff">DIFF {{ (totalWarDifferential() ?? 0) >= 0 ? '+' : '' }}{{ totalWarDifferential() }}</strong>
+              </span>
+            }
+          </div>
+        </button>
+      } @else {
+        <div class="identity identity-static">
+          <span class="status-dot" [class.thinking]="thinking()" aria-hidden="true"></span>
+          <div class="identity-details">
+            <div class="identity-name-row">
+              <strong>{{ name() }}</strong>
+            </div>
+            @if (title()) {
+              <span class="seat-title">{{ title() }}</span>
+            }
+            @if (faction()) {
+              <span class="seat-faction">{{ faction() }}</span>
+            }
+            <span>{{ cardCount() }} cards<span class="at-risk">{{ dangerLabel() }}</span></span>
+            @if (reserves(); as res) {
+              <span
+                class="reserve-badge"
+                [class.reserve-exhausted]="res.remaining === 0"
+                [attr.aria-label]="'Reserves: ' + res.remaining + ' of ' + res.max + ' remaining'">
+                <span class="reserve-label">RESERVES</span>
+                <strong class="reserve-count">{{ res.remaining }} / {{ res.max }}</strong>
+              </span>
+            }
+            @if (totalWarDifferential() !== null) {
+              <span
+                class="total-war-badge"
+                [class.diff-positive]="(totalWarDifferential() ?? 0) > 0"
+                [class.diff-negative]="(totalWarDifferential() ?? 0) < 0"
+                [attr.aria-label]="'Total War running differential: ' + ((totalWarDifferential() ?? 0) >= 0 ? '+' : '') + totalWarDifferential()">
+                <span class="total-war-label">TOTAL WAR</span>
+                <strong class="total-war-diff">DIFF {{ (totalWarDifferential() ?? 0) >= 0 ? '+' : '' }}{{ totalWarDifferential() }}</strong>
+              </span>
+            }
+          </div>
         </div>
-      </div>
+      }
 
       @if (quip()) {
         <p class="quip" role="status">{{ quip() }}</p>
@@ -91,6 +139,8 @@ import { CardComponent } from '../card/card.component';
 export class PlayerSeatComponent {
   name = input.required<string>();
   title = input<string | null>(null);
+  faction = input<string | null>(null);
+  dossierAccessible = input(false);
   position = input<'top' | 'right' | 'bottom' | 'left'>('bottom');
   cardCount = input(0);
   cardsAtRisk = input(0);
@@ -104,6 +154,7 @@ export class PlayerSeatComponent {
   totalWarDifferential = input<number | null>(null);
 
   deckActivated = output<void>();
+  dossierRequested = output<void>();
 
   protected dangerLabel = computed(() =>
     this.cardsAtRisk() > 0 ? ` · ${this.cardsAtRisk()} at stake` : ''

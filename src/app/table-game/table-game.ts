@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { PlayerType } from '../core/models/game-state.model';
 import { Card } from '../core/models/card.model';
+import { OpponentCommanderId } from '../core/models/commander.model';
 import { GameStateService } from '../core/services/game-state.service';
 import { SettingsService } from '../core/services/settings.service';
 import { AchievementService } from '../services/achievement.service';
@@ -59,6 +60,7 @@ export class TableGame implements OnInit {
   protected readonly boneyardOpen = signal(false);
   protected readonly storyBookOpen = signal(false);
   protected readonly manualReferenceCard = signal<Card | null>(null);
+  protected readonly dossierTargetCommander = signal<OpponentCommanderId | null>(null);
 
   protected readonly opponentThinking = computed(() =>
     this.controller.presentationState() === PresentationState.OPPONENT_CONSIDERING_CHALLENGE ||
@@ -196,16 +198,29 @@ export class TableGame implements OnInit {
 
   protected toggleStoryBook(): void {
     if (this.storyBookOpen()) {
-      this.storyBookOpen.set(false);
-      this.manualReferenceCard.set(null);
+      this.closeStoryBook();
       return;
     }
     this.manualReferenceCard.set(null);
+    this.dossierTargetCommander.set(null);
     this.storyBookOpen.set(true);
+  }
+
+  protected openCommanderDossier(commanderId?: OpponentCommanderId): void {
+    this.manualReferenceCard.set(null);
+    this.dossierTargetCommander.set(commanderId ?? this.controller.opponentCommanderIdentity().commanderId);
+    this.storyBookOpen.set(true);
+  }
+
+  protected closeStoryBook(): void {
+    this.storyBookOpen.set(false);
+    this.manualReferenceCard.set(null);
+    this.dossierTargetCommander.set(null);
   }
 
   protected openBoneyardReference(card: Card): void {
     if (this.isFogOfWarActive()) return;
+    this.dossierTargetCommander.set(null);
     this.manualReferenceCard.set(card);
     this.storyBookOpen.set(true);
   }

@@ -98,35 +98,33 @@ The documentation pass establishes creative decisions; it does not imply they ar
 
 | Area | Implemented now | Settled next state |
 | --- | --- | --- |
-| Commander mechanics & identities | Five named characters (Marcel, Edmund, Matthias, Bastien, Lorenzo) mapped to strategy IDs | Same IDs and strategies, active in runtime and tests |
+| Commander mechanics & identities | Five named characters (Marcel, Edmund, Matthias, Bastien, Lorenzo) active in table UI, headers, and presentation | Same IDs and strategies, active in runtime and tests |
 | Commander schedule/history | Schema v2 authored per-War schedule, dynamic current encounter resolution, truthful 3-opponent Campaign history | Fully active in progression model, services, telemetry, and Hall of Valor |
-| Dialogue & narrative foundation | Chapter-I authored dialogue bank, transitions, and progressive dossier dataset with `NarrativeResolverService` | Sprint 1 UI presentation (dialogue banners, transition screens, Field Manual dossier tab) |
-| Campaign chapter availability | Schema v2 chapter progression: Standard → Limited Reserves → Fog of War → Total War, unlocked on Campaign completion | Chapter unlock UI cues in Campaign Orders dialog |
+| Dialogue & narrative foundation | Chapter-I authored dialogue bank, transitions, progressive dossiers, deduplication, and `NarrativeResolverService` | Fully active in table reactions, game controller, dialogs, and summary |
+| Campaign chapter availability | Schema v2 chapter progression: Standard → Limited Reserves → Fog of War → Total War, canonical order and lock cues in Orders modal | Completed for Chapter I; Chapters II–IV data and presentation ready for subsequent passes |
 | Narrative persistence & migration | Schema v2 persistence with full v1 migration, legacy grandfathering, and reload determinism | Unlocked dossiers and story progress persisted cleanly |
-| Field Manual / Dossiers | In-memory tactical Chronicle + Hall + Rules + Card Reference; progressive dossier unlock logic verified in resolver | UI presentation of commander dossier tab and table-header deep link |
+| Field Manual / Dossiers | Field Manual dossier tab, commander switcher chips, progressive records, evidence badges, safe external source links, table-header deep link | Fully active in runtime with keyboard navigation and ARIA support |
 | Table animation | Card movement, Battle layers, sequencing, skip/speed/motion controls | Sprint 2 rank-to-unit clash visualization while cards remain visible and authoritative |
 
 The private mouse/hay cause in [`narrative-canon.md`](../../developer-docs/narrative-canon.md) is writer knowledge. It must not simply appear as an early player-facing explanation.
 
 ---
 
-## 4. Remaining Substantial Sprint 1 — Narrative UI & Presentation
+## 4. Sprint 1 State — Chapter I Player-Facing Vertical Slice Complete
 
-The architectural foundation for Sprint 1 is complete and stabilized (Schema v2, authored schedules, chapter progression, Chapter-I narrative bank, resolver service, and full test matrix).
+The Chapter I player-facing vertical slice is complete, tested, and verified end-to-end:
 
-Remaining UI/presentation scope for Sprint 1:
+- **Named Opponent Presentation**: Top seat renders active commander name (`Marcel de Brie`, `Matthias von Greyerz`, `Bastien de Herve`), title, and faction.
+- **Opponent Header Dossier Deep-Linking**: Interactive button on opponent identity with gold `:focus-visible` ring and keyboard/touch activation directly opens the Field Manual drawer to the active commander's dossier.
+- **Field Manual Commander Dossier Tab**: Dedicated `dossier` tab with commander switcher chip row, header summary, progressive records (Overview, Mont-Rouge Record, Archived Statement), evidence badges (`documented`, `attributed interpretation`, `prophetic metaphor`), and safe source links (`target="_blank" rel="noopener noreferrer"`).
+- **Authored Dialogue & Deduplication**: War-scoped in-memory deduplication in `TableReactionService` prioritizing Chapter I authored lines for introductions, results, and combat events.
+- **Campaign Orders Framing & Chapter Availability**: Canonical chapter order (Chapters I–IV), `TR-C1-01` ("The Accord") framing dispatch, and chapter unlock/lock state presentation.
+- **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-02`, `TR-C1-03`, `TR-C1-04`), resolution quotes, and dynamic next-war action buttons.
+- **Comprehensive Test Suite**: Full unit and integration suite green (517/517 tests passing), including `chapter-one-narrative-flow.spec.ts`.
 
-- Implement commander dossier UI and progressive disclosure presentation in the Field Manual drawer.
-- Implement table-header commander identity deep link / touch interaction to open the active dossier.
-- Present Chapter-I dialogue lines and encounter framing during table gameplay.
-- Present chapter transition cards/modals between campaign stages.
-- Add focused UI and accessibility tests for newly added narrative presentation components.
-
-Out of scope for Sprint 1:
-
-- A visual novel, quest system, dialogue tree engine, relationship meters, character combat stats, new AI strategies, magical abilities, or hidden-information access.
-- Full battlefield unit animation, sprite-army production, or the 2-vs-Ace assassination sequence; those belong to Sprint 2.
-- Randomized replay commander scheduling; defer it to pre-production polish after canonical four-chapter completion.
+Next steps for future passes:
+- Chapters II–IV authored narrative content integration.
+- Sprint 2 Clash Visualizations / Battlefield Animations.
 
 ---
 

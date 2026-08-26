@@ -2,20 +2,33 @@ import { TestBed } from '@angular/core/testing';
 import { CardImpl, Rank, Suit } from '../core/models/card.model';
 import { PlayerType } from '../core/models/game-state.model';
 import { REACTION_RANDOM, TableReactionService } from './table-reaction.service';
+import { NarrativeResolverService } from '../narrative/narrative-resolver.service';
+import { CampaignProgressionService } from '../core/services/campaign-progression.service';
+import { AuthService } from '../core/services/auth.service';
 
 describe('TableReactionService', () => {
   let randomValues: number[];
   let service: TableReactionService;
 
   beforeEach(() => {
+    localStorage.clear();
     randomValues = [];
     TestBed.configureTestingModule({
-      providers: [{
-        provide: REACTION_RANDOM,
-        useFactory: () => () => randomValues.shift() ?? 0.99
-      }]
+      providers: [
+        AuthService,
+        CampaignProgressionService,
+        NarrativeResolverService,
+        {
+          provide: REACTION_RANDOM,
+          useFactory: () => () => randomValues.shift() ?? 0.99
+        }
+      ]
     });
     service = TestBed.inject(TableReactionService);
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   const card = (rank: Rank) => new CardImpl(Suit.HEARTS, rank);
@@ -91,7 +104,7 @@ describe('TableReactionService', () => {
 
     expect(reaction).toEqual({
       speaker: PlayerType.OPPONENT,
-      message: 'That one was worth saving.',
+      message: 'There. Proper stock returns to the cellar.',
       category: 'rescue',
     });
   });
@@ -120,11 +133,11 @@ describe('TableReactionService', () => {
       'quartermaster'
     );
 
-    expect(reaction?.message).toBe('Too many supplies expended on one deadlock.');
+    expect(reaction?.message).toBe('Layer upon layer. Even a rind knows when thickness has become stubbornness.');
   });
 
   describe('Commander Dialogue Personality Customization', () => {
-    it('uses Gambler-specific lines when Gambler loses to 2 vs Ace', () => {
+    it('uses Gambler-specific fallback lines when Gambler loses to 2 vs Ace', () => {
       randomValues = [0.1, 0];
       const reaction = service.forClash({
         playerCard: card(Rank.TWO),
@@ -160,7 +173,29 @@ describe('TableReactionService', () => {
       );
 
       expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
-      expect(reaction?.message).toBe('An Ace fallen, but the line remains.');
+      expect(reaction?.message).toBe('A great head falls. Somewhere, a very small guest remains uninvited.');
+    });
+
+    it('provides authored introduction and result lines for Chapter I commanders', () => {
+      const intro = service.forIntroduction('quartermaster');
+      expect(intro?.speaker).toBe(PlayerType.OPPONENT);
+      expect(intro?.category).toBe('introduction');
+      expect(intro?.message).toBe('At Mont-Rouge, monsieur, we placed two ancient traditions at one table. Only one of them arrived with the dignity to remain seated.');
+
+      const result = service.forResult('quartermaster');
+      expect(result?.speaker).toBe(PlayerType.OPPONENT);
+      expect(result?.category).toBe('result');
+      expect(result?.message).toBe('The cards have rendered a verdict. Naturally, history will appeal.');
+    });
+
+    it('prevents immediate duplicate dialogue within a single war', () => {
+      service.clearUsedDialogue();
+      const first = service.forIntroduction('attritionist');
+      expect(first?.message).toBe('The blind wheel opened seven eyes. Four men closed eight.');
+
+      // Second request in same war deduplicates used IDs
+      const second = service.forIntroduction('attritionist');
+      expect(second === null || second.message !== first?.message).toBeTrue();
     });
   });
 });

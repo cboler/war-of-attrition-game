@@ -12,8 +12,11 @@
   <app-card-table>
     <app-player-seat
       table-seat-top
-      [name]="controller.opponentCommander().name"
-      [title]="controller.opponentCommander().title"
+      [name]="controller.opponentCommanderIdentity().name"
+      [title]="controller.opponentCommanderIdentity().title"
+      [faction]="controller.opponentCommanderIdentity().faction"
+      [dossierAccessible]="true"
+      (dossierRequested)="openCommanderDossier()"
       position="top"
       [cardCount]="controller.opponentDeckDisplayCount()"
       [cardsAtRisk]="controller.opponentCardsAtRisk()"
@@ -445,7 +448,8 @@
   @if (storyBookOpen()) {
     <app-story-book-drawer
       [referenceCard]="manualReferenceCard()"
-      (closed)="toggleStoryBook()"
+      [targetCommanderId]="dossierTargetCommander()"
+      (closed)="closeStoryBook()"
     />
   }
 

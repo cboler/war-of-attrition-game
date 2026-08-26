@@ -50,8 +50,8 @@ describe('CampaignOrdersDialogComponent', () => {
     expect(cards.length).toBe(4);
     expect(cards[0].textContent).toContain('Standard Campaign');
     expect(cards[1].textContent).toContain('Limited Reserves');
-    expect(cards[2].textContent).toContain('Total War');
-    expect(cards[3].textContent).toContain('Fog of War');
+    expect(cards[2].textContent).toContain('Fog of War');
+    expect(cards[3].textContent).toContain('Total War');
   });
 
   it('should allow selecting Limited Reserves mode', () => {
@@ -63,21 +63,21 @@ describe('CampaignOrdersDialogComponent', () => {
     expect(cards[1].classList).toContain('selected');
   });
 
-  it('should allow selecting Total War mode', () => {
+  it('should allow selecting Fog of War mode', () => {
     const cards = fixture.nativeElement.querySelectorAll('.order-card');
     cards[2].click();
     fixture.detectChanges();
 
-    expect(component.selectedMode()).toBe('total_war');
+    expect(component.selectedMode()).toBe('fog_of_war');
     expect(cards[2].classList).toContain('selected');
   });
 
-  it('should allow selecting Fog of War mode', () => {
+  it('should allow selecting Total War mode', () => {
     const cards = fixture.nativeElement.querySelectorAll('.order-card');
     cards[3].click();
     fixture.detectChanges();
 
-    expect(component.selectedMode()).toBe('fog_of_war');
+    expect(component.selectedMode()).toBe('total_war');
     expect(cards[3].classList).toContain('selected');
   });
 

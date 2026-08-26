@@ -196,14 +196,20 @@ describe('StoryBookDrawerComponent', () => {
     fixture.detectChanges();
     expect(component['activeTab']()).toBe('rules');
 
-    // End moves to last tab (rules)
+    // ArrowRight moves from rules -> dossier
+    const rulesTab = compiled.querySelector('#tab-rules') as HTMLButtonElement;
+    rulesTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }));
+    fixture.detectChanges();
+    expect(component['activeTab']()).toBe('dossier');
+
+    // End moves to last tab (dossier)
     valorTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', cancelable: true }));
     fixture.detectChanges();
-    expect(component['activeTab']()).toBe('rules');
+    expect(component['activeTab']()).toBe('dossier');
 
     // Home moves to first tab (chronicle)
-    const rulesTab = compiled.querySelector('#tab-rules') as HTMLButtonElement;
-    rulesTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', cancelable: true }));
+    const dossierTab = compiled.querySelector('#tab-dossier') as HTMLButtonElement;
+    dossierTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', cancelable: true }));
     fixture.detectChanges();
     expect(component['activeTab']()).toBe('chronicle');
   });
@@ -516,6 +522,48 @@ describe('StoryBookDrawerComponent', () => {
       expect(unsealedNodes[1].classList).not.toContain('fog-sealed');
       expect(unsealedNodes[1].querySelector('.node-text')?.textContent).toContain('4 casualties sent to Boneyard');
       expect(unsealedNodes[1].querySelector('.casualties-strip')).toBeTruthy();
+    });
+  });
+
+  describe('Commander Dossier Tab', () => {
+    it('should render commander dossier tab with unlocked records and safe source links', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const dossierTab = compiled.querySelector('#tab-dossier') as HTMLButtonElement;
+      expect(dossierTab).toBeTruthy();
+
+      dossierTab.click();
+      fixture.detectChanges();
+
+      const panel = compiled.querySelector('#panel-dossier');
+      expect(panel).toBeTruthy();
+      expect(panel?.textContent).toContain('Marcel de Brie');
+      expect(panel?.textContent).toContain('French Master Affineur');
+      expect(panel?.textContent).toContain('French Delegation');
+
+      const recordCards = panel?.querySelectorAll('.dossier-record-card');
+      expect(recordCards?.length).toBeGreaterThanOrEqual(1);
+
+      const firstRecord = recordCards?.[0];
+      expect(firstRecord?.querySelector('.record-section')?.textContent).toContain('Overview');
+      expect(firstRecord?.querySelector('.evidence-badge')?.textContent).toContain('documented');
+
+      const sourceLink = firstRecord?.querySelector('.dossier-source-link') as HTMLAnchorElement | null;
+      if (sourceLink) {
+        expect(sourceLink.getAttribute('target')).toBe('_blank');
+        expect(sourceLink.getAttribute('rel')).toBe('noopener noreferrer');
+        expect(sourceLink.href).toContain('gruyere-france.fr');
+      }
+    });
+
+    it('should open dossier tab when targetCommanderId input is set', () => {
+      fixture.componentRef.setInput('targetCommanderId', 'analyst');
+      fixture.detectChanges();
+
+      expect(component['activeTab']()).toBe('dossier');
+      expect(component['selectedCommanderId']()).toBe('analyst');
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelector('#panel-dossier')?.textContent).toContain('Matthias von Greyerz');
     });
   });
 });

@@ -63,6 +63,20 @@
       <mat-icon aria-hidden="true">gavel</mat-icon>
       <span>Rules of Engagement</span>
     </button>
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.active]="activeTab() === 'dossier'"
+      [attr.aria-selected]="activeTab() === 'dossier'"
+      [attr.tabindex]="activeTab() === 'dossier' ? 0 : -1"
+      aria-controls="panel-dossier"
+      id="tab-dossier"
+      (click)="selectTab('dossier')"
+      (keydown)="handleTabKeyDown($event, 'dossier')">
+      <mat-icon aria-hidden="true">assignment_ind</mat-icon>
+      <span>Dossiers</span>
+    </button>
     @if (referenceCard()) {
       <button
         type="button"
@@ -486,6 +500,70 @@
           </button>
         </article>
       }
+    }
+
+    @if (activeTab() === 'dossier') {
+      <div id="panel-dossier" role="tabpanel" aria-labelledby="tab-dossier" class="dossier-panel">
+        @if (unlockedCommanders().length > 1) {
+          <div class="commander-selector" role="tablist" aria-label="Select commander dossier">
+            @for (cmd of unlockedCommanders(); track cmd.commanderId) {
+              <button
+                type="button"
+                class="commander-chip"
+                [class.active]="selectedCommanderId() === cmd.commanderId"
+                [attr.aria-selected]="selectedCommanderId() === cmd.commanderId"
+                (click)="selectDossierCommander(cmd.commanderId)">
+                <span class="chip-name">{{ cmd.name }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        <article class="dossier-header-card">
+          <div class="dossier-header-main">
+            <span class="dossier-faction">{{ activeCommanderIdentity().faction }}</span>
+            <h3 class="dossier-name">{{ activeCommanderIdentity().name }}</h3>
+            <span class="dossier-title">{{ activeCommanderIdentity().title }}</span>
+          </div>
+          <p class="dossier-summary">{{ activeCommanderIdentity().publicSummary }}</p>
+        </article>
+
+        <div class="dossier-records-list">
+          @if (activeCommanderDossier().length === 0) {
+            <div class="empty-state">
+              <mat-icon class="empty-icon" aria-hidden="true">folder_open</mat-icon>
+              <p>No intelligence unsealed yet.</p>
+              <small>Complete engagements against this commander to unseal field records.</small>
+            </div>
+          } @else {
+            @for (record of activeCommanderDossier(); track record.id) {
+              <article class="dossier-record-card">
+                <header class="record-header">
+                  <span class="record-section">{{ record.section }}</span>
+                  <span class="evidence-badge" [class]="'evidence-' + record.evidence.replace(' ', '-')">
+                    {{ record.evidence }}
+                  </span>
+                </header>
+                <p class="record-text">{{ record.text }}</p>
+                @if (record.source) {
+                  <footer class="record-footer">
+                    <a
+                      class="dossier-source-link"
+                      [href]="record.source.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      [attr.aria-label]="record.source.label + ' (opens external source)'">
+                      <mat-icon aria-hidden="true">menu_book</mat-icon>
+                      <span>{{ record.source.label }}</span>
+                      <mat-icon class="external-icon" aria-hidden="true">open_in_new</mat-icon>
+                    </a>
+                  </footer>
+                }
+              </article>
+            }
+          }
+        </div>
+      </div>
     }
   </div>
 

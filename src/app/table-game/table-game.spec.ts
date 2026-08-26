@@ -605,4 +605,37 @@ describe('TableGame presentation', () => {
       expect(fixture.nativeElement.querySelector('.boneyard-drawer')).toBeTruthy();
     }));
   });
+
+  describe('Chapter I Narrative Vertical Slice Presentation', () => {
+    it('presents named opponent commander on table and deep-links to dossier on click', fakeAsync(() => {
+      const progression = TestBed.inject(CampaignProgressionService);
+      progression.selectCampaignOrders('standard');
+      fixture.detectChanges();
+
+      const opponentIdentity = controller.opponentCommanderIdentity();
+      expect(opponentIdentity.name).toBe('Marcel de Brie');
+      expect(opponentIdentity.title).toBe('French Master Affineur');
+      expect(opponentIdentity.faction).toBe('French Delegation');
+
+      // Check opponent seat presentation
+      const opponentSeat = fixture.nativeElement.querySelector('app-player-seat:not(.current-player)');
+      expect(opponentSeat).toBeTruthy();
+      expect(opponentSeat.textContent).toContain('Marcel de Brie');
+      expect(opponentSeat.textContent).toContain('French Master Affineur');
+
+      // Click opponent identity button
+      const identityBtn = opponentSeat.querySelector('.identity-button') as HTMLButtonElement;
+      expect(identityBtn).toBeTruthy();
+      identityBtn.click();
+      fixture.detectChanges();
+      tick();
+
+      // Field manual drawer opens focused on Marcel's dossier
+      expect((fixture.componentInstance as any).storyBookOpen()).toBeTrue();
+      expect((fixture.componentInstance as any).dossierTargetCommander()).toBe('quartermaster');
+
+      const drawer = fixture.nativeElement.querySelector('app-story-book-drawer');
+      expect(drawer).toBeTruthy();
+    }));
+  });
 });

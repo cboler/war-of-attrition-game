@@ -102,6 +102,72 @@ describe('GameOverSummaryComponent', () => {
     expect(compiled.querySelector('.campaign-diff .diff-value')?.textContent).toContain('+11');
   });
 
+  it('renders narrative transition card and resolution quote when present', () => {
+    fixture.componentRef.setInput('message', 'The war is won.');
+    fixture.componentRef.setInput('summary', {
+      outcome: GameOutcome.PLAYER_WIN,
+      turns: 12,
+      battlesCount: 3,
+      deepestBattleLayer: 1,
+      maxCardsAtStake: 8,
+      largestBattleVictory: 8,
+      largestBattleLoss: 0,
+      playerChallengesCount: 0,
+      playerChallengesWon: 0,
+      playerCardsRemaining: 6,
+      opponentCardsRemaining: 0,
+      isComeback: false,
+      maxDeficit: 0,
+      warIndex: 1,
+      commanderIdentity: {
+        commanderId: 'quartermaster',
+        name: 'Marcel de Brie',
+        title: 'French Master Affineur',
+        faction: 'French Delegation',
+        publicSummary: 'Exacting cellar steward.'
+      },
+      nextCommanderIdentity: {
+        commanderId: 'analyst',
+        name: 'Matthias von Greyerz',
+        title: 'Swiss Master Cheesemaker',
+        faction: 'Swiss Delegation',
+        publicSummary: 'Procedural precision.'
+      },
+      transition: {
+        id: 'TR-C1-02',
+        mode: 'standard',
+        placement: 'after_war_1',
+        title: 'Sealed Swiss Correction',
+        text: 'From Matthias von Greyerz: “Marcel has omitted 11 minutes, one unsigned folio, and the fact that I asked him to wait.”'
+      },
+      resolutionLine: {
+        id: 'C1W1-MAR-16',
+        commanderId: 'quartermaster',
+        mode: 'standard',
+        warIndex: 1,
+        event: 'resolution',
+        text: 'The account settles. Let the records show what was held and what was spent.'
+      }
+    } as CurrentGameSummary);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.game-over-eyebrow')?.textContent).toContain('WAR 1 OF 3 · Marcel de Brie');
+
+    const transitionCard = compiled.querySelector('.narrative-transition-card');
+    expect(transitionCard).toBeTruthy();
+    expect(transitionCard?.textContent).toContain('Sealed Swiss Correction');
+    expect(transitionCard?.textContent).toContain('From Matthias von Greyerz');
+
+    const quote = transitionCard?.querySelector('.resolution-quote');
+    expect(quote).toBeTruthy();
+    expect(quote?.textContent).toContain('Marcel de Brie:');
+    expect(quote?.textContent).toContain('The account settles');
+
+    const primaryBtn = compiled.querySelector('.game-over-btn.primary') as HTMLButtonElement;
+    expect(primaryBtn.textContent).toContain('Engage War II · Matthias von Greyerz');
+  });
+
   it('emits manualRequested and replayRequested events', () => {
     spyOn(component.manualRequested, 'emit');
     spyOn(component.replayRequested, 'emit');

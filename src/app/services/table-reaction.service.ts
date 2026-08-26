@@ -8,6 +8,10 @@ import {
 } from '../core/models/commander.model';
 import { TableReactionCategory } from '../core/models/game-events.model';
 import { PlayerType } from '../core/models/game-state.model';
+import { NarrativeGameplayEvent } from '../core/models/narrative.model';
+import { CampaignWarIndex } from '../core/models/campaign-chapter.model';
+import { CampaignProgressionService } from '../core/services/campaign-progression.service';
+import { NarrativeResolverService } from '../narrative/narrative-resolver.service';
 
 export const REACTION_RANDOM = new InjectionToken<() => number>('REACTION_RANDOM', {
   providedIn: 'root',
@@ -47,6 +51,10 @@ export interface BattleReactionContext {
 @Injectable({ providedIn: 'root' })
 export class TableReactionService {
   private readonly random = inject(REACTION_RANDOM);
+  private readonly narrativeResolver = inject(NarrativeResolverService, { optional: true });
+  private readonly progression = inject(CampaignProgressionService, { optional: true });
+  private readonly usedDialogueIds = new Set<string>();
+  private activeWarSignature = '';
 
   forClash(
     context: ClashReactionContext,
@@ -56,11 +64,15 @@ export class TableReactionService {
     const commander = this.resolveCommander(commanderInput);
 
     if (context.specialRule) {
+      const authored =
+        loser === PlayerType.OPPONENT
+          ? this.getAuthoredLine(commander.id, 'special_clash')
+          : null;
       const variants =
         loser === PlayerType.OPPONENT
           ? commander.dialogue.specialClash
           : ['The little card had one job.', 'A Two changes everything.', 'That Ace found its exception.'];
-      return this.pick(0.28, loser, 'special_clash', variants);
+      return this.pick(0.28, loser, 'special_clash', variants, authored);
     }
 
     const winningCard =
@@ -69,11 +81,15 @@ export class TableReactionService {
       context.winner === PlayerType.PLAYER ? context.opponentCard : context.playerCard;
     if (winningCard.rank !== Rank.JACK || losingCard.rank !== Rank.TEN) return null;
 
+    const authored =
+      loser === PlayerType.OPPONENT
+        ? this.getAuthoredLine(commander.id, 'narrow_clash')
+        : null;
     const variants =
       loser === PlayerType.OPPONENT
         ? commander.dialogue.narrowClash
         : ['Too close.', 'One rank was enough.', 'A narrow edge.'];
-    return this.pick(0.14, loser, 'narrow_clash', variants);
+    return this.pick(0.14, loser, 'narrow_clash', variants, authored);
   }
 
   forChallengeResolution(
@@ -88,7 +104,9 @@ export class TableReactionService {
 
     if (context.challengerWon) {
       let variants: readonly string[];
+      let authored: string | null = null;
       if (speaker === PlayerType.OPPONENT) {
+        authored = this.getAuthoredLine(commander.id, 'rescue');
         variants = commander.dialogue.rescue;
       } else {
         variants =
@@ -101,18 +119,23 @@ export class TableReactionService {
         rescuedSpecialCard ? 0.24 : 0.12,
         speaker,
         'rescue',
-        variants
+        variants,
+        authored
       );
     }
 
     const costly = rescuedSpecialCard || this.isValuable(context.reinforcementCard);
     if (!costly) return null;
 
+    const authored =
+      speaker === PlayerType.OPPONENT
+        ? this.getAuthoredLine(commander.id, 'failed_rescue')
+        : null;
     const variants =
       speaker === PlayerType.OPPONENT
         ? commander.dialogue.failedRescue
         : ['That reinforcement cost dearly.', 'Two cards gone for nothing.', 'A costly gamble.'];
-    return this.pick(0.2, speaker, 'failed_rescue', variants);
+    return this.pick(0.2, speaker, 'failed_rescue', variants, authored);
   }
 
   forBattleLoss(
@@ -140,8 +163,19 @@ export class TableReactionService {
 
     const commander = this.resolveCommander(commanderInput);
     let variants: readonly string[];
+    let authored: string | null = null;
 
     if (loser === PlayerType.OPPONENT) {
+      if (lostAce) {
+        authored = this.getAuthoredLine(commander.id, 'battle_ace_lost');
+      } else if (lostTwo) {
+        authored = this.getAuthoredLine(commander.id, 'battle_two_lost');
+      } else if (deepBattle) {
+        authored = this.getAuthoredLine(commander.id, 'deep_battle');
+      } else if (largeLoss) {
+        authored = this.getAuthoredLine(commander.id, 'large_battle_loss');
+      }
+
       const bDialogue = commander.dialogue.battleLoss;
       if (lostAce && lostTwo && bDialogue.aceAndTwoLost && bDialogue.aceAndTwoLost.length > 0) {
         variants = bDialogue.aceAndTwoLost;
@@ -188,24 +222,97 @@ export class TableReactionService {
       }
     }
 
+    const message = authored ?? variants[Math.floor(this.random() * variants.length)];
     return {
       speaker: loser,
-      message: variants[Math.floor(this.random() * variants.length)],
+      message,
       category: 'battle'
     };
+  }
+
+  forIntroduction(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+    const commander = this.resolveCommander(commanderInput);
+    const line = this.getAuthoredLine(commander.id, 'introduction');
+    if (!line) return null;
+    return {
+      speaker: PlayerType.OPPONENT,
+      category: 'introduction',
+      message: line
+    };
+  }
+
+  forResult(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+    const commander = this.resolveCommander(commanderInput);
+    const line = this.getAuthoredLine(commander.id, 'result');
+    if (!line) return null;
+    return {
+      speaker: PlayerType.OPPONENT,
+      category: 'result',
+      message: line
+    };
+  }
+
+  clearUsedDialogue(): void {
+    this.usedDialogueIds.clear();
+    this.activeWarSignature = '';
+  }
+
+  private getAuthoredLine(
+    commanderId: OpponentCommanderId,
+    event: NarrativeGameplayEvent,
+    warIndexOverride?: CampaignWarIndex
+  ): string | null {
+    if (!this.narrativeResolver) return null;
+
+    const mode = this.progression?.activeCampaignMode() ?? 'standard';
+    const schedule = this.progression?.currentCampaign()?.commanderSchedule;
+    let warIndex: CampaignWarIndex = warIndexOverride ?? (this.progression?.campaignWarIndex() ?? 1);
+
+    if (schedule && !warIndexOverride) {
+      const scheduledIdx = schedule.indexOf(commanderId);
+      if (scheduledIdx !== -1) {
+        warIndex = (scheduledIdx + 1) as CampaignWarIndex;
+      }
+    }
+
+    const chapterCompleted = this.progression?.isChapterCompleted(mode) ?? false;
+    const warSig = `${mode}:${warIndex}:${commanderId}`;
+
+    if (this.activeWarSignature !== warSig) {
+      this.activeWarSignature = warSig;
+      this.usedDialogueIds.clear();
+    }
+
+    const authored = this.narrativeResolver.dialogueFor({
+      commanderId,
+      mode,
+      warIndex,
+      event,
+      chapterCompleted,
+      excludeIds: Array.from(this.usedDialogueIds)
+    });
+
+    if (authored) {
+      this.usedDialogueIds.add(authored.id);
+      return authored.text;
+    }
+    return null;
   }
 
   private pick(
     chance: number,
     speaker: PlayerType,
     category: TableReaction['category'],
-    variants: readonly string[]
+    variants: readonly string[],
+    authoredOverride: string | null = null
   ): TableReaction | null {
     if (this.random() >= chance) return null;
+    const message =
+      authoredOverride ?? variants[Math.floor(this.random() * variants.length)];
     return {
       speaker,
       category,
-      message: variants[Math.floor(this.random() * variants.length)]
+      message
     };
   }
 

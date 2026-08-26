@@ -6,7 +6,7 @@
   aria-labelledby="game-over-title"
 >
   @if (summary()?.campaignMode === 'total_war') {
-    <span class="game-over-eyebrow">TOTAL WAR · WAR {{ summary()?.warIndex }} OF 3</span>
+    <span class="game-over-eyebrow">TOTAL WAR · WAR {{ summary()?.warIndex }} OF 3 · {{ summary()?.commanderIdentity?.name ?? 'COMMANDER' }}</span>
     <h2 id="game-over-title">{{ message() }}</h2>
 
     @if (summary()?.warIndex === 3) {
@@ -29,8 +29,30 @@
       </div>
     }
   } @else {
-    <span class="game-over-eyebrow">WAR RESOLUTION</span>
+    <span class="game-over-eyebrow">
+      @if (summary()?.warIndex; as idx) {
+        WAR {{ idx }} OF 3 · {{ summary()?.commanderIdentity?.name ?? 'WAR RESOLUTION' }}
+      } @else {
+        WAR RESOLUTION
+      }
+    </span>
     <h2 id="game-over-title">{{ message() }}</h2>
+  }
+
+  @if (summary()?.transition; as trans) {
+    <div class="narrative-transition-card">
+      <div class="transition-header">
+        <mat-icon aria-hidden="true">history_edu</mat-icon>
+        <span class="transition-title">{{ trans.title }}</span>
+      </div>
+      <p class="transition-text">{{ trans.text }}</p>
+      @if (summary()?.resolutionLine; as res) {
+        <blockquote class="resolution-quote">
+          <span class="quote-speaker">{{ summary()?.commanderIdentity?.name }}:</span>
+          “{{ res.text }}”
+        </blockquote>
+      }
+    </div>
   }
 
   @if (summary(); as result) {
@@ -66,12 +88,24 @@
 
   <div class="game-over-actions">
     <button type="button" class="game-over-btn secondary" (click)="manualRequested.emit()">
-      <mat-icon>menu_book</mat-icon>
+      <mat-icon aria-hidden="true">menu_book</mat-icon>
       <span>Field Manual</span>
     </button>
     <button type="button" class="game-over-btn primary" (click)="replayRequested.emit()">
-      <mat-icon>refresh</mat-icon>
-      <span>Deal Again</span>
+      <mat-icon aria-hidden="true">
+        {{ summary()?.warIndex && (summary()?.warIndex ?? 0) < 3 ? 'arrow_forward' : 'refresh' }}
+      </mat-icon>
+      <span>
+        @if (summary()?.warIndex === 1) {
+          Engage War II{{ summary()?.nextCommanderIdentity ? ' · ' + summary()?.nextCommanderIdentity?.name : '' }}
+        } @else if (summary()?.warIndex === 2) {
+          Engage War III{{ summary()?.nextCommanderIdentity ? ' · ' + summary()?.nextCommanderIdentity?.name : '' }}
+        } @else if (summary()?.warIndex === 3) {
+          Complete Campaign
+        } @else {
+          Deal Again
+        }
+      </span>
     </button>
   </div>
 </section>

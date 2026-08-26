@@ -5,13 +5,24 @@
       <h2 id="campaign-orders-title">Field Command Briefing</h2>
       <div class="commander-briefing" aria-label="Campaign opposing commander">
         <span class="briefing-label">OPPOSING FORCE:</span>
-        <strong class="commander-name">{{ commander().name }}</strong>
-        <span class="commander-title">({{ commander().title }})</span>
+        <strong class="commander-name">{{ commanderIdentity().name }}</strong>
+        <span class="commander-title">({{ commanderIdentity().title }})</span>
+        <span class="commander-faction">· {{ commanderIdentity().faction }}</span>
       </div>
     </div>
   </header>
 
   <mat-dialog-content class="dialog-content">
+    @if (chapterFraming(); as framing) {
+      <div class="framing-dispatch">
+        <div class="dispatch-header">
+          <mat-icon aria-hidden="true">history_edu</mat-icon>
+          <span class="dispatch-title">{{ framing.title }}</span>
+        </div>
+        <p class="dispatch-text">{{ framing.text }}</p>
+      </div>
+    }
+
     <p class="dialog-intro">
       Choose the strategic orders governing your three-War Campaign. Your selection is locked for all three Wars of this Campaign.
     </p>
@@ -25,31 +36,59 @@
           type="button"
           class="order-card"
           [class.selected]="selectedMode() === option.id"
+          [class.locked]="!isModeUnlocked(option.id)"
+          [class.completed]="isModeCompleted(option.id)"
+          [disabled]="!isModeUnlocked(option.id)"
           role="radio"
           [attr.aria-checked]="selectedMode() === option.id"
-          [attr.aria-label]="option.title + ' — ' + option.tag"
+          [attr.aria-disabled]="!isModeUnlocked(option.id)"
+          [attr.aria-label]="'Chapter ' + option.chapterNumber + ': ' + option.title + (isModeCompleted(option.id) ? ' (Completed)' : !isModeUnlocked(option.id) ? ' (Locked)' : '')"
           (click)="selectMode(option.id)">
           <div class="card-radio-indicator" aria-hidden="true">
-            <span class="radio-dot" [class.checked]="selectedMode() === option.id"></span>
+            @if (!isModeUnlocked(option.id)) {
+              <mat-icon class="lock-icon">lock</mat-icon>
+            } @else {
+              <span class="radio-dot" [class.checked]="selectedMode() === option.id"></span>
+            }
           </div>
 
           <div class="card-body">
             <div class="card-title-row">
-              <strong class="card-title">{{ option.title }}</strong>
-              <span class="card-tag">{{ option.tag }}</span>
+              <div class="chapter-label-group">
+                <span class="chapter-num">Chapter {{ option.chapterNumber }}</span>
+                <strong class="card-title">{{ option.title }}</strong>
+              </div>
+              @if (isModeCompleted(option.id)) {
+                <span class="card-status-badge completed">
+                  <mat-icon>check_circle</mat-icon> Completed
+                </span>
+              } @else if (!isModeUnlocked(option.id)) {
+                <span class="card-status-badge locked">
+                  <mat-icon>lock</mat-icon> Locked
+                </span>
+              } @else {
+                <span class="card-status-badge available">Available</span>
+              }
             </div>
 
             <p class="card-desc">{{ option.description }}</p>
 
-            <div class="rule-box">
-              <span class="rule-icon" aria-hidden="true">⚔️</span>
-              <span class="rule-text">{{ option.ruleSummary }}</span>
-            </div>
+            @if (!isModeUnlocked(option.id)) {
+              <div class="lock-prereq-msg">
+                <mat-icon>info</mat-icon>
+                <span>Complete Chapter {{ option.chapterNumber - 1 }} to unseal these orders.</span>
+              </div>
+            } @else {
+              <div class="rule-box">
+                <span class="rule-icon" aria-hidden="true">⚔️</span>
+                <span class="rule-text">{{ option.ruleSummary }}</span>
+              </div>
 
-            <div class="quota-badge">
-              <span class="quota-label">Reinforcements:</span>
-              <strong class="quota-val">{{ option.reinforcementPolicy }}</strong>
-            </div>
+              <div class="quota-badge">
+                <span class="quota-label">Reinforcements:</span>
+                <strong class="quota-val">{{ option.reinforcementPolicy }}</strong>
+              </div>
+            }
           </div>
         </button>
       }

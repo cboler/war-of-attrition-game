@@ -33,6 +33,12 @@ import { StoryBookService } from './story-book.service';
 import { TutorialService } from './tutorial.service';
 import { TutorialStep } from '../core/models/tutorial.model';
 import { GameTelemetryService } from './game-telemetry.service';
+import { CommanderIdentity, getCommanderIdentity } from '../core/models/commander-identity.model';
+import {
+  AuthoredDialogueRecord,
+  NarrativeTransitionRecord
+} from '../core/models/narrative.model';
+import { NarrativeResolverService } from '../narrative/narrative-resolver.service';
 import type { ComparisonStrengthView } from '../shared/components/comparison-strength/comparison-strength.component';
 import {
   battleTargetInstruction,
@@ -114,6 +120,10 @@ export interface CurrentGameSummary {
   readonly warDifferential?: number;
   readonly runningCampaignDifferential?: number;
   readonly warIndex?: number;
+  readonly commanderIdentity?: CommanderIdentity;
+  readonly transition?: NarrativeTransitionRecord;
+  readonly resolutionLine?: AuthoredDialogueRecord;
+  readonly nextCommanderIdentity?: CommanderIdentity;
 }
 
 export interface BattlefieldMessage {
@@ -143,6 +153,7 @@ export class GameControllerService {
   private readonly telemetry = inject(GameTelemetryService);
   private readonly storyBook = inject(StoryBookService);
   private readonly tutorial = inject(TutorialService);
+  private readonly narrativeResolver = inject(NarrativeResolverService, { optional: true });
 
   private readonly gameMessage = signal('Your deck is ready.');
   private readonly phase = signal(PresentationState.READY);
@@ -202,6 +213,12 @@ export class GameControllerService {
   readonly opponentCommander = computed<OpponentCommander>(
     () => this.fixtureCommanderSignal() ?? this.campaignProgression.currentCommander()
   );
+  readonly opponentCommanderIdentity = computed<CommanderIdentity>(() => {
+    const fixture = this.fixtureCommanderSignal();
+    return fixture
+      ? getCommanderIdentity(fixture.id)
+      : this.campaignProgression.currentCommanderIdentity();
+  });
   readonly opponentPointerIndex = this.opponentPointer.asReadonly();
   readonly cardsMovingToBoneyard = this.movingToBoneyardIds.asReadonly();
   readonly cardsReturningHome = this.returningHomeIds.asReadonly();
@@ -468,6 +485,11 @@ export class GameControllerService {
         text: 'Campaign initiated under Limited Reserves. 5 reinforcement reserves allocated for all three Wars.',
         badge: 'challenge',
       });
+    }
+
+    const introReaction = this.reactions.forIntroduction(this.opponentCommander().id);
+    if (introReaction) {
+      this.speakReaction(introReaction);
     }
   }
 
@@ -1476,6 +1498,35 @@ export class GameControllerService {
     const warIndex = this.campaignProgression.campaignWarIndex();
     const runningCampaignDiff = this.campaignProgression.runningCampaignDifferential() + warDifferential;
 
+    let transition: NarrativeTransitionRecord | undefined;
+    let resolutionLine: AuthoredDialogueRecord | undefined;
+    let nextCommanderIdentity: CommanderIdentity | undefined;
+
+    if (this.narrativeResolver) {
+      const mode = this.campaignProgression.activeCampaignMode();
+      const placement =
+        warIndex === 1 ? 'after_war_1' : warIndex === 2 ? 'after_war_2' : 'campaign_complete';
+      const trans = this.narrativeResolver.transitionFor(mode, placement);
+      if (trans) transition = trans;
+
+      const res = this.narrativeResolver.dialogueFor({
+        commanderId: this.opponentCommander().id,
+        mode,
+        warIndex,
+        event: 'resolution',
+        chapterCompleted: this.campaignProgression.isChapterCompleted(mode),
+      });
+      if (res) resolutionLine = res;
+
+      if (warIndex < 3) {
+        const sched = this.campaignProgression.currentCampaign().commanderSchedule;
+        const nextId = sched ? sched[warIndex as 0 | 1 | 2] : null;
+        if (nextId) {
+          nextCommanderIdentity = getCommanderIdentity(nextId);
+        }
+      }
+    }
+
     // Compile summary for table dialog
     const summary: CurrentGameSummary = {
       outcome,
@@ -1495,8 +1546,17 @@ export class GameControllerService {
       warDifferential,
       runningCampaignDifferential: runningCampaignDiff,
       warIndex,
+      commanderIdentity: this.opponentCommanderIdentity(),
+      transition,
+      resolutionLine,
+      nextCommanderIdentity,
     };
     this.gameSummarySignal.set(summary);
+
+    const resultReaction = this.reactions.forResult(this.opponentCommander().id);
+    if (resultReaction) {
+      this.speakReaction(resultReaction);
+    }
 
     // Record long-term stats
     this.authService.recordGameResult({

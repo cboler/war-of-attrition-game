@@ -27,6 +27,65 @@
 
 h2 { margin: 8px 0 16px; color: #fff; font: 600 1.75rem/1.1 Georgia, serif; }
 
+.narrative-transition-card {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  background: linear-gradient(145deg, rgba(20, 48, 38, 0.8), rgba(8, 22, 18, 0.95));
+  border: 1px solid rgba(228, 191, 114, 0.35);
+  border-left: 3px solid #e5c175;
+  border-radius: 8px;
+  text-align: left;
+
+  .transition-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #e5c175;
+    }
+
+    .transition-title {
+      font: 700 0.76rem/1 system-ui, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e5c175;
+    }
+  }
+
+  .transition-text {
+    margin: 0 0 8px;
+    font: italic 400 0.88rem/1.45 Georgia, serif;
+    color: #fffaf0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .resolution-quote {
+    margin: 8px 0 0;
+    padding: 8px 10px;
+    background: rgba(10, 24, 20, 0.6);
+    border-radius: 4px;
+    font: 400 0.84rem/1.4 Georgia, serif;
+    color: rgba(247, 240, 225, 0.9);
+
+    .quote-speaker {
+      display: block;
+      font: 700 0.68rem system-ui, sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #ffd54f;
+      margin-bottom: 2px;
+    }
+  }
+}
+
 .total-war-banner {
   display: flex;
   justify-content: center;
