@@ -79,7 +79,12 @@ export class CampaignOrdersDialogComponent {
     this.progression.currentCommanderIdentity()
   );
 
+  readonly isReplay = computed<boolean>(() =>
+    this.progression.isAllChaptersCompleted()
+  );
+
   readonly options = CAMPAIGN_ORDER_OPTIONS;
+
   readonly selectedMode = signal<CampaignModeId>('standard');
 
   readonly chapterFraming = computed<NarrativeTransitionRecord | null>(() => {

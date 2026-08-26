@@ -1,7 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { AuthService } from '../core/services/auth.service';
-import { NarrativeResolverService } from './narrative-resolver.service';
+import {
+  ALL_AUTHORED_DIALOGUE,
+  ALL_COMMANDER_DOSSIERS,
+  ALL_NARRATIVE_TRANSITIONS,
+  NarrativeResolverService
+} from './narrative-resolver.service';
+
 import { TableReactionService } from '../services/table-reaction.service';
 import { GameOutcome } from '../core/models/game-state.model';
 import { OpponentCommanderId } from '../core/models/commander.model';
@@ -188,21 +194,170 @@ describe('Twelve-War Narrative Traversal & Spoiler Firewall', () => {
       expect(narrative.dossierFor('attritionist').map(d => d.id)).toEqual(['DOS-BAS-01', 'DOS-BAS-02']);
     });
 
-    it('ensures private Mont-Rouge mechanism is never stated as direct player-facing fact', () => {
-      // Test all dialogue and transition texts
-      const allTexts = [
-        ...narrative.dossierFor('quartermaster').map(d => d.text),
-        ...narrative.dossierFor('analyst').map(d => d.text),
-        ...narrative.dossierFor('gambler').map(d => d.text),
-        ...narrative.dossierFor('cornered-general').map(d => d.text),
-        ...narrative.dossierFor('attritionist').map(d => d.text)
-      ];
+    it('ensures private Mont-Rouge mechanism is never stated as direct player-facing fact across entire corpus', () => {
+      // Test ALL 227 authored dialogue records + all 16 transitions + all 24 dossiers
+      const allDialogue = ALL_AUTHORED_DIALOGUE.map(d => d.text);
+      const allTransitions = ALL_NARRATIVE_TRANSITIONS.map(t => t.text);
+      const allDossiers = ALL_COMMANDER_DOSSIERS.map(d => d.text);
+      const fullCorpus = [...allDialogue, ...allTransitions, ...allDossiers];
 
-      for (const text of allTexts) {
-        expect(text.toLowerCase()).not.toContain('the mouse caused');
-        expect(text.toLowerCase()).not.toContain('a mouse caused');
-        expect(text.toLowerCase()).not.toContain('the culprit was a mouse');
+      expect(fullCorpus.length).toBe(227 + 16 + 24); // 267 total creative records
+
+      for (const text of fullCorpus) {
+        const lower = text.toLowerCase();
+        expect(lower).not.toContain('the mouse caused');
+        expect(lower).not.toContain('a mouse caused');
+        expect(lower).not.toContain('the culprit was a mouse');
+        expect(lower).not.toContain('a mouse chewed');
+        expect(lower).not.toContain('mouse in the wheel');
       }
+    });
+  });
+
+  describe('Defeat and Draw Campaign Progression Across All Four Chapters', () => {
+    it('advances narrative progression and unlocks subsequent chapters on defeat or draw', () => {
+      // Chapter I with a loss in War 1, draw in War 2, loss in War 3
+      progression.selectCampaignOrders('standard');
+      progression.recordResolvedWar({ warId: 'c1-w1', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 4 });
+      expect(progression.campaignWarIndex()).toBe(2);
+
+      progression.recordResolvedWar({ warId: 'c1-w2', outcome: GameOutcome.TIE, playerCardsRemaining: 0, opponentCardsRemaining: 0 });
+      expect(progression.campaignWarIndex()).toBe(3);
+
+      const ch1Complete = progression.recordResolvedWar({ warId: 'c1-w3', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 3 });
+      expect(ch1Complete.completedCampaign).toBeTruthy();
+      expect(progression.isChapterCompleted('standard')).toBeTrue();
+      expect(progression.isChapterUnlocked('limited_reserves')).toBeTrue();
+
+      // Chapter II on defeats
+      progression.selectCampaignOrders('limited_reserves');
+      progression.recordResolvedWar({ warId: 'c2-w1', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 2 });
+      progression.recordResolvedWar({ warId: 'c2-w2', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 5 });
+      progression.recordResolvedWar({ warId: 'c2-w3', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 1 });
+      expect(progression.isChapterCompleted('limited_reserves')).toBeTrue();
+      expect(progression.isChapterUnlocked('fog_of_war')).toBeTrue();
+
+      // Chapter III on defeats
+      progression.selectCampaignOrders('fog_of_war');
+      progression.recordResolvedWar({ warId: 'c3-w1', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 3 });
+      progression.recordResolvedWar({ warId: 'c3-w2', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 4 });
+      progression.recordResolvedWar({ warId: 'c3-w3', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 2 });
+      expect(progression.isChapterCompleted('fog_of_war')).toBeTrue();
+      expect(progression.isChapterUnlocked('total_war')).toBeTrue();
+
+      // Chapter IV on defeats
+      progression.selectCampaignOrders('total_war');
+      progression.recordResolvedWar({ warId: 'c4-w1', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 4 });
+      progression.recordResolvedWar({ warId: 'c4-w2', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 2 });
+      const ch4Complete = progression.recordResolvedWar({ warId: 'c4-w3', outcome: GameOutcome.OPPONENT_WIN, playerCardsRemaining: 0, opponentCardsRemaining: 6 });
+      expect(ch4Complete.completedCampaign).toBeTruthy();
+      expect(progression.isChapterCompleted('total_war')).toBeTrue();
+      expect(progression.isAllChaptersCompleted()).toBeTrue();
+
+      // TR-C4-04 ending is presented regardless of defeat
+      const finalEnding = narrative.transitionFor('total_war', 'campaign_complete');
+      expect(finalEnding?.id).toBe('TR-C4-04');
+      expect(finalEnding?.text).toContain('Matthias: “I never proved it.”');
+      expect(finalEnding?.text).toContain('Marcel: “Non. Neither did I.”');
+    });
+  });
+
+  describe('Post-Story Randomized Replay Commander Scheduling', () => {
+    it('maintains strict canonical schedule prior to completing all four chapters', () => {
+      // Replaying Chapter I while only Chapter I is completed
+      progression.selectCampaignOrders('standard');
+      progression.recordResolvedWar({ warId: 'w1', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 5, opponentCardsRemaining: 0 });
+      progression.recordResolvedWar({ warId: 'w2', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 5, opponentCardsRemaining: 0 });
+      progression.recordResolvedWar({ warId: 'w3', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 5, opponentCardsRemaining: 0 });
+
+      expect(progression.isChapterCompleted('standard')).toBeTrue();
+      expect(progression.isAllChaptersCompleted()).toBeFalse();
+
+      // Replay Chapter I
+      progression.selectCampaignOrders('standard');
+      const replaySchedule = progression.currentCampaign().commanderSchedule;
+      expect(replaySchedule).toEqual(['quartermaster', 'analyst', 'attritionist']);
+    });
+
+    it('generates a 3-distinct-commander randomized schedule only after all four chapters are completed', () => {
+      // Complete all 4 chapters
+      const modes = ['standard', 'limited_reserves', 'fog_of_war', 'total_war'] as const;
+      for (const mode of modes) {
+        progression.selectCampaignOrders(mode);
+        progression.recordResolvedWar({ warId: `${mode}-1`, outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+        progression.recordResolvedWar({ warId: `${mode}-2`, outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+        progression.recordResolvedWar({ warId: `${mode}-3`, outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+      }
+
+      expect(progression.isAllChaptersCompleted()).toBeTrue();
+
+      // Use deterministic mock RNG
+      // Pool starts: ['quartermaster', 'gambler', 'analyst', 'attritionist', 'cornered-general']
+      // i=4, random 0.5 -> j=2 (swap 4 & 2)
+      // i=3, random 0.1 -> j=0 (swap 3 & 0)
+      // i=2, random 0.9 -> j=2 (swap 2 & 2)
+      // i=1, random 0.0 -> j=0 (swap 1 & 0)
+      let callCount = 0;
+      const sequence = [0.5, 0.1, 0.9, 0.0];
+      progression.setRandomSource(() => sequence[callCount++ % sequence.length]);
+
+      // Replay Chapter I
+      progression.selectCampaignOrders('standard');
+      const replaySchedule = progression.currentCampaign().commanderSchedule;
+
+      // Must be 3 commanders
+      expect(replaySchedule.length).toBe(3);
+      // Must be distinct
+      expect(new Set(replaySchedule).size).toBe(3);
+
+      // Verify schedule is snapshotted in currentCampaign and does not reroll
+      expect(progression.currentCommanderId()).toBe(replaySchedule[0]);
+
+      // Advance to War 2
+      progression.recordResolvedWar({ warId: 'rep-w1', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+      expect(progression.campaignWarIndex()).toBe(2);
+      expect(progression.currentCommanderId()).toBe(replaySchedule[1]);
+
+      // Advance to War 3
+      progression.recordResolvedWar({ warId: 'rep-w2', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+      expect(progression.campaignWarIndex()).toBe(3);
+      expect(progression.currentCommanderId()).toBe(replaySchedule[2]);
+    });
+
+    it('safely resolves dialogue in randomized replay without leaking first-play-only lines', () => {
+      // Complete all 4 chapters
+      const modes = ['standard', 'limited_reserves', 'fog_of_war', 'total_war'] as const;
+      for (const mode of modes) {
+        progression.selectCampaignOrders(mode);
+        progression.recordResolvedWar({ warId: `${mode}-1`, outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+        progression.recordResolvedWar({ warId: `${mode}-2`, outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+        progression.recordResolvedWar({ warId: `${mode}-3`, outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 4, opponentCardsRemaining: 0 });
+      }
+
+      // Replay Chapter I with Lorenzo ('cornered-general') in War 1
+      const line = narrative.dialogueFor({
+        commanderId: 'cornered-general',
+        mode: 'standard',
+        warIndex: 1,
+        event: 'special_clash',
+        chapterCompleted: true
+      });
+
+      // Resolves evergreen record EV-LOR-01
+      expect(line).not.toBeNull();
+      expect(line?.id).toBe('EV-LOR-01');
+      expect(line?.availability).toBe('any');
+
+      // Introduction query for Lorenzo in Chapter I replay:
+      // Lorenzo has no encounter intro for standard war 1, so returns null (no first-play leak)
+      const intro = narrative.dialogueFor({
+        commanderId: 'cornered-general',
+        mode: 'standard',
+        warIndex: 1,
+        event: 'introduction',
+        chapterCompleted: true
+      });
+      expect(intro).toBeNull();
     });
   });
 

@@ -487,6 +487,15 @@ export class GameControllerService {
       });
     }
 
+    if (
+      this.campaignProgression.ordersSelected() ||
+      this.campaignProgression.campaignWarIndex() > 1
+    ) {
+      this.speakIntroduction();
+    }
+  }
+
+  speakIntroduction(): void {
     const introReaction = this.reactions.forIntroduction(this.opponentCommander().id);
     if (introReaction) {
       this.speakReaction(introReaction);
@@ -571,11 +580,11 @@ export class GameControllerService {
 
   private async playTurn(): Promise<void> {
     const version = this.sequencer.begin();
-    this.reaction.set(null);
     this.comparisonPresentationSignal.set(null);
     this.revealedCasualtyIds.set([]);
     this.phase.set(PresentationState.DRAWING);
     this.announce('Cards are dealt.');
+
 
     try {
       this.holdFinalBadgeIfDepletedBy(PlayerType.PLAYER, 1);
@@ -862,6 +871,10 @@ export class GameControllerService {
         winner: PlayerType.PLAYER,
         message: 'Opponent concedes.',
       });
+      const concessionReaction = this.reactions.forConcession(this.opponentCommander().id);
+      if (concessionReaction) {
+        this.speakReaction(concessionReaction);
+      }
       await this.sequencer.pause(300, version);
       await this.playOrdinarySettlement(result, version);
       return;
@@ -876,6 +889,14 @@ export class GameControllerService {
       await this.playOrdinarySettlement(concession, version);
       return;
     }
+
+    if (this.gameState.opponentCardCount() <= 3) {
+      const desperateReaction = this.reactions.forDesperateRescue(this.opponentCommander().id);
+      if (desperateReaction) {
+        this.speakReaction(desperateReaction);
+      }
+    }
+
 
     this.syncPresentedTurn();
     const turnBeforeReveal = this.presentedTurn();
@@ -1275,6 +1296,12 @@ export class GameControllerService {
     await this.sequencer.pause(170, version);
     this.phase.set(PresentationState.READY);
     this.announce('Draw when ready.');
+    if (this.turnsPlayed === 1) {
+      const contextReaction = this.reactions.forContext(this.opponentCommander().id);
+      if (contextReaction) {
+        this.speakReaction(contextReaction);
+      }
+    }
     if (releaseBattleAchievements) {
       this.eventBus.emit({ type: 'battle_presentation_complete', turnNumber: this.turnsPlayed });
     }
@@ -1302,8 +1329,14 @@ export class GameControllerService {
     }, 5200);
   }
 
+  private reactionTimeout: ReturnType<typeof setTimeout> | null = null;
+
   private speakReaction(reaction: TableReaction | null): void {
     if (!reaction) return;
+    if (this.reactionTimeout) {
+      clearTimeout(this.reactionTimeout);
+      this.reactionTimeout = null;
+    }
     this.reaction.set(reaction);
     this.eventBus.emit({
       type: 'quip_spoken',
@@ -1312,7 +1345,13 @@ export class GameControllerService {
       message: reaction.message,
       category: reaction.category,
     });
+    this.reactionTimeout = setTimeout(() => {
+      if (this.reaction() === reaction) {
+        this.reaction.set(null);
+      }
+    }, 5500);
   }
+
 
   private emitSettlementAttribution(result: TurnResult): void {
     if (!result.settlementAttribution) return;

@@ -25,9 +25,11 @@ import {
 import {
   ALL_AUTHORED_DIALOGUE,
   ALL_COMMANDER_DOSSIERS,
+  ALL_EVERGREEN_DIALOGUE,
   ALL_NARRATIVE_TRANSITIONS,
   NarrativeResolverService
 } from './narrative-resolver.service';
+import { EVERGREEN_DIALOGUE } from './evergreen-narrative.data';
 
 describe('NarrativeResolverService & Four-Chapter Data Architecture', () => {
   let resolver: NarrativeResolverService;
@@ -47,13 +49,23 @@ describe('NarrativeResolverService & Four-Chapter Data Architecture', () => {
   afterEach(() => localStorage.clear());
 
   describe('Four-Chapter Data Integrity, Exact Counts & Uniqueness', () => {
-    it('contains exact authored record counts across all chapters', () => {
-      // Exactly 16 records per encounter, 48 per chapter, 192 total
+    it('contains exact authored record counts across all chapters and evergreen pool', () => {
+      // Exactly 16 records per encounter, 48 per chapter, 192 encounter total
       expect(CHAPTER_ONE_DIALOGUE.length).toBe(48);
       expect(CHAPTER_TWO_DIALOGUE.length).toBe(48);
       expect(CHAPTER_THREE_DIALOGUE.length).toBe(48);
       expect(CHAPTER_FOUR_DIALOGUE.length).toBe(48);
-      expect(ALL_AUTHORED_DIALOGUE.length).toBe(192);
+
+      // Exactly 35 evergreen reserve records (7 per commander)
+      expect(EVERGREEN_DIALOGUE.length).toBe(35);
+      expect(ALL_EVERGREEN_DIALOGUE.length).toBe(35);
+      const commanders = ['quartermaster', 'analyst', 'gambler', 'cornered-general', 'attritionist'] as const;
+      for (const cmd of commanders) {
+        expect(EVERGREEN_DIALOGUE.filter(d => d.commanderId === cmd).length).toBe(7);
+      }
+
+      // Total authored dialogue records = 192 + 35 = 227
+      expect(ALL_AUTHORED_DIALOGUE.length).toBe(227);
 
       // Exactly 4 transitions per chapter (Orders, War 1->2, War 2->3, Campaign Complete), 16 total
       expect(CHAPTER_ONE_TRANSITIONS.length).toBe(4);
@@ -72,7 +84,7 @@ describe('NarrativeResolverService & Four-Chapter Data Architecture', () => {
 
     it('contains strictly unique IDs across all dialogue, transition, and dossier records', () => {
       const dialogueIds = ALL_AUTHORED_DIALOGUE.map(d => d.id);
-      expect(new Set(dialogueIds).size).toBe(192);
+      expect(new Set(dialogueIds).size).toBe(227);
 
       const transitionIds = ALL_NARRATIVE_TRANSITIONS.map(t => t.id);
       expect(new Set(transitionIds).size).toBe(16);
@@ -80,6 +92,7 @@ describe('NarrativeResolverService & Four-Chapter Data Architecture', () => {
       const dossierIds = ALL_COMMANDER_DOSSIERS.map(d => d.id);
       expect(new Set(dossierIds).size).toBe(24);
     });
+
 
     it('attaches valid reveal IDs to narrative data across all chapters', () => {
       // Chapter I sample
@@ -154,7 +167,7 @@ describe('NarrativeResolverService & Four-Chapter Data Architecture', () => {
 
   describe('Availability & Replay Filtering', () => {
     it('returns first_play on first playthrough and replay lines on replay', () => {
-      // Chapter II War 1: C2W1-EDM-01 is first_play
+      // Chapter II War 1: C2W1-EDM-01 is first_play introduction
       const firstPlayIntro = resolver.dialogueFor({
         commanderId: 'gambler',
         mode: 'limited_reserves',
@@ -173,25 +186,28 @@ describe('NarrativeResolverService & Four-Chapter Data Architecture', () => {
       });
       expect(replayIntro).toBeNull();
 
-      // C2W1-EDM-05 has availability: 'replay'
-      const firstPlayRescue = resolver.dialogueFor({
+      // C2W1-EDM-13 is first_play, C2W1-EDM-14 is replay
+      const firstPlayContextual = resolver.dialogueFor({
         commanderId: 'gambler',
         mode: 'limited_reserves',
         warIndex: 1,
-        event: 'rescue',
+        event: 'contextual',
         chapterCompleted: false
       });
-      expect(firstPlayRescue).toBeNull();
+      expect(firstPlayContextual?.id).toBe('C2W1-EDM-13');
 
-      const replayRescue = resolver.dialogueFor({
+      const replayContextual = resolver.dialogueFor({
         commanderId: 'gambler',
         mode: 'limited_reserves',
         warIndex: 1,
-        event: 'rescue',
+        event: 'contextual',
         chapterCompleted: true
       });
-      expect(replayRescue?.id).toBe('C2W1-EDM-05');
+      expect(replayContextual?.id).toBe('C2W1-EDM-14');
     });
+
+
+
 
     it('respects excludeIds to omit recently spoken lines', () => {
       const excluded = resolver.dialogueFor({
@@ -200,11 +216,66 @@ describe('NarrativeResolverService & Four-Chapter Data Architecture', () => {
         warIndex: 1,
         event: 'narrow_clash',
         chapterCompleted: false,
-        excludeIds: ['C2W1-EDM-04']
+        excludeIds: ['C2W1-EDM-04', 'EV-EDM-02']
       });
       expect(excluded).toBeNull();
     });
   });
+
+  describe('Evergreen Reserve Fallback Resolution', () => {
+    it('falls back to evergreen dialogue when no encounter-specific line exists in randomized replay', () => {
+      // In Chapter I War 1, Lorenzo has no encounter dialogue.
+      // But Lorenzo has evergreen dialogue for 'special_clash' (EV-LOR-01).
+      const fallbackSpecial = resolver.dialogueFor({
+        commanderId: 'cornered-general',
+        mode: 'standard',
+        warIndex: 1,
+        event: 'special_clash',
+        chapterCompleted: true
+      });
+      expect(fallbackSpecial).not.toBeNull();
+      expect(fallbackSpecial?.id).toBe('EV-LOR-01');
+      expect(fallbackSpecial?.text).toBe('Even an Ace has an unguarded road.');
+
+      // Lorenzo evergreen 'concession' (EV-LOR-06)
+      const fallbackConcession = resolver.dialogueFor({
+        commanderId: 'cornered-general',
+        mode: 'standard',
+        warIndex: 1,
+        event: 'concession',
+        chapterCompleted: true
+      });
+      expect(fallbackConcession?.id).toBe('EV-LOR-06');
+      expect(fallbackConcession?.text).toBe('Choose the ground. Yield the card.');
+    });
+
+    it('prefers encounter-specific line over evergreen line when encounter line exists', () => {
+      // Marcel in Chapter I War 1 has encounter line C1W1-MAR-04 for narrow_clash
+      const encounterLine = resolver.dialogueFor({
+        commanderId: 'quartermaster',
+        mode: 'standard',
+        warIndex: 1,
+        event: 'narrow_clash',
+        chapterCompleted: false
+      });
+      expect(encounterLine?.id).toBe('C1W1-MAR-04');
+      expect(encounterLine?.id).not.toBe('EV-MAR-02');
+    });
+
+
+    it('respects excludeIds when selecting evergreen lines', () => {
+      const excluded = resolver.dialogueFor({
+        commanderId: 'cornered-general',
+        mode: 'standard',
+        warIndex: 1,
+        event: 'special_clash',
+        chapterCompleted: true,
+        excludeIds: ['EV-LOR-01']
+      });
+      expect(excluded).toBeNull();
+    });
+  });
+
 
   describe('Narrative Transitions for All Four Chapters', () => {
     it('retrieves all 16 transition records at their correct placements', () => {

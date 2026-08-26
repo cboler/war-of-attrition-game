@@ -40,11 +40,25 @@
   min-height: 0;
 }
 
-.rail-top { grid-row: 1; }
-.table-center { grid-row: 2; position: relative; }
-.rail-bottom { grid-row: 3; }
+.rail-top {
+  grid-row: 1;
+  position: relative;
+  z-index: 10;
+}
+
+.table-center {
+  grid-row: 2;
+  position: relative;
+}
+
+.rail-bottom {
+  grid-row: 3;
+}
+
 .rail-left,
-.rail-right { display: none; }
+.rail-right {
+  display: none;
+}
 
 @media (min-width: 1100px) {
   .card-table {
@@ -65,4 +79,3 @@
     border-inline: 0;
   }
 }
-

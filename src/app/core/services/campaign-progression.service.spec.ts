@@ -207,15 +207,18 @@ describe('CampaignProgressionService', () => {
         'total_war'
       ]);
 
-      // Can select and replay any chapter
+      // Can select and replay any chapter (generates 3-commander randomized schedule)
       expect(service.selectCampaignOrders('standard')).toBeTrue();
       expect(service.activeCampaignMode()).toBe('standard');
-      expect(service.currentCommanderId()).toBe('quartermaster');
+      expect(service.currentCampaign().commanderSchedule.length).toBe(3);
+      expect(new Set(service.currentCampaign().commanderSchedule).size).toBe(3);
 
       expect(service.selectCampaignOrders('limited_reserves')).toBeTrue();
       expect(service.activeCampaignMode()).toBe('limited_reserves');
-      expect(service.currentCommanderId()).toBe('gambler');
+      expect(service.currentCampaign().commanderSchedule.length).toBe(3);
+      expect(new Set(service.currentCampaign().commanderSchedule).size).toBe(3);
     });
+
   });
 
   describe('Campaign Orders Immutability & Selection', () => {

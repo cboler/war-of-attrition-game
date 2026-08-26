@@ -8,7 +8,11 @@
         <strong class="commander-name">{{ commanderIdentity().name }}</strong>
         <span class="commander-title">({{ commanderIdentity().title }})</span>
         <span class="commander-faction">· {{ commanderIdentity().faction }}</span>
+        @if (isReplay()) {
+          <span class="replay-cue">· Replay Command: Opposition randomized</span>
+        }
       </div>
+
     </div>
   </header>
 

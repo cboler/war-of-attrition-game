@@ -702,5 +702,41 @@ describe('GameControllerService presentation integration', () => {
       expect(controller.isFogOfWarActive()).toBeTrue();
       expect(controller.canInspectCasualties()).toBeFalse();
     });
+
+    it('presents commander introduction visibly when orders are selected', () => {
+      // In War 1 before orders are selected, intro is deferred until orders confirmation
+      expect(progression.ordersSelected()).toBeFalse();
+
+      progression.selectCampaignOrders('standard');
+      controller.speakIntroduction();
+
+      expect(controller.tableReaction()).not.toBeNull();
+      expect(controller.tableReaction()?.category).toBe('introduction');
+      expect(controller.tableReaction()?.speaker).toBe(PlayerType.OPPONENT);
+      expect(controller.tableReaction()?.message).toContain('Mont-Rouge');
+    });
+
+    it('surfaces guaranteed context line after Turn 1 settles', fakeAsync(() => {
+      progression.selectCampaignOrders('standard');
+      controller.startNewGame();
+      expect(controller.tableReaction()).not.toBeNull(); // Intro spoken
+
+      spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+      spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+      spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+
+      // Play Turn 1
+      controller.playerDrawCard();
+      tick(5000);
+
+      // After Turn 1 completes and field is ready, context reaction is spoken
+      expect(controller.tableReaction()).not.toBeNull();
+      expect(controller.tableReaction()?.speaker).toBe(PlayerType.OPPONENT);
+      expect(controller.tableReaction()?.message).toContain('Witness Wheel');
+
+      // Auto-clear timeout dismisses quip after 5.5s
+      tick(6000);
+      expect(controller.tableReaction()).toBeNull();
+    }));
   });
 });

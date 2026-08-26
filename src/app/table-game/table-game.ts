@@ -147,7 +147,9 @@ export class TableGame implements OnInit {
 
     dialogRef.afterClosed().subscribe(() => {
       this.controller.ensureGameStarted();
+      this.controller.speakIntroduction();
     });
+
   }
 
   protected draw(): void {

@@ -110,18 +110,30 @@ The private mouse/hay cause in [`narrative-canon.md`](../../developer-docs/narra
 
 ---
 
-## 4. Sprint 1 State — Four-Chapter Narrative Architecture Complete
+## 4. Sprint 1 State — Narrative Architecture Complete (Passes A, B, and C)
 
-Sprint 1 (Pass A & Pass B) is complete, tested, and verified end-to-end across all four chapters and twelve canonical encounters:
+Sprint 1 is fully complete, validated, and tested end-to-end:
 
 - **Named Opponent Presentation**: Top seat dynamically renders active commander name, title, and faction across all five commanders (`Marcel de Brie`, `Sir Edmund Gloucester`, `Matthias von Greyerz`, `Bastien de Herve`, `Lorenzo di Taleggio`).
 - **Opponent Header Dossier Deep-Linking**: Interactive button on opponent identity directly opens the Field Manual drawer to the active commander's progressive dossier.
-- **Field Manual Commander Dossier Tab**: Dedicated `dossier` tab with commander switcher chips, header summary, progressive records (Overview, Mont-Rouge Record, Known Associations, Campaign Notes, Archived Statement), evidence badges (`documented`, `attributed interpretation`, `prophetic metaphor`), and safe external source links.
-- **Complete Authored Dialogue Bank**: 192 authored dialogue records (48 per chapter, 16 per encounter) with first-play vs. Replay availability, trigger matching, in-memory deduplication, and evergreen fallback pools.
-- **Campaign Orders Framing & Chapter Availability**: Canonical chapter order (Chapters I–IV), `TR-C1-01` through `TR-C4-01` framing dispatches, and chapter unlock/lock state presentation.
+- **Field Manual Commander Dossier Tab**: Dedicated `dossier` tab with commander switcher chips, header summary, 24 progressive records (Overview, Mont-Rouge Record, Known Associations, Campaign Notes, Archived Statement), evidence badges (`documented`, `attributed interpretation`, `prophetic metaphor`), and safe external source links.
+- **Complete Authored Dialogue & Evergreen Corpus**: 227 authored dialogue records total:
+  - 192 encounter-specific dialogue records (48 per chapter, 16 per encounter) with first-play vs. replay availability, trigger matching, and deduplication.
+  - 35 evergreen dialogue records (7 per commander) covering clashes, battles, rescues, and results across both canonical and replay campaigns.
+  - Robust 4-tier fallback: Encounter line → Evergreen line → Personality-tuned generic line → Silence.
+- **Speech Bubble Visibility & Delivery Engine**:
+  - Live opponent speech rendered in top rail with high-contrast military styling and guaranteed layering (`z-index: 10`).
+  - Intro speech triggered on match start and after Orders modal closes; guaranteed Turn 1 context delivered when Turn 1 settles.
+  - 5.5s auto-dismissal timeout prevents stuck speech while protecting active dialogue from premature turn-draw wiping.
+- **Post-Story Randomized Replay Scheduling**:
+  - Canonical first playthrough remains 100% scripted across Chapters I–IV.
+  - Completing all 4 chapters unlocks randomized replay scheduling: replaying any chapter generates a 3-War schedule of 3 distinct commanders chosen via Fisher-Yates from all 5 permanent commanders.
+  - Replay schedule persists into active campaign state (`currentCampaign.commanderSchedule`) without rerolling on reload.
+  - Campaign Orders modal indicates `"Replay Command: Opposition randomized"` for unlocked replay chapters.
 - **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-01` through `TR-C4-04`), resolution quotes, and dynamic next-war action buttons.
-- **Spoiler Firewall & Canonical Resolution**: Strict information boundaries across all four chapters; private Mont-Rouge mechanism (mouse/hay) safely protected; Chapter IV completes with the canonical resolution (`Matthias: “I never proved it.”` / `Marcel: “Non. Neither did I.”`) without an extraneous Bastien punchline.
-- **Comprehensive Test Suite**: Full unit and integration suite green (521/521 tests passing), including `chapter-one-narrative-flow.spec.ts`, `narrative-campaign-traversal.spec.ts` (12-War traversal & spoiler firewall), and `narrative-resolver.service.spec.ts`.
+- **Spoiler Firewall & Canonical Resolution**: Strict information boundaries across all four chapters; private Mont-Rouge mechanism (mouse/hay) safely protected in author knowledge; Chapter IV completes with the canonical resolution (`Matthias: “I never proved it.”` / `Marcel: “Non. Neither did I.”`) without an extraneous Bastien punchline.
+- **Comprehensive Test Suite**: Full unit and integration suite green at **533 / 533 tests passing**, including `chapter-one-narrative-flow.spec.ts`, `narrative-campaign-traversal.spec.ts` (12-War traversal, spoiler firewall audit, defeat/draw progression, randomized replay matrix), `narrative-resolver.service.spec.ts`, and `game-controller.service.spec.ts`.
+- **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json`.
 
 Next steps for future work:
 - Sprint 2 Clash Visualizations / Battlefield Animations.

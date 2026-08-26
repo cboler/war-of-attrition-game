@@ -1,4 +1,4 @@
-import { OpponentCommanderId } from './commander.model';
+import { COMMANDER_IDS, OpponentCommanderId } from './commander.model';
 
 export type CampaignModeId = 'standard' | 'limited_reserves' | 'fog_of_war' | 'total_war';
 export type CampaignWarIndex = 1 | 2 | 3;
@@ -91,4 +91,19 @@ export function nextCampaignChapter(mode: CampaignModeId): CampaignModeId | null
 export function chapterPrerequisitesThrough(mode: CampaignModeId): readonly CampaignModeId[] {
   const index = CAMPAIGN_CHAPTER_ORDER.indexOf(mode);
   return index < 0 ? ['standard'] : CAMPAIGN_CHAPTER_ORDER.slice(0, index + 1);
+}
+
+/**
+ * Generates a randomized 3-War schedule of 3 distinct commanders chosen from all 5 permanent commanders.
+ * Used exclusively for post-story replay (after all four canonical chapters have been completed).
+ */
+export function generateReplayCommanderSchedule(
+  randomFn: () => number = Math.random
+): CampaignCommanderSchedule {
+  const pool = [...COMMANDER_IDS];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(randomFn() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return [pool[0], pool[1], pool[2]] as unknown as CampaignCommanderSchedule;
 }

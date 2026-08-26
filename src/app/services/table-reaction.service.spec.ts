@@ -73,7 +73,7 @@ describe('TableReactionService', () => {
     });
     expect(reaction).toEqual({
       speaker: PlayerType.OPPONENT,
-      message: 'An irregular casualty. We adjust the ledger.',
+      message: 'An exception is not anarchy, monsieur. It is a rule with dramatic tailoring.',
       category: 'special_clash',
     });
   });
@@ -147,7 +147,7 @@ describe('TableReactionService', () => {
       }, 'gambler');
 
       expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
-      expect(reaction?.message).toBe('Now that is a lucky pull.');
+      expect(reaction?.message).toBe('The rule keeps one excellent surprise in its sleeve.');
     });
 
     it('uses Analyst-specific lines when Analyst loses to 2 vs Ace', () => {
@@ -160,7 +160,7 @@ describe('TableReactionService', () => {
       }, 'analyst');
 
       expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
-      expect(reaction?.message).toBe('The probability of that exception was documented.');
+      expect(reaction?.message).toBe('Categorical exception. Valid result.');
     });
 
     it('uses Attritionist-specific lines when Attritionist suffers battle casualty', () => {
@@ -187,6 +187,34 @@ describe('TableReactionService', () => {
       expect(result?.category).toBe('result');
       expect(result?.message).toBe('The cards have rendered a verdict. Naturally, history will appeal.');
     });
+
+    it('provides guaranteed context lines for active commanders', () => {
+      const context = service.forContext('quartermaster');
+      expect(context?.speaker).toBe(PlayerType.OPPONENT);
+      expect(context?.category).toBe('introduction');
+      expect(context?.message).toBe('The French Witness Wheel opened as promised. The Swiss wheel opened eyes it was never asked to possess. Matthias then closed the Accord.');
+    });
+
+    it('provides concession and desperate rescue reaction hooks', () => {
+      randomValues = [0.1, 0];
+      const concession = service.forConcession('quartermaster');
+      expect(concession?.speaker).toBe(PlayerType.OPPONENT);
+      expect(concession?.category).toBe('concession');
+      expect(concession?.message).toBeTruthy();
+
+      const desperate = service.forDesperateRescue('quartermaster');
+      expect(desperate?.speaker).toBe(PlayerType.OPPONENT);
+      expect(desperate?.category).toBe('desperate_rescue');
+      expect(desperate?.message).toBeTruthy();
+    });
+
+    it('provides optional contextual lines when available', () => {
+      const contextual = service.forContextual('quartermaster');
+      expect(contextual?.speaker).toBe(PlayerType.OPPONENT);
+      expect(contextual?.category).toBe('contextual');
+      expect(contextual?.message).toBe('I had his word. Whatever else the Swiss preserve, they did not preserve that.');
+    });
+
 
     it('prevents immediate duplicate dialogue within a single war', () => {
       service.clearUsedDialogue();

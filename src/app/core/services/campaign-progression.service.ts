@@ -7,9 +7,11 @@ import { getCommanderIdentity } from '../models/commander-identity.model';
 import {
   CAMPAIGN_CHAPTER_ORDER,
   CampaignWarIndex,
+  generateReplayCommanderSchedule,
   getAuthoredCommanderSchedule,
   nextCampaignChapter
 } from '../models/campaign-chapter.model';
+
 import {
   CampaignHistoryEntry,
   CampaignModeId,
@@ -113,12 +115,23 @@ export class CampaignProgressionService {
     return canInspectCasualties(this.activeCampaignMode(), isWarResolved);
   }
 
+  private randomSource: () => number = Math.random;
+
+  setRandomSource(randomFn: () => number): void {
+    this.randomSource = randomFn;
+  }
+
   isChapterUnlocked(mode: CampaignModeId): boolean {
     return this.unlockedChapterModes().includes(mode);
   }
 
   isChapterCompleted(mode: CampaignModeId): boolean {
     return this.completedChapterModes().includes(mode);
+  }
+
+  isAllChaptersCompleted(): boolean {
+    const completed = this.completedChapterModes();
+    return CAMPAIGN_CHAPTER_ORDER.every(mode => completed.includes(mode));
   }
 
   chapterState(mode: CampaignModeId): CampaignChapterState {
@@ -147,19 +160,25 @@ export class CampaignProgressionService {
           }
         : undefined;
 
+    const isReplay = this.isAllChaptersCompleted();
+    const commanderSchedule = isReplay
+      ? generateReplayCommanderSchedule(this.randomSource)
+      : getAuthoredCommanderSchedule(mode);
+
     this.authService.updateActiveProfileProgression(previous => ({
       ...previous,
       currentCampaign: {
         ...previous.currentCampaign,
         mode,
         ordersSelected: true,
-        commanderSchedule: getAuthoredCommanderSchedule(mode),
+        commanderSchedule,
         limitedReserves: undefined,
         ...(limitedReserves ? { limitedReserves } : {})
       }
     }));
     return true;
   }
+
 
   /**
    * Authoritative point of human reserve consumption.

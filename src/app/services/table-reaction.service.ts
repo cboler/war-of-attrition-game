@@ -241,6 +241,17 @@ export class TableReactionService {
     };
   }
 
+  forContext(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+    const commander = this.resolveCommander(commanderInput);
+    const line = this.getAuthoredLine(commander.id, 'context');
+    if (!line) return null;
+    return {
+      speaker: PlayerType.OPPONENT,
+      category: 'introduction',
+      message: line
+    };
+  }
+
   forResult(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
     const commander = this.resolveCommander(commanderInput);
     const line = this.getAuthoredLine(commander.id, 'result');
@@ -251,6 +262,43 @@ export class TableReactionService {
       message: line
     };
   }
+
+  forResolution(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+    const commander = this.resolveCommander(commanderInput);
+    const line = this.getAuthoredLine(commander.id, 'resolution');
+    if (!line) return null;
+    return {
+      speaker: PlayerType.OPPONENT,
+      category: 'result',
+      message: line
+    };
+  }
+
+  forConcession(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+    const commander = this.resolveCommander(commanderInput);
+    const authored = this.getAuthoredLine(commander.id, 'concession');
+    const variants = commander.dialogue.concession ?? ['We yield this ground.', 'Hold. We have room.', 'Concede the clash.'];
+    return this.pick(0.55, PlayerType.OPPONENT, 'concession', variants, authored);
+  }
+
+  forDesperateRescue(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+    const commander = this.resolveCommander(commanderInput);
+    const authored = this.getAuthoredLine(commander.id, 'desperate_rescue');
+    const variants = commander.dialogue.desperateRescue ?? ['Spend everything! Attack!', 'Hold the line at all costs!', 'No reserve left. Stand here!'];
+    return this.pick(0.65, PlayerType.OPPONENT, 'desperate_rescue', variants, authored);
+  }
+
+  forContextual(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+    const commander = this.resolveCommander(commanderInput);
+    const authored = this.getAuthoredLine(commander.id, 'contextual');
+    if (!authored) return null;
+    return {
+      speaker: PlayerType.OPPONENT,
+      category: 'contextual',
+      message: authored
+    };
+  }
+
 
   clearUsedDialogue(): void {
     this.usedDialogueIds.clear();

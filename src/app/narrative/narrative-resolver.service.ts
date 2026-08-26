@@ -34,13 +34,18 @@ import {
   CHAPTER_FOUR_DOSSIERS,
   CHAPTER_FOUR_TRANSITIONS
 } from './chapter-four-narrative.data';
+import { EVERGREEN_DIALOGUE } from './evergreen-narrative.data';
+
+export const ALL_EVERGREEN_DIALOGUE: readonly AuthoredDialogueRecord[] = EVERGREEN_DIALOGUE;
 
 export const ALL_AUTHORED_DIALOGUE: readonly AuthoredDialogueRecord[] = [
   ...CHAPTER_ONE_DIALOGUE,
   ...CHAPTER_TWO_DIALOGUE,
   ...CHAPTER_THREE_DIALOGUE,
-  ...CHAPTER_FOUR_DIALOGUE
+  ...CHAPTER_FOUR_DIALOGUE,
+  ...EVERGREEN_DIALOGUE
 ];
+
 
 export const ALL_NARRATIVE_TRANSITIONS: readonly NarrativeTransitionRecord[] = [
   ...CHAPTER_ONE_TRANSITIONS,
@@ -86,15 +91,26 @@ export class NarrativeResolverService {
 
   dialogueFor(context: NarrativeDialogueContext): AuthoredDialogueRecord | null {
     const excluded = new Set(context.excludeIds ?? []);
-    return ALL_AUTHORED_DIALOGUE.find(record =>
+    const encounterLine = ALL_AUTHORED_DIALOGUE.find(record =>
       record.commanderId === context.commanderId &&
       record.mode === context.mode &&
       record.warIndex === context.warIndex &&
       record.event === context.event &&
       !excluded.has(record.id) &&
       this.isReplaySafe(record, context.chapterCompleted)
-    ) ?? null;
+    );
+    if (encounterLine) return encounterLine;
+
+    const evergreenLine = ALL_AUTHORED_DIALOGUE.find(record =>
+      record.commanderId === context.commanderId &&
+      record.mode === undefined &&
+      record.event === context.event &&
+      !excluded.has(record.id) &&
+      this.isReplaySafe(record, context.chapterCompleted)
+    );
+    return evergreenLine ?? null;
   }
+
 
   transitionFor(
     mode: CampaignModeId,

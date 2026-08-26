@@ -23,13 +23,14 @@ export type NarrativeReplayAvailability = 'first_play' | 'replay' | 'any';
 export interface AuthoredDialogueRecord {
   readonly id: string;
   readonly commanderId: OpponentCommanderId;
-  readonly mode: CampaignModeId;
-  readonly warIndex: CampaignWarIndex;
+  readonly mode?: CampaignModeId;
+  readonly warIndex?: CampaignWarIndex;
   readonly event: NarrativeGameplayEvent;
   readonly text: string;
   readonly availability: NarrativeReplayAvailability;
   readonly revealIds?: readonly string[];
 }
+
 
 export type NarrativeTransitionPlacement =
   | 'orders'
