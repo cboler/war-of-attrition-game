@@ -10,7 +10,7 @@ This repository contains the **War of Attrition** card game - a Progressive Web 
 - **Type**: Progressive Web Application (PWA) + Android TWA
 - **Architecture**: Signal-based reactive state management with standalone components
 - **Deployment**: GitHub Pages (hosted from `/docs`)
-- **Current Status**: Production Readiness / Final Polish (Google Play closed testing)
+- **Current Status**: Feature-complete core; Progressive Narrative Unveiling and Clash Visualization sprints remain before final release polish. See `current-development-status.md`.
 - **Test Coverage**: Comprehensive automated unit test coverage across game logic, turns, challenges, recursive battles, and UI components
 
 ## Build and Development Commands

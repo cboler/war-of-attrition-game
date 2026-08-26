@@ -1,95 +1,112 @@
 # Opponent Commanders & AI Personalities
 
-Status: Implemented in core gameplay, campaign progression, table presentation, and telemetry.
+Status: **Five fair-play strategy assets are implemented. Canonical fictional identities are settled for Sprint 1 but are not yet reflected in production data.**
 
-> [!NOTE]
-> **Creative Direction & Character Evolution**
-> The titles and generic labels in this document (*The Quartermaster*, *The Gambler*, *The Analyst*, *The Attritionist*, *The Cornered General*) describe the **implemented AI strategy layer and behavioral archetypes**.
-> 
-> As defined in [`developer-docs/north-star.md`](./north-star.md), future fictional opponent identities will be richer named characters (e.g. passionate international cheesemakers and affineurs) whose personalities and visual presentation map directly onto these established strategy archetypes.
-> 
-> The current generic names should **not** be treated as immutable creative canon, but the underlying parameterized AI strategy architecture and fair-play math remain authoritative.
+The private biographies, knowledge/belief boundaries, and relationships live in [`narrative-canon.md`](./narrative-canon.md). This document describes the permanent mechanical layer and the exact boundary between current code and the named cast.
 
-## 1. Physical 52-Card Deck Integrity & Fair Play
+## 1. Permanent Strategy IDs and Canonical Identities
 
-*War of Attrition* is designed to be physically playable with an ordinary 52-card deck. Opponent commanders strictly respect that identity:
+| Permanent strategy ID | Current production label | Canonical Sprint 1 identity | Faction and role |
+| --- | --- | --- | --- |
+| `quartermaster` | The Quartermaster | **Marcel de Brie** | French master affineur; principal French negotiator of the Mont-Rouge Accord |
+| `gambler` | The Gambler | **Sir Edmund Gloucester** | English artisan-adventurer; Marcel's confidant |
+| `analyst` | The Analyst | **Matthias von Greyerz** | Swiss master cheesemaker; principal Swiss negotiator of the Accord |
+| `attritionist` | The Attritionist | **Bastien de Herve** | Belgian tyromancer and apolitical itinerant rind-seer |
+| `cornered-general` | The Cornered General | **Lorenzo di Taleggio** | Italian Alpine merchant-prince, cheesemaker, and Matthias's confidant |
 
-- **Identical Rules**: Commanders obey the exact same physical rules as the player.
-- **No Cheating / No Hidden Information**: Commanders never inspect hidden deck order, never know the player's face-down cards, and never manipulate draw orders.
-- **No Stat Buffs or Extra Cards**: Commanders never receive extra cards, altered ranks, bonus hit points, or statistical modifiers.
-- **Strategic Variance**: Differences between commanders stem solely from distinct risk models, challenge thresholds, card valuations, and contextual table reactions.
+The IDs are permanent mechanical assets. Sprint 1 changes the player-facing `name`, `title`, `description`, biography, and dialogue data; it does not replace the strategies or introduce a sixth commander. Bastien is intentionally both the Belgian commander and the Tyromancer.
 
----
+## 2. Physical-Deck Integrity and Fair Play
 
-## 2. Commander Archetypes & Strategy Parameters
+All commanders obey the same physical rules and information boundaries as the player:
 
-The system defines 5 distinct commander archetypes implemented via parameterized strategy weights in `src/app/core/models/commander.model.ts`:
+- They never inspect hidden deck order or face-down Battle cards.
+- They never manipulate draws, deck composition, rank, or comparison results.
+- They receive no bonus cards, durability, magical powers, or statistical modifiers.
+- Their differences come only from parameterized risk evaluation of legal public information and from presentation/dialogue.
+- Narrative knowledge is not gameplay knowledge. Bastien's prophecy never allows the AI to peek at a future card.
 
-### 1. The Quartermaster (`quartermaster`)
-- **Title**: Conservative Logistics
-- **Description**: Conserves reserves; only challenges to protect critical high-rank cards when probabilities strongly favor success.
-- **Behavioral Weights**:
-  - `cardValueWeight`: `1.25` (strongly protects face cards/Aces/Twos)
-  - `winRateWeight`: `1.30` (requires high probability of winning)
-  - `reserveDepletionPenalty`: `1.8` (avoids risks when reserve count is low)
-  - `autoAcceptScore`: `22` / `autoRejectScore`: `-12`
-  - `gambleBandMultiplier`: `0.70` (reluctant gambler)
+## 3. Implemented Strategy Parameters
 
-### 2. The Gambler (`gambler`)
-- **Title**: High-Stakes Opportunist
-- **Description**: Aggressive and opportunistic; challenges often on narrow odds and embraces high-stakes Battles.
-- **Behavioral Weights**:
-  - `cardValueWeight`: `0.85`
-  - `winRateWeight`: `0.90` (willing to challenge on coin flips)
-  - `supportedTieWeight`: `1.20` / `unsupportedTiePenalty`: `0.80` (embraces Battles)
-  - `reserveDepletionPenalty`: `0.5`
-  - `autoAcceptScore`: `12` / `autoRejectScore`: `-24`
-  - `gambleBandMultiplier`: `1.45` (high risk tolerance)
+`src/app/core/models/commander.model.ts` is the executable source of truth. The values below match version 4.2.0 and replace earlier exploratory numbers that no longer matched code.
 
-### 3. The Analyst (`analyst`)
-- **Title**: Probabilistic Calculus
-- **Description**: Cold and calculated; computes public card probabilities with strict mathematical cutoffs and zero emotional bias.
-- **Behavioral Weights**:
-  - `cardValueWeight`: `1.00`
-  - `winRateWeight`: `1.15`
-  - `candidatePoolStrengthWeight`: `1.20` (tracks remaining deck quality)
-  - `supportedTieWeight`: `1.00` / `unsupportedTiePenalty`: `1.00`
-  - `autoAcceptScore`: `18` / `autoRejectScore`: `-18`
-  - `gambleBandMultiplier`: `1.00` (neutral, mathematically calibrated)
+| ID | Card value | Win rate | Supported tie | Unsupported tie | Reserve penalty | Desperation severe / moderate / mild | Accept / reject | Pool strength | Gamble band |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `quartermaster` | 0.84 | 38 | 8 | -26 | 6 | 34 / 22 / 10 | 82 / 26 | 0.08 | 0.85 |
+| `gambler` | 0.52 | 26 | 16 | -12 | 0 | 36 / 24 / 14 | 72 / 16 | 0.04 | 1.35 |
+| `analyst` | 0.38 | 56 | 14 | -28 | 4 | 32 / 20 / 10 | 78 / 22 | 0.16 | 1.00 |
+| `attritionist` | 0.58 | 30 | 12 | -36 | 18 | 28 / 16 / 8 | 80 / 24 | 0.08 | 0.90 |
+| `cornered-general` | 0.66 | 32 | 10 | -20 | 2 | 58 / 38 / 14 | 80 / 20 | 0.08 | 1.15 |
 
-### 4. The Attritionist (`attritionist`)
-- **Title**: Resource Depletion
-- **Description**: Relentless grinding; welcomes Battles and card trades to bleed down the opponent's overall deck count.
-- **Behavioral Weights**:
-  - `cardValueWeight`: `0.70` (cares less about card rank than total attrition)
-  - `winRateWeight`: `0.95`
-  - `supportedTieWeight`: `1.40` (actively seeks Battles to force casualties)
-  - `unsupportedTiePenalty`: `0.60`
-  - `autoAcceptScore`: `14` / `autoRejectScore`: `-20`
-  - `gambleBandMultiplier`: `1.20`
+The parameter fields are:
 
-### 5. The Cornered General (`cornered-general`)
-- **Title**: Desperate Gambit
-- **Description**: Begins cautious, but shifts into erratic, high-risk aggression as reserves dwindle.
-- **Behavioral Weights**:
-  - `cardValueWeight`: `1.10`
-  - `winRateWeight`: `1.05`
-  - `desperationWeights`:
-    - `lowDeckBonus`: `12.0` (when deck <= 3 cards)
-    - `mediumDeckBonus`: `6.0` (when deck <= 6 cards)
-    - `mildDeckBonus`: `2.5` (when deck <= 10 cards)
-  - `autoAcceptScore`: `17` / `autoRejectScore`: `-16`
-  - `gambleBandMultiplier`: `1.10`
+- `cardValueWeight` — value placed on the card at risk.
+- `winRateWeight` — weight applied to clean win probability from the public candidate pool.
+- `supportedTieWeight` / `unsupportedTiePenalty` — treatment of tie probability depending on whether the deck can sustain a Battle.
+- `reserveDepletionPenalty` — caution as deck depth approaches critical thresholds.
+- `desperationWeights` — urgency bonuses at deck counts `<= 3`, `<= 6`, and `<= 10`.
+- `autoAcceptScore` / `autoRejectScore` — deterministic decision thresholds around the probabilistic marginal band.
+- `candidatePoolStrengthWeight` — influence of average legal candidate-pool quality.
+- `gambleBandMultiplier` — risk tolerance inside the marginal decision band.
 
----
+### `quartermaster` → Marcel de Brie
 
-## 3. Architecture & Service Design
+The implemented model strongly values the card at risk, requires favorable odds, and uses a narrow gamble band. Marcel's characterization should make reserve husbandry feel like the discipline of an affineur protecting irreplaceable stock. Narrative pride must not distort the underlying legal calculation.
 
-Rather than duplicating AI logic across five distinct services, the system uses a clean, data-driven strategy pattern:
+### `gambler` → Sir Edmund Gloucester
 
-1. **`commander.model.ts`**: Single source of truth for commander IDs, strategy configurations, registry maps, and curated dialogue pools.
-2. **`OpponentAIService`**: Evaluates public candidate cards (the 26 opposing-color cards minus revealed/discarded cards) against the active commander's strategy parameters to generate continuous challenge scores and decisions.
-3. **`TableReactionService`**: Emits context-sensitive reactions using the active commander's dialogue for opponent lines while keeping player lines generic. Silence remains the default.
-4. **`CampaignProgressionService`**: Persists the active `commanderId` across all 3 Wars of a Campaign. When a Campaign completes, `selectNextCommander()` rotates to a new commander (preventing immediate repetition).
-5. **Persistence Migration**: `normalizeCampaignProgression` automatically derives a deterministic commander ID from the `campaignId` for legacy profiles lacking `commanderId`, ensuring no rerolls on page reload.
-6. **Telemetry**: Transmits `commander_id` across `beginWar`, `TelemetryEnvelope`, `war_started`, and `campaign_resolved` events for analytics.
+The implemented model has the lowest acceptance threshold, no reserve-depletion penalty, high supported-tie appetite, and the broadest gamble band. Edmund treats hesitation as a decision and embraces action under uncertainty. He pushed Marcel toward decisive action but did not intend war.
+
+### `analyst` → Matthias von Greyerz
+
+The implemented model gives the greatest weight to visible win probabilities and candidate-pool strength. Matthias describes his decisions as objective calculus even when the private canon makes clear that humiliation and suspicion affected his historical judgment. His AI still uses only legal public information.
+
+### `attritionist` → Bastien de Herve
+
+The implemented model emphasizes long-horizon deck sustainability, strongly penalizes unsupported Battles near exhaustion, and treats the War as longer than any single clash. This maps naturally to a prophet who behaves as though he has already seen the campaign's end. Prophecy is voice, not a gameplay advantage.
+
+### `cornered-general` → Lorenzo di Taleggio
+
+The implemented model is relatively controlled while healthy and receives the sharpest desperation bonuses at low deck counts. Lorenzo believes waiting for danger to become undeniable means waiting until one is already cornered. He is an accelerant and loyal adviser, not a mastermind.
+
+## 4. Current Architecture
+
+1. **`commander.model.ts`** defines IDs, strategy configuration, current generic presentation metadata, and fixed dialogue pools.
+2. **`OpponentAIService`** evaluates legal public candidate cards against the active strategy and produces challenge decisions.
+3. **`TableReactionService`** emits sparse contextual reactions. Opponent lines come from the active commander; player lines remain generic.
+4. **`CampaignProgressionService`** persists one commander across all three Wars of a Campaign and rotates after Campaign completion without immediate repetition.
+5. **`normalizeCampaignProgression`** deterministically derives a commander from `campaignId` for legacy data missing `commanderId`, preventing reload rerolls.
+6. **Telemetry** carries `commander_id` in War/Campaign context without changing privacy guarantees.
+
+## 5. Current Dialogue Contract and Sprint 1 Extension
+
+`OpponentCommanderDialogue` currently holds pools for:
+
+- 2-defeats-Ace clashes;
+- Jack-over-Ten narrow clashes;
+- successful and failed reinforcement rescues;
+- notable Battle losses, split by Ace/Two loss, deep Battle, large loss, and general loss;
+- optional concessions and low-deck desperate rescues.
+
+`TableReactionService` applies event-specific probabilities, so silence remains the default. It has no mode, chapter, completion, or narrative-flag context, and it does not currently supply pre-War, War-resolution, or Campaign-completion dialogue.
+
+Sprint 1 should use the smallest data extension capable of selecting a line by:
+
+- commander;
+- campaign mode/chapter;
+- broad chapter progression;
+- relevant gameplay event;
+- optionally, prior chapter completion or a very small set of major narrative flags.
+
+A compact conditioned-line record or keyed pool overlay is sufficient. Do not build a branching RPG engine, persistent relationship system, quest graph, or unrestricted scripting language.
+
+## 6. Character Relationship Boundary
+
+- Marcel and Matthias are respected rivals who each believes the other betrayed him.
+- Edmund and Lorenzo are mirror-image loyal accelerants on opposite sides.
+- Bastien is apolitical, truthful about Mont-Rouge, and obscure enough to be dismissed.
+- Neither principal is evil or the saboteur.
+- Edmund and Lorenzo are not secret masterminds.
+- Bastien is not a conventional omniscient narrator and receives no sixth strategy identity.
+
+See [`narrative-canon.md`](./narrative-canon.md) for each commander's exact knowledge, belief, omission, relationships, and chapter disclosure limits.

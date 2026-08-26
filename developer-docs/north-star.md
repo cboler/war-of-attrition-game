@@ -94,20 +94,22 @@ A well-crafted joke should ideally perform more than one job at once:
 
 ## 3. The World: An International War of Cheesemakers
 
-Opponent commanders should evolve away from generic archetype labels (*The Quartermaster*, *The Gambler*, *The Analyst*, *The Attritionist*, *The Cornered General*) into vivid, memorable individuals whose personalities embody those playstyles.
+Opponent commanders are five vivid fictional individuals whose personalities embody the five implemented strategy archetypes. Production code still uses generic player-facing labels until Narrative Sprint 1, but the creative identities are settled.
 
 ### Mechanical Foundation vs. Fictional Identity
 The parameterized AI strategy architecture implemented in `src/app/core/models/commander.model.ts` (weights for card valuation, win rate thresholds, reserve preservation, battle appetite, and desperation) is a permanent technical asset. Future fictional characters map directly onto these established strategy archetypes without replacing the fair-play engine.
 
-### Exploratory Character Concepts *(Directional, Not Finalized Canon)*
-The following concepts illustrate the intended flavor and variety. They are design starting points subject to a deliberate creative pass:
+### Canonical Commander Roster
 
-- **Marcel de Brie** *(matches Quartermaster strategy)*: A spectacularly self-important French master affineur who treats high-value cards like irreplaceable vintage wheels of cheese, husbanding reserves with aristocratic disdain.
-- **The Furious Belgian** *(matches Attritionist strategy)*: A fiercely proud artisan who grows incandescent with rage whenever mistaken for or compared with the French, waging a relentless war of exhaustion.
-- **The English Artisan** *(matches Gambler strategy)*: A dry, eccentric cheesemaker with Monty-Python-adjacent energy (without copying Monty Python dialogue or characters), cheerfully embracing wild gambles and chaotic Battles.
-- **The Swiss Precisionist** *(matches Analyst strategy)*: A meticulous, hyper-rational affineur who evaluates every clash with mathematical precision, obsessed with exact curd moisture, rind thickness, and card probabilities.
-- **The Operatic Italian** *(matches Cornered General strategy)*: A passionate, theatrical rival who begins with operatic grandiosity and shifts into dramatic, high-stakes desperation as deck reserves dwindle.
-- **The Tyromancer**: An enigmatic cheese mystic who claims to read destiny, military fortunes, and opponent draws directly from rinds, curd formations, wheel holes, and mold veining.
+| Character | Permanent strategy ID | Faction | Dramatic role |
+| --- | --- | --- | --- |
+| **Marcel de Brie** | `quartermaster` | French | Master affineur and principal French negotiator of the Mont-Rouge Accord |
+| **Sir Edmund Gloucester** | `gambler` | English | Eccentric artisan-adventurer and Marcel's confidant |
+| **Matthias von Greyerz** | `analyst` | Swiss | Master cheesemaker and principal Swiss negotiator of the Accord |
+| **Bastien de Herve** | `attritionist` | Belgian | Apolitical tyromancer, itinerant rind-seer, and apparently mad prophet |
+| **Lorenzo di Taleggio** | `cornered-general` | Italian | Alpine merchant-prince, cheesemaker, and Matthias's political confidant |
+
+Bastien is intentionally both the Belgian commander and the Tyromancer. Do not create a sixth commander to split those concepts. The exact private dossiers, relationships, and knowledge/belief boundaries are authoritative in [`narrative-canon.md`](./narrative-canon.md).
 
 ### Guidelines on Cultural & National Characterization
 Humor may incorporate strong accents (including deliberately phonetic written dialogue), regional rivalries, theatrical mannerisms, and affectionate European culinary traditions:
@@ -118,19 +120,20 @@ Humor may incorporate strong accents (including deliberately phonetic written di
 
 ---
 
-## 4. Story & Worldbuilding — Historical & Pseudo-Historical Inspiration
+## 4. Story & Worldbuilding — The Mont-Rouge Affair
 
-*War of Attrition* will eventually feature a simple Campaign narrative connecting its commanders, but it must never become a slow, dialogue-heavy visual novel.
+*War of Attrition* uses progressive, fractured storytelling to connect its commanders, campaign modes, lore surfaces, and repeated play. It must never become a slow, dialogue-heavy visual novel.
 
 ### Narrative Design Principles
 1. **Momentum First**: Narrative provides motivation and flavor without interrupting the crisp rhythm of card play.
 2. **Where Story Lives**:
    - Opponent introductions and pre-war briefings
    - Character portraits and contextual situational quips
-   - Brief campaign interstitials between Wars in a Three-War series
+   - Brief campaign framing and optional interstitials
    - Post-match victory and defeat reactions
-   - Lore snippets in the *Field Manual* and *Chronicle*
-3. **Quick Onboarding**: A new player should understand the premise within seconds.
+   - Lore snippets in the *Field Manual*, *Chronicle*, achievements, and cosmetic descriptions
+3. **Incomplete Testimony**: Characters speak sincerely but incompletely, often rationalizing their own choices. Later fragments should change the meaning of earlier lines.
+4. **Quick Onboarding**: A new player should understand the premise within seconds without receiving the complete history.
 
 ### Fictional Pseudo-History in a Medieval / Early-Modern Fantasy World
 The canonical world is a **fictional medieval / early-modern European-flavored fantasy setting**, presented through the visual grammar of late-16-bit / early-32-bit JRPGs (drawing inspiration from the design language of early *Suikoden* and 2D *Final Fantasy*, without copying copyrighted settings, characters, plots, sprites, or dialogue).
@@ -138,7 +141,7 @@ The canonical world is a **fictional medieval / early-modern European-flavored f
 The game's history should be **fictional pseudo-history assembled from the shapes of real cheesemaking absurdities**, rather than a literal retelling of a single historical war. This gives the game freedom to invent its own nations, guilds, treaties, charters, feuds, cheese fairs, monasteries, appellations, dynasties, and catastrophes while allowing knowledgeable players to recognize affectionate historical echoes.
 
 ### Primary Story Inspiration: French & Swiss Gruyère-Style Disputes
-The strongest current inspiration for the eventual inciting conflict is the rich class of real-world disputes surrounding **French and Swiss Gruyère traditions, naming, provenance, standards, and protected identity**.
+The historical inspiration for the inciting conflict is the rich class of real-world disputes surrounding **French and Swiss Gruyère traditions, naming, provenance, standards, and protected identity**.
 
 The dramatic and comedic core to draw from:
 - Two neighboring cheesemaking traditions, both claiming ancient legitimacy and ancestral rights;
@@ -149,19 +152,20 @@ The dramatic and comedic core to draw from:
 - The inherent comedy of characters who are technically precise, historically aggrieved, completely justified in their own eyes, and monumentally petty all at once.
 
 > **Key Real-World Technical Echo for Inspiration**:
-> In protected specifications, French Gruyère (IGP) explicitly calls for characteristic eye/hole formation (*"ouvertures de la taille d'un pois à une cerise"*), whereas Swiss Le Gruyère (AOP) maintains a distinct tradition with a blind, closed texture without holes.
-> 
+> In protected specifications, French Gruyère (IGP) explicitly calls for characteristic eye/hole formation (*"ouvertures de la taille d'un pois à une cerise"*), whereas Swiss Le Gruyère (AOP) has a much more closed or blind visual tradition. Its official characteristics allow a few small openings but do not require them.
+>
 > This exact type of minute, technically rigorous, yet deeply consequential distinction is what the fictional setting can exaggerate into centuries of international grievance.
 
-#### Exploratory Story Ingredients *(Not Settled Plot Points)*:
-- An ancient royal appellation or protected guild name granted by a long-dead emperor;
-- Rival factions interpreting opposing clauses of a centuries-old monastic charter;
-- Disputed alpine pasture borders and transhumance grazing routes;
-- Accusations of counterfeit rinds or illicit milk blending;
-- A diplomatic insult delivered at a prestigious grand cheese fair;
-- A controversial judging decision by a corrupt or partisan tasting tribunal;
-- Incompatible definitions of correct rind mold, hole formation, curd temperature, or maturation cellars;
-- A minor dispute that no reasonable ruler would escalate into a war—and which therefore sparks an all-out international conflict.
+### Settled Inciting History
+
+Marcel de Brie and Matthias von Greyerz, honorable professional rivals representing French and Swiss interests, negotiate the **Mont-Rouge Accord**. At ratification, the ceremonial Swiss Witness Wheel unexpectedly contains eyes. Matthias suspends ratification to investigate; Marcel proceeds unilaterally under the framework they negotiated. Each experiences the other's defensible but prideful action as betrayal. Edmund pushes Marcel toward decisive action, Lorenzo pushes Matthias toward pre-emption, a restricted Alpine pass and disputed shipments lead to bloodshed, and retaliation turns suspicion into certainty.
+
+In objective private canon, no sabotage or betrayal occurred. Months earlier, a field mouse disturbed hay or similar plant material associated with the Swiss dairy; microscopic structural material entered the cheesemaking environment and supplied natural eye nuclei. This fictional sequence is inspired by real eye-formation research in Swiss-type cheeses, not asserted as a documented Gruyère event.
+
+> [!CAUTION]
+> The mouse/hay cause is private writer knowledge. It should be inferable from Chapter III fragments and optional sources, not stated as an ordinary early-game explanation.
+
+The four narrative chapters are **Standard: “The Accord” → Limited Reserves: “The Closing Passes” → Fog of War: “The Blind Wheel” → Total War: “The War of Attrition.”** Completion rather than victory unlocks the next chapter. Detailed chronology and disclosure limits live in [`narrative-canon.md`](./narrative-canon.md).
 
 ### Secondary Cultural Inspiration: Cheese-Rolling Rituals (Cooper's Hill Echoes)
 The famous English tradition of the **Cooper's Hill Cheese-Rolling** in Gloucestershire—where competitors hurdle down a perilous gradient in pursuit of an eight-pound wheel of Double Gloucester—serves as a secondary cultural touchstone.
@@ -173,14 +177,14 @@ Rather than serving as the main war trigger, this tradition illustrates how real
 - Campaign interstitial color, *Field Manual* lore, or achievement references;
 - The comedic effect of characters treating an obviously reckless cheese-rolling contest as an ancient, dignified, and solemn institution.
 
-### The Tyromancy Bridge: Historical Divination to Fantasy Reality
+### Bastien and the Tyromancy Bridge
 **Tyromancy**—the divination of the future through the coagulation, curds, holes, sweating, patterns, and mold of cheese—is a genuine historical divination practice recorded from antiquity through medieval Europe.
 
-The Tyromancer embodies the overarching worldbuilding formula for *War of Attrition*:
+**Bastien de Herve**, the Belgian Attritionist and apolitical Tyromancer, embodies the overarching worldbuilding formula for *War of Attrition*:
 
 > **"Take something genuinely present in cheese history, folklore, trade, law, ritual, or craft, then push it one step sideways into sincere fantasy worldbuilding."**
 
-The Tyromancer operates as an earnest mystic whose curd readings and rind portents are taken with utmost tactical gravity by commanders.
+Bastien operates as an earnest mystic whose curd readings and rind portents are treated with tactical gravity or exasperation by commanders. He tells the truth about Mont-Rouge through absurd riddles, but prophecy never gives his AI hidden-card knowledge or magical gameplay power.
 
 ### Rejection of Modern 20th-Century Settings
 The core narrative and visual identity explicitly **reject** 20th-century industrial conflicts (such as the 1960s Tillamook dairy cooperative disputes) as canonical story direction. Mid-century American corporate/commercial aesthetics clash with the established medieval/early-modern JRPG fantasy visual direction and are not part of the game's foundation.
@@ -306,17 +310,17 @@ To make card clashes intuitive, card ranks map to consistent military unit arche
 ├───────────────────┬─────────────────────────────────────────────────────┤
 │ Card Rank         │ Battlefield Unit Representation                     │
 ├───────────────────┼─────────────────────────────────────────────────────┤
-│ Number Cards (3-10)│ Infantry Formations (visually scaled by rank)       │
+│ Number Cards (2-10)│ Ordinary soldiers / infantry scaled by rank         │
 │ Jack              │ Cavalry / Mounted Knight                            │
 │ Queen             │ Caster / Mage / Witch / Tactical Ranged Figure      │
 │ King              │ Regal Swordsman / Champion Commander                │
 │ Ace               │ Supreme General / Army Commander                    │
-│ 2 (The Assassin)  │ Humble Scouts / Lethal Infiltrators                 │
+│ 2 (special case)  │ Humble soldiers/scouts capable of lethal infiltration│
 └───────────────────┴─────────────────────────────────────────────────────┘
 ```
 
-### Number Cards (3 through 10)
-Represent line infantry formations. Rather than rendering 10 individual sprites for a 10, sprite counts are visually compressed into distinct formation tiers (small, medium, large formation) to maintain readability on mobile screens.
+### Number Cards (2 through 10)
+Represent ordinary soldiers or line infantry formations, with the Two retaining its special visual role described below. Rather than rendering one sprite per pip, counts are visually compressed into formation tiers to maintain readability on mobile screens.
 
 ### Face Cards & Aces
 - **Jack**: Rapid cavalry charging into the fray.
@@ -397,62 +401,60 @@ Multiplayer is a long-term design horizon rather than immediate release scope. H
 
 ## 14. Scope Discipline & Canon Categorization
 
-To maintain creative clarity and protect time-to-release, all creative decisions are explicitly categorized into three distinct levels of certainty:
-
-### 1. Settled Creative Principles *(Authoritative & Binding)*
+### Settled Creative Principles *(Authoritative and Binding)*
 - **Tonal Contrast**: Straight-faced military UI framing an absurdly serious international cheese war.
 - **Humor Philosophy**: Abundant layered puns, linguistic wit, and multi-level jokes (*"The UI does not wink. The writers may."* / *"Use as many cheese puns as we can Muenster—without letting them curdle usability."*).
 - **Contextual Sourcing & Footnotes**: Real cheesemaking terminology and history linked unobtrusively (*"Provide context, not punchline annotations"*); jokes never paused for explanations.
 - **Physical Deck Fidelity**: Strict 52-card physical integrity; zero pay-to-win, stat modifiers, or superpowers.
 - **Visual Grammar**: 16/32-bit tactical JRPG-inspired pixel/portrait staging; readable at mobile scale (`<= 620px`).
 - **Mechanical Separation**: 5 parameterized AI strategy models in code remain immutable; fictional personalities map onto them.
+- **Canonical Cast**: Marcel, Edmund, Matthias, Bastien, and Lorenzo map respectively to `quartermaster`, `gambler`, `analyst`, `attritionist`, and `cornered-general`. Bastien is both Belgian and Tyromancer.
+- **Mont-Rouge Canon**: No sabotage or betrayal occurred. The mouse/hay cause is private canon to be inferred rather than announced.
+- **Chapter Order**: Standard → Limited Reserves → Fog of War → Total War, unlocked by completion rather than victory and never by monetization.
+- **Narrative Form**: Fractured, environmental disclosure through existing or low-cost surfaces; no visual-novel conversion.
 - **Rank Archetypes**: Consistent military formations (Infantry, Cavalry Jacks, Caster Queens, Swordsman Kings, General Aces, and the signature 2-vs-Ace assassination sequence).
+- **Clash Visualizations**: A first-class remaining sprint in which visible physical cards summon brief presentation-only battlefield encounters.
 - **Cosmetics Policy**: Purely visual presentation (card backs, army themes, portraits); strict prohibition against unauthorized third-party trade dress.
 
-### 2. Strong Current Direction *(Settled Thematic Framework)*
+### Settled Thematic Framework
 - **Fictional Setting**: A fictional medieval / early-modern European fantasy world (drawing JRPG aesthetic cues, not documentary realism).
 - **Primary Narrative Anchor**: French and Swiss Gruyère-style provenance, standards, and naming disputes as the dramatic blueprint for the central war.
 - **Cultural Folklore Echoes**: Real cheese traditions (such as Cooper's Hill cheese rolling) used as flavor for festivals, rituals, and anecdotes.
 - **Tyromancy**: Real historical cheese divination used as a sincere bridge between cheese lore and fantasy worldbuilding.
 - **Default Suit Armies**: Four distinct suit-based military traditions (Disciplined Spades, Chivalric Hearts, Gilded Diamonds, Rugged Clubs).
 
-### 3. Exploratory Ingredients *(Subject to Future Creative Pass; Not Final Canon)*
+### Still Exploratory Unless Later Settled
 - Specific names of fictional countries, borders, or dynasties;
-- Specific names of charters, treaties, or the inciting prize cheese wheel;
-- Specific commander roster names (e.g., *Marcel de Brie* remains a directional concept);
-- Specific campaign plot beats, cutscene scripts, or dialogue lines;
-- The final official title of the cheese conflict.
+- Final player-facing wording, individual dialogue lines, and exact fragment placement;
+- Exact commander portrait designs and animation asset technique;
+- Additional suit-army costume details and distant alternate cosmetic themes;
+- Long-term multiplayer and licensed partnership execution.
 
 ---
 
-## 15. Roadmap Tiers & Milestones
+## 15. Remaining Roadmap
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ ROADMAP TIERS & SCOPE DISCIPLINE                                        │
-├─────────────────────────────────────────────────────────────────────────┤
-│ TIER 1: PRESERVE & REFINE NOW (Immediate / Current Milestone)           │
-│ • Solidify cheese-war thematic identity and tonal contrast              │
-│ • Retain established 5 fair-play AI strategy archetypes in code         │
-│ • Maintain dark green felt table, gold trim, and serious military UI    │
-│ • Enforce strict 52-card physical deck fidelity                         │
-│ • Lay groundwork for portrait specs and character dialogue             │
-│ • Resolve active UI layout, icon, and layering defects                  │
-├─────────────────────────────────────────────────────────────────────────┤
-│ TIER 2: PROGRESSIVE ARRIVAL (Post-Release Candidate Milestones)         │
-│ • Named cheesemaker characters mapped to existing strategy models       │
-│ • Expressive 2D character portraits with emotional states               │
-│ • Animated pixel/sprite clash staging and 2-vs-Ace signature moment     │
-│ • Four distinct suit-specific default armies                            │
-│ • Cheese-themed cosmetic card backs unlockable via tokens               │
-│ • Lightweight campaign narrative interstitials                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│ TIER 3: LONG-TERM HORIZON (Future Strategic Expansions)                 │
-│ • Full alternate cosmetic army themes (Gothic, Steampunk, etc.)         │
-│ • Head-to-head multiplayer cosmetic showcase                            │
-│ • Licensed promotional brand partnerships                               │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+Barring newly discovered release-blocking defects, two substantial creative implementation sprints remain before final-pass polish.
+
+### Sprint 1 — Progressive Narrative Unveiling
+
+- Replace generic presentation labels with the five canonical identities while retaining strategy IDs and math.
+- Implement chapter completion/unlocks, replay access, legacy migration, and minimal narrative state.
+- Add mode-aware reactions, compact Campaign/War framing, biographies, lore fragments, and contextual historical/scientific links.
+- Use the Field Manual, Chronicle, Campaign Orders, resolution surfaces, achievements, and cosmetics without building a visual novel.
+
+### Sprint 2 — Clash Visualizations / Battlefield Animations
+
+- Stage brief, economical rank-to-unit encounters while physical cards remain visible and authoritative.
+- Preserve the number/Jack/Queen/King/Ace mapping and the Two's signature Ace-defeating role.
+- Reuse or extend existing sequencing, speed, Continue/skip, and reduced-motion seams where appropriate.
+- Keep silhouettes readable at phone scale and avoid copyrighted source material or an excessive asset/runtime budget.
+
+### Then — Final-Pass Polish
+
+- Resolve verified responsive layout/redraw gremlins, icon and overlay defects, pacing, accessibility, real-device compatibility, and store-readiness concerns.
+- Do not demote Sprint 2 into this generic polish bucket.
+- Long-term multiplayer, alternate army themes, and licensed partnerships remain beyond these two sprints.
 
 ### Prototyping & Iteration
 Placeholder and first-pass assets may be simple or AI-assisted during rapid prototyping. All visual assets must be evaluated by how cleanly they read at actual mobile gameplay scale (`<= 620px`) on physical devices.

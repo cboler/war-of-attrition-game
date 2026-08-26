@@ -141,12 +141,13 @@ flowchart TD
 
 ## Development Status & Documentation
 
-War of Attrition is in **Production Readiness / Final Polish** (Google Play closed testing, store asset automation, device validation).
+War of Attrition has a feature-complete core. Two substantial creative sprints—**Progressive Narrative Unveiling** and **Clash Visualizations / Battlefield Animations**—remain before final release polish, closed-testing follow-up, and device validation.
 
 - **Current Implementation Status**: [`.github/instructions/current-development-status.md`](.github/instructions/current-development-status.md) — Live status, active systems, and release priorities.
 - **Rules & Specification**: [`.github/instructions/war-of-attrition-requirements.md`](.github/instructions/war-of-attrition-requirements.md) — Authoritative physical game rules and requirements.
 - **Documentation Index**: [`.github/instructions/README.md`](.github/instructions/README.md) — Complete documentation hierarchy and development guides.
-- **Future Design Backlog**: [`developer-docs/future-gameplay-ideas.md`](developer-docs/future-gameplay-ideas.md) — AI Commanders, Hall of Valor, and Alternate Rules Campaigns.
+- **Private Narrative Canon**: [`developer-docs/narrative-canon.md`](developer-docs/narrative-canon.md) — Mont-Rouge chronology, commander dossiers, chapter disclosure, and source plan.
+- **Remaining Sprints & Backlog**: [`developer-docs/future-gameplay-ideas.md`](developer-docs/future-gameplay-ideas.md) — Narrative Sprint 1, Clash Visualization Sprint 2, release polish, and later candidates.
 
 # Cadillac / 31
 

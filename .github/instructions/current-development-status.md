@@ -1,78 +1,181 @@
 # War of Attrition — Current Development Status
 
-## 1. Project State: Production Readiness / Final Polish
+## 1. Project State: Core Complete, Two Creative Sprints Remaining
 
-**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. The project is an Angular Progressive Web Application (PWA) packaged for Android via a Trusted Web Activity (TWA) and is currently at version 4.2.0 (Android versionCode 40200) in the **Production Readiness / Final Polish** phase, undergoing Google Play closed testing, device compatibility validation, and store presence preparation.
+**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity and is currently version 4.2.0 (Android `versionCode` 40200).
 
----
+The project is no longer in broad feature discovery. Barring a newly discovered release-blocking defect, two substantial creative implementation sprints remain before final release-polish work:
 
-## 2. Completed Major Systems
+1. **Progressive Narrative Unveiling** — named commanders, four-chapter access and disclosure, mode-aware characterization, compact framing, lore fragments, source links, persistence/migration, and tests.
+2. **Clash Visualizations / Battlefield Animations** — the first-class visual system through which cards briefly summon readable battlefield units while cards remain authoritative.
 
-The core game and meta-progression architectures are fully implemented, tested, and active:
+After those sprints, the remaining work returns to release validation, responsive/redraw fixes, accessibility, pacing, device compatibility, and store presentation. Do not use known layout gremlins as a reason to expand either creative sprint.
 
-### Core Game Engine & Rules
-- **Physical Deck Model**: Standard 52-card deck divided by suit color (Red for Player, Black for Opponent) with immutable card definitions and independent shuffling.
-- **Card Comparison & Special Rule**: Truthful rank comparison logic with strict enforcement of the core rule: **2 defeats Ace** (the sole exception, non-challengeable).
-- **Turn Resolution Engine**: Complete lifecycle for normal clash draws, card awards, and deck exhaustion end conditions.
-- **Challenge / Reinforcement System**: Tactical decision flow allowing the losing side of a clash to commit one reinforcement card from their deck to counter the winning card.
-- **Recursive Battle System**: Multi-layer deadlock resolution for equal-rank clashes:
-  - Both players stake 3 new face-down cards per battle round.
-  - Blind cross-selection of the opposing champion.
-  - Layer recursion if champions tie.
-  - Privacy preservation: Winner recovers their own hidden battle cards face-down; defeated casualties are turned face-up into the public Boneyard.
+Authoritative creative references:
 
-### User Interface & Responsive Presentation
-- **Active Table UI (`TableGame`)**: The primary game view featuring a responsive tabletop layout with card playfield, stakes visualization, player seats with deck counters, and thumb action regions.
-- **Responsive Layout Engine**: Fully tailored viewports across three distinct responsive form factors:
-  - **Handheld Mobile Phone** (`<= 620px`): Single-column portrait stack optimized for one-thumb reachability.
-  - **Intermediate 7-Inch Tablet** (`620px - 820px`): Expanded portrait layout with side stakes, utility hub, and persistent telemetry affordances.
-  - **Widescreen 10-Inch Tablet & Desktop** (`>= 1100px`): Spacious multi-column tabletop grid.
-- **Visual Feedback & Power Badges**: Comparison power badges with explicit math breakdowns (`Base - Opposing = Remainder`), interactive combat tooltips, battlefield announcements, and situational quip reactions.
-- **Field Manual & Interactive Rule Demos**: In-game drawer (`StoryBookDrawerComponent`) containing a live match chronicle with accessible combat math inspector (hover, keyboard focus, and mobile tap-to-expand), Hall of Valor card records, Rules of Engagement, and animated rule demonstrations (`RuleDemoComponent`).
-- **Boneyard Casualty Viewer**: Public casualty inspector displaying discard counts, deck thickness cues, and full discarded card inspection.
-
-### Progression, Personalization & Telemetry
-- **Opponent Commanders & AI Personalities**: Parameterized decision engine in `OpponentAIService` powering five distinct fair-play archetypes (The Quartermaster, The Gambler, The Analyst, The Attritionist, The Cornered General) with contextual dialogue in `TableReactionService`, persistent campaign-level assignment, rotation without immediate repeat, table seat presentation, and telemetry integration. See [`developer-docs/opponent-commanders.md`](../../developer-docs/opponent-commanders.md).
-- **Commander Profile & Statistics**: Persistent local statistics tracking win rate, game durations, battle records, challenge success rates, and memorable card events (e.g. Ace assassinations, Juggernauts).
-- **Achievements System**: 28 tiered achievements with local persistence (including "Against the Odds" / `war.battle_assassin` for winning a Battle via 2-defeats-Ace, intentionally local-only pending final Play achievement reconciliation) and scaffolded Play Games Services synchronization for the 27 Google Play IDs.
-- **Hall of Valor (Card Service Records)**: Persistent historical service records for individual physical-card identities across multiple Wars, fully implemented in version 4.1.0 (Roll of Honor, card detail ledgers, Juggernaut Citations at 5-streak threshold, notable rivalries, Field Manual integration). See [`developer-docs/hall-of-valor.md`](../../developer-docs/hall-of-valor.md).
-- **Three-War Campaign & Alternate Rules**: Multi-war campaign progression tracking match scores, cumulative card differentials, opposing commander records, and career distinctions. Includes the **Campaign Orders** briefing interface before War 1, **Limited Reserves** (5 cross-war reinforcements with zero-reserve auto-concession), **Total War** (cumulative signed card differential scoring with differential-first presentation and seat badging), and **Fog of War** (sealed Boneyard, redacted active Chronicle math, and sealed Hall records during active fighting). See [`developer-docs/alternate-rules-campaigns.md`](../../developer-docs/alternate-rules-campaigns.md).
-- **Cosmetic Card Backings**: Token wallet and card-backing customization unlockable via campaign progression.
-- **Privacy-Compliant Telemetry**: Google Analytics 4 integration with verified outgoing transmission, standard `gtag.js` command queue bootstrap, and explicit user consent prompts (`TelemetryConsentService`), denying tracking by default until granted, with zero analytics collected in test/screenshot modes.
-
-### Platform Packaging & Tooling
-- **Android TWA Wrapper**: Native Android application wrapper built with Google ChromeOS / Android Browser Helper, targeting Android 14+ (API 36).
-- **Automated Store Screenshots**: Deterministic Playwright Chromium test matrix capturing store-ready PNG screenshots across Phone (1080×1920), 7" Tablet (1200×1920), and 10" Tablet (2560×1600) with binary header validation.
-- **Automated CI/CD Workflows**: GitHub Actions for GitHub Pages deployment (`deploy.yml`), Android App Bundle generation (`build-android-bundle.yml`), and opt-in Store Screenshot generation (`generate-store-screenshots.yml`).
+- [`developer-docs/north-star.md`](../../developer-docs/north-star.md) — tone, physical-deck fidelity, and visual identity.
+- [`developer-docs/narrative-canon.md`](../../developer-docs/narrative-canon.md) — private Mont-Rouge canon, commander dossiers, chapter disclosure, and narrative migration contract.
+- [`developer-docs/opponent-commanders.md`](../../developer-docs/opponent-commanders.md) — permanent AI strategy assets and current dialogue architecture.
+- [`developer-docs/alternate-rules-campaigns.md`](../../developer-docs/alternate-rules-campaigns.md) — implemented mode mechanics and planned chapter availability.
+- [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — the remaining two-sprint boundary and later backlog.
 
 ---
 
-## 3. Current Release-Readiness Priorities
+## 2. Completed Major Systems — Do Not Re-Propose
 
-Remaining work is concentrated in validation, UX refinement, and store compliance:
+The following architectures are implemented, tested, and active. Future agents should extend their existing seams rather than proposing them as new systems.
 
-1. **Google Play Closed Testing Feedback**: Monitor closed-testing telemetry, crash reports, and player feedback.
-2. **Real-Device Form Factor Validation**: Test on physical Android devices ranging from compact phones to foldables and large tablets.
-3. **Animation Pacing & Touch Refinement**: Fine-tune transition timings and touch targets for rapid one-handed play.
-4. **Store Presence & Marketing Assets**: Maintain store screenshot packages, feature graphics, and localized store listing copy.
-5. **Accessibility (a11y) Verification**: Ensure full screen-reader announcements (ARIA live regions) and high-contrast compliance across dialogs.
-6. **Monetization Architecture Review**: Monetization remains intentionally deferred (`ADS_ENABLED=false`). Any future ad integration will require a dedicated UX evaluation.
+### Core Game Engine and Rules
+
+- Standard 52-card physical deck split by suit color: Red for the player and Black for the opponent, with independent legal shuffling.
+- Truthful rank comparison with the sole special exception that **2 defeats Ace**.
+- Complete ordinary clash, Challenge/reinforcement, settlement, recursive Battle, Boneyard, and deck-exhaustion lifecycle.
+- Three face-down cards per side at each Battle layer, blind cross-selection, and strict hidden-card privacy.
+- Attrition loss when a side cannot commit the required Battle cards.
+
+The authoritative mechanical specification remains [`war-of-attrition-requirements.md`](./war-of-attrition-requirements.md) and must not be changed by narrative or animation work.
+
+### Active Table and Presentation
+
+- `TableGame` is the active table view, with responsive phone, tablet, and desktop layouts on fixed dark green felt.
+- Physical cards remain visible game state. The table already presents stakes, Battle layers, deck counters, Boneyard movement, combat-strength badges, battlefield announcements, and sparse contextual reactions.
+- `PresentationSequencerService` provides timed presentation phases, animation-speed multipliers, player Continue/skip behavior, timing collapse when animations are disabled, and `prefers-reduced-motion` handling.
+- Existing CSS/card animations cover dealing, clash movement, reinforcement, casualty reveals, Battle-layer staging, return, and Boneyard movement. They are not yet the planned rank-to-unit battlefield visualization system.
+- `RuleDemoComponent` provides isolated, frame-based, replayable and skippable rules drills with reduced-motion support. It is a useful economy/readability reference for Sprint 2, not a requirement to turn the runtime table into a rule demo.
+
+### Field Manual, Chronicle, and Hall of Valor
+
+- `StoryBookDrawerComponent` supplies the Field Manual tab architecture: Chronicle, Hall of Valor, Rules of Engagement, and contextual Card Reference.
+- `StoryBookService` builds the current War's in-memory tactical Chronicle from public domain events. It records curated clashes, Challenges, Battles, casualties, reactions, achievements, and resolution. It is not presently a persistent narrative codex.
+- Interactive rule demonstrations are implemented and never alter the active War.
+- Boneyard casualty inspection and exact card reference are implemented outside active Fog of War sealing.
+- **Hall of Valor is fully implemented**, profile-persistent, and integrated into the Field Manual. It records truthful physical-card service histories, honors, rivalries, Juggernaut Citations, and War survival with zero gameplay buffs. See [`developer-docs/hall-of-valor.md`](../../developer-docs/hall-of-valor.md).
+
+### Campaigns and Alternate Rules
+
+- Three-War Campaign progression, history, signed margins, token rewards, persistent opposing commander assignment, and commander rotation are implemented.
+- The Campaign Orders modal is implemented and opens before War 1 when orders are unselected.
+- All four mechanical modes are implemented:
+  - `standard`
+  - `limited_reserves` — five human reinforcement reserves across the Three-War Campaign, including zero-reserve automatic concession.
+  - `fog_of_war` — sealed Boneyard, redacted active Chronicle details, sealed Hall records, and telemetry redaction while fighting continues.
+  - `total_war` — signed cumulative card differential determines the Campaign outcome.
+- Current code displays all four Campaign Orders to every profile and permits any selection before War 1. Progressive narrative chapter locks do **not** exist yet; that is Sprint 1 work.
+- The intended future chapter order is **Standard → Limited Reserves → Fog of War → Total War**, unlocked by chapter completion rather than victory. Existing profiles require a backward-compatible migration and sensible grandfathering.
+
+### Opponent Commanders and Reactions
+
+- Five permanent, parameterized, fair-play strategies are implemented in `commander.model.ts` and evaluated by `OpponentAIService`:
+  - `quartermaster`
+  - `gambler`
+  - `analyst`
+  - `attritionist`
+  - `cornered-general`
+- The current registry still exposes generic creative labels and event-specific dialogue pools. `TableReactionService` selects sparse lines for special/narrow clashes, successful and failed reinforcements, concessions, desperation, and notable Battle losses.
+- Dialogue is currently conditioned on commander and gameplay event only. It has no campaign-mode, chapter-progress, or narrative-flag condition layer.
+- Sprint 1 will map the existing strategies to Marcel de Brie, Sir Edmund Gloucester, Matthias von Greyerz, Bastien de Herve, and Lorenzo di Taleggio. It must not add commanders, change strategy fairness, or provide hidden information.
+
+### Progression, Personalization, and Telemetry
+
+- Profile-scoped Campaign progress, bounded Campaign history, career statistics, and cosmetic entitlements are persisted and normalized.
+- Card-backing cosmetics and token purchase/unlock flow are implemented.
+- Twenty-eight local tiered achievements are implemented, with the 2-defeats-Ace Battle achievement intentionally local-only pending final Play Games reconciliation.
+- Google Analytics 4 telemetry is consent-gated and denied by default until permission. Test and screenshot modes collect no analytics. Fog of War applies presentation and mapper-level information redaction while a War is active.
+
+### Platform Packaging and Tooling
+
+- Android TWA wrapper targeting the current project Android configuration.
+- GitHub Pages deployment, Android bundle, secret scanning, and deterministic Playwright store-screenshot workflows.
+- Store screenshot matrix for phone, 7-inch tablet, and 10-inch tablet targets with validation tooling.
 
 ---
 
-## 4. Architectural & Design Decisions
+## 3. Current Implementation Boundary vs. Settled Design
 
-### Fixed Dark / Felt Tabletop Presentation
-The application deliberately uses a **fixed dark green felt presentation**. In War of Attrition, the visual world is the card table itself. Conventional light/dark theme toggling does not fit this aesthetic and was intentionally removed.
+The documentation pass establishes creative decisions; it does not imply they are already in production code.
 
-### Fidelity to Physical Card Play
-War of Attrition is designed to be fully playable with an ordinary, physical 52-card deck. Digital additions (animations, power badges, quip dialogue, campaign scoring, statistics, opponent commanders) enhance presentation and progression, but do **not** alter standard card ranks, manipulate hidden deck orders, or introduce fantasy card abilities.
+| Area | Implemented now | Settled next state |
+| --- | --- | --- |
+| Commander mechanics | Five generic-named fair-play strategy records | Same IDs and strategies, mapped to the five canonical named characters |
+| Dialogue | Fixed event pools per commander | Small mode/chapter/event-aware data layer; no RPG dialogue engine |
+| Campaign availability | All four modes selectable immediately | Chapter completion unlocks the next mode; no victory or monetization gate |
+| Narrative persistence | Campaign history and gameplay progression only | Minimal chapter completion/unlock state and only necessary major flags |
+| Chronicle | In-memory tactical War feed | May carry short contextual fragments without compromising truthful combat history |
+| Historical links | Creative direction only | Optional contextual links in suitable lore surfaces |
+| Table animation | Card movement, Battle layers, sequencing, skip/speed/motion controls | Rank-to-unit clash visualization while cards remain visible and authoritative |
+
+The private mouse/hay cause in [`narrative-canon.md`](../../developer-docs/narrative-canon.md) is writer knowledge. It must not simply appear as an early player-facing explanation.
 
 ---
 
-## 5. Future Candidates (Post-Release Backlog)
+## 4. Remaining Substantial Sprint 1 — Progressive Narrative Unveiling
 
-The following concepts are preserved for post-release development and are documented in [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md):
+Implementation scope:
 
-- **Alternate Rules Campaign Modifiers**: Additional campaign variants (No Retreat, Escalation, Custom Orders).
-- **Casualty Granularity in Hall of Valor**: Distinguishing 1v1 duel casualties from mass Battle casualties on card service records.
+- Map canonical names, titles, factions, biographies, beliefs, omissions, and relationships onto the existing strategy IDs.
+- Implement **Standard → Limited Reserves → Fog of War → Total War** chapter availability.
+- Unlock the next chapter after a completed Three-War Campaign regardless of outcome; retain unlocked chapters for replay.
+- Add a backward-compatible progression schema migration. Preserve active Campaign mode/resources/history, infer reached chapters where possible, and grandfather legacy access where the old schema cannot prove what the player previously used.
+- Add concise pre-Campaign/pre-War framing, completion reactions, mode-aware commander lines, Field Manual lore fragments, and contextual sources.
+- Extend dialogue data only enough to filter by commander, campaign mode/chapter, broad progression, event, and a very small set of major flags if necessary.
+- Keep repeated play fast; narrative access is not gated by skill, tokens, achievements, purchases, advertising, or monetization.
+- Add focused unit, migration, and presentation tests plus documentation updates.
+
+Out of scope for Sprint 1:
+
+- A visual novel, quest system, dialogue tree engine, relationship meters, character combat stats, new AI strategies, magical abilities, or hidden-information access.
+- Full battlefield unit animation, sprite-army production, or the 2-vs-Ace assassination sequence; those belong to Sprint 2.
+
+---
+
+## 5. Remaining Substantial Sprint 2 — Clash Visualizations / Battlefield Animations
+
+This sprint is a first-class expression of the visual identity, not generic optional polish.
+
+> **The cards do not merely represent the battle. They summon the battle.**
+
+The physical cards continue to show and determine state. A presentation layer briefly imagines them as opposing units:
+
+- Number cards → ordinary soldiers/infantry, with scale or formation influenced by rank.
+- Jack → cavalry or knight.
+- Queen → mage or equivalent elite specialist.
+- King → regal swordsman or champion.
+- Ace → commander or general.
+- Two → visually humble ordinary troops/scouts that remain capable of the signature Ace-defeating role rather than merely looking weak.
+
+Required qualities:
+
+- Economical late-16-bit/early-32-bit tactical-JRPG grammar without copying copyrighted sprites, characters, animations, or UI.
+- Clean silhouettes readable at phone scale; reusable SVG/CSS/keyframe or similarly economical assets where practical.
+- Quick charge, collision, recoil, defeat, retreat, and/or casualty communication.
+- Recursive Battles may escalate spectacle without obscuring stakes or extending play unnecessarily.
+- Continue/skip and animation-speed behavior for experienced players, plus full reduced-motion support.
+- No asset, runtime, or style budget that undermines mobile reliability.
+
+The existing presentation phases, sequencer, settings, card table, Battle layers, CSS motion rules, and deterministic rule demos are implementation seams to evaluate. They do not authorize changes to card resolution or game state.
+
+---
+
+## 6. Final-Pass Release Concerns After the Two Sprints
+
+These remain important but should not absorb or expand the creative sprint scopes:
+
+1. Google Play closed-testing feedback, crash review, and store compliance.
+2. Physical-device validation across compact phones, foldables, and tablets.
+3. Known initial responsive layout/redraw gremlins, including first-load mobile viewport/reflow behavior that can correct after a redraw. Diagnose on real devices; do not assert a root cause without evidence.
+4. Animation pacing and touch-target refinement for rapid one-handed play.
+5. Screen-reader, focus, contrast, and reduced-motion verification across dialogs and drawers.
+6. Store screenshots, feature graphics, and listing copy.
+7. Unsupported Material icon audit and combat-math/callout overlay composition where still reproducible.
+8. Monetization remains deferred (`ADS_ENABLED=false`) and cannot gate narrative.
+
+---
+
+## 7. Durable Architectural Guardrails
+
+- Preserve the fixed dark-green felt table, gold accents, and dignified military interaction language.
+- Preserve physical 52-card fidelity and deterministic game correctness.
+- AI never inspects hidden deck order, face-down Battle cards, or concealed player information.
+- Cosmetics, story, dialogue, portraits, and battlefield spectacle are presentation only.
+- Do not reintroduce theme switching, collectible card stats, deck building, fantasy card abilities, or pay-to-win progression.
+- Preserve accessibility, mobile readability, and current telemetry/privacy guarantees.

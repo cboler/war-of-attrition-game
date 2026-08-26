@@ -1,110 +1,142 @@
-# War of Attrition — Future Gameplay & Backlog Design Concepts
+# War of Attrition — Remaining Sprints and Later Backlog
 
-This document catalogs future design concepts, post-release candidates, and UX backlog observations for **War of Attrition**.
+This document separates the two substantial creative implementation sprints that remain from final release polish and longer-term ideas.
 
-> [!TIP]
-> **Authoritative Creative & Visual Direction**
-> For the game's creative direction, world identity (The War of Cheesemakers), visual grammar (JRPG-inspired battle staging), suit-specific armies, and cosmetic principles, refer to the authoritative document:
-> 
-> 👉 [`developer-docs/north-star.md`](./north-star.md)
+Authoritative companions:
 
----
+- [`north-star.md`](./north-star.md) — tone, physical-deck fidelity, and visual grammar.
+- [`narrative-canon.md`](./narrative-canon.md) — private history, dossiers, chapters, and disclosure rules.
+- [`opponent-commanders.md`](./opponent-commanders.md) — implemented strategy layer and current dialogue seams.
+- [`alternate-rules-campaigns.md`](./alternate-rules-campaigns.md) — implemented mode mechanics and planned availability.
+- [`.github/instructions/current-development-status.md`](../.github/instructions/current-development-status.md) — authoritative implementation status.
 
-## 🧭 Core Design Guardrail for Future Additions
+## 1. Implemented Foundations — Not Backlog Proposals
 
-> **Guiding Principle**:
-> War of Attrition is literally playable with an ordinary physical deck of 52 cards. Digital features should strictly preserve and honor that physical identity.
->
-> Future modes, visual enhancements, and backlog additions may introduce campaign-level resource constraints, statistical progression, thematic presentation, enhanced scoring metrics, or specialized opponent behaviors. However, they must **avoid** turning standard playing cards into collectible card superpowers, arbitrary fantasy abilities, or deck-building pieces, unless the project deliberately decides to become a fundamentally different game.
+The following graduated systems are in production code and should not be re-proposed:
 
----
+- Five fair-play commander strategy IDs in `commander.model.ts`, legal public-information decisions in `OpponentAIService`, persistent Campaign assignment/rotation, sparse reactions, and commander telemetry.
+- Hall of Valor card service records, Roll of Honor/detail views, Juggernaut Citations, rivalries, profile persistence, and Field Manual integration.
+- All four Campaign modes: Standard, Limited Reserves, Fog of War, and Total War.
+- Campaign Orders before War 1, Three-War history/scoring, tokens, cosmetic card-backing unlocks, and profile presentation.
+- Field Manual tabs for Chronicle, Hall of Valor, Rules of Engagement, and Card Reference.
+- Frame-based interactive rule demos and an active-table presentation sequencer with animation speed, Continue/skip, disabled-animation timing collapse, and reduced-motion handling.
 
-## 1. Graduated Systems & Their Evolution
+The missing work is the settled creative layer on top of these foundations, not another mechanics redesign.
 
-The following systems were originally proposed as backlog concepts and are now fully implemented in production code:
+## 2. Remaining Sprint 1 — Progressive Narrative Unveiling
 
-### A. Opponent Commanders & AI Personalities (Implemented)
-- **Technical Status**: Fully implemented in `OpponentAIService`, `commander.model.ts`, and `CampaignProgressionService`. See [`developer-docs/opponent-commanders.md`](./opponent-commanders.md).
-- **Creative Evolution**: The 5 implemented strategy archetypes (*The Quartermaster*, *The Gambler*, *The Analyst*, *The Attritionist*, *The Cornered General*) represent the underlying AI behavioral architecture. Future character passes will map named cheesemaker personalities and expressive portraits directly onto these models as outlined in [`developer-docs/north-star.md`](./north-star.md).
+This is the next substantial implementation sprint.
 
-### B. Hall of Valor / Persistent Card Service Records (Implemented)
-- **Technical Status**: Fully implemented in `HallOfValorService` and the Field Manual drawer. See [`developer-docs/hall-of-valor.md`](./hall-of-valor.md).
-- **Core Distinctions**: Tracks Confirmed Casualties, Ace Assassinations (2-vs-Ace), Reinforcement Rescues, Times Rescued, Battle Layers Survived, Victorious Wars Survived, Juggernaut Citations, and Notable Rivalries with zero gameplay stat buffs.
+### Scope
 
-### C. Alternate Rules Campaigns (First Three Variants Implemented)
-- **Technical Status**: Fully implemented with the Campaign Orders briefing modal. See [`developer-docs/alternate-rules-campaigns.md`](./alternate-rules-campaigns.md).
-- **Active Modes**: *Standard Campaign*, *Limited Reserves* (5 cross-war reinforcements), *Total War* (cumulative signed card differential scoring), and *Fog of War* (sealed Boneyard and casualty ledgers during active fighting).
+- Map the canonical cast onto the permanent strategy IDs:
+  - Marcel de Brie → `quartermaster`
+  - Sir Edmund Gloucester → `gambler`
+  - Matthias von Greyerz → `analyst`
+  - Bastien de Herve → `attritionist`
+  - Lorenzo di Taleggio → `cornered-general`
+- Translate the private dossiers into concise player-facing names, titles, biographies, relationships, omissions, and distinct voices.
+- Implement chapter availability in the order **Standard → Limited Reserves → Fog of War → Total War**.
+- Unlock the next chapter after a complete Three-War Campaign regardless of victory, defeat, or draw; retain every unlocked chapter for replay.
+- Add a versioned, backward-compatible progression migration that preserves active Campaigns and sensibly grandfathers legacy profiles that previously had all-mode access.
+- Add short pre-Campaign/pre-War framing, mode-aware table reactions, War/Campaign resolution reactions, and lore fragments.
+- Use the existing Campaign Orders, Field Manual, Chronicle, Hall of Valor, achievements, card-back/item descriptions, and appropriate loading/interstitial surfaces.
+- Add optional, unobtrusive historical/scientific links following the source plan in [`narrative-canon.md`](./narrative-canon.md).
+- Persist only chapter unlock/completion state and any genuinely necessary major narrative flags.
+- Add focused tests for migration, unlock-on-completion, replay access, mode-aware line selection, disclosure boundaries, and accessibility.
 
----
+### Architectural Boundary
 
-## 2. Creative & Visual Presentation Backlog (Tier 2 & 3 Candidates)
+The current `OpponentCommanderDialogue` is a set of event pools, and `TableReactionService` knows commander plus gameplay context but not mode or chapter. Extend this with a small conditioned-data shape. Do not create a general branching dialogue engine.
 
-As detailed in [`developer-docs/north-star.md`](./north-star.md), the digital layer will progressively stage the dramatic battles summoned by physical cards:
+The current Chronicle is an in-memory truthful tactical War feed. Narrative fragments may complement it, but Fog of War redaction, card identities, combat attribution, and Hall of Valor statistics must remain mechanically truthful.
 
-1. **Visualized Card Clashes & Battle Staging**:
-   - Small sprite formations meeting and clashing on the battlefield to dramatize card resolution.
-   - Distinct rank-to-unit visual archetypes (Infantry formations, Cavalry Jacks, Caster Queens, Champion Kings, General Aces).
-   - Signature **2-defeats-Ace assassination sequence** where humble infiltrators strike down the opposing general.
-2. **Suit-Specific Default Armies**:
-   - Distinct battlefield identities for each card suit (Spades = Disciplined Steel Legion, Hearts = Chivalric Vanguard, Diamonds = Gilded Mercenaries, Clubs = Rugged Highland Force).
-3. **Character Portraits & Emotional Dialogue**:
-   - Expressive 2D character portraits (Neutral, Smug/Confident, Alarmed/Furious, Defeated) paired with contextual situational quips.
-4. **Cosmetic Progression & Unlockable Card Backs**:
-   - Token-based cosmetic customization including cheese-themed card backs (Aged Rind, Blue Vein, Waxed Wheel, Cheese Board, Artisan Cracker).
+### Explicit Exclusions
 
----
+- No new strategy archetype or sixth Tyromancer.
+- No visual novel, quest graph, relationship meter, collectible commander stats, or RPG combat system.
+- No magical gameplay abilities or narrative-based access to hidden cards.
+- No victory, token, achievement, purchase, advertising, or monetization gate on chapter access.
+- No direct early-game statement of the private mouse/hay cause.
+- No production battlefield-unit animation; that belongs to Sprint 2.
 
-## 3. Alternate Rules Campaign Candidates
+## 3. Remaining Sprint 2 — Clash Visualizations / Battlefield Animations
 
-Additional campaign variants reserved for future evaluation:
+This is the second substantial implementation sprint. It is not optional generic polish.
 
-#### 1. No Retreat (Future Candidate)
-- The War must be fought to the bitter end.
-- Abandoning, conceding, or resetting an unresolved War immediately forfeits the entire Campaign with maximum penalty to career differential.
+> **The cards do not merely represent the battle. They summon the battle.**
 
-#### 2. Escalation (Future Candidate)
-- Each successful reinforcement or multi-layer battle in a War increases the stake cost or difficulty of subsequent actions in that Campaign.
+### Authoritative Presentation Contract
 
----
+- The physical cards remain visible, readable, and authoritative state.
+- The digital layer briefly imagines the resolved cards as small opposing military forces.
+- Visuals never determine an outcome, change timing-sensitive game state, or conceal which cards actually fought.
 
-## 4. Concrete UX & Product Backlog Observations
+### Rank-to-Unit Mapping
 
-The following concrete UX, mobile layout, and presentation observations are recorded for future refinement and resolution:
+| Card rank | Battlefield presentation |
+| --- | --- |
+| Number cards | Ordinary soldiers or infantry, with scale/formation influenced by rank |
+| Jack | Cavalry or knight |
+| Queen | Mage or equivalent elite specialist |
+| King | Regal swordsman or champion |
+| Ace | Commander or general |
+| Two | Humble soldiers/scouts that remain visually capable of the signature Ace-defeating infiltration |
 
-### A. Campaign Abandonment & Restart Flow
-- **Current State**: There is currently no obvious, dedicated mechanism in the UI to abandon or reset an active Three-War Campaign and begin another.
-- **Future UX Requirement**:
-  - Provide a deliberate "Abandon Campaign" or "Reset Campaign Orders" affordance with an explicit confirmation dialog.
-  - Abandoning an active Campaign must gracefully record the partial outcome in history if appropriate, but must **never** erase cumulative career statistics, profile history, or unlocked achievements.
+Against ordinary 3-through-King opposition, the Two can read as a small, vulnerable formation. Against an Ace, it must visibly communicate its special lethal role rather than appearing to win through unexplained power scaling.
 
-### B. Mobile Initial-Layout & Viewport Reflow Defect
-- **Observation**: On mobile devices (PWA / Android TWA), the player's deck and table seat information can initially render partially below the visible viewport upon first load.
-- **Behavioral Clue**: Leaving and re-entering the application or otherwise forcing a layout recalculation/redraw corrects the presentation.
-- **Investigation Guidance**:
-  - This indicates an initial viewport measurement or reflow timing defect rather than a static CSS breakpoint limitation.
-  - Future investigation should analyze:
-    - Dynamic viewport units (`dvh` vs `vh` vs `svh`)
-    - Android safe-area insets (`env(safe-area-inset-*)`)
-    - Android TWA browser chrome initialization timing
-    - Angular layout measurements occurring before the mobile visual viewport stabilizes.
-  - *Do not assert a single root cause until verified on physical Android devices.*
+### Desired Visual Grammar
 
-### C. Missing Field Manual & Profile Icons
-- **Rules of Engagement Item 3 (*Deadlocks & Battles*)**: The icon for this entry (`swords`) does not render correctly in standard Material Icons web font and requires replacement with a verified icon identifier (e.g. `sports_kabaddi`, `layers`, or custom SVG).
-- **Profile / Achievements Missing Icons**: The first two achievement definitions in `ACHIEVEMENTS` (`war.first_casualty` referencing `playing_cards` and `war.first_battle` referencing `swords`) use icon names not supported by the font set.
-- **Action**: Audit all icon references across `story-book-drawer.component.ts` and `achievement.model.ts` against supported Material Icon identifiers.
+- Economical late-16-bit/early-32-bit tactical-JRPG staging.
+- Original, clean sprite or SVG silhouettes readable on phones.
+- Small forces charge from opposite sides; collision, recoil, defeat, retreat, or casualties resolve quickly.
+- Recursive Battles may increase scale or intensity while preserving the exact staked layers.
+- Prefer reusable SVG/CSS/keyframes or similarly economical techniques where practical.
+- Do not copy sprites, characters, effects, animations, or UI from *Suikoden*, *Final Fantasy*, or other inspirations.
 
-### D. Combat-Math & Callout Overlay Layering
-- **Observation**: During active turns, combat-math callouts, power badges, and explanatory banners can visually overlap or obscure one another.
-- **Architectural Principle**: Treat this as a visual composition, spatial positioning, and timing problem rather than simply escalating `z-index` values.
-- **Long-Term Alignment**: Future visual clash animations will naturally communicate combat power and outcomes, reducing the need for dense simultaneous textual overlays.
+### Speed, Accessibility, and Runtime Guardrails
 
-### E. Card Backs & Cosmetic Progression Guardrails
-- **Design Focus**: Advance tasteful cheese-themed unlockable and purchasable card backings (Aged Rind, Blue Vein, Waxed Wheel, Artisan Cracker).
-- **Brand Protection Guardrail**: Strictly prohibit unauthorized third-party trademarks, logos, or commercial trade dress (e.g., Cheez-It, Kraft). Branded crossovers remain deferred partnership concepts only.
+- A routine clash should resolve in roughly one to two seconds at normal speed and must not make rapid play feel trapped.
+- Continue/skip behavior should allow experienced players to finish the current visual beat immediately.
+- Respect animation-speed settings, disabled animations, and `prefers-reduced-motion` with a clear static outcome.
+- Keep cards and core actions readable throughout; never recreate input freezes or delayed action availability.
+- Avoid large asset, style, or runtime budgets.
 
----
+### Existing Seams to Evaluate
 
-## 5. Implementation Status Summary
+- `PresentationSequencerService` already sequences deterministic table phases, multiplies timing by user speed, and permits Continue.
+- `TableGame` already exposes clash, reinforcement, Battle layer, casualty, return, and Boneyard presentation states.
+- Existing CSS handles dealing, card collisions, Battle layers, casualty reveals, return, Boneyard movement, and motion-disabled behavior.
+- `RuleDemoComponent` demonstrates an economical frame-data model with Replay, Skip to result, sound cues, and reduced-motion collapse.
+- `CardTableComponent` provides the responsive table/rail/center layout into which a presentation layer may fit.
 
-All items in Sections 2, 3, and 4 are tracked backlog items. Core gameplay, 5 AI strategy archetypes, Hall of Valor, and the first 3 Alternate Rules Campaign modes remain fully operational in production code.
+These are promising seams, not a mandate to couple runtime battlefield scenes to the rules-demo implementation. Deterministic game resolution remains in the existing engine.
+
+## 4. Final-Pass Release and UX Concerns
+
+These should be addressed after or alongside tightly scoped validation, without expanding Narrative Sprint 1 or demoting Sprint 2 into a generic bucket.
+
+### Responsive Initial Layout / Redraw
+
+On mobile PWA/TWA launches, the player deck or seat information can initially appear partially below the visible viewport and correct after a later redraw. Treat this as a release-polish investigation involving physical devices, visual viewport stabilization, dynamic viewport units, safe-area insets, and measurement timing. Do not declare a root cause without evidence.
+
+### Material Icons
+
+The Rules of Engagement Battle entry and early achievements reference icon names such as `swords` and `playing_cards` that are not reliably supplied by the configured Material Icons font. Audit and replace only with verified identifiers or an intentional local SVG.
+
+### Combat-Math and Callout Composition
+
+Power badges, combat math, and announcements can compete spatially. Treat this as composition and timing work, not a `z-index` escalation contest. Sprint 2 may reduce the need for simultaneous explanatory overlays, but it must not remove accessible outcome text.
+
+### Campaign Abandonment
+
+There is no prominent dedicated flow to abandon/reset an active Three-War Campaign. A future deliberate affordance should confirm the action and preserve career history, achievements, unlocked chapters, and cosmetics. This is not a prerequisite for documenting or implementing the chapter order.
+
+## 5. Longer-Term Candidates — Beyond the Final Two Sprints
+
+- **No Retreat:** A deliberately evaluated Campaign variant in which abandonment has Campaign consequences.
+- **Escalation:** A possible variant where repeated reinforcement or deep Battle changes later Campaign pressure while preserving physical-deck rules.
+- **Hall of Valor casualty granularity:** Split one-on-one clash casualties from mass Battle casualties using existing settlement source attribution.
+- **Alternate army themes:** Purely visual suit-army reskins after the default clash language proves readable and maintainable.
+- **Head-to-head multiplayer:** Long-term only, with strict cosmetic-only progression and fair-play integrity.
+- **Licensed partnerships:** Distant and permitted only with explicit rights; no unauthorized trademarks or trade dress.

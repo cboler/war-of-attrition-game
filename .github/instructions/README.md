@@ -18,30 +18,32 @@ To ensure clarity for developers and automated coding agents, documentation in t
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
-│ 3. CREATIVE DIRECTION, BACKLOG & HISTORICAL PLANNING        │
+│ 3. CREATIVE DIRECTION, CANON & ROADMAP                      │
 │    - developer-docs/north-star.md (Creative North Star)     │
-│    - developer-docs/future-gameplay-ideas.md (Backlog ideas)│
+│    - developer-docs/narrative-canon.md (Private canon)      │
+│    - developer-docs/future-gameplay-ideas.md (Roadmap)      │
 │    - development-milestones.md (Historical planning)        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### 1. Authoritative Specification
-- [`war-of-attrition-requirements.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/war-of-attrition-requirements.md) — **SINGLE SOURCE OF TRUTH** for all game rules, rank hierarchies, Battle resolution, and core requirements. **⚠️ NEVER MODIFY THIS FILE.**
+- [`war-of-attrition-requirements.md`](./war-of-attrition-requirements.md) — **SINGLE SOURCE OF TRUTH** for all game rules, rank hierarchies, Battle resolution, and core requirements. **⚠️ NEVER MODIFY THIS FILE.**
 
 ### 2. Current Project State & Guidance
-- [`current-development-status.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/current-development-status.md) — Authoritative live status describing the **Production Readiness / Final Polish** phase, active systems, responsive layouts, and near-term priorities.
-- [`implementation-guidelines.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/implementation-guidelines.md) — Code quality standards, Angular conventions, signal state rules, and architecture guidelines.
+- [`current-development-status.md`](./current-development-status.md) — Authoritative live status describing the feature-complete core, two remaining creative sprints, and final release priorities.
+- [`implementation-guidelines.md`](./implementation-guidelines.md) — Code quality standards, Angular conventions, signal state rules, and architecture guidelines.
 
 ### 3. Creative Direction & Backlog References
-- [`developer-docs/north-star.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/north-star.md) — **CREATIVE NORTH STAR** establishing thematic world identity (The War of Cheesemakers), JRPG-inspired visual grammar, suit-specific armies, and cosmetic principles.
-- [`developer-docs/future-gameplay-ideas.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/developer-docs/future-gameplay-ideas.md) — Backlog design concepts, concrete UX observations, and candidate campaign variants.
-- [`development-milestones.md`](file:///c:/Users/lacyv/Documents/GitHub/war-of-attrition-game/.github/instructions/development-milestones.md) — Historical milestone roadmap used during early development. Provided for context only; completion percentages in milestone documents are historical artifacts and do not supersede `current-development-status.md`.
+- [`developer-docs/north-star.md`](../../developer-docs/north-star.md) — **CREATIVE NORTH STAR** establishing thematic world identity, tone, JRPG-inspired visual grammar, and cosmetic principles.
+- [`developer-docs/narrative-canon.md`](../../developer-docs/narrative-canon.md) — **PRIVATE WRITER CANON** for Mont-Rouge, commander dossiers, chapters, unlock philosophy, and source plan.
+- [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — Remaining Narrative and Clash Visualization sprints, release-polish concerns, and later candidates.
+- [`development-milestones.md`](./development-milestones.md) — Historical milestone roadmap used during early development. Completion percentages there do not supersede `current-development-status.md`.
 
 ---
 
 ## 🎯 Current State Summary
 
-- **Project Phase**: Production Readiness / Final Polish (Google Play closed testing, store asset generation, device validation).
+- **Project Phase**: Feature-complete core with two substantial creative sprints remaining: Progressive Narrative Unveiling, then Clash Visualizations / Battlefield Animations. Final release polish follows.
 - **Active Table Route**: `src/app/table-game/` (`TableGame`) — Fully responsive across Mobile Phone (`<= 620px`), 7-inch Tablet (`620px - 820px`), and 10-inch Tabletop Grid (`>= 1100px`).
 - **Visual Design**: Fixed dark/green felt card table. (Theme toggling was intentionally removed as the visual world is the felt table itself).
 - **Automated Tests**: Comprehensive unit test suite (`npm test`) covering game logic, turns, challenges, recursive battles, and UI components.
@@ -143,7 +145,7 @@ flowchart TD
     resolveNormalWin & resolveNormalLoss --> startTurn
     resolveChallengeWin & resolveChallengeLoss --> startTurn
     resolveBattleWin & resolveBattleLoss --> startTurn
-    
+
     %% End Game
     winGame --> playAgain{"Play again?"}
     loseGame --> playAgain
