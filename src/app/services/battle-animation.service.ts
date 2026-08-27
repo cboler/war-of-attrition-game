@@ -21,7 +21,6 @@ export class BattleAnimationService {
 
   request(winner: PlayerType): BattleAnimationScene | null {
     if (
-      !this.settings.battleAnimationsEnabled() ||
       !this.settings.autoPlayAnimations() ||
       (winner !== PlayerType.PLAYER && winner !== PlayerType.OPPONENT)
     ) {

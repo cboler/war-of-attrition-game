@@ -50,7 +50,8 @@ import {
 
 export const MODEST_COMEBACK_DEFICIT_THRESHOLD = 3;
 export const SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD = 15;
-export const BATTLE_ANIMATION_BASE_DURATION_MS = 800;
+export const SKIRMISH_ANIMATION_BASE_DURATION_MS = 800;
+export const SKIRMISH_ANIMATION_FAST_MIN_DURATION_MS = 720;
 
 export enum PresentationState {
   READY = 'ready',
@@ -132,6 +133,8 @@ export interface BattlefieldMessage {
   readonly id: number;
   readonly text: string;
 }
+
+export type BattlefieldMessageProminence = 'routine' | 'significant';
 
 export interface ComparisonPresentation {
   readonly player: ComparisonStrengthView;
@@ -589,7 +592,7 @@ export class GameControllerService {
     this.comparisonPresentationSignal.set(null);
     this.revealedCasualtyIds.set([]);
     this.phase.set(PresentationState.DRAWING);
-    this.announce('Cards are dealt.');
+    this.announce('Cards are dealt.', 'routine');
 
 
     try {
@@ -618,7 +621,7 @@ export class GameControllerService {
       this.sound.playCardDraw();
       await this.sequencer.pause(280, version);
       this.phase.set(PresentationState.CLASH_REVEAL);
-      this.announce('Reveal.');
+      this.announce('Reveal.', 'routine');
       this.sound.playCardFlip();
       await this.sequencer.pause(360, version);
       this.phase.set(PresentationState.CLASH_RESOLUTION);
@@ -633,7 +636,7 @@ export class GameControllerService {
       const specialRule = this.comparison.isSpecialAceVsTwoRule(playerCard, opponentCard);
       this.resolveComparison(playerCard, opponentCard, result.result, specialRule);
       this.playComparisonResolutionSound(result.result);
-      this.announce(result.message);
+      this.announce(result.message, specialRule ? 'significant' : 'routine');
       if (specialRule && result.winner === PlayerType.PLAYER) {
         this.acesDefeatedByTwo++;
       }
@@ -667,7 +670,11 @@ export class GameControllerService {
       } else {
         await this.tutorial.triggerStep(TutorialStep.FIRST_COMPARISON);
       }
-      await this.sequencer.pause(430, version, 650);
+      if (result.winner) {
+        await this.playComparisonSkirmish(result.winner, version);
+      } else {
+        await this.sequencer.pause(430, version, 650);
+      }
       await this.continueFromResult(result, version);
     } catch (error) {
       this.handleSequenceError(error);
@@ -801,7 +808,11 @@ export class GameControllerService {
         );
       }
 
-      await this.sequencer.pause(420, version, 650);
+      if (result.winner) {
+        await this.playComparisonSkirmish(result.winner, version);
+      } else {
+        await this.sequencer.pause(420, version, 650);
+      }
       await this.continueFromResult(result, version);
     } catch (error) {
       this.handleSequenceError(error);
@@ -864,7 +875,7 @@ export class GameControllerService {
     });
 
     for (let dots = 1; dots <= 3; dots++) {
-      this.announce(`Reinforce ${'.'.repeat(dots)}`, false);
+      this.announce(`Reinforce ${'.'.repeat(dots)}`, 'routine');
       await this.sequencer.pause(230, version);
     }
 
@@ -973,7 +984,11 @@ export class GameControllerService {
       );
     }
 
-    await this.sequencer.pause(420, version, 650);
+    if (challengeResult.winner) {
+      await this.playComparisonSkirmish(challengeResult.winner, version);
+    } else {
+      await this.sequencer.pause(420, version, 650);
+    }
     await this.continueFromResult(challengeResult, version);
   }
 
@@ -1103,7 +1118,7 @@ export class GameControllerService {
       });
 
       if (selection.winner) {
-        await this.playBattleOutcomeAnimation(selection.winner, version);
+        await this.playComparisonSkirmish(selection.winner, version);
       } else {
         await this.sequencer.pause(500, version, 650);
       }
@@ -1236,16 +1251,17 @@ export class GameControllerService {
     await this.finishTurn(version, true);
   }
 
-  private async playBattleOutcomeAnimation(
+  private async playComparisonSkirmish(
     winner: PlayerType,
     version: number,
   ): Promise<void> {
     const scene = this.battleAnimationService.request(winner);
     try {
       await this.sequencer.pause(
-        scene ? BATTLE_ANIMATION_BASE_DURATION_MS : 500,
+        scene ? SKIRMISH_ANIMATION_BASE_DURATION_MS : 500,
         version,
         scene?.motion === 'reduced' ? 280 : 650,
+        scene?.motion === 'full' ? SKIRMISH_ANIMATION_FAST_MIN_DURATION_MS : 0,
       );
     } finally {
       this.battleAnimationService.clear(scene?.id);
@@ -1276,7 +1292,10 @@ export class GameControllerService {
     }
     if (loser && result.cardsLost.length > 0) {
       this.revealedCasualtyIds.set(result.cardsLost.map((card) => card.id));
-      this.announce(casualtyProgress(result.cardsLost.length, result.cardsLost.length));
+      this.announce(
+        casualtyProgress(result.cardsLost.length, result.cardsLost.length),
+        'routine',
+      );
       result.cardsLost.forEach((card, index) => {
         this.eventBus.emit({
           type: 'casualty_revealed',
@@ -1293,7 +1312,7 @@ export class GameControllerService {
     }
     this.movingToBoneyardIds.set(result.cardsLost.map((card) => card.id));
     this.phase.set(PresentationState.SEND_LOSER_CARDS_TO_BONEYARD);
-    this.announce(cardsToBoneyard(result.cardsLost.length));
+    this.announce(cardsToBoneyard(result.cardsLost.length), 'routine');
     this.sound.playBoneyard();
     await this.sequencer.pause(420, version);
     this.eventBus.emit({
@@ -1318,10 +1337,10 @@ export class GameControllerService {
       return;
     }
     this.phase.set(PresentationState.TURN_COMPLETE);
-    this.announce('The field is clear.');
+    this.announce('The field is clear.', 'routine');
     await this.sequencer.pause(170, version);
     this.phase.set(PresentationState.READY);
-    this.announce('Draw when ready.');
+    this.announce('Draw when ready.', 'routine');
     if (this.turnsPlayed === 1) {
       const contextReaction = this.reactions.forContext(this.opponentCommander().id);
       if (contextReaction) {
@@ -1335,12 +1354,15 @@ export class GameControllerService {
   }
 
   /**
-   * Keep the latest status compatible with the existing table API while also
-   * retaining a short, bounded narration trail for quick presentation beats.
+   * Keep every status available to the table API and assistive technology,
+   * while reserving the visible stack for semantically significant beats.
    */
-  private announce(text: string, enqueue = true): void {
+  private announce(
+    text: string,
+    prominence: BattlefieldMessageProminence = 'significant',
+  ): void {
     this.gameMessage.set(text);
-    if (!enqueue) return;
+    if (prominence === 'routine') return;
 
     const current = this.battlefieldMessagesSignal();
     if (current[0]?.text === text) return;
@@ -1359,6 +1381,8 @@ export class GameControllerService {
 
   private speakReaction(reaction: TableReaction | null): void {
     if (!reaction) return;
+    const current = this.reaction();
+    if (current?.authored && !reaction.authored) return;
     if (this.reactionTimeout) {
       clearTimeout(this.reactionTimeout);
       this.reactionTimeout = null;
@@ -1375,7 +1399,7 @@ export class GameControllerService {
       if (this.reaction() === reaction) {
         this.reaction.set(null);
       }
-    }, 5500);
+    }, reaction.authored ? 7500 : 5500);
   }
 
 

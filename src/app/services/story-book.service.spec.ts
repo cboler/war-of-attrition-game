@@ -54,7 +54,7 @@ describe('StoryBookService', () => {
     expect(service.hasEntries()).toBe(false);
   });
 
-  it('should curate narrative and omit ordinary mundane clash turns to avoid noise', () => {
+  it('keeps an ordinary clash in the Chronicle after transient presentation filters it', () => {
     // Ordinary clash: K beats 8 without special rule
     eventBus.emit({
       type: 'clash_resolved',
@@ -67,8 +67,14 @@ describe('StoryBookService', () => {
       message: 'K♣ defeated 8♦.',
     });
 
-    // Should NOT create an entry for mundane clash
-    expect(service.entries().length).toBe(0);
+    expect(service.entries().length).toBe(1);
+    expect(service.entries()[0]).toEqual(jasmine.objectContaining({
+      type: 'clash',
+      eyebrow: 'TURN 1 · CLASH',
+      text: 'K♣ defeated 8♦.',
+      badge: 'victory',
+    }));
+    expect(service.entries()[0].comparison?.state).toBe('winner');
   });
 
   it('should record special rule assassin clashes', () => {

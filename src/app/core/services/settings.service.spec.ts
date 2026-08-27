@@ -96,19 +96,32 @@ describe('SettingsService', () => {
       expect(service.autoPlayAnimations()).toBe(false);
     });
 
-    it('should default Battle animations on and persist changes', () => {
-      expect(service.battleAnimationsEnabled()).toBeTrue();
-
-      service.setBattleAnimationsEnabled(false);
+    it('uses the global animation preference without persisting a feature-specific toggle', () => {
+      service.setAutoPlayAnimations(false);
       TestBed.tick();
 
-      expect(service.battleAnimationsEnabled()).toBeFalse();
+      expect(service.autoPlayAnimations()).toBeFalse();
       const persistedSettings = (localStorage.setItem as jasmine.Spy).calls
         .allArgs()
         .filter(([key]) => key === APP_LOCAL_STORAGE_KEYS.settings)
-        .map(([, value]) => JSON.parse(value) as { battleAnimationsEnabled?: boolean });
-      expect(persistedSettings.some((settings) => settings.battleAnimationsEnabled === false))
+        .map(([, value]) => JSON.parse(value) as Record<string, unknown>);
+      expect(persistedSettings.some((settings) => settings['autoPlayAnimations'] === false))
         .toBeTrue();
+      expect(persistedSettings.every((settings) => !('battleAnimationsEnabled' in settings)))
+        .toBeTrue();
+    });
+
+    it('drops the retired Battle animation key when loading existing stored settings', () => {
+      (localStorage.getItem as jasmine.Spy).and.returnValue(JSON.stringify({
+        ...DEFAULT_SETTINGS,
+        battleAnimationsEnabled: false,
+      }));
+
+      const loaded = (service as unknown as { loadSettings(): Record<string, unknown> })
+        .loadSettings();
+
+      expect(loaded['autoPlayAnimations']).toBeTrue();
+      expect('battleAnimationsEnabled' in loaded).toBeFalse();
     });
 
     it('should update show card details', () => {

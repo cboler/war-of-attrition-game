@@ -141,7 +141,7 @@ flowchart TD
 
 ## Development Status & Documentation
 
-War of Attrition has a feature-complete core and production initial passes for **Progressive Narrative Unveiling** and **Clash Visualizations / Battlefield Animations**. Decisive Battles can now summon an optional, roughly one-second infantry charge while physical cards remain authoritative. Final release polish, closed-testing follow-up, and device validation remain.
+War of Attrition has a feature-complete core and production initial passes for **Progressive Narrative Unveiling** and **Clash Visualizations / Battlefield Animations**. Every decisive card comparison currently summons a brief infantry skirmish while physical cards remain authoritative; this frequency is being evaluated in deployed play. Final release polish, closed-testing follow-up, and device validation remain.
 
 - **Current Implementation Status**: [`.github/instructions/current-development-status.md`](.github/instructions/current-development-status.md) — Live status, active systems, and release priorities.
 - **Rules & Specification**: [`.github/instructions/war-of-attrition-requirements.md`](.github/instructions/war-of-attrition-requirements.md) — Authoritative physical game rules and requirements.

@@ -448,8 +448,9 @@ Barring newly discovered release-blocking defects, both substantial creative spr
 
 ### Sprint 2 — Clash Visualizations / Battlefield Animations (V1 Implemented)
 
-- Implemented: symbolic five-unit infantry formations charge horizontally, bonk, and resolve with a much larger losing-side knockback while physical cards remain authoritative.
-- Implemented: inline SVG/CSS presentation reuses sequencing, speed, Continue/skip, persistent settings, and reduced-motion seams.
+- Implemented: every decisive comparison currently summons symbolic five-unit infantry formations that charge horizontally, bonk, and resolve with a much larger losing-side knockback while physical cards remain authoritative. The frequency remains under playtest evaluation.
+- Implemented: inline SVG/CSS presentation reuses sequencing, the global animation setting, Continue/skip, and reduced-motion seams; Fast/Normal/Slow skirmish timing is approximately 0.72/0.92/1.2 seconds.
+- Implemented: routine comparison copy leaves the prominent transient stack but remains accessible and recorded in the Chronicle, while authored dialogue is protected from procedural replacement.
 - Deferred: number/Jack/Queen/King/Ace classes, suit identities, the Two's signature Ace-defeating sequence, and recursive spectacle escalation.
 - Continue to keep silhouettes readable at phone scale and avoid copyrighted source material or an excessive asset/runtime budget.
 

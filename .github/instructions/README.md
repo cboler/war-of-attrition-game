@@ -47,7 +47,7 @@ To ensure clarity for developers and automated coding agents, documentation in t
 
 ## 🎯 Current State Summary
 
-- **Project Phase**: Feature-complete core with production initial passes for Progressive Narrative Unveiling and Clash Visualizations / Battlefield Animations. Final release polish follows.
+- **Project Phase**: Feature-complete core with production initial passes for Progressive Narrative Unveiling and every-comparison Clash Visualizations / Battlefield Animations. Final release polish follows.
 - **Active Table Route**: `src/app/table-game/` (`TableGame`) — Fully responsive across Mobile Phone (`<= 620px`), 7-inch Tablet (`620px - 820px`), and 10-inch Tabletop Grid (`>= 1100px`).
 - **Visual Design**: Fixed dark/green felt card table. (Theme toggling was intentionally removed as the visual world is the felt table itself).
 - **Automated Tests**: Comprehensive unit test suite (`npm test`) covering game logic, turns, challenges, recursive battles, and UI components.

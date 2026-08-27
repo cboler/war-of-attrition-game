@@ -22,6 +22,8 @@ export interface TableReaction {
   readonly speaker: PlayerType;
   readonly message: string;
   readonly category: TableReactionCategory;
+  /** Authored narrative is protected from replacement by procedural table chatter. */
+  readonly authored?: boolean;
 }
 
 /** Every field is already face-up when a clash reaction may be requested. */
@@ -226,7 +228,8 @@ export class TableReactionService {
     return {
       speaker: loser,
       message,
-      category: 'battle'
+      category: 'battle',
+      authored: authored !== null,
     };
   }
 
@@ -237,7 +240,8 @@ export class TableReactionService {
     return {
       speaker: PlayerType.OPPONENT,
       category: 'introduction',
-      message: line
+      message: line,
+      authored: true,
     };
   }
 
@@ -248,7 +252,8 @@ export class TableReactionService {
     return {
       speaker: PlayerType.OPPONENT,
       category: 'introduction',
-      message: line
+      message: line,
+      authored: true,
     };
   }
 
@@ -259,7 +264,8 @@ export class TableReactionService {
     return {
       speaker: PlayerType.OPPONENT,
       category: 'result',
-      message: line
+      message: line,
+      authored: true,
     };
   }
 
@@ -270,7 +276,8 @@ export class TableReactionService {
     return {
       speaker: PlayerType.OPPONENT,
       category: 'result',
-      message: line
+      message: line,
+      authored: true,
     };
   }
 
@@ -295,7 +302,8 @@ export class TableReactionService {
     return {
       speaker: PlayerType.OPPONENT,
       category: 'contextual',
-      message: authored
+      message: authored,
+      authored: true,
     };
   }
 
@@ -360,7 +368,8 @@ export class TableReactionService {
     return {
       speaker,
       category,
-      message
+      message,
+      authored: authoredOverride !== null,
     };
   }
 

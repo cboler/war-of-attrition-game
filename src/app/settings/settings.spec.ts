@@ -50,13 +50,12 @@ describe('SettingsComponent', () => {
     expect(labels).not.toContain('Statistics');
   });
 
-  it('offers the persisted Battle Animations preference', () => {
+  it('uses only the global animation preference for presentation motion', () => {
     const labels = [...fixture.nativeElement.querySelectorAll('mat-slide-toggle')].map(
       (toggle: Element) => toggle.textContent?.trim()
     );
 
-    expect(labels).toContain('Battle Animations');
-    settingsService.setBattleAnimationsEnabled(false);
-    expect(settingsService.battleAnimationsEnabled()).toBeFalse();
+    expect(labels).toContain('Auto-play Animations');
+    expect(labels).not.toContain('Battle Animations');
   });
 });

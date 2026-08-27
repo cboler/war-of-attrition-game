@@ -7,7 +7,7 @@
 The project is no longer in broad feature discovery. Both substantial creative sprints now have production implementations:
 
 1. **Progressive Narrative Unveiling** — named commanders, four-chapter access and disclosure, mode-aware characterization, compact framing, lore fragments, source links, persistence/migration, and tests.
-2. **Clash Visualizations / Battlefield Animations, V1** — resolved Battles briefly summon readable opposing infantry while cards remain authoritative.
+2. **Clash Visualizations / Battlefield Animations, V1** — every decisive comparison currently summons readable opposing infantry while cards remain authoritative.
 
 The remaining work returns to release validation, responsive/redraw fixes, accessibility, pacing, device compatibility, and store presentation. Rank-specific units and other richer battlefield ideas remain deliberate later refinements rather than part of the V1 animation.
 
@@ -42,15 +42,17 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 - `TableGame` is the active table view, with responsive phone, tablet, and desktop layouts on fixed dark green felt.
 - Physical cards remain visible game state. The table already presents stakes, Battle layers, deck counters, Boneyard movement, combat-strength badges, battlefield announcements, and sparse contextual reactions.
 - `PresentationSequencerService` provides timed presentation phases, animation-speed multipliers, player Continue/skip behavior, timing collapse when animations are disabled, and `prefers-reduced-motion` handling.
-- `BattleAnimationService` and `BattleAnimationComponent` visualize decisive Battle results as two five-unit inline-SVG infantry formations. They charge horizontally, bonk at center, and give the losing formation the larger recoil/tumble before cleanup.
-- The V1 scene reuses the sequencer's existing result beat: normal timing is about 0.92 seconds, Continue collapses it, animation-speed settings scale it, and no extra resolution state is introduced.
-- The persisted **Battle Animations** preference defaults on. Global animation disabling suppresses scene creation; `prefers-reduced-motion` receives a short static winner/loser cue with no animated travel.
+- `BattleAnimationService` and `BattleAnimationComponent` visualize every decisive ordinary, reinforcement, and Battle comparison as two five-unit inline-SVG infantry formations. They charge horizontally, bonk at center, and give the losing formation the larger recoil/tumble before cleanup.
+- The V1 scene replaces each comparison's existing result hold: Fast is floored at about 0.72 seconds for readability, Normal remains about 0.92 seconds, Slow remains about 1.2 seconds, Continue collapses the active beat, and no extra resolution state is introduced.
+- The existing global **Auto-play Animations** preference is the only toggle. Disabling it suppresses scene creation; a retired `battleAnimationsEnabled` storage key is ignored safely, and `prefers-reduced-motion` receives a short static winner/loser cue with no animated travel.
+- Routine deal/reveal/comparison/settlement status still updates the accessible current status but is not added to the prominent top-of-table message stack. Battles, reinforcements, milestones, and other exceptional events retain that channel.
+- Authored reactions carry semantic priority: they remain visible for 7.5 seconds and cannot be replaced by procedural quips. Procedural messages are dropped rather than queued, so they cannot create a backlog ahead of narrative.
 - `RuleDemoComponent` provides isolated, frame-based, replayable and skippable rules drills with reduced-motion support. It is a useful economy/readability reference for Sprint 2, not a requirement to turn the runtime table into a rule demo.
 
 ### Field Manual, Chronicle, and Hall of Valor
 
 - `StoryBookDrawerComponent` supplies the Field Manual tab architecture: Chronicle, Hall of Valor, Rules of Engagement, and contextual Card Reference.
-- `StoryBookService` builds the current War's in-memory tactical Chronicle from public domain events. It records curated clashes, Challenges, Battles, casualties, reactions, achievements, and resolution. It is not presently a persistent narrative codex.
+- `StoryBookService` builds the current War's in-memory tactical Chronicle from public domain events. It records ordinary comparison detail as well as Challenges, Battles, casualties, reactions, achievements, and resolution, allowing routine mechanical copy to leave the transient table channel without losing factual history. It is not presently a persistent narrative codex.
 - Interactive rule demonstrations are implemented and never alter the active War.
 - Boneyard casualty inspection and exact card reference are implemented outside active Fog of War sealing.
 - **Hall of Valor is fully implemented**, profile-persistent, and integrated into the Field Manual. It records truthful physical-card service histories, honors, rivalries, Juggernaut Citations, and War survival with zero gameplay buffs. See [`developer-docs/hall-of-valor.md`](../../developer-docs/hall-of-valor.md).
@@ -134,7 +136,7 @@ Sprint 1 is fully complete, validated, and tested end-to-end:
   - Campaign Orders modal indicates `"Replay Command: Opposition randomized"` for unlocked replay chapters.
 - **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-01` through `TR-C4-04`), resolution quotes, and dynamic next-war action buttons.
 - **Spoiler Firewall & Canonical Resolution**: Strict information boundaries across all four chapters; private Mont-Rouge mechanism (mouse/hay) safely protected in author knowledge; Chapter IV completes with the canonical resolution (`Matthias: “I never proved it.”` / `Marcel: “Non. Neither did I.”`) without an extraneous Bastien punchline.
-- **Comprehensive Test Suite**: Full unit and integration suite green at **543 / 543 tests passing**, including `chapter-one-narrative-flow.spec.ts`, `narrative-campaign-traversal.spec.ts` (12-War traversal, spoiler firewall audit, defeat/draw progression, randomized replay matrix), `narrative-resolver.service.spec.ts`, `game-controller.service.spec.ts`, and the Battle animation presentation tests.
+- **Comprehensive Test Suite**: Full unit and integration suite green at **547 / 547 tests passing**, including `chapter-one-narrative-flow.spec.ts`, `narrative-campaign-traversal.spec.ts` (12-War traversal, spoiler firewall audit, defeat/draw progression, randomized replay matrix), `narrative-resolver.service.spec.ts`, `game-controller.service.spec.ts`, and the skirmish/message-hierarchy presentation tests.
 - **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json`.
 
 Next steps for future work:
@@ -149,7 +151,7 @@ The first production pass is implemented as a small presentation-only layer.
 
 > **The cards do not merely represent the battle. They summon the battle.**
 
-The physical cards continue to show and determine state. After a decisive Battle result is authoritative:
+The physical cards continue to show and determine state. After any ordinary, reinforcement, or Battle comparison has an authoritative winner:
 
 - Five player infantry enter from the left and five opponent infantry enter from the right.
 - The formations meet at a small central star/bonk cue.
@@ -160,11 +162,15 @@ The physical cards continue to show and determine state. After a decisive Battle
 Implemented runtime guardrails:
 
 - Inline SVG and CSS only; no asset files or animation dependency.
-- Normal speed is about 0.92 seconds (fast about 0.56 seconds; slow about 1.2 seconds).
+- Fast is about 0.72 seconds, Normal about 0.92 seconds, and Slow about 1.2 seconds. The feature-specific Fast floor does not change other application animation timing.
 - Continue completes the current beat immediately; cancellation, restart, and error paths clear the scene.
-- The **Battle Animations** setting persists through `SettingsService` and defaults enabled.
+- The existing global **Auto-play Animations** setting controls scene creation; there is no feature-specific toggle.
 - Reduced motion replaces travel with a roughly 0.28-second static winner/loser cue.
 - Verified without horizontal overflow at 360×740, 540×960, and 1280×800 CSS viewports.
+
+Routine comparison results are now retained in the Chronicle and accessible status without entering the prominent transient message stack. Exceptional game events still use the stack. Authored persona/story reactions are held longer and cannot be displaced by procedural quips; no routine-message queue is maintained.
+
+The every-comparison trigger is intentionally an experiment. Its policy remains in `GameControllerService`, separate from the reusable ephemeral animation state and renderer, so later playtesting can narrow the frequency without rebuilding the presentation.
 
 Intentionally deferred: rank-specific classes, suit-specific armies, magnitude scaling, recursive spectacle escalation, the special Two-vs-Ace assassination treatment, skins, sound, and a general animation framework.
 

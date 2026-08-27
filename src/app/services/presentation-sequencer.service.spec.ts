@@ -83,6 +83,27 @@ describe('PresentationSequencerService', () => {
     expect(completed).toBeTrue();
   }));
 
+  it('applies the skirmish minimum only when Fast scaling would make it unreadable', fakeAsync(() => {
+    const cases = [
+      { speed: 'fast' as const, expected: 720 },
+      { speed: 'normal' as const, expected: 920 },
+      { speed: 'slow' as const, expected: 1200 },
+    ];
+
+    for (const testCase of cases) {
+      settings.setAnimationSpeed(testCase.speed);
+      const version = service.begin();
+      let completed = false;
+      void service.pause(800, version, 280, 720).then(() => completed = true);
+
+      tick(testCase.expected - 1);
+      expect(completed).withContext(testCase.speed).toBeFalse();
+      tick(1);
+      flushMicrotasks();
+      expect(completed).withContext(testCase.speed).toBeTrue();
+    }
+  }));
+
   it('cancels an obsolete wait instead of allowing its callback to continue', fakeAsync(() => {
     const version = service.begin();
     let cancelled = false;

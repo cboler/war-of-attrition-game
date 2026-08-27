@@ -12,7 +12,6 @@ describe('BattleAnimationService', () => {
     TestBed.configureTestingModule({});
     settings = TestBed.inject(SettingsService);
     settings.setAutoPlayAnimations(true);
-    settings.setBattleAnimationsEnabled(true);
     service = TestBed.inject(BattleAnimationService);
   });
 
@@ -29,13 +28,6 @@ describe('BattleAnimationService', () => {
       }),
     );
     expect(service.scene()).toBe(scene);
-  });
-
-  it('does not create a scene when Battle animations are disabled', () => {
-    settings.setBattleAnimationsEnabled(false);
-
-    expect(service.request(PlayerType.OPPONENT)).toBeNull();
-    expect(service.scene()).toBeNull();
   });
 
   it('does not create a scene when global animation playback is disabled', () => {

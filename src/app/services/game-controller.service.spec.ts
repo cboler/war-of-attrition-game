@@ -208,15 +208,14 @@ describe('GameControllerService presentation integration', () => {
 
   it('clears the summoned armies when Continue skips their visual beat', fakeAsync(() => {
     settings.setAutoPlayAnimations(true);
-    settings.setBattleAnimationsEnabled(true);
     const sequencer = TestBed.inject(PresentationSequencerService);
     const version = sequencer.begin();
     const internal = controller as unknown as {
-      playBattleOutcomeAnimation(winner: PlayerType, sequenceVersion: number): Promise<void>;
+      playComparisonSkirmish(winner: PlayerType, sequenceVersion: number): Promise<void>;
     };
     let completed = false;
 
-    void internal.playBattleOutcomeAnimation(PlayerType.OPPONENT, version).then(() => {
+    void internal.playComparisonSkirmish(PlayerType.OPPONENT, version).then(() => {
       completed = true;
     });
 
@@ -229,6 +228,83 @@ describe('GameControllerService presentation integration', () => {
     expect(completed).toBeTrue();
     expect(controller.battleAnimation()).toBeNull();
     flush();
+  }));
+
+  it('summons a correctly oriented skirmish for an ordinary decisive comparison', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    settings.setAnimationSpeed('normal');
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+    const request = spyOn(battleAnimation, 'request').and.callThrough();
+
+    controller.playerDrawCard();
+    tick(322);
+    flushMicrotasks();
+    tick(414);
+    flushMicrotasks();
+
+    expect(request).toHaveBeenCalledOnceWith(PlayerType.PLAYER);
+    expect(controller.battleAnimation()).toEqual(jasmine.objectContaining({
+      winner: PlayerType.PLAYER,
+      loser: PlayerType.OPPONENT,
+    }));
+
+    controller.advancePresentation();
+    tick(16);
+    flushMicrotasks();
+    expect(controller.battleAnimation()).toBeNull();
+    flush();
+  }));
+
+  it('keeps routine comparison status out of the transient stack but in accessible status and Chronicle', fakeAsync(() => {
+    settings.setAutoPlayAnimations(false);
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+
+    controller.playerDrawCard();
+    flushMicrotasks();
+
+    const resultMessage = controller.tableMessage();
+    expect(resultMessage).not.toBe('Your deck is ready.');
+    expect(controller.battlefieldMessages().map((message) => message.text))
+      .not.toContain(resultMessage);
+    expect(storyBook.entries().find((entry) => entry.type === 'clash')?.text)
+      .toBe(resultMessage);
+    expect(controller.battleAnimation()).toBeNull();
+    flush();
+  }));
+
+  it('does not let procedural chatter replace authored dialogue or build a queue', fakeAsync(() => {
+    const internal = controller as unknown as {
+      speakReaction(reaction: {
+        speaker: PlayerType;
+        message: string;
+        category: 'introduction' | 'narrow_clash';
+        authored?: boolean;
+      }): void;
+    };
+    const authored = {
+      speaker: PlayerType.OPPONENT,
+      message: 'The archive has the floor.',
+      category: 'introduction' as const,
+      authored: true,
+    };
+
+    internal.speakReaction(authored);
+    internal.speakReaction({
+      speaker: PlayerType.PLAYER,
+      message: 'One rank was enough.',
+      category: 'narrow_clash',
+      authored: false,
+    });
+
+    expect(controller.tableReaction()).toBe(authored);
+    tick(7499);
+    expect(controller.tableReaction()).toBe(authored);
+    tick(1);
+    expect(controller.tableReaction()).toBeNull();
   }));
 
   it('replaces the beaten card with the reinforcement for the exact comparison', fakeAsync(() => {
@@ -765,8 +841,8 @@ describe('GameControllerService presentation integration', () => {
       expect(controller.tableReaction()?.speaker).toBe(PlayerType.OPPONENT);
       expect(controller.tableReaction()?.message).toContain('Witness Wheel');
 
-      // Auto-clear timeout dismisses quip after 5.5s
-      tick(6000);
+      // Authored dialogue receives a longer, readable hold than procedural quips.
+      tick(8000);
       expect(controller.tableReaction()).toBeNull();
     }));
   });

@@ -1,4 +1,4 @@
-import { ComponentFixture, fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, flush, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { CardComparisonService, ComparisonResult } from '../core/services/card-comparison.service';
 import { GameStateService } from '../core/services/game-state.service';
@@ -398,7 +398,12 @@ describe('TableGame presentation', () => {
       'No cards lost',
     );
 
-    tick(3000);
+    expect(controller.battleAnimation()).not.toBeNull();
+    expect(controller.advancePresentation()).toBeTrue();
+    tick(16);
+    flushMicrotasks();
+    expect(controller.battleAnimation()).toBeNull();
+    flush();
     fixture.detectChanges();
     expect(controller.visibleBoneyardCount()).toBe(1);
     expect(fixture.nativeElement.querySelector('.boneyard small').textContent.trim()).toBe(

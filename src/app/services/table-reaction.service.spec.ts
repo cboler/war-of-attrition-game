@@ -75,6 +75,7 @@ describe('TableReactionService', () => {
       speaker: PlayerType.OPPONENT,
       message: 'An exception is not anarchy, monsieur. It is a rule with dramatic tailoring.',
       category: 'special_clash',
+      authored: true,
     });
   });
 
@@ -106,6 +107,7 @@ describe('TableReactionService', () => {
       speaker: PlayerType.OPPONENT,
       message: 'There. Proper stock returns to the cellar.',
       category: 'rescue',
+      authored: true,
     });
   });
 
@@ -180,6 +182,7 @@ describe('TableReactionService', () => {
       const intro = service.forIntroduction('quartermaster');
       expect(intro?.speaker).toBe(PlayerType.OPPONENT);
       expect(intro?.category).toBe('introduction');
+      expect(intro?.authored).toBeTrue();
       expect(intro?.message).toBe('At Mont-Rouge, monsieur, we placed two ancient traditions at one table. Only one of them arrived with the dignity to remain seated.');
 
       const result = service.forResult('quartermaster');

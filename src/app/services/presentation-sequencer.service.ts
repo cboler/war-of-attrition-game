@@ -28,11 +28,12 @@ export class PresentationSequencerService {
     milliseconds: number,
     version = this.sequenceVersion,
     staticHoldMilliseconds = 0,
+    minimumAnimatedMilliseconds = 0,
   ): Promise<void> {
     if (version !== this.sequenceVersion) throw new PresentationSequenceCancelled();
     const duration = this.shouldCollapseTiming()
       ? Math.max(0, staticHoldMilliseconds)
-      : Math.max(0, milliseconds * this.speedMultiplier());
+      : Math.max(0, minimumAnimatedMilliseconds, milliseconds * this.speedMultiplier());
     if (duration === 0) return;
 
     await new Promise<void>((resolve, reject) => {

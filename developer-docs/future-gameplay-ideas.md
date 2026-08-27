@@ -81,13 +81,15 @@ The production V1 is implemented. It establishes the visual joke and integration
 
 ### Implemented V1
 
-- Every decisive Battle may summon five red player infantry from the left and five steel opponent infantry from the right.
+- Every decisive ordinary, reinforcement, and Battle comparison currently summons five red player infantry from the left and five steel opponent infantry from the right. This every-comparison frequency is an active playtesting experiment, not a commitment to permanent trigger policy.
 - The formations charge, meet at a restrained star/bonk, recoil, and resolve asymmetrically; several losing units tumble while the winning line holds.
 - `BattleAnimationService` contains short-lived result/orientation state, and `BattleAnimationComponent` renders reusable inline SVG with CSS transforms/keyframes.
-- The scene occupies the existing Battle result wait in `GameControllerService`; normal duration is about 0.92 seconds and Continue skips the active beat.
-- **Battle Animations** is a persisted, default-on Settings toggle. Global animation disabling suppresses scene creation.
+- The scene replaces the existing comparison result hold in `GameControllerService`; Fast is floored at about 0.72 seconds, Normal remains about 0.92 seconds, Slow remains about 1.2 seconds, and Continue skips the active beat.
+- The existing global **Auto-play Animations** preference is the only control. Disabling it suppresses scene creation; the retired V1 `battleAnimationsEnabled` storage key is ignored during loading.
 - `prefers-reduced-motion` produces a short static winner/loser cue instead of horizontal travel.
 - The absolute overlay is pointer-transparent, clipped to the table center, and does not participate in layout.
+- Routine comparison status remains available to assistive technology and in the truthful Chronicle but no longer enters the prominent transient message stack. Exceptional game events retain that channel.
+- Authored story/persona reactions are held longer and protected from procedural replacement; procedural reactions are not queued behind them.
 
 ### Deferred Rank-to-Unit Mapping
 

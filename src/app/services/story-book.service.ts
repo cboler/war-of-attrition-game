@@ -60,32 +60,36 @@ export class StoryBookService {
   private handleGameEvent(event: GameEvent): void {
     switch (event.type) {
       case 'clash_resolved': {
-        // Curated narrative: record special rule assassinations or tied clashes that initiate battles
-        if (event.specialRule) {
-          const pCardStr = this.formatCard(event.playerCard);
-          const oCardStr = this.formatCard(event.opponentCard);
-          const narrative =
+        const pCardStr = this.formatCard(event.playerCard);
+        const oCardStr = this.formatCard(event.opponentCard);
+        const text = event.specialRule
+          ? event.winner === PlayerType.PLAYER
+            ? `${pCardStr} assassinated ${oCardStr}!`
+            : `${oCardStr} assassinated ${pCardStr}!`
+          : event.message;
+        const comparison = this.comparisonService.explainComparison(
+          event.playerCard,
+          event.opponentCard,
+          event.comparison,
+          event.specialRule
+        );
+
+        this.addEntry({
+          turnNumber: event.turnNumber,
+          type: 'clash',
+          eyebrow: event.specialRule
+            ? `TURN ${event.turnNumber} · SPECIAL FEAT`
+            : `TURN ${event.turnNumber} · CLASH`,
+          text,
+          cards: [event.playerCard, event.opponentCard],
+          badge:
             event.winner === PlayerType.PLAYER
-              ? `${pCardStr} assassinated ${oCardStr}!`
-              : `${oCardStr} assassinated ${pCardStr}!`;
-
-          const comparison = this.comparisonService.explainComparison(
-            event.playerCard,
-            event.opponentCard,
-            event.comparison,
-            event.specialRule
-          );
-
-          this.addEntry({
-            turnNumber: event.turnNumber,
-            type: 'clash',
-            eyebrow: `TURN ${event.turnNumber} · SPECIAL FEAT`,
-            text: narrative,
-            cards: [event.playerCard, event.opponentCard],
-            badge: event.winner === PlayerType.PLAYER ? 'victory' : 'defeat',
-            comparison,
-          });
-        }
+              ? 'victory'
+              : event.winner === PlayerType.OPPONENT
+                ? 'defeat'
+                : 'battle',
+          comparison,
+        });
         break;
       }
 
