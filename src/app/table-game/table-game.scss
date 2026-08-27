@@ -13,6 +13,7 @@
   --casualty-duration: 414ms;
   --return-duration: 414ms;
   --boneyard-duration: 483ms;
+  --battle-animation-duration: 920ms;
   height: 100%;
   min-height: 0;
   padding: 8px;
@@ -31,6 +32,7 @@
   --casualty-duration: 252ms;
   --return-duration: 252ms;
   --boneyard-duration: 294ms;
+  --battle-animation-duration: 560ms;
 }
 
 .table-page.speed-slow {
@@ -41,6 +43,7 @@
   --casualty-duration: 540ms;
   --return-duration: 540ms;
   --boneyard-duration: 630ms;
+  --battle-animation-duration: 1200ms;
 }
 
 app-card-table {

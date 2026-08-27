@@ -84,6 +84,19 @@
                 </mat-slide-toggle>
               </div>
 
+              <div class="toggle-setting setting-with-description">
+                <mat-slide-toggle
+                  [checked]="settingsService.battleAnimationsEnabled()"
+                  (change)="settingsService.setBattleAnimationsEnabled($event.checked)"
+                >
+                  Battle Animations
+                </mat-slide-toggle>
+                <p>
+                  Tiny armies briefly depict resolved Battles. Reduced-motion preferences use a
+                  static outcome cue.
+                </p>
+              </div>
+
               <div class="toggle-setting">
                 <mat-slide-toggle [checked]="settingsService.showCardDetails()"
                                  (change)="settingsService.setShowCardDetails($event.checked)">

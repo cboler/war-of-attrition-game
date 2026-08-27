@@ -19,6 +19,8 @@ import {
   PresentationState,
 } from './game-controller.service';
 import { StoryBookService } from './story-book.service';
+import { BattleAnimationService } from './battle-animation.service';
+import { PresentationSequencerService } from './presentation-sequencer.service';
 
 describe('GameControllerService presentation integration', () => {
   let controller: GameControllerService;
@@ -32,6 +34,7 @@ describe('GameControllerService presentation integration', () => {
   let progression: CampaignProgressionService;
   let auth: AuthService;
   let sound: SoundService;
+  let battleAnimation: BattleAnimationService;
 
   beforeEach(() => {
     localStorage.clear();
@@ -47,6 +50,7 @@ describe('GameControllerService presentation integration', () => {
     storyBook = TestBed.inject(StoryBookService);
     progression = TestBed.inject(CampaignProgressionService);
     sound = TestBed.inject(SoundService);
+    battleAnimation = TestBed.inject(BattleAnimationService);
 
     settings.setTutorialEnabled(false);
     settings.setSoundEnabled(false);
@@ -202,6 +206,31 @@ describe('GameControllerService presentation integration', () => {
     flush();
   }));
 
+  it('clears the summoned armies when Continue skips their visual beat', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    settings.setBattleAnimationsEnabled(true);
+    const sequencer = TestBed.inject(PresentationSequencerService);
+    const version = sequencer.begin();
+    const internal = controller as unknown as {
+      playBattleOutcomeAnimation(winner: PlayerType, sequenceVersion: number): Promise<void>;
+    };
+    let completed = false;
+
+    void internal.playBattleOutcomeAnimation(PlayerType.OPPONENT, version).then(() => {
+      completed = true;
+    });
+
+    expect(controller.battleAnimation()?.winner).toBe(PlayerType.OPPONENT);
+    expect(controller.presentationCanAdvance()).toBeTrue();
+    expect(controller.advancePresentation()).toBeTrue();
+    tick(16);
+    flushMicrotasks();
+
+    expect(completed).toBeTrue();
+    expect(controller.battleAnimation()).toBeNull();
+    flush();
+  }));
+
   it('replaces the beaten card with the reinforcement for the exact comparison', fakeAsync(() => {
     settings.setAutoPlayAnimations(false);
     const compare = spyOn(comparison, 'compareCards').and.returnValues(
@@ -249,6 +278,7 @@ describe('GameControllerService presentation integration', () => {
     spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
     spyOn(opponentAI, 'selectBattleTarget').and.returnValue(0);
     const resolveSelection = spyOn(turnResolution, 'resolveBattleSelection').and.callThrough();
+    const requestBattleAnimation = spyOn(battleAnimation, 'request').and.callThrough();
     const emitted: GameEvent[] = [];
     const subscription = eventBus.events$.subscribe((event) => emitted.push(event));
 
@@ -274,6 +304,7 @@ describe('GameControllerService presentation integration', () => {
     const chronicleReveal = storyBook.entries().find((entry) => entry.type === 'battle_reveal')!;
 
     expect(battleVictory).toHaveBeenCalledTimes(1);
+    expect(requestBattleAnimation).toHaveBeenCalledOnceWith(PlayerType.PLAYER);
     expect(compare.calls.argsFor(1).map((card) => card.id)).toEqual([
       foeTarget.id,
       humanTarget.id,

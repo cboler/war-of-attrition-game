@@ -23,7 +23,7 @@ export type ScreenshotSceneId =
 
 function card(suit: Suit, rank: Rank, value: number, id?: string): Card {
   return {
-    id: id ?? `${suit.toLowerCase()}-${rank.toLowerCase()}`,
+    id: id ?? `${suit}-${rank}`,
     suit,
     rank,
     value,
@@ -56,6 +56,12 @@ function generateStandardDeck(color: DeckColor): Card[] {
     }
   }
   return result;
+}
+
+function findFixtureCard(cards: readonly Card[], suit: Suit, rank: Rank): Card {
+  const found = cards.find((candidate) => candidate.suit === suit && candidate.rank === rank);
+  if (!found) throw new Error(`Fixture card not found: ${rank} of ${suit}`);
+  return found;
 }
 
 export class ScreenshotStateLoader {
@@ -239,27 +245,38 @@ export class ScreenshotStateLoader {
       }
 
       case 'battle': {
-        const playerClash = card(Suit.DIAMONDS, Rank.SEVEN, 7, 'diamonds-seven');
-        const opponentClash = card(Suit.CLUBS, Rank.SEVEN, 7, 'clubs-seven');
+        const playerClash = findFixtureCard(redCards, Suit.DIAMONDS, Rank.SEVEN);
+        const opponentClash = findFixtureCard(blackCards, Suit.CLUBS, Rank.SEVEN);
 
         const playerBattleCards = [
-          card(Suit.HEARTS, Rank.NINE, 9, 'p-battle-1'),
-          card(Suit.DIAMONDS, Rank.JACK, 11, 'p-battle-2'),
-          card(Suit.HEARTS, Rank.FOUR, 4, 'p-battle-3')
+          findFixtureCard(redCards, Suit.HEARTS, Rank.NINE),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.JACK),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.FOUR)
         ];
 
         const opponentBattleCards = [
-          card(Suit.SPADES, Rank.SIX, 6, 'o-battle-1'),
-          card(Suit.CLUBS, Rank.ACE, 14, 'o-battle-2'),
-          card(Suit.SPADES, Rank.THREE, 3, 'o-battle-3')
+          findFixtureCard(blackCards, Suit.SPADES, Rank.SIX),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.ACE),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.THREE)
         ];
 
-        const remainingPlayer = redCards.slice(0, 18);
-        const remainingOpponent = blackCards.slice(0, 18);
         const casualties = [
-          card(Suit.HEARTS, Rank.TWO, 2, 'cas-1'),
-          card(Suit.CLUBS, Rank.EIGHT, 8, 'cas-2')
+          findFixtureCard(redCards, Suit.HEARTS, Rank.TWO),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.EIGHT)
         ];
+        const tableCardIds = new Set([
+          playerClash.id,
+          opponentClash.id,
+          ...playerBattleCards.map((battleCard) => battleCard.id),
+          ...opponentBattleCards.map((battleCard) => battleCard.id),
+          ...casualties.map((casualty) => casualty.id)
+        ]);
+        const remainingPlayer = redCards.filter(
+          (battleCard) => !tableCardIds.has(battleCard.id)
+        );
+        const remainingOpponent = blackCards.filter(
+          (battleCard) => !tableCardIds.has(battleCard.id)
+        );
 
         const turn = {
           playerCard: playerClash,

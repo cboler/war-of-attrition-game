@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { SettingsService } from './settings.service';
 import { DEFAULT_SETTINGS, CARD_BACKING_OPTIONS } from '../models/settings.model';
 import { CampaignProgressionService } from './campaign-progression.service';
+import { APP_LOCAL_STORAGE_KEYS } from '../models/app-storage.model';
 
 describe('SettingsService', () => {
   let service: SettingsService;
@@ -93,6 +94,21 @@ describe('SettingsService', () => {
     it('should update auto play animations', () => {
       service.setAutoPlayAnimations(false);
       expect(service.autoPlayAnimations()).toBe(false);
+    });
+
+    it('should default Battle animations on and persist changes', () => {
+      expect(service.battleAnimationsEnabled()).toBeTrue();
+
+      service.setBattleAnimationsEnabled(false);
+      TestBed.tick();
+
+      expect(service.battleAnimationsEnabled()).toBeFalse();
+      const persistedSettings = (localStorage.setItem as jasmine.Spy).calls
+        .allArgs()
+        .filter(([key]) => key === APP_LOCAL_STORAGE_KEYS.settings)
+        .map(([, value]) => JSON.parse(value) as { battleAnimationsEnabled?: boolean });
+      expect(persistedSettings.some((settings) => settings.battleAnimationsEnabled === false))
+        .toBeTrue();
     });
 
     it('should update show card details', () => {

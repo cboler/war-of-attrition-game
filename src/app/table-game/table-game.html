@@ -78,6 +78,10 @@
         </span>
       </div>
 
+      @if (controller.battleAnimation(); as battleAnimation) {
+        <app-battle-animation [scene]="battleAnimation" />
+      }
+
       <section class="stakes" [class.in-battle]="battleActive()" aria-label="Cards at stake">
         <!-- Opponent Stake -->
         <div class="side-stake opponent-stake">

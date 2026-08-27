@@ -7,3 +7,4 @@ export { GameBoardComponent } from './game-board/game-board.component';
 export { ActionIndicatorComponent } from './action-indicator/action-indicator.component';
 export { CampaignOrdersDialogComponent, CAMPAIGN_ORDER_OPTIONS } from './campaign-orders-dialog/campaign-orders-dialog.component';
 export type { CampaignOrderOption } from './campaign-orders-dialog/campaign-orders-dialog.component';
+export { BattleAnimationComponent } from './battle-animation/battle-animation.component';

@@ -1,6 +1,6 @@
-# War of Attrition — Remaining Sprints and Later Backlog
+# War of Attrition — Completed Sprints and Later Backlog
 
-This document separates the two substantial creative implementation sprints that remain from final release polish and longer-term ideas.
+This document records the boundaries of the two implemented creative sprints and separates their deliberately deferred ideas from final release polish and longer-term work.
 
 Authoritative companions:
 
@@ -23,13 +23,13 @@ The following graduated systems are in production code and should not be re-prop
 - Field Manual tabs for Chronicle, Hall of Valor, Rules of Engagement, and Card Reference.
 - Frame-based interactive rule demos and an active-table presentation sequencer with animation speed, Continue/skip, disabled-animation timing collapse, and reduced-motion handling.
 
-The missing work is the settled creative layer on top of these foundations, not another mechanics redesign.
+The implemented creative layers extend these foundations without redesigning mechanics.
 
-## 2. Remaining Sprint 1 — Progressive Narrative Unveiling
+## 2. Sprint 1 — Progressive Narrative Unveiling (Implemented)
 
-This is the next substantial implementation sprint.
+This production scope is implemented.
 
-### Scope
+### Implemented Scope
 
 - Map the canonical cast onto the permanent strategy IDs:
   - Marcel de Brie → `quartermaster`
@@ -52,9 +52,9 @@ This is the next substantial implementation sprint.
 
 ### Architectural Boundary
 
-The current `OpponentCommanderDialogue` is a set of event pools, and `TableReactionService` knows commander plus gameplay context but not mode or chapter. Extend this with a small conditioned-data shape. Do not create a general branching dialogue engine.
+The implementation uses small conditioned narrative data and `NarrativeResolverService`; it does not create a general branching dialogue engine.
 
-The canonical schedule may be reused for initial replays. Randomized replay scheduling is deferred to pre-production polish after the player has completed all four canonical chapters at least once; do not weaken ordered first-play disclosure to make every line order-independent.
+The canonical schedule remains fixed for the first playthrough. After all four chapters are complete, randomized replay schedules use three distinct commanders without weakening ordered first-play disclosure.
 
 The current Chronicle is an in-memory truthful tactical War feed. Narrative fragments may complement it, but Fog of War redaction, card identities, combat attribution, and Hall of Valor statistics must remain mechanically truthful.
 
@@ -65,11 +65,11 @@ The current Chronicle is an in-memory truthful tactical War feed. Narrative frag
 - No magical gameplay abilities or narrative-based access to hidden cards.
 - No victory, token, achievement, purchase, advertising, or monetization gate on chapter access.
 - No direct early-game statement of the private mouse/hay cause.
-- No production battlefield-unit animation; that belongs to Sprint 2.
+- No battlefield-unit animation was added during Sprint 1; the scoped V1 belongs to and is implemented in Sprint 2.
 
-## 3. Remaining Sprint 2 — Clash Visualizations / Battlefield Animations
+## 3. Sprint 2 Initial Pass — Clash Visualizations / Battlefield Animations
 
-This is the second substantial implementation sprint. It is not optional generic polish.
+The production V1 is implemented. It establishes the visual joke and integration seam without attempting the complete rank-to-unit vision.
 
 > **The cards do not merely represent the battle. They summon the battle.**
 
@@ -79,7 +79,17 @@ This is the second substantial implementation sprint. It is not optional generic
 - The digital layer briefly imagines the resolved cards as small opposing military forces.
 - Visuals never determine an outcome, change timing-sensitive game state, or conceal which cards actually fought.
 
-### Rank-to-Unit Mapping
+### Implemented V1
+
+- Every decisive Battle may summon five red player infantry from the left and five steel opponent infantry from the right.
+- The formations charge, meet at a restrained star/bonk, recoil, and resolve asymmetrically; several losing units tumble while the winning line holds.
+- `BattleAnimationService` contains short-lived result/orientation state, and `BattleAnimationComponent` renders reusable inline SVG with CSS transforms/keyframes.
+- The scene occupies the existing Battle result wait in `GameControllerService`; normal duration is about 0.92 seconds and Continue skips the active beat.
+- **Battle Animations** is a persisted, default-on Settings toggle. Global animation disabling suppresses scene creation.
+- `prefers-reduced-motion` produces a short static winner/loser cue instead of horizontal travel.
+- The absolute overlay is pointer-transparent, clipped to the table center, and does not participate in layout.
+
+### Deferred Rank-to-Unit Mapping
 
 | Card rank | Battlefield presentation |
 | --- | --- |
@@ -91,6 +101,8 @@ This is the second substantial implementation sprint. It is not optional generic
 | Two | Humble soldiers/scouts that remain visually capable of the signature Ace-defeating infiltration |
 
 Against ordinary 3-through-King opposition, the Two can read as a small, vulnerable formation. Against an Ace, it must visibly communicate its special lethal role rather than appearing to win through unexplained power scaling.
+
+This mapping, suit-specific forces, battle-magnitude scaling, and recursive spectacle escalation are intentionally not part of V1.
 
 ### Desired Visual Grammar
 
@@ -109,15 +121,15 @@ Against ordinary 3-through-King opposition, the Two can read as a small, vulnera
 - Keep cards and core actions readable throughout; never recreate input freezes or delayed action availability.
 - Avoid large asset, style, or runtime budgets.
 
-### Existing Seams to Evaluate
+### Integration Seams Used
 
-- `PresentationSequencerService` already sequences deterministic table phases, multiplies timing by user speed, and permits Continue.
-- `TableGame` already exposes clash, reinforcement, Battle layer, casualty, return, and Boneyard presentation states.
+- `PresentationSequencerService` sequences the scene, multiplies timing by user speed, collapses reduced motion, and permits Continue.
+- `TableGame` hosts the overlay without changing its stakes or responsive layout.
 - Existing CSS handles dealing, card collisions, Battle layers, casualty reveals, return, Boneyard movement, and motion-disabled behavior.
 - `RuleDemoComponent` demonstrates an economical frame-data model with Replay, Skip to result, sound cues, and reduced-motion collapse.
 - `CardTableComponent` provides the responsive table/rail/center layout into which a presentation layer may fit.
 
-These are promising seams, not a mandate to couple runtime battlefield scenes to the rules-demo implementation. Deterministic game resolution remains in the existing engine.
+The runtime scene is not coupled to the rules-demo implementation. Deterministic game resolution remains in the existing engine.
 
 ## 4. Final-Pass Release and UX Concerns
 

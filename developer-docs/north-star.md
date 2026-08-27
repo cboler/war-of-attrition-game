@@ -415,7 +415,7 @@ Multiplayer is a long-term design horizon rather than immediate release scope. H
 - **Authored Encounter Form**: Canonical first play uses the settled twelve-War commander schedule; randomized replay is deferred until after the four chapters are complete.
 - **Progressive Dossiers**: The table identity area deep-links into compact Field Manual records that improve their historiography as evidence unlocks; no RPG character sheets.
 - **Rank Archetypes**: Consistent military formations (Infantry, Cavalry Jacks, Caster Queens, Swordsman Kings, General Aces, and the signature 2-vs-Ace assassination sequence).
-- **Clash Visualizations**: A first-class remaining sprint in which visible physical cards summon brief presentation-only battlefield encounters.
+- **Clash Visualizations**: The implemented V1 lets visible physical cards summon brief presentation-only infantry encounters; the settled rank archetypes remain future refinements.
 - **Cosmetics Policy**: Purely visual presentation (card backs, army themes, portraits); strict prohibition against unauthorized third-party trade dress.
 
 ### Settled Thematic Framework
@@ -436,7 +436,7 @@ Multiplayer is a long-term design horizon rather than immediate release scope. H
 
 ## 15. Remaining Roadmap
 
-Barring newly discovered release-blocking defects, two substantial creative implementation sprints remain before final-pass polish.
+Barring newly discovered release-blocking defects, both substantial creative sprints now have production initial passes. Final-pass polish comes next; richer battlefield variants remain later refinements.
 
 ### Sprint 1 — Progressive Narrative Unveiling
 
@@ -446,17 +446,17 @@ Barring newly discovered release-blocking defects, two substantial creative impl
 - Add chapter/War-aware reactions, compact Campaign/War framing, progressive commander dossiers, lore fragments, and contextual historical/scientific links.
 - Use the Field Manual, Chronicle, Campaign Orders, resolution surfaces, achievements, and cosmetics without building a visual novel.
 
-### Sprint 2 — Clash Visualizations / Battlefield Animations
+### Sprint 2 — Clash Visualizations / Battlefield Animations (V1 Implemented)
 
-- Stage brief, economical rank-to-unit encounters while physical cards remain visible and authoritative.
-- Preserve the number/Jack/Queen/King/Ace mapping and the Two's signature Ace-defeating role.
-- Reuse or extend existing sequencing, speed, Continue/skip, and reduced-motion seams where appropriate.
-- Keep silhouettes readable at phone scale and avoid copyrighted source material or an excessive asset/runtime budget.
+- Implemented: symbolic five-unit infantry formations charge horizontally, bonk, and resolve with a much larger losing-side knockback while physical cards remain authoritative.
+- Implemented: inline SVG/CSS presentation reuses sequencing, speed, Continue/skip, persistent settings, and reduced-motion seams.
+- Deferred: number/Jack/Queen/King/Ace classes, suit identities, the Two's signature Ace-defeating sequence, and recursive spectacle escalation.
+- Continue to keep silhouettes readable at phone scale and avoid copyrighted source material or an excessive asset/runtime budget.
 
 ### Then — Final-Pass Polish
 
 - Resolve verified responsive layout/redraw gremlins, icon and overlay defects, pacing, accessibility, real-device compatibility, and store-readiness concerns.
-- Do not demote Sprint 2 into this generic polish bucket.
+- Do not fold deferred battlefield expansion into generic polish without a separately scoped later pass.
 - Long-term multiplayer, alternate army themes, and licensed partnerships remain beyond these two sprints.
 
 ### Prototyping & Iteration

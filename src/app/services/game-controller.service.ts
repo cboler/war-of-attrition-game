@@ -39,6 +39,7 @@ import {
   NarrativeTransitionRecord
 } from '../core/models/narrative.model';
 import { NarrativeResolverService } from '../narrative/narrative-resolver.service';
+import { BattleAnimationService } from './battle-animation.service';
 import type { ComparisonStrengthView } from '../shared/components/comparison-strength/comparison-strength.component';
 import {
   battleTargetInstruction,
@@ -49,6 +50,7 @@ import {
 
 export const MODEST_COMEBACK_DEFICIT_THRESHOLD = 3;
 export const SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD = 15;
+export const BATTLE_ANIMATION_BASE_DURATION_MS = 800;
 
 export enum PresentationState {
   READY = 'ready',
@@ -154,6 +156,7 @@ export class GameControllerService {
   private readonly storyBook = inject(StoryBookService);
   private readonly tutorial = inject(TutorialService);
   private readonly narrativeResolver = inject(NarrativeResolverService, { optional: true });
+  private readonly battleAnimationService = inject(BattleAnimationService);
 
   private readonly gameMessage = signal('Your deck is ready.');
   private readonly phase = signal(PresentationState.READY);
@@ -226,6 +229,7 @@ export class GameControllerService {
   readonly comparisonPresentation = this.comparisonPresentationSignal.asReadonly();
   readonly battlefieldMessages = this.battlefieldMessagesSignal.asReadonly();
   readonly deckDefeatPopOwner = this.deckDefeatPopOwnerSignal.asReadonly();
+  readonly battleAnimation = this.battleAnimationService.scene;
   readonly presentationStepSkipped = computed(
     () => this.presentationStepSkippedPhaseSignal() === this.phase(),
   );
@@ -408,6 +412,7 @@ export class GameControllerService {
     }
 
     this.sequencer.cancel();
+    this.battleAnimationService.clear();
     this.gameState.initializeGame();
     this.phase.set(PresentationState.READY);
     this.gameMessage.set('Your deck is ready.');
@@ -580,6 +585,7 @@ export class GameControllerService {
 
   private async playTurn(): Promise<void> {
     const version = this.sequencer.begin();
+    this.battleAnimationService.clear();
     this.comparisonPresentationSignal.set(null);
     this.revealedCasualtyIds.set([]);
     this.phase.set(PresentationState.DRAWING);
@@ -1096,7 +1102,11 @@ export class GameControllerService {
         selection,
       });
 
-      await this.sequencer.pause(500, version, 650);
+      if (selection.winner) {
+        await this.playBattleOutcomeAnimation(selection.winner, version);
+      } else {
+        await this.sequencer.pause(500, version, 650);
+      }
 
       if (result.pendingBattleSettlement) {
         await this.playBattleSettlement(result, version);
@@ -1224,6 +1234,22 @@ export class GameControllerService {
     this.withheldBoneyardIds.set([]);
     this.clearPresentedCards();
     await this.finishTurn(version, true);
+  }
+
+  private async playBattleOutcomeAnimation(
+    winner: PlayerType,
+    version: number,
+  ): Promise<void> {
+    const scene = this.battleAnimationService.request(winner);
+    try {
+      await this.sequencer.pause(
+        scene ? BATTLE_ANIMATION_BASE_DURATION_MS : 500,
+        version,
+        scene?.motion === 'reduced' ? 280 : 650,
+      );
+    } finally {
+      this.battleAnimationService.clear(scene?.id);
+    }
   }
 
   private async playOrdinarySettlement(result: TurnResult, version: number): Promise<void> {
@@ -1729,6 +1755,7 @@ export class GameControllerService {
   }
 
   private clearPresentedCards(): void {
+    this.battleAnimationService.clear();
     this.presentedTurn.set(null);
     this.revealedCasualtyIds.set([]);
     this.movingToBoneyardIds.set([]);
@@ -1840,6 +1867,7 @@ export class GameControllerService {
   private recoverFromError(error: unknown): void {
     console.error('Game flow error:', error);
     this.sequencer.cancel();
+    this.battleAnimationService.clear();
     this.announce('The table was reset after an invalid game state.');
     this.replaceGame(false);
   }

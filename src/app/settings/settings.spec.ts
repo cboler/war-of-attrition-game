@@ -49,4 +49,14 @@ describe('SettingsComponent', () => {
       .map((label: Element) => label.textContent?.trim());
     expect(labels).not.toContain('Statistics');
   });
+
+  it('offers the persisted Battle Animations preference', () => {
+    const labels = [...fixture.nativeElement.querySelectorAll('mat-slide-toggle')].map(
+      (toggle: Element) => toggle.textContent?.trim()
+    );
+
+    expect(labels).toContain('Battle Animations');
+    settingsService.setBattleAnimationsEnabled(false);
+    expect(settingsService.battleAnimationsEnabled()).toBeFalse();
+  });
 });

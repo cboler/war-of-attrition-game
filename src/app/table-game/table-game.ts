@@ -27,6 +27,7 @@ import { StoryBookDrawerComponent } from '../shared/components/story-book-drawer
 import { TutorialOverlayComponent } from '../shared/components/tutorial-overlay/tutorial-overlay.component';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { CampaignOrdersDialogComponent } from '../shared/components/campaign-orders-dialog/campaign-orders-dialog.component';
+import { BattleAnimationComponent } from '../shared/components/battle-animation/battle-animation.component';
 
 @Component({
   selector: 'app-table-game',
@@ -39,7 +40,8 @@ import { CampaignOrdersDialogComponent } from '../shared/components/campaign-ord
     CardTableComponent,
     PlayerSeatComponent,
     StoryBookDrawerComponent,
-    TutorialOverlayComponent
+    TutorialOverlayComponent,
+    BattleAnimationComponent
   ],
   templateUrl: './table-game.html',
   styleUrl: './table-game.scss',

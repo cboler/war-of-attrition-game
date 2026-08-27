@@ -1,0 +1,60 @@
+<div
+  class="battle-animation"
+  [class.reduced-motion]="scene().motion === 'reduced'"
+  [class.player-victory]="scene().winner === player.PLAYER"
+  [class.opponent-victory]="scene().winner === player.OPPONENT"
+  aria-hidden="true"
+>
+  <div
+    class="army player-army"
+    [class.winner]="scene().winner === player.PLAYER"
+    [class.loser]="scene().loser === player.PLAYER"
+  >
+    @for (unit of units; track unit) {
+      <svg
+        class="soldier"
+        [style.--unit-index]="unit"
+        viewBox="0 0 34 42"
+        focusable="false"
+      >
+        <path class="weapon" d="M26 8v24M23 11h6M24 32h4" />
+        <path class="plume" d="M13 8c1-5 8-6 10-1-4-1-7 0-10 1Z" />
+        <path class="helmet" d="M10 10c0-5 12-5 12 0v5H10Z" />
+        <circle class="face" cx="16" cy="15" r="5" />
+        <path class="body" d="M10 20h12l3 14H7Z" />
+        <path class="shield" d="M7 21c5-3 10-2 11 0v10c-3 4-7 6-11 7Z" />
+        <path class="feet" d="M12 34v5M21 34l2 5" />
+      </svg>
+    }
+  </div>
+
+  <div class="impact" aria-hidden="true">
+    <svg viewBox="0 0 48 48" focusable="false">
+      <path d="m24 2 5 13 13-6-7 13 11 7-14 2 2 14-10-10-10 10 2-14-14-2 11-7L6 9l13 6Z" />
+      <circle cx="24" cy="24" r="6" />
+    </svg>
+  </div>
+
+  <div
+    class="army opponent-army"
+    [class.winner]="scene().winner === player.OPPONENT"
+    [class.loser]="scene().loser === player.OPPONENT"
+  >
+    @for (unit of units; track unit) {
+      <svg
+        class="soldier"
+        [style.--unit-index]="unit"
+        viewBox="0 0 34 42"
+        focusable="false"
+      >
+        <path class="weapon" d="M26 8v24M23 11h6M24 32h4" />
+        <path class="plume" d="M13 8c1-5 8-6 10-1-4-1-7 0-10 1Z" />
+        <path class="helmet" d="M10 10c0-5 12-5 12 0v5H10Z" />
+        <circle class="face" cx="16" cy="15" r="5" />
+        <path class="body" d="M10 20h12l3 14H7Z" />
+        <path class="shield" d="M7 21c5-3 10-2 11 0v10c-3 4-7 6-11 7Z" />
+        <path class="feet" d="M12 34v5M21 34l2 5" />
+      </svg>
+    }
+  </div>
+</div>

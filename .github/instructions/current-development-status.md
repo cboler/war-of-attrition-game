@@ -1,15 +1,15 @@
 # War of Attrition — Current Development Status
 
-## 1. Project State: Core Complete, Two Creative Sprints Remaining
+## 1. Project State: Core and Creative Initial Passes Complete
 
 **War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity and is currently version 4.2.0 (Android `versionCode` 40200).
 
-The project is no longer in broad feature discovery. Barring a newly discovered release-blocking defect, two substantial creative implementation sprints remain before final release-polish work:
+The project is no longer in broad feature discovery. Both substantial creative sprints now have production implementations:
 
 1. **Progressive Narrative Unveiling** — named commanders, four-chapter access and disclosure, mode-aware characterization, compact framing, lore fragments, source links, persistence/migration, and tests.
-2. **Clash Visualizations / Battlefield Animations** — the first-class visual system through which cards briefly summon readable battlefield units while cards remain authoritative.
+2. **Clash Visualizations / Battlefield Animations, V1** — resolved Battles briefly summon readable opposing infantry while cards remain authoritative.
 
-After those sprints, the remaining work returns to release validation, responsive/redraw fixes, accessibility, pacing, device compatibility, and store presentation. Do not use known layout gremlins as a reason to expand either creative sprint.
+The remaining work returns to release validation, responsive/redraw fixes, accessibility, pacing, device compatibility, and store presentation. Rank-specific units and other richer battlefield ideas remain deliberate later refinements rather than part of the V1 animation.
 
 Authoritative creative references:
 
@@ -19,7 +19,7 @@ Authoritative creative references:
 - [`developer-docs/commander-voice-bible.md`](../../developer-docs/commander-voice-bible.md) — canonical voices and curated implementation-ready dialogue bank.
 - [`developer-docs/opponent-commanders.md`](../../developer-docs/opponent-commanders.md) — permanent AI strategy assets and current dialogue architecture.
 - [`developer-docs/alternate-rules-campaigns.md`](../../developer-docs/alternate-rules-campaigns.md) — implemented mode mechanics and planned chapter availability.
-- [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — the remaining two-sprint boundary and later backlog.
+- [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — completed sprint boundaries, later refinements, and backlog.
 
 ---
 
@@ -42,7 +42,9 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 - `TableGame` is the active table view, with responsive phone, tablet, and desktop layouts on fixed dark green felt.
 - Physical cards remain visible game state. The table already presents stakes, Battle layers, deck counters, Boneyard movement, combat-strength badges, battlefield announcements, and sparse contextual reactions.
 - `PresentationSequencerService` provides timed presentation phases, animation-speed multipliers, player Continue/skip behavior, timing collapse when animations are disabled, and `prefers-reduced-motion` handling.
-- Existing CSS/card animations cover dealing, clash movement, reinforcement, casualty reveals, Battle-layer staging, return, and Boneyard movement. They are not yet the planned rank-to-unit battlefield visualization system.
+- `BattleAnimationService` and `BattleAnimationComponent` visualize decisive Battle results as two five-unit inline-SVG infantry formations. They charge horizontally, bonk at center, and give the losing formation the larger recoil/tumble before cleanup.
+- The V1 scene reuses the sequencer's existing result beat: normal timing is about 0.92 seconds, Continue collapses it, animation-speed settings scale it, and no extra resolution state is introduced.
+- The persisted **Battle Animations** preference defaults on. Global animation disabling suppresses scene creation; `prefers-reduced-motion` receives a short static winner/loser cue with no animated travel.
 - `RuleDemoComponent` provides isolated, frame-based, replayable and skippable rules drills with reduced-motion support. It is a useful economy/readability reference for Sprint 2, not a requirement to turn the runtime table into a rule demo.
 
 ### Field Manual, Chronicle, and Hall of Valor
@@ -104,7 +106,7 @@ The documentation pass establishes creative decisions; it does not imply they ar
 | Campaign chapter availability | Schema v2 chapter progression: Standard → Limited Reserves → Fog of War → Total War, canonical order and lock cues in Orders modal | Completed for Chapter I; Chapters II–IV data and presentation ready for subsequent passes |
 | Narrative persistence & migration | Schema v2 persistence with full v1 migration, legacy grandfathering, and reload determinism | Unlocked dossiers and story progress persisted cleanly |
 | Field Manual / Dossiers | Field Manual dossier tab, commander switcher chips, progressive records, evidence badges, safe external source links, table-header deep link | Fully active in runtime with keyboard navigation and ARIA support |
-| Table animation | Card movement, Battle layers, sequencing, skip/speed/motion controls | Sprint 2 rank-to-unit clash visualization while cards remain visible and authoritative |
+| Table animation | Card movement, Battle layers, sequencing, skip/speed/motion controls, and optional V1 summoned-infantry Battle scenes | Rank-specific units, suit identities, recursive escalation, and the signature Two-vs-Ace scene remain later refinements |
 
 The private mouse/hay cause in [`narrative-canon.md`](../../developer-docs/narrative-canon.md) is writer knowledge. It must not simply appear as an early player-facing explanation.
 
@@ -132,44 +134,43 @@ Sprint 1 is fully complete, validated, and tested end-to-end:
   - Campaign Orders modal indicates `"Replay Command: Opposition randomized"` for unlocked replay chapters.
 - **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-01` through `TR-C4-04`), resolution quotes, and dynamic next-war action buttons.
 - **Spoiler Firewall & Canonical Resolution**: Strict information boundaries across all four chapters; private Mont-Rouge mechanism (mouse/hay) safely protected in author knowledge; Chapter IV completes with the canonical resolution (`Matthias: “I never proved it.”` / `Marcel: “Non. Neither did I.”`) without an extraneous Bastien punchline.
-- **Comprehensive Test Suite**: Full unit and integration suite green at **533 / 533 tests passing**, including `chapter-one-narrative-flow.spec.ts`, `narrative-campaign-traversal.spec.ts` (12-War traversal, spoiler firewall audit, defeat/draw progression, randomized replay matrix), `narrative-resolver.service.spec.ts`, and `game-controller.service.spec.ts`.
+- **Comprehensive Test Suite**: Full unit and integration suite green at **543 / 543 tests passing**, including `chapter-one-narrative-flow.spec.ts`, `narrative-campaign-traversal.spec.ts` (12-War traversal, spoiler firewall audit, defeat/draw progression, randomized replay matrix), `narrative-resolver.service.spec.ts`, `game-controller.service.spec.ts`, and the Battle animation presentation tests.
 - **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json`.
 
 Next steps for future work:
-- Sprint 2 Clash Visualizations / Battlefield Animations.
+- Final release polish and device validation; richer battlefield variants remain optional later work.
 
 
 ---
 
-## 5. Remaining Substantial Sprint 2 — Clash Visualizations / Battlefield Animations
+## 5. Sprint 2 Initial Pass — Implemented
 
-This sprint is a first-class expression of the visual identity, not generic optional polish.
+The first production pass is implemented as a small presentation-only layer.
 
 > **The cards do not merely represent the battle. They summon the battle.**
 
-The physical cards continue to show and determine state. A presentation layer briefly imagines them as opposing units:
+The physical cards continue to show and determine state. After a decisive Battle result is authoritative:
 
-- Number cards → ordinary soldiers/infantry, with scale or formation influenced by rank.
-- Jack → cavalry or knight.
-- Queen → mage or equivalent elite specialist.
-- King → regal swordsman or champion.
-- Ace → commander or general.
-- Two → visually humble ordinary troops/scouts that remain capable of the signature Ace-defeating role rather than merely looking weak.
+- Five player infantry enter from the left and five opponent infantry enter from the right.
+- The formations meet at a small central star/bonk cue.
+- The winner recoils slightly and holds; the loser is displaced much farther and several units tumble or fall.
+- The overlay is layout-neutral, pointer-transparent, and removed before casualty presentation continues.
+- `BattleAnimationService` owns ephemeral scene state; `GameControllerService` requests it only after `TurnResolutionService` has decided the result; `BattleAnimationComponent` owns SVG/CSS rendering.
 
-Required qualities:
+Implemented runtime guardrails:
 
-- Economical late-16-bit/early-32-bit tactical-JRPG grammar without copying copyrighted sprites, characters, animations, or UI.
-- Clean silhouettes readable at phone scale; reusable SVG/CSS/keyframe or similarly economical assets where practical.
-- Quick charge, collision, recoil, defeat, retreat, and/or casualty communication.
-- Recursive Battles may escalate spectacle without obscuring stakes or extending play unnecessarily.
-- Continue/skip and animation-speed behavior for experienced players, plus full reduced-motion support.
-- No asset, runtime, or style budget that undermines mobile reliability.
+- Inline SVG and CSS only; no asset files or animation dependency.
+- Normal speed is about 0.92 seconds (fast about 0.56 seconds; slow about 1.2 seconds).
+- Continue completes the current beat immediately; cancellation, restart, and error paths clear the scene.
+- The **Battle Animations** setting persists through `SettingsService` and defaults enabled.
+- Reduced motion replaces travel with a roughly 0.28-second static winner/loser cue.
+- Verified without horizontal overflow at 360×740, 540×960, and 1280×800 CSS viewports.
 
-The existing presentation phases, sequencer, settings, card table, Battle layers, CSS motion rules, and deterministic rule demos are implementation seams to evaluate. They do not authorize changes to card resolution or game state.
+Intentionally deferred: rank-specific classes, suit-specific armies, magnitude scaling, recursive spectacle escalation, the special Two-vs-Ace assassination treatment, skins, sound, and a general animation framework.
 
 ---
 
-## 6. Final-Pass Release Concerns After the Two Sprints
+## 6. Final-Pass Release Concerns
 
 These remain important but should not absorb or expand the creative sprint scopes:
 

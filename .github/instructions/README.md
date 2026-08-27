@@ -32,7 +32,7 @@ To ensure clarity for developers and automated coding agents, documentation in t
 - [`war-of-attrition-requirements.md`](./war-of-attrition-requirements.md) — **SINGLE SOURCE OF TRUTH** for all game rules, rank hierarchies, Battle resolution, and core requirements. **⚠️ NEVER MODIFY THIS FILE.**
 
 ### 2. Current Project State & Guidance
-- [`current-development-status.md`](./current-development-status.md) — Authoritative live status describing the feature-complete core, two remaining creative sprints, and final release priorities.
+- [`current-development-status.md`](./current-development-status.md) — Authoritative live status describing the feature-complete core, implemented creative initial passes, and final release priorities.
 - [`implementation-guidelines.md`](./implementation-guidelines.md) — Code quality standards, Angular conventions, signal state rules, and architecture guidelines.
 
 ### 3. Creative Direction & Backlog References
@@ -40,14 +40,14 @@ To ensure clarity for developers and automated coding agents, documentation in t
 - [`developer-docs/narrative-canon.md`](../../developer-docs/narrative-canon.md) — **PRIVATE WRITER CANON** for Mont-Rouge, commander dossiers, chapters, unlock philosophy, and source plan.
 - [`developer-docs/narrative-disclosure-matrix.md`](../../developer-docs/narrative-disclosure-matrix.md) — **SPRINT 1 CREATIVE ROUTING** with the Reveal Ledger, authored twelve-War order, progressive dossiers, transitions, callbacks, spoiler/truth audits, sources, and runtime handoff.
 - [`developer-docs/commander-voice-bible.md`](../../developer-docs/commander-voice-bible.md) — **CANONICAL VOICE & COPY** with relationship language, replay safety, and the curated twelve-encounter dialogue bank.
-- [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — Remaining Narrative and Clash Visualization sprints, release-polish concerns, and later candidates.
+- [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — Implemented Narrative and Clash Visualization sprint boundaries, release-polish concerns, and later candidates.
 - [`development-milestones.md`](./development-milestones.md) — Historical milestone roadmap used during early development. Completion percentages there do not supersede `current-development-status.md`.
 
 ---
 
 ## 🎯 Current State Summary
 
-- **Project Phase**: Feature-complete core with two substantial creative sprints remaining: Progressive Narrative Unveiling, then Clash Visualizations / Battlefield Animations. Final release polish follows.
+- **Project Phase**: Feature-complete core with production initial passes for Progressive Narrative Unveiling and Clash Visualizations / Battlefield Animations. Final release polish follows.
 - **Active Table Route**: `src/app/table-game/` (`TableGame`) — Fully responsive across Mobile Phone (`<= 620px`), 7-inch Tablet (`620px - 820px`), and 10-inch Tabletop Grid (`>= 1100px`).
 - **Visual Design**: Fixed dark/green felt card table. (Theme toggling was intentionally removed as the visual world is the felt table itself).
 - **Automated Tests**: Comprehensive unit test suite (`npm test`) covering game logic, turns, challenges, recursive battles, and UI components.

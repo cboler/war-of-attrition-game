@@ -93,6 +93,7 @@ export interface AppSettings {
   soundEnabled: boolean;
   showTurnCounter: boolean;
   tutorialEnabled: boolean;
+  battleAnimationsEnabled: boolean;
 
   // Advanced settings
   confirmChallenges: boolean;
@@ -162,6 +163,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   showTurnCounter: true,
   tutorialEnabled: true,
+  battleAnimationsEnabled: true,
   confirmChallenges: false,
   autoPlayAnimations: true,
   showCardDetails: true
