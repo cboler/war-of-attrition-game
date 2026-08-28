@@ -63,7 +63,7 @@ Use this factual breakdown to complete the **Data Safety** questionnaire in Goog
 | **Account creation** | Yes | Google Sign-in or Local Guest Account |
 | **Deletion request URL** | `https://cboler.github.io/war-of-attrition-game/delete-account/` | Direct URL for users to request/execute data deletion |
 | **Target Audience / Age** | Everyone (13+) | Casual strategic card game |
-| **Advertising / Ads** | **OWNER ACTION REQUIRED** | Android source initializes a Google Mobile Ads banner, while existing store declarations say no ads. Disable it in the shipped build or update Ads/Data Safety/consent declarations before testing. |
+| **Advertising / Ads** | **No** | The application contains no advertising SDK and does not display or request ads. |
 | **Financial / Purchase Info** | **No** | App has no payments or real money transactions |
 | **Location Data** | **No** | App does not access precise or coarse location |
 | **Health / Fitness** | **No** | Not applicable |

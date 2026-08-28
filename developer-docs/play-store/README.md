@@ -135,9 +135,9 @@ Follow these actions in order:
   - **Privacy Policy URL:** `https://cboler.github.io/war-of-attrition-game/privacy/`
   - **Data Safety:** Complete questionnaire using [`data-safety.md`](./data-safety.md).
   - **Target Audience:** 13+ (or Everyone).
-  - **Ads:** Do not submit an answer until the shipped Android behavior is verified. Android source currently initializes a Google Mobile Ads banner, so selecting "No" is only accurate if that integration is disabled for the release build. Otherwise update consent, privacy, Data Safety, and store declarations.
+  - **Ads:** Select **No**. The Android wrapper contains no advertising SDK, ad manifest metadata, ad unit identifiers, or ad runtime behavior.
 * **WHEN:** Before creating internal release.
-* **HOW TO VERIFY:** All policy declarations show "Completed" in Play Console.
+* **HOW TO VERIFY:** All policy declarations show "Completed" in Play Console, and the release artifact contains no advertising SDK classes or resources.
 
 ### 8. Upload AAB to Internal Testing Track
 * **WHERE:** Play Console → **Testing** → **Internal testing**

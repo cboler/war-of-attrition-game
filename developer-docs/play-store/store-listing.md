@@ -30,9 +30,7 @@ Experience the tension of attrition combat where every draw counts.
 * **GOOGLE PLAY ACHIEVEMENTS:** Earn XP and unlock 27 distinct achievements, from pulling off a 15-card comeback to mastering multi-tier battles.
 * **CUSTOMIZE YOUR DECK:** Unlock and choose from multiple distinct card backing styles.
 * **SEAMLESS OFFLINE PLAY:** Play anywhere, anytime without requiring a persistent network connection.
-* **NO PAY-TO-WIN:** Cosmetic tokens are earned through play, with no paid gameplay advantage or in-app purchases.
-
-> **Owner action before publishing:** Do not restore an "ad-free" claim unless the Android Google Mobile Ads banner is disabled in the shipped build. If the banner remains, make the listing, Ads declaration, consent flow, privacy policy, and Data Safety answers describe that behavior consistently.
+* **NO ADS OR IN-APP PURCHASES:** Cosmetic tokens are earned only through play. There are no advertisements, paid items, or paid gameplay advantages.
 
 ---
 

@@ -22,5 +22,7 @@ describe('PrivacyComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('mat-card-title')?.textContent).toContain('Privacy Policy');
     expect(compiled.textContent).toContain('War of Attrition');
+    expect(compiled.textContent).toContain('contains no advertising SDK');
+    expect(compiled.textContent).toContain('displays no ads');
   });
 });

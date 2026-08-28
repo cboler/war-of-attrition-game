@@ -29,7 +29,7 @@ import { MatDividerModule } from '@angular/material/divider';
         </mat-card-header>
 
         <mat-card-content class="legal-content">
-          <div class="last-updated">Last Updated: August 22, 2026</div>
+          <div class="last-updated">Last Updated: August 28, 2026</div>
 
           <section>
             <h3>1. Overview & Developer Identity</h3>
@@ -83,11 +83,10 @@ import { MatDividerModule } from '@angular/material/divider';
           </section>
 
           <section>
-            <h3>4. Advertising & Monetization</h3>
+            <h3>4. Advertising & Purchases</h3>
             <p>
-              Tokens and cosmetics are earned through play and cannot be purchased with real money. We do not sell or rent personal data.
-              The Android project currently contains a Google Mobile Ads banner integration; release owners must ensure the deployed behavior,
-              consent flow, store advertising declaration, and Google Play Data Safety answers remain consistent.
+              War of Attrition contains no advertising SDK, displays no ads, and makes no ad requests. It also has no in-app purchases:
+              tokens and cosmetics are earned only through play and cannot be purchased with real money. We do not sell or rent personal data.
             </p>
           </section>
 

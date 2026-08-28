@@ -186,7 +186,7 @@ The creative sprint scopes are closed. The next pass may address:
 3. Broad code simplification, dead-code/dependency review, asset/bundle optimization, and final release-AAB preparation.
 4. Remaining physical-device-specific compatibility observations not reproducible in automated Chromium checks.
 5. Store screenshots, feature graphics, listing copy, and final accessibility smoke checks.
-6. Monetization remains deferred (`ADS_ENABLED=false`) and cannot gate narrative.
+6. Advertising and monetization are absent: there is no ad SDK, ad configuration, ad runtime, payment flow, or purchase gate.
 
 ---
 
