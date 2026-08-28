@@ -65,6 +65,70 @@ async function assertFixedTableFits(page: Page, width: number, height: number): 
 }
 
 test.describe('Table first-render layout and message composition', () => {
+  test('makes all three desktop Battle lanes selectable from either card', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'store-tablet-10in');
+
+    for (const viewport of [
+      { width: 1280, height: 800 },
+      { width: 1600, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+
+      for (const cardArea of ['opponent', 'player'] as const) {
+        for (let targetIndex = 0; targetIndex < 3; targetIndex++) {
+          await loadScreenshotScene(page, 'battle');
+          const opponentTargets = page.locator('.opponent-layers .battle-card-shell');
+          const playerProxies = page.locator('.player-layers .battle-card-shell.lane-proxy');
+          await expect(opponentTargets).toHaveCount(3);
+          await expect(playerProxies).toHaveCount(3);
+          await expect(
+            page.locator('.opponent-layers .battle-card-shell.eligible'),
+          ).toHaveCount(3);
+          await expect(
+            page.locator('.battle-card-shell:is(button):not(:disabled)'),
+            'The three opponent cards are the only keyboard targets',
+          ).toHaveCount(3);
+          await expect(page.locator('.player-layers button.battle-card-shell')).toHaveCount(0);
+
+          const upper = opponentTargets.nth(targetIndex);
+          const lower = playerProxies.nth(targetIndex);
+          const activeLaneCards = page.locator(
+            `[data-battle-lane="${targetIndex}"].lane-active`,
+          );
+
+          await (cardArea === 'opponent' ? upper : lower).hover();
+          await expect(activeLaneCards).toHaveCount(2);
+
+          await upper.focus();
+          await expect(activeLaneCards).toHaveCount(2);
+          await expect(upper).toBeFocused();
+
+          const target = cardArea === 'opponent' ? upper : lower;
+          const box = await target.boundingBox();
+          expect(
+            box,
+            `${cardArea} card in Battle lane ${targetIndex + 1} should have bounds`,
+          ).not.toBeNull();
+          const center = { x: box!.width / 2, y: box!.height / 2 };
+          const hitTarget = await page.evaluate(
+            ({ x, y }) =>
+              document
+                .elementFromPoint(x, y)
+                ?.closest<HTMLElement>('.battle-card-shell')
+                ?.getAttribute('data-battle-lane') ?? null,
+            { x: box!.x + center.x, y: box!.y + center.y },
+          );
+          expect(hitTarget).toBe(String(targetIndex));
+
+          await target.click({ position: center });
+          await expect(upper).toHaveClass(/selected/);
+        }
+      }
+    }
+  });
+
   test('fits compact phone 360 x 740 on first render', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'store-phone');
     await assertFixedTableFits(page, 360, 740);

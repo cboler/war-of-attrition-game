@@ -49,7 +49,10 @@ describe('TurnResolutionService', () => {
     while (gameState.opponentCardCount() > opponentCount) {
       const cards = activeCards();
       compareSpy.and.returnValue(ComparisonResult.PLAYER_WINS);
-      service.resolveTurn(cards.playerCard, cards.opponentCard);
+      const result = service.resolveTurn(cards.playerCard, cards.opponentCard);
+      if (result.opponentConsidered && !result.opponentChallenge) {
+        service.resolveChallengeConcession(PlayerType.OPPONENT);
+      }
       expectConserved();
     }
     return compareSpy;
@@ -69,7 +72,7 @@ describe('TurnResolutionService', () => {
     return result;
   }
 
-  it('settles an ordinary decisive turn exactly once', () => {
+  it('defers an AI concession until disclosure, then settles exactly once', () => {
     const cards = activeCards();
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
     spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
@@ -77,7 +80,17 @@ describe('TurnResolutionService', () => {
 
     const result = service.resolveTurn(cards.playerCard, cards.opponentCard);
 
-    expect(result.winner).toBe(PlayerType.PLAYER);
+    expect(result.winner).toBeNull();
+    expect(result.opponentConsidered).toBeTrue();
+    expect(result.opponentChallenge).toBeFalse();
+    expect(gameState.playerCardCount()).toBe(25);
+    expect(gameState.opponentCardCount()).toBe(25);
+    expect(gameState.discardedCardCount()).toBe(0);
+    expect(gameState.currentState.activeTurn).not.toBeNull();
+
+    const concession = service.resolveChallengeConcession(PlayerType.OPPONENT);
+
+    expect(concession.winner).toBe(PlayerType.PLAYER);
     expect(gameState.playerCardCount()).toBe(26);
     expect(gameState.opponentCardCount()).toBe(25);
     expect(gameState.discardedCardCount()).toBe(1);

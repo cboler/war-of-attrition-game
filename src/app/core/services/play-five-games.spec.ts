@@ -37,6 +37,8 @@ describe('deterministic engine simulation harness', () => {
         } else if (result.opponentChallenge) {
           gameState.beginChallenge(PlayerType.OPPONENT);
           result = resolver.resolveChallenge(PlayerType.OPPONENT);
+        } else if (result.opponentConsidered) {
+          result = resolver.resolveChallengeConcession(PlayerType.OPPONENT);
         }
 
         while (result.nextPhase === GamePhase.BATTLE) {
@@ -67,4 +69,3 @@ describe('deterministic engine simulation harness', () => {
     }
   });
 });
-

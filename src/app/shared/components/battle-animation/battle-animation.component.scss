@@ -22,23 +22,33 @@
 .army {
   position: absolute;
   top: 50%;
-  display: flex;
-  align-items: flex-end;
   width: 47%;
-  gap: clamp(0px, 0.45vw, 5px);
   transform: translateY(-50%);
   will-change: transform, opacity;
 }
 
+.formation {
+  display: flex;
+  align-items: flex-end;
+  width: max-content;
+  gap: clamp(0px, 0.45vw, 5px);
+}
+
 .player-army {
   left: 0;
-  justify-content: flex-end;
+}
+
+.player-army .formation {
+  margin-left: auto;
 }
 
 .opponent-army {
   right: 0;
-  justify-content: flex-end;
-  transform: translateY(-50%) scaleX(-1);
+}
+
+/* Facing is deliberately independent from positional movement. */
+.opponent-army .formation-facing {
+  transform: scaleX(-1);
 }
 
 .player-army.winner {
@@ -152,9 +162,9 @@
   0% { opacity: 0; transform: translate(-112%, -50%); }
   8% { opacity: 1; }
   43% { transform: translate(0, -50%); }
-  51% { transform: translate(-8%, -50%); }
-  72% { opacity: 1; transform: translate(-3%, -50%); }
-  100% { opacity: 0; transform: translate(-3%, -50%); }
+  54% { transform: translate(7%, -50%); }
+  78% { opacity: 1; transform: translate(5%, -50%); }
+  100% { opacity: 0; transform: translate(5%, -50%); }
 }
 
 @keyframes player-loses {
@@ -167,21 +177,21 @@
 }
 
 @keyframes opponent-wins {
-  0% { opacity: 0; transform: translate(112%, -50%) scaleX(-1); }
+  0% { opacity: 0; transform: translate(112%, -50%); }
   8% { opacity: 1; }
-  43% { transform: translate(0, -50%) scaleX(-1); }
-  51% { transform: translate(8%, -50%) scaleX(-1); }
-  72% { opacity: 1; transform: translate(3%, -50%) scaleX(-1); }
-  100% { opacity: 0; transform: translate(3%, -50%) scaleX(-1); }
+  43% { transform: translate(0, -50%); }
+  54% { transform: translate(-7%, -50%); }
+  78% { opacity: 1; transform: translate(-5%, -50%); }
+  100% { opacity: 0; transform: translate(-5%, -50%); }
 }
 
 @keyframes opponent-loses {
-  0% { opacity: 0; transform: translate(112%, -50%) scaleX(-1); }
+  0% { opacity: 0; transform: translate(112%, -50%); }
   8% { opacity: 1; }
-  43% { transform: translate(0, -50%) scaleX(-1); }
-  51% { transform: translate(12%, -50%) scaleX(-1); }
-  72% { opacity: 0.88; transform: translate(45%, -45%) rotate(-5deg) scaleX(-1); }
-  100% { opacity: 0; transform: translate(72%, -40%) rotate(-8deg) scaleX(-1); }
+  43% { transform: translate(0, -50%); }
+  51% { transform: translate(12%, -50%); }
+  72% { opacity: 0.88; transform: translate(45%, -45%) rotate(5deg); }
+  100% { opacity: 0; transform: translate(72%, -40%) rotate(8deg); }
 }
 
 @keyframes soldier-charge-bob {
@@ -223,8 +233,8 @@
   opacity: 1;
 }
 
-.reduced-motion .player-army { transform: translate(-3%, -50%); }
-.reduced-motion .opponent-army { transform: translate(3%, -50%) scaleX(-1); }
+.reduced-motion .player-army { transform: translate(3%, -50%); }
+.reduced-motion .opponent-army { transform: translate(-3%, -50%); }
 .reduced-motion .loser { opacity: 0.32; }
 .reduced-motion .loser .soldier:nth-child(odd) { rotate: 68deg; translate: 0 9px; }
 .reduced-motion .winner { filter: drop-shadow(0 0 5px rgba(255, 226, 146, 0.8)); }
@@ -243,8 +253,8 @@
   }
 
   .army { opacity: 1; }
-  .player-army { transform: translate(-3%, -50%); }
-  .opponent-army { transform: translate(3%, -50%) scaleX(-1); }
+  .player-army { transform: translate(3%, -50%); }
+  .opponent-army { transform: translate(-3%, -50%); }
   .loser { opacity: 0.32; }
   .loser .soldier:nth-child(odd) { rotate: 68deg; translate: 0 9px; }
   .winner { filter: drop-shadow(0 0 5px rgba(255, 226, 146, 0.8)); }

@@ -101,6 +101,7 @@
                     class="battle-card-shell"
                     type="button"
                     [class.eligible]="view.eligible"
+                    [class.lane-active]="view.eligible && activeBattleLane() === index"
                     [class.selected]="view.selected"
                     [class.casualty]="view.casualty"
                     [class.casualty-major]="view.casualtyEmphasis === 'major'"
@@ -108,17 +109,25 @@
                     [class.returning]="isReturning(view.id)"
                     [class.to-boneyard]="isGoingToBoneyard(view.id)"
                     [disabled]="!view.eligible"
+                    [attr.data-battle-lane]="index"
                     [attr.aria-label]="
                       view.eligible
-                        ? 'Choose foe champion: opponent Battle card ' + (index + 1) + ' of 3'
+                        ? 'Choose ' + battleLaneLabel(index) + ' lane: opponent Battle card ' + (index + 1) + ' of 3'
                         : view.faceDown
                           ? 'Hidden opponent Battle card'
                           : null
                     "
+                    (pointerenter)="setHoveredBattleLane(index)"
+                    (pointerleave)="setHoveredBattleLane(null)"
+                    (focus)="setFocusedBattleLane(index)"
+                    (blur)="setFocusedBattleLane(null)"
                     (click)="chooseTarget(view)"
                   >
                     @if (view.eligible) {
                       <span class="target-pointer pointer-down" aria-hidden="true">↓</span>
+                      <span class="battle-lane-label" aria-hidden="true">{{
+                        battleLaneLabel(index)
+                      }}</span>
                     }
                     <app-card
                       [card]="view.card"
@@ -172,7 +181,7 @@
                 <span class="inactive-label">Inactive for this comparison</span>
               }
             }
-            @if (controller.opponentChallengeCard(); as card) {
+            @if (controller.visibleOpponentChallengeCard(); as card) {
               <div
                 class="reinforcement opponent-reinforcement"
                 [class.dealing]="controller.presentationState() === state.CHALLENGE_DRAW"
@@ -274,12 +283,25 @@
                 @for (view of layer.playerCards; track view.id; let index = $index) {
                   <div
                     class="battle-card-shell"
+                    [class.lane-proxy]="isSelectableBattleLane(layer.round)"
+                    [class.lane-active]="
+                      isSelectableBattleLane(layer.round) && activeBattleLane() === index
+                    "
                     [class.selected]="view.selected"
                     [class.casualty]="view.casualty"
                     [class.casualty-major]="view.casualtyEmphasis === 'major'"
                     [class.casualty-face]="view.casualtyEmphasis === 'face'"
                     [class.returning]="isReturning(view.id)"
                     [class.to-boneyard]="isGoingToBoneyard(view.id)"
+                    [attr.data-battle-lane]="index"
+                    [attr.aria-hidden]="isSelectableBattleLane(layer.round) ? 'true' : null"
+                    (pointerenter)="
+                      isSelectableBattleLane(layer.round) && setHoveredBattleLane(index)
+                    "
+                    (pointerleave)="
+                      isSelectableBattleLane(layer.round) && setHoveredBattleLane(null)
+                    "
+                    (click)="chooseTargetLane(layer.round, index)"
                   >
                     <app-card
                       [card]="view.card"

@@ -202,7 +202,11 @@ describe('GameControllerService presentation integration', () => {
     expect(controller.presentationState()).toBe(PresentationState.CLASH_REVEAL);
     tick(1);
     flushMicrotasks();
-    expect(controller.presentationState()).toBe(PresentationState.CLASH_RESOLUTION);
+    expect(controller.presentationState()).toBe(
+      PresentationState.OPPONENT_CONSIDERING_CHALLENGE,
+    );
+    expect(controller.battleAnimation()).toBeNull();
+    expect(controller.visibleOpponentChallengeCard()).toBeNull();
     flush();
   }));
 
@@ -230,7 +234,7 @@ describe('GameControllerService presentation integration', () => {
     flush();
   }));
 
-  it('summons a correctly oriented skirmish for an ordinary decisive comparison', fakeAsync(() => {
+  it('waits for a public AI concession before summoning the player victory skirmish', fakeAsync(() => {
     settings.setAutoPlayAnimations(true);
     settings.setAnimationSpeed('normal');
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
@@ -244,6 +248,25 @@ describe('GameControllerService presentation integration', () => {
     tick(414);
     flushMicrotasks();
 
+    expect(controller.presentationState()).toBe(
+      PresentationState.OPPONENT_CONSIDERING_CHALLENGE,
+    );
+    expect(request).not.toHaveBeenCalled();
+    expect(controller.battleAnimation()).toBeNull();
+    expect(controller.visibleOpponentChallengeCard()).toBeNull();
+    expect(controller.cardsMovingToBoneyard()).toEqual([]);
+    expect(controller.cardsReturningHome()).toEqual([]);
+
+    // Three consideration beats complete before the branch becomes public.
+    tick(794);
+    flushMicrotasks();
+    expect(controller.presentationState()).toBe(PresentationState.CLASH_RESOLUTION);
+    expect(controller.tableMessage()).toBe('Opponent concedes.');
+    expect(request).not.toHaveBeenCalled();
+
+    // The final skirmish starts only after the public concession hold.
+    tick(345);
+    flushMicrotasks();
     expect(request).toHaveBeenCalledOnceWith(PlayerType.PLAYER);
     expect(controller.battleAnimation()).toEqual(jasmine.objectContaining({
       winner: PlayerType.PLAYER,
@@ -257,6 +280,138 @@ describe('GameControllerService presentation integration', () => {
     flush();
   }));
 
+  it('keeps challenge and concession branches presentation-equivalent while the AI considers', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    settings.setAnimationSpeed('normal');
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    const decision = spyOn(opponentAI, 'shouldChallenge');
+
+    const snapshotAtConsideration = (willChallenge: boolean) => {
+      decision.and.returnValue(willChallenge);
+      controller.playerDrawCard();
+      tick(322);
+      flushMicrotasks();
+      tick(414);
+      flushMicrotasks();
+
+      expect(controller.presentationState()).toBe(
+        PresentationState.OPPONENT_CONSIDERING_CHALLENGE,
+      );
+      const snapshot = {
+        message: controller.tableMessage(),
+        playerDeck: controller.playerDeckDisplayCount(),
+        opponentDeck: controller.opponentDeckDisplayCount(),
+        playerAtRisk: controller.playerCardsAtRisk(),
+        opponentAtRisk: controller.opponentCardsAtRisk(),
+        visibleReinforcement: controller.visibleOpponentChallengeCard()?.id ?? null,
+        rawReinforcement: controller.opponentChallengeCard()?.id ?? null,
+        animation: controller.battleAnimation(),
+        movingToBoneyard: [...controller.cardsMovingToBoneyard()],
+        returningHome: [...controller.cardsReturningHome()],
+        reaction: controller.tableReaction(),
+        expression: controller.opponentExpression(),
+        boneyardCount: controller.visibleBoneyardCount(),
+        activeTurnPresent: gameState.currentState.activeTurn !== null,
+      };
+      controller.startNewGame();
+      flushMicrotasks();
+      return snapshot;
+    };
+
+    const concessionBranch = snapshotAtConsideration(false);
+    const challengeBranch = snapshotAtConsideration(true);
+
+    expect(challengeBranch).toEqual(concessionBranch);
+    expect(challengeBranch).toEqual(
+      jasmine.objectContaining({
+        visibleReinforcement: null,
+        rawReinforcement: null,
+        animation: null,
+        movingToBoneyard: [],
+        returningHome: [],
+        reaction: null,
+        boneyardCount: 0,
+        activeTurnPresent: true,
+      }),
+    );
+    controller.startNewGame();
+    flush();
+  }));
+
+  it('gates a committed AI reinforcement until its public deal and reveal phases', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    settings.setAnimationSpeed('normal');
+    spyOn(comparison, 'compareCards').and.returnValues(
+      ComparisonResult.PLAYER_WINS,
+      ComparisonResult.OPPONENT_WINS,
+    );
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    spyOn(opponentAI, 'shouldChallenge').and.returnValue(true);
+
+    controller.playerDrawCard();
+    tick(322);
+    flushMicrotasks();
+    tick(414);
+    flushMicrotasks();
+    expect(controller.presentationState()).toBe(
+      PresentationState.OPPONENT_CONSIDERING_CHALLENGE,
+    );
+    expect(controller.visibleOpponentChallengeCard()).toBeNull();
+    expect(controller.battleAnimation()).toBeNull();
+
+    tick(794);
+    flushMicrotasks();
+    expect(controller.presentationState()).toBe(PresentationState.CHALLENGE_DRAW);
+    expect(controller.tableMessage()).toBe('Opponent challenges.');
+    expect(controller.opponentChallengeCard()).toBeNull();
+    expect(controller.visibleOpponentChallengeCard()).toBeNull();
+
+    tick(300);
+    flushMicrotasks();
+    const reinforcement = controller.opponentChallengeCard();
+    expect(reinforcement).not.toBeNull();
+    expect(controller.visibleOpponentChallengeCard()).toBe(reinforcement);
+    expect(controller.presentationState()).toBe(PresentationState.CHALLENGE_DRAW);
+    expect(controller.battleAnimation()).toBeNull();
+
+    tick(437);
+    flushMicrotasks();
+    expect(controller.presentationState()).toBe(PresentationState.CHALLENGE_CLASH);
+    expect(controller.visibleOpponentChallengeCard()).toBe(reinforcement);
+    expect(controller.battleAnimation()).toBeNull();
+
+    tick(552);
+    flushMicrotasks();
+    expect(controller.battleAnimation()?.winner).toBe(PlayerType.OPPONENT);
+    flush();
+  }));
+
+  it('does not render a privately committed reinforcement in a consideration fixture', () => {
+    const cards = gameState.startTurn();
+    expect(cards.playerCard).not.toBeNull();
+    expect(cards.opponentCard).not.toBeNull();
+    const reinforcement = gameState.beginChallenge(PlayerType.OPPONENT);
+    const turn = gameState.currentState.activeTurn;
+    expect(reinforcement).not.toBeNull();
+    expect(turn).not.toBeNull();
+
+    controller.loadFixtureState({
+      phase: PresentationState.OPPONENT_CONSIDERING_CHALLENGE,
+      message: 'Reinforce ...',
+      presentedTurn: turn,
+    });
+    expect(controller.opponentChallengeCard()).toBe(reinforcement);
+    expect(controller.visibleOpponentChallengeCard()).toBeNull();
+
+    controller.loadFixtureState({
+      phase: PresentationState.CHALLENGE_DRAW,
+      message: 'Opponent sends reinforcement.',
+      presentedTurn: turn,
+    });
+    expect(controller.visibleOpponentChallengeCard()).toBe(reinforcement);
+  });
+
   it('keeps routine comparison status out of the transient stack but in accessible status and Chronicle', fakeAsync(() => {
     settings.setAutoPlayAnimations(false);
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
@@ -266,12 +421,12 @@ describe('GameControllerService presentation integration', () => {
     controller.playerDrawCard();
     flushMicrotasks();
 
-    const resultMessage = controller.tableMessage();
-    expect(resultMessage).not.toBe('Your deck is ready.');
+    const clashEntry = storyBook.entries().find((entry) => entry.type === 'clash');
+    expect(clashEntry).toBeDefined();
+    const resultMessage = clashEntry!.text;
+    expect(resultMessage).toBe('Your card holds. Opponent is considering reinforcement.');
     expect(controller.battlefieldMessages().map((message) => message.text))
       .not.toContain(resultMessage);
-    expect(storyBook.entries().find((entry) => entry.type === 'clash')?.text)
-      .toBe(resultMessage);
     expect(controller.battleAnimation()).toBeNull();
     flush();
   }));

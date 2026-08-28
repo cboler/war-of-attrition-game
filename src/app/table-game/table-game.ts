@@ -64,6 +64,11 @@ export class TableGame implements OnInit {
   protected readonly storyBookOpen = signal(false);
   protected readonly manualReferenceCard = signal<Card | null>(null);
   protected readonly dossierTargetCommander = signal<OpponentCommanderId | null>(null);
+  protected readonly hoveredBattleLane = signal<number | null>(null);
+  protected readonly focusedBattleLane = signal<number | null>(null);
+  protected readonly activeBattleLane = computed(
+    () => this.focusedBattleLane() ?? this.hoveredBattleLane(),
+  );
 
   protected readonly opponentThinking = computed(() =>
     this.controller.presentationState() === PresentationState.OPPONENT_CONSIDERING_CHALLENGE ||
@@ -177,6 +182,28 @@ export class TableGame implements OnInit {
     this.controller.selectBattleCard(view.id);
   }
 
+  protected chooseTargetLane(round: number, index: number): void {
+    if (!this.isSelectableBattleLane(round)) return;
+    const target = this.controller.battleLayers().at(-1)?.opponentCards[index];
+    if (target?.eligible) this.chooseTarget(target);
+  }
+
+  protected setHoveredBattleLane(index: number | null): void {
+    this.hoveredBattleLane.set(index);
+  }
+
+  protected setFocusedBattleLane(index: number | null): void {
+    this.focusedBattleLane.set(index);
+  }
+
+  protected isSelectableBattleLane(round: number): boolean {
+    return this.controller.canSelectTarget() && round === this.newestBattleRound();
+  }
+
+  protected battleLaneLabel(index: number): string {
+    return ['Left', 'Center', 'Right'][index] ?? `Position ${index + 1}`;
+  }
+
   protected advancePresentation(): void {
     this.controller.advancePresentation();
   }
@@ -185,7 +212,7 @@ export class TableGame implements OnInit {
     const element = event.target as HTMLElement | null;
     if (
       element?.closest(
-        'button, a, details, summary, .achievement-toast, .story-book-drawer, .drawer-backdrop, .boneyard-drawer, .tutorial-overlay',
+        'button, a, details, summary, .battle-card-shell, .achievement-toast, .story-book-drawer, .drawer-backdrop, .boneyard-drawer, .tutorial-overlay',
       )
     )
       return;

@@ -279,6 +279,30 @@ export class GameControllerService {
   readonly opponentChallengeCard = computed(
     () => this.presentedTurn()?.opponentChallengeCard ?? null,
   );
+  /**
+   * Presentation firewall for the AI's private reinforcement commitment.
+   * Card existence in the authoritative turn is not, by itself, permission
+   * to render it; only post-announcement phases make it table-visible.
+   */
+  readonly visibleOpponentChallengeCard = computed(() => {
+    switch (this.phase()) {
+      case PresentationState.CHALLENGE_DRAW:
+      case PresentationState.CHALLENGE_CLASH:
+      case PresentationState.BATTLE_SETUP:
+      case PresentationState.PLAYER_TARGET_SELECTION:
+      case PresentationState.OPPONENT_TARGET_SELECTION:
+      case PresentationState.BATTLE_REVEAL:
+      case PresentationState.BATTLE_TIE:
+      case PresentationState.CASUALTY_REVEAL:
+      case PresentationState.RETURN_WINNER_CARDS:
+      case PresentationState.SEND_LOSER_CARDS_TO_BONEYARD:
+      case PresentationState.DECK_DEFEAT_POP:
+      case PresentationState.TURN_COMPLETE:
+        return this.presentedTurn()?.opponentChallengeCard ?? null;
+      default:
+        return null;
+    }
+  });
 
   readonly battleLayers = computed<readonly TableBattleLayerView[]>(() => {
     const turn = this.presentedTurn();
@@ -697,9 +721,12 @@ export class GameControllerService {
       } else {
         await this.tutorial.triggerStep(TutorialStep.FIRST_COMPARISON);
       }
-      if (result.winner) {
+      // No final-result presentation may run while either side still owns an
+      // unresolved legal reinforcement decision. The comparison math above is
+      // provisional; the skirmish belongs only to the disclosed final result.
+      if (result.winner && !result.canChallenge && !result.opponentConsidered) {
         await this.playComparisonSkirmish(result.winner, version);
-      } else {
+      } else if (!result.opponentConsidered) {
         await this.sequencer.pause(430, version, 650);
       }
       await this.continueFromResult(result, version);
@@ -721,6 +748,9 @@ export class GameControllerService {
           winner: PlayerType.OPPONENT,
           message: result.message,
         });
+        if (result.winner) {
+          await this.playComparisonSkirmish(result.winner, version);
+        }
         await this.playOrdinarySettlement(result, version);
         return;
       }
@@ -864,6 +894,9 @@ export class GameControllerService {
           message: 'Reserves exhausted. The position must be conceded.',
         });
         await this.sequencer.pause(350, version);
+        if (concession.winner) {
+          await this.playComparisonSkirmish(concession.winner, version);
+        }
         await this.playOrdinarySettlement(concession, version);
         return;
       }
@@ -907,29 +940,43 @@ export class GameControllerService {
     }
 
     if (!result.opponentChallenge) {
+      this.phase.set(PresentationState.CLASH_RESOLUTION);
       this.announce('Opponent concedes.');
+      const concession = this.turnResolution.resolveChallengeConcession(PlayerType.OPPONENT);
+      this.withholdBoneyard(concession);
       this.eventBus.emit({
         type: 'challenge_conceded',
         turnNumber: this.turnsPlayed,
         loser: PlayerType.OPPONENT,
         winner: PlayerType.PLAYER,
-        message: 'Opponent concedes.',
+        message: concession.message,
       });
       const concessionReaction = this.reactions.forConcession(this.opponentCommander().id);
       if (concessionReaction) {
         this.speakReaction(concessionReaction);
       }
       await this.sequencer.pause(300, version);
-      await this.playOrdinarySettlement(result, version);
+      if (concession.winner) {
+        await this.playComparisonSkirmish(concession.winner, version);
+      }
+      await this.playOrdinarySettlement(concession, version);
       return;
     }
 
+    // The decision is public from this point onward, but the reinforcement
+    // itself does not exist in the presentation until the face-down deal.
+    this.phase.set(PresentationState.CHALLENGE_DRAW);
     this.announce('Opponent challenges.');
     await this.sequencer.pause(260, version);
     this.holdFinalBadgeIfDepletedBy(PlayerType.OPPONENT, 1);
     const reinforcement = this.gameState.beginChallenge(PlayerType.OPPONENT);
     if (!reinforcement) {
       const concession = this.turnResolution.resolveChallengeConcession(PlayerType.OPPONENT);
+      this.phase.set(PresentationState.CLASH_RESOLUTION);
+      this.announce('Opponent has no reserve and concedes.');
+      if (concession.winner) {
+        await this.playComparisonSkirmish(concession.winner, version);
+      }
       await this.playOrdinarySettlement(concession, version);
       return;
     }
@@ -945,7 +992,6 @@ export class GameControllerService {
     this.syncPresentedTurn();
     const turnBeforeReveal = this.presentedTurn();
     if (turnBeforeReveal) this.primeComparison(turnBeforeReveal.playerCard, reinforcement);
-    this.phase.set(PresentationState.CHALLENGE_DRAW);
     this.announce('Opponent sends reinforcement.');
     this.sound.playCardDraw();
     await this.sequencer.pause(380, version);

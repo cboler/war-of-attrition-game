@@ -31,11 +31,26 @@ describe('BattleAnimationComponent', () => {
     expect(element.querySelectorAll('.opponent-army .soldier').length).toBe(5);
     expect(element.querySelector('.player-army')?.classList.contains('winner')).toBeTrue();
     expect(element.querySelector('.opponent-army')?.classList.contains('loser')).toBeTrue();
+    expect(element.querySelector('.opponent-army .formation-facing')).not.toBeNull();
+  });
+
+  it('marks steel as winner and red as loser for an opponent victory', () => {
+    const element = render({
+      id: 2,
+      winner: PlayerType.OPPONENT,
+      loser: PlayerType.PLAYER,
+      motion: 'full',
+    });
+
+    expect(element.querySelector('.player-army')?.classList.contains('loser')).toBeTrue();
+    expect(element.querySelector('.opponent-army')?.classList.contains('winner')).toBeTrue();
+    expect(element.querySelector('.player-army .formation-facing')).not.toBeNull();
+    expect(element.querySelector('.opponent-army .formation-facing')).not.toBeNull();
   });
 
   it('renders the reduced-motion static result class', () => {
     const element = render({
-      id: 2,
+      id: 3,
       winner: PlayerType.OPPONENT,
       loser: PlayerType.PLAYER,
       motion: 'reduced',

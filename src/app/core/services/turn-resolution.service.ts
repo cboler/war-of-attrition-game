@@ -65,20 +65,22 @@ export class TurnResolutionService {
           commander,
         });
 
-      if (opponentChallenges) {
+      if (canOpponentChallenge) {
+        // A legal response remains unresolved until its decision is publicly
+        // disclosed. Keep both AI branches physically identical here: no
+        // cards return home and no casualty enters the Boneyard yet.
         this.gameState.setPhase(GamePhase.CHALLENGE);
         return this.result({
           winner: null,
           comparison: result,
           message: 'Your card holds. Opponent is considering reinforcement.',
           nextPhase: GamePhase.CHALLENGE,
-          opponentChallenge: true,
+          opponentChallenge: opponentChallenges,
           opponentConsidered: true,
           cardsKept: [playerCard, opponentCard],
         });
       }
       return this.settle(PlayerType.PLAYER, result, 'Your card survives.', {
-        opponentConsidered: canOpponentChallenge,
         source: 'clash',
         decisiveCard: playerCard,
       });

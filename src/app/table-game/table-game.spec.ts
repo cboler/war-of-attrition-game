@@ -268,7 +268,41 @@ describe('TableGame presentation', () => {
       'Battle',
     );
 
-    controller.selectBattleCard(firstLayer.opponentCards[0].id);
+    const tableElement = fixture.nativeElement as HTMLElement;
+    const upperTargets = Array.from(
+      tableElement.querySelectorAll<HTMLButtonElement>(
+        '.opponent-layers .battle-card-shell.eligible',
+      ),
+    );
+    const lowerLaneProxies = Array.from(
+      tableElement.querySelectorAll<HTMLElement>('.player-layers .battle-card-shell.lane-proxy'),
+    );
+    expect(upperTargets.length).toBe(3);
+    expect(lowerLaneProxies.length).toBe(3);
+    expect(upperTargets.every((target) => target.tagName === 'BUTTON' && target.tabIndex === 0)).toBeTrue();
+    expect(
+      lowerLaneProxies.every(
+        (proxy) => proxy.tagName === 'DIV' && proxy.tabIndex === -1 && proxy.ariaHidden === 'true',
+      ),
+    ).toBeTrue();
+    expect(upperTargets.map((target) => target.ariaLabel)).toEqual([
+      'Choose Left lane: opponent Battle card 1 of 3',
+      'Choose Center lane: opponent Battle card 2 of 3',
+      'Choose Right lane: opponent Battle card 3 of 3',
+    ]);
+
+    lowerLaneProxies[1].dispatchEvent(new PointerEvent('pointerenter'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('[data-battle-lane="1"].lane-active').length).toBe(2);
+    lowerLaneProxies[1].dispatchEvent(new PointerEvent('pointerleave'));
+    upperTargets[1].focus();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('[data-battle-lane="1"].lane-active').length).toBe(2);
+    upperTargets[1].blur();
+
+    lowerLaneProxies[0].click();
+    fixture.detectChanges();
+    expect(upperTargets[0].classList.contains('selected')).toBeTrue();
     continuePastReadableHold();
 
     expect(controller.presentationState()).toBe(PresentationState.PLAYER_TARGET_SELECTION);
@@ -289,6 +323,46 @@ describe('TableGame presentation', () => {
     expect(announcement.textContent).not.toContain('😰');
     compareSpy.and.callThrough();
   }));
+
+  it('omits a private opponent reinforcement from the DOM until its public phase', () => {
+    const gameState = TestBed.inject(GameStateService);
+    const cards = gameState.startTurn();
+    expect(cards.playerCard).not.toBeNull();
+    expect(cards.opponentCard).not.toBeNull();
+    const reinforcement = gameState.beginChallenge(PlayerType.OPPONENT);
+    const turn = gameState.currentState.activeTurn;
+    expect(reinforcement).not.toBeNull();
+    expect(turn).not.toBeNull();
+
+    controller.loadFixtureState({
+      phase: PresentationState.OPPONENT_CONSIDERING_CHALLENGE,
+      message: 'Reinforce ...',
+      presentedTurn: turn,
+    });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.opponent-reinforcement')).toBeNull();
+
+    controller.loadFixtureState({
+      phase: PresentationState.CHALLENGE_DRAW,
+      message: 'Opponent sends reinforcement.',
+      presentedTurn: turn,
+    });
+    fixture.detectChanges();
+    const faceDown = fixture.nativeElement.querySelector('.opponent-reinforcement');
+    expect(faceDown).not.toBeNull();
+    expect(faceDown.querySelector('.card.face-down .card-back')).not.toBeNull();
+    expect(faceDown.querySelector('.card-face')).toBeNull();
+
+    controller.loadFixtureState({
+      phase: PresentationState.CHALLENGE_CLASH,
+      message: 'Reinforcement revealed.',
+      presentedTurn: turn,
+    });
+    fixture.detectChanges();
+    const revealed = fixture.nativeElement.querySelector('.opponent-reinforcement');
+    expect(revealed.querySelector('.card.face-down')).toBeNull();
+    expect(revealed.querySelector('.card-face')).not.toBeNull();
+  });
 
   it('publishes casualties without leaking hidden Battle winner identities', fakeAsync(() => {
     const events: GameEvent[] = [];
@@ -390,14 +464,26 @@ describe('TableGame presentation', () => {
 
     controller.playerDrawCard();
     tick(800);
+    flushMicrotasks();
     fixture.detectChanges();
 
-    expect(gameState.discardedCardCount()).toBe(1);
+    expect(controller.presentationState()).toBe(
+      PresentationState.OPPONENT_CONSIDERING_CHALLENGE,
+    );
+    expect(gameState.discardedCardCount()).toBe(0);
     expect(controller.visibleBoneyardCount()).toBe(0);
     expect(fixture.nativeElement.querySelector('.boneyard-empty small').textContent.trim()).toBe(
       'No cards lost',
     );
 
+    expect(controller.battleAnimation()).toBeNull();
+
+    tick(1200);
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(controller.tableMessage()).toBe('Opponent concedes.');
+    expect(gameState.discardedCardCount()).toBe(1);
+    expect(controller.visibleBoneyardCount()).toBe(0);
     expect(controller.battleAnimation()).not.toBeNull();
     expect(controller.advancePresentation()).toBeTrue();
     tick(16);
@@ -553,8 +639,7 @@ describe('TableGame presentation', () => {
 
       // Decline challenge to settle Turn 2
       controller.handleChallenge(false);
-      flushMicrotasks();
-      fixture.detectChanges();
+      continuePastReadableHold();
 
       expect(controller.presentationState()).toBe(PresentationState.READY);
       expect(controller.comparisonPresentation()).toBeNull();
