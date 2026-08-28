@@ -2,7 +2,7 @@
 
 Automated, deterministic Google Play Store listing screenshot package for **War of Attrition**.
 
-Generated at: `2026-08-23T04:22:39.508Z`  
+Generated at: `2026-08-28T05:06:26.633Z`
 Total Screenshots: **11**
 
 ---

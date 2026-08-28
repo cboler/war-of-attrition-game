@@ -15,6 +15,8 @@
       [name]="controller.opponentCommanderIdentity().name"
       [title]="controller.opponentCommanderIdentity().title"
       [faction]="controller.opponentCommanderIdentity().faction"
+      [portraitSrc]="opponentPortrait()"
+      [portraitExpression]="controller.opponentExpression()"
       [dossierAccessible]="true"
       (dossierRequested)="openCommanderDossier()"
       position="top"
@@ -63,16 +65,18 @@
         [class.battle-quake-3]="battleQuakeLevel(3)"
         [class.battle-quake-4]="newestBattleRound() >= 4 && settings.autoPlayAnimations()"
       >
-        @if (battleActive()) {
-          <span class="eyebrow">{{ battleAnnouncement() }}</span>
-        }
-        <div class="message-stack" aria-hidden="true">
-          @for (message of controller.battlefieldMessages(); track message.id; let index = $index) {
-            <strong [class.current]="index === 0" [style.--message-index]="index">
-              {{ message.text }}
-            </strong>
+        @if (!opponentQuip() && !playerQuip()) {
+          @if (battleActive()) {
+            <span class="eyebrow">{{ battleAnnouncement() }}</span>
           }
-        </div>
+          <div class="message-stack" aria-hidden="true">
+            @for (message of controller.battlefieldMessages(); track message.id; let index = $index) {
+              <strong [class.current]="index === 0" [style.--message-index]="index">
+                {{ message.text }}
+              </strong>
+            }
+          </div>
+        }
         <span class="sr-only" aria-live="polite" aria-atomic="true">
           {{ controller.tableMessage() }}
         </span>

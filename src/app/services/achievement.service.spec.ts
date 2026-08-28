@@ -67,6 +67,43 @@ describe('AchievementService', () => {
     });
   }
 
+  function emitOpponentSettlement(
+    casualties: readonly Card[],
+    turnNumber = 1,
+    source: SettlementAttribution['source'] = 'clash',
+  ): void {
+    eventBus.emit({
+      type: 'settlement_resolved',
+      turnNumber,
+      attribution: {
+        source,
+        winner: PlayerType.OPPONENT,
+        loser: PlayerType.PLAYER,
+        decisiveCard: cardAce,
+        casualties,
+        battleDepth: source === 'battle' ? 1 : 0,
+      },
+    });
+  }
+
+  function emitClashComparison(comparison: ComparisonResult, turnNumber: number): void {
+    eventBus.emit({
+      type: 'clash_resolved',
+      turnNumber,
+      playerCard: new CardImpl(Suit.HEARTS, Rank.SEVEN),
+      opponentCard: new CardImpl(Suit.CLUBS, Rank.SEVEN),
+      comparison,
+      winner:
+        comparison === ComparisonResult.TIE
+          ? null
+          : comparison === ComparisonResult.PLAYER_WINS
+            ? PlayerType.PLAYER
+            : PlayerType.OPPONENT,
+      specialRule: false,
+      message: comparison === ComparisonResult.TIE ? 'True tie.' : 'Resolved.',
+    });
+  }
+
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({
@@ -325,6 +362,100 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('war.grave_intelligence')).toBeFalse();
   });
 
+  it('unlocks Crippled only when both physical player-owned 2s are lost in one settlement', () => {
+    const heartsTwo = new CardImpl(Suit.HEARTS, Rank.TWO);
+    const diamondsTwo = new CardImpl(Suit.DIAMONDS, Rank.TWO);
+    eventBus.emit({ type: 'war_started', turnNumber: 0, playerDeckColor: DeckColor.RED });
+
+    emitOpponentSettlement([heartsTwo, diamondsTwo], 3, 'battle');
+
+    expect(service.isUnlocked('war.crippled')).toBeTrue();
+  });
+
+  it('does not combine 2 casualties from separate settlements for Crippled', () => {
+    eventBus.emit({ type: 'war_started', turnNumber: 0, playerDeckColor: DeckColor.RED });
+    emitOpponentSettlement([new CardImpl(Suit.HEARTS, Rank.TWO)], 1);
+    emitOpponentSettlement([new CardImpl(Suit.DIAMONDS, Rank.TWO)], 2, 'challenge');
+
+    expect(service.isUnlocked('war.crippled')).toBeFalse();
+  });
+
+  it('does not unlock Crippled for one 2, unrelated cards, or duplicate attribution', () => {
+    const heartsTwo = new CardImpl(Suit.HEARTS, Rank.TWO);
+    eventBus.emit({ type: 'war_started', turnNumber: 0, playerDeckColor: DeckColor.RED });
+    emitOpponentSettlement([new CardImpl(Suit.HEARTS, Rank.SEVEN), heartsTwo], 1);
+    emitOpponentSettlement([heartsTwo, heartsTwo], 2);
+
+    expect(service.isUnlocked('war.crippled')).toBeFalse();
+  });
+
+  it('unlocks Neverending Stalemate at exactly three authoritative ties', () => {
+    emitClashComparison(ComparisonResult.TIE, 1);
+    emitClashComparison(ComparisonResult.TIE, 2);
+    expect(service.isUnlocked('war.neverending_stalemate')).toBeFalse();
+
+    emitClashComparison(ComparisonResult.TIE, 3);
+    expect(service.isUnlocked('war.neverending_stalemate')).toBeTrue();
+  });
+
+  it('resets the stalemate streak on a non-tied comparison', () => {
+    emitClashComparison(ComparisonResult.TIE, 1);
+    emitClashComparison(ComparisonResult.TIE, 2);
+    emitClashComparison(ComparisonResult.PLAYER_WINS, 3);
+    emitClashComparison(ComparisonResult.TIE, 4);
+
+    expect(service.isUnlocked('war.neverending_stalemate')).toBeFalse();
+  });
+
+  it('counts recursive Battle ties by the same authoritative comparison semantics', () => {
+    emitClashComparison(ComparisonResult.TIE, 1);
+    for (const layerRound of [1, 2]) {
+      const playerCard = new CardImpl(Suit.HEARTS, Rank.NINE);
+      const opponentCard = new CardImpl(Suit.CLUBS, Rank.NINE);
+      eventBus.emit({
+        type: 'battle_cards_revealed',
+        turnNumber: 1,
+        layerRound,
+        playerChosenCard: playerCard,
+        opponentChosenCard: opponentCard,
+        comparison: ComparisonResult.TIE,
+        winner: null,
+        specialRule: false,
+        message: 'Battle remains tied.',
+        selection: {
+          layerRound,
+          playerCard,
+          opponentCard,
+          playerCardId: playerCard.id,
+          opponentCardId: opponentCard.id,
+          comparison: ComparisonResult.TIE,
+          winner: null,
+          specialRule: false,
+        },
+      });
+    }
+
+    expect(service.isUnlocked('war.neverending_stalemate')).toBeTrue();
+  });
+
+  it('keeps both new awards idempotent after their persisted unlocks are re-evaluated', () => {
+    const heartsTwo = new CardImpl(Suit.HEARTS, Rank.TWO);
+    const diamondsTwo = new CardImpl(Suit.DIAMONDS, Rank.TWO);
+    eventBus.emit({ type: 'war_started', turnNumber: 0, playerDeckColor: DeckColor.RED });
+    emitOpponentSettlement([heartsTwo, diamondsTwo]);
+    emitClashComparison(ComparisonResult.TIE, 1);
+    emitClashComparison(ComparisonResult.TIE, 2);
+    emitClashComparison(ComparisonResult.TIE, 3);
+
+    const unlocked = authService.userStats().unlockedAchievements;
+    emitOpponentSettlement([heartsTwo, diamondsTwo], 4);
+    emitClashComparison(ComparisonResult.TIE, 4);
+
+    expect(unlocked.filter((id) => id === 'war.crippled').length).toBe(1);
+    expect(unlocked.filter((id) => id === 'war.neverending_stalemate').length).toBe(1);
+    expect(authService.userStats().unlockedAchievements).toEqual(unlocked);
+  });
+
   it('requires an Ace reinforcement to successfully rescue the original 2 for Cavalry', () => {
     const originalTwo = new CardImpl(Suit.HEARTS, Rank.TWO);
     const opposingKing = new CardImpl(Suit.CLUBS, Rank.KING);
@@ -478,7 +609,7 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('war.marathon')).toBe(true);
   });
 
-  it('defines 28 local achievements and maps the 27 Play Games achievements', () => {
+  it('defines 30 local achievements and maps the 27 Play Games achievements', () => {
     const exactPlayIds: Readonly<Record<string, string>> = {
       'war.first_casualty': 'CgkIz5juh94JEAIQDA',
       'war.first_battle': 'CgkIz5juh94JEAIQEQ',
@@ -509,9 +640,11 @@ describe('AchievementService', () => {
       'profile.centurion': 'CgkIz5juh94JEAIQAw',
     };
     const ids = ACHIEVEMENTS.map((achievement) => achievement.id);
-    expect(ids.length).toBe(28);
-    expect(new Set(ids).size).toBe(28);
+    expect(ids.length).toBe(30);
+    expect(new Set(ids).size).toBe(30);
     expect(ids).toContain('war.battle_assassin');
+    expect(ids).toContain('war.crippled');
+    expect(ids).toContain('war.neverending_stalemate');
     expect(Object.keys(PLAY_ACHIEVEMENT_MAPPINGS).length).toBe(27);
     expect(
       Object.fromEntries(

@@ -16,7 +16,11 @@
   --battle-animation-duration: 920ms;
   height: 100%;
   min-height: 0;
-  padding: 8px;
+  padding:
+    8px
+    max(8px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom))
+    max(8px, env(safe-area-inset-left));
   box-sizing: border-box;
   overflow: hidden;
   overscroll-behavior: none;
@@ -1175,6 +1179,23 @@ app-card-table {
   }
   .thumb-action-region { bottom: 3px; gap: 5px; }
   .thumb-action { min-width: 76px; min-height: 46px; padding-inline: 10px; font-size: 0.67rem; }
+}
+
+@media (max-width: 420px) {
+  // Keep the explanatory Challenge bubble and the thumb actions in separate
+  // lanes without hiding either. The mirrored rule follows the chosen hand.
+  .player-callout {
+    box-sizing: border-box;
+    width: 172px;
+    min-width: 0;
+    padding: 10px 11px;
+  }
+  .hand-right .player-callout {
+    transform: translateX(calc(-50% - 50px));
+  }
+  .hand-left .player-callout {
+    transform: translateX(calc(-50% + 50px));
+  }
 }
 
 @media (max-height: 500px) and (pointer: coarse) {

@@ -33,7 +33,7 @@ export const SCREENSHOT_TARGETS: readonly ScreenshotTarget[] = [
     outputDimensions: { width: 1080, height: 1920 },
     recommendedOrder: 1,
     suggestedAltText: 'War of Attrition mobile clash showing high-card comparison and power badges.',
-    expectedSelectors: ['.playfield', '.stakes', '.active-card-shell', '.announcement'],
+    expectedSelectors: ['.playfield', '.stakes', '.active-card-shell', '.rail-top .quip'],
   },
   {
     id: 'phone-02-challenge',

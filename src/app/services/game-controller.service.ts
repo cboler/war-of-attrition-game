@@ -34,6 +34,7 @@ import { TutorialService } from './tutorial.service';
 import { TutorialStep } from '../core/models/tutorial.model';
 import { GameTelemetryService } from './game-telemetry.service';
 import { CommanderIdentity, getCommanderIdentity } from '../core/models/commander-identity.model';
+import { CommanderExpression } from '../core/models/commander-art.model';
 import {
   AuthoredDialogueRecord,
   NarrativeTransitionRecord
@@ -216,6 +217,10 @@ export class GameControllerService {
   readonly presentationState = this.phase.asReadonly();
   readonly tableMessage = this.gameMessage.asReadonly();
   readonly tableReaction = this.reaction.asReadonly();
+  readonly opponentExpression = computed<CommanderExpression>(() => {
+    const reaction = this.reaction();
+    return reaction?.speaker === PlayerType.OPPONENT ? (reaction.expression ?? 'calm') : 'calm';
+  });
   readonly opponentCommander = computed<OpponentCommander>(
     () => this.fixtureCommanderSignal() ?? this.campaignProgression.currentCommander()
   );
@@ -378,44 +383,32 @@ export class GameControllerService {
     this.replaceGame(true, abandonmentDecision);
   }
 
+  /** Deliberately abandons the active Campaign without resolving or rewarding it. */
+  abandonCampaign(): boolean {
+    if (!this.campaignProgression.hasActiveCampaign()) return false;
+
+    this.recordCurrentWarAbandonment('abandon');
+    if (!this.campaignProgression.abandonActiveCampaign()) return false;
+    this.replaceGame(false);
+    return true;
+  }
+
   private replaceGame(
     recordAbandonment: boolean,
     abandonmentDecision: 'restart' | 'abandon' = 'restart',
   ): void {
     const interruptedBattlePresentation = this.isBattlePresentationPhase();
     const interruptedTurnNumber = this.turnsPlayed;
-    let didAbandon = false;
-    if (recordAbandonment && this.hasMeaningfulUnresolvedGame() && !this.abandonmentRecorded) {
-      const activeTurn = this.gameState.currentState.activeTurn;
-      const career = this.authService.userStats();
-      this.authService.recordGameAbandoned();
-      this.eventBus.emit({
-        type: 'game_abandoned',
-        turnNumber: this.turnsPlayed,
-        turnsPlayed: this.turnsPlayed,
-        playerDeckCount: this.gameState.playerCardCount(),
-        opponentDeckCount: this.gameState.opponentCardCount(),
-        playerCardsAtStakeCount: this.gameState.getStake(PlayerType.PLAYER).length,
-        opponentCardsAtStakeCount: this.gameState.getStake(PlayerType.OPPONENT).length,
-        playerCardDeficit:
-          this.gameState.opponentCardCount() - this.gameState.playerCardCount(),
-        gamePhase: this.gameState.currentPhase,
-        battleDepth: activeTurn?.battleLayers.length ?? 0,
-        currentBattleWinStreak: career.currentBattleWinStreak,
-        currentBattleLossStreak: career.currentBattleLossStreak,
-        presentationPhase: this.phase(),
-        animationSpeed: this.settings.animationSpeed(),
-        lastDecision: this.lastMeaningfulDecision,
-        abandonmentAction: abandonmentDecision,
-        recentEventCategory: this.recentEventCategory(),
-        recentReactionCategory: this.reaction()?.category,
-      });
-      this.abandonmentRecorded = true;
-      didAbandon = true;
-    }
+    const didAbandon = recordAbandonment
+      ? this.recordCurrentWarAbandonment(abandonmentDecision)
+      : false;
 
     this.sequencer.cancel();
     this.battleAnimationService.clear();
+    if (this.reactionTimeout) {
+      clearTimeout(this.reactionTimeout);
+      this.reactionTimeout = null;
+    }
     this.gameState.initializeGame();
     this.phase.set(PresentationState.READY);
     this.gameMessage.set('Your deck is ready.');
@@ -501,6 +494,40 @@ export class GameControllerService {
     ) {
       this.speakIntroduction();
     }
+  }
+
+  private recordCurrentWarAbandonment(
+    abandonmentDecision: 'restart' | 'abandon',
+  ): boolean {
+    if (this.hasMeaningfulUnresolvedGame() && !this.abandonmentRecorded) {
+      const activeTurn = this.gameState.currentState.activeTurn;
+      const career = this.authService.userStats();
+      this.authService.recordGameAbandoned();
+      this.eventBus.emit({
+        type: 'game_abandoned',
+        turnNumber: this.turnsPlayed,
+        turnsPlayed: this.turnsPlayed,
+        playerDeckCount: this.gameState.playerCardCount(),
+        opponentDeckCount: this.gameState.opponentCardCount(),
+        playerCardsAtStakeCount: this.gameState.getStake(PlayerType.PLAYER).length,
+        opponentCardsAtStakeCount: this.gameState.getStake(PlayerType.OPPONENT).length,
+        playerCardDeficit:
+          this.gameState.opponentCardCount() - this.gameState.playerCardCount(),
+        gamePhase: this.gameState.currentPhase,
+        battleDepth: activeTurn?.battleLayers.length ?? 0,
+        currentBattleWinStreak: career.currentBattleWinStreak,
+        currentBattleLossStreak: career.currentBattleLossStreak,
+        presentationPhase: this.phase(),
+        animationSpeed: this.settings.animationSpeed(),
+        lastDecision: this.lastMeaningfulDecision,
+        abandonmentAction: abandonmentDecision,
+        recentEventCategory: this.recentEventCategory(),
+        recentReactionCategory: this.reaction()?.category,
+      });
+      this.abandonmentRecorded = true;
+      return true;
+    }
+    return false;
   }
 
   speakIntroduction(): void {
@@ -1642,7 +1669,7 @@ export class GameControllerService {
     };
     this.gameSummarySignal.set(summary);
 
-    const resultReaction = this.reactions.forResult(this.opponentCommander().id);
+    const resultReaction = this.reactions.forResult(this.opponentCommander().id, outcome);
     if (resultReaction) {
       this.speakReaction(resultReaction);
     }

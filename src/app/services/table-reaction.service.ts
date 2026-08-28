@@ -7,7 +7,8 @@ import {
   getCommander
 } from '../core/models/commander.model';
 import { TableReactionCategory } from '../core/models/game-events.model';
-import { PlayerType } from '../core/models/game-state.model';
+import { GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { CommanderExpression } from '../core/models/commander-art.model';
 import { NarrativeGameplayEvent } from '../core/models/narrative.model';
 import { CampaignWarIndex } from '../core/models/campaign-chapter.model';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
@@ -24,6 +25,8 @@ export interface TableReaction {
   readonly category: TableReactionCategory;
   /** Authored narrative is protected from replacement by procedural table chatter. */
   readonly authored?: boolean;
+  /** Explicit presentation metadata; never inferred from the dialogue text. */
+  readonly expression?: CommanderExpression;
 }
 
 /** Every field is already face-up when a clash reaction may be requested. */
@@ -74,7 +77,7 @@ export class TableReactionService {
         loser === PlayerType.OPPONENT
           ? commander.dialogue.specialClash
           : ['The little card had one job.', 'A Two changes everything.', 'That Ace found its exception.'];
-      return this.pick(0.28, loser, 'special_clash', variants, authored);
+      return this.pick(0.28, loser, 'special_clash', variants, authored, 'surprised');
     }
 
     const winningCard =
@@ -91,7 +94,7 @@ export class TableReactionService {
       loser === PlayerType.OPPONENT
         ? commander.dialogue.narrowClash
         : ['Too close.', 'One rank was enough.', 'A narrow edge.'];
-    return this.pick(0.14, loser, 'narrow_clash', variants, authored);
+    return this.pick(0.14, loser, 'narrow_clash', variants, authored, 'surprised');
   }
 
   forChallengeResolution(
@@ -122,7 +125,8 @@ export class TableReactionService {
         speaker,
         'rescue',
         variants,
-        authored
+        authored,
+        'surprised',
       );
     }
 
@@ -137,7 +141,7 @@ export class TableReactionService {
       speaker === PlayerType.OPPONENT
         ? commander.dialogue.failedRescue
         : ['That reinforcement cost dearly.', 'Two cards gone for nothing.', 'A costly gamble.'];
-    return this.pick(0.2, speaker, 'failed_rescue', variants, authored);
+    return this.pick(0.2, speaker, 'failed_rescue', variants, authored, 'angry');
   }
 
   forBattleLoss(
@@ -230,6 +234,14 @@ export class TableReactionService {
       message,
       category: 'battle',
       authored: authored !== null,
+      expression:
+        lostAce && lostTwo
+          ? 'sad'
+          : largeLoss || decisiveRampage || lostAce
+            ? 'angry'
+            : deepBattle || longStreak
+              ? 'determined'
+              : 'sad',
     };
   }
 
@@ -242,6 +254,7 @@ export class TableReactionService {
       category: 'introduction',
       message: line,
       authored: true,
+      expression: 'calm',
     };
   }
 
@@ -254,10 +267,14 @@ export class TableReactionService {
       category: 'introduction',
       message: line,
       authored: true,
+      expression: 'calm',
     };
   }
 
-  forResult(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+  forResult(
+    commanderInput?: OpponentCommander | OpponentCommanderId,
+    outcome?: GameOutcome,
+  ): TableReaction | null {
     const commander = this.resolveCommander(commanderInput);
     const line = this.getAuthoredLine(commander.id, 'result');
     if (!line) return null;
@@ -266,10 +283,21 @@ export class TableReactionService {
       category: 'result',
       message: line,
       authored: true,
+      expression:
+        outcome === GameOutcome.OPPONENT_WIN
+          ? 'smug'
+          : outcome === GameOutcome.PLAYER_WIN
+            ? 'sad'
+            : outcome === GameOutcome.TIE
+              ? 'determined'
+              : 'calm',
     };
   }
 
-  forResolution(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+  forResolution(
+    commanderInput?: OpponentCommander | OpponentCommanderId,
+    outcome?: GameOutcome,
+  ): TableReaction | null {
     const commander = this.resolveCommander(commanderInput);
     const line = this.getAuthoredLine(commander.id, 'resolution');
     if (!line) return null;
@@ -278,6 +306,14 @@ export class TableReactionService {
       category: 'result',
       message: line,
       authored: true,
+      expression:
+        outcome === GameOutcome.OPPONENT_WIN
+          ? 'smug'
+          : outcome === GameOutcome.PLAYER_WIN
+            ? 'sad'
+            : outcome === GameOutcome.TIE
+              ? 'determined'
+              : 'calm',
     };
   }
 
@@ -285,14 +321,14 @@ export class TableReactionService {
     const commander = this.resolveCommander(commanderInput);
     const authored = this.getAuthoredLine(commander.id, 'concession');
     const variants = commander.dialogue.concession ?? ['We yield this ground.', 'Hold. We have room.', 'Concede the clash.'];
-    return this.pick(0.55, PlayerType.OPPONENT, 'concession', variants, authored);
+    return this.pick(0.55, PlayerType.OPPONENT, 'concession', variants, authored, 'determined');
   }
 
   forDesperateRescue(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
     const commander = this.resolveCommander(commanderInput);
     const authored = this.getAuthoredLine(commander.id, 'desperate_rescue');
     const variants = commander.dialogue.desperateRescue ?? ['Spend everything! Attack!', 'Hold the line at all costs!', 'No reserve left. Stand here!'];
-    return this.pick(0.65, PlayerType.OPPONENT, 'desperate_rescue', variants, authored);
+    return this.pick(0.65, PlayerType.OPPONENT, 'desperate_rescue', variants, authored, 'determined');
   }
 
   forContextual(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
@@ -304,6 +340,7 @@ export class TableReactionService {
       category: 'contextual',
       message: authored,
       authored: true,
+      expression: 'calm',
     };
   }
 
@@ -360,7 +397,8 @@ export class TableReactionService {
     speaker: PlayerType,
     category: TableReaction['category'],
     variants: readonly string[],
-    authoredOverride: string | null = null
+    authoredOverride: string | null = null,
+    expression: CommanderExpression = 'calm',
   ): TableReaction | null {
     if (this.random() >= chance) return null;
     const message =
@@ -370,6 +408,7 @@ export class TableReactionService {
       category,
       message,
       authored: authoredOverride !== null,
+      expression,
     };
   }
 

@@ -307,6 +307,43 @@ describe('GameControllerService presentation integration', () => {
     expect(controller.tableReaction()).toBeNull();
   }));
 
+  it('keeps commander expression presentation-only and returns it to Calm on expiry', fakeAsync(() => {
+    const internal = controller as unknown as {
+      speakReaction(reaction: {
+        speaker: PlayerType;
+        message: string;
+        category: 'battle';
+        authored?: boolean;
+        expression: 'angry' | 'smug';
+      }): void;
+    };
+    const before = gameState.cardConservationReport();
+    expect(controller.opponentExpression()).toBe('calm');
+
+    internal.speakReaction({
+      speaker: PlayerType.OPPONENT,
+      message: 'A costly exchange.',
+      category: 'battle',
+      expression: 'angry',
+    });
+    expect(controller.opponentExpression()).toBe('angry');
+    expect(gameState.cardConservationReport()).toEqual(before);
+
+    tick(5499);
+    expect(controller.opponentExpression()).toBe('angry');
+    tick(1);
+    expect(controller.opponentExpression()).toBe('calm');
+
+    internal.speakReaction({
+      speaker: PlayerType.PLAYER,
+      message: 'A player-side reaction.',
+      category: 'battle',
+      expression: 'smug',
+    });
+    expect(controller.opponentExpression()).toBe('calm');
+    expect(gameState.cardConservationReport()).toEqual(before);
+  }));
+
   it('replaces the beaten card with the reinforcement for the exact comparison', fakeAsync(() => {
     settings.setAutoPlayAnimations(false);
     const compare = spyOn(comparison, 'compareCards').and.returnValues(
@@ -486,6 +523,36 @@ describe('GameControllerService presentation integration', () => {
 
     expect(recordWar).not.toHaveBeenCalled();
     expect(progression.currentCampaign().wars.length).toBe(1);
+  });
+
+  it('abandons a Campaign before initializing its replacement War', () => {
+    progression.selectCampaignOrders('standard');
+    progression.recordResolvedWar({
+      warId: 'campaign-abandon-war-1',
+      outcome: GameOutcome.PLAYER_WIN,
+      playerCardsRemaining: 3,
+      opponentCardsRemaining: 0,
+      playerDeckColor: DeckColor.RED,
+    });
+    const oldCampaignId = progression.currentCampaign().campaignId;
+    const completedBefore = auth.userStats().campaignsCompleted;
+    const historyBefore = progression.progression().recentCampaigns.length;
+    const recordWar = spyOn(progression, 'recordResolvedWar').and.callThrough();
+    const events: GameEvent[] = [];
+    const subscription = eventBus.events$.subscribe((event) => events.push(event));
+    gameState.startTurn();
+
+    expect(controller.abandonCampaign()).toBeTrue();
+
+    expect(progression.currentCampaign().campaignId).not.toBe(oldCampaignId);
+    expect(progression.currentCampaign().wars).toEqual([]);
+    expect(progression.ordersSelected()).toBeFalse();
+    expect(progression.progression().recentCampaigns.length).toBe(historyBefore);
+    expect(auth.userStats().campaignsCompleted).toBe(completedBefore);
+    expect(recordWar).not.toHaveBeenCalled();
+    expect(events.filter((event) => event.type === 'game_abandoned').length).toBe(1);
+    expect(events.filter((event) => event.type === 'war_started').length).toBe(1);
+    subscription.unsubscribe();
   });
 
   it('reserves the existing full victory and defeat melodies for final War outcomes', () => {

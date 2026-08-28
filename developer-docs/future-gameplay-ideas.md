@@ -67,9 +67,9 @@ The current Chronicle is an in-memory truthful tactical War feed. Narrative frag
 - No direct early-game statement of the private mouse/hay cause.
 - No battlefield-unit animation was added during Sprint 1; the scoped V1 belongs to and is implemented in Sprint 2.
 
-## 3. Sprint 2 Initial Pass — Clash Visualizations / Battlefield Animations
+## 3. Sprint 2 — Clash Visualizations / Battlefield Animations (Closed)
 
-The production V1 is implemented. It establishes the visual joke and integration seam without attempting the complete rank-to-unit vision.
+The production V1 and its scoped closure/polish pass are implemented. They establish the visual joke and integration seam without attempting the complete rank-to-unit vision.
 
 > **The cards do not merely represent the battle. They summon the battle.**
 
@@ -90,6 +90,11 @@ The production V1 is implemented. It establishes the visual joke and integration
 - The absolute overlay is pointer-transparent, clipped to the table center, and does not participate in layout.
 - Routine comparison status remains available to assistive technology and in the truthful Chronicle but no longer enters the prominent transient message stack. Exceptional game events retain that channel.
 - Authored story/persona reactions are held longer and protected from procedural replacement; procedural reactions are not queued behind them.
+- The supplied five-commander sheet is the canonical portrait set. The table uses compact expression-aware portraits, while the Field Manual uses Calm dossier portraits and crest-plus-name commander tabs.
+- Expression is explicit semantic presentation metadata (Calm, Smug, Determined, Angry, Sad, or Surprised), returns to Calm after the reaction expires, and never affects engine state or timing.
+- The Battle rule drill truthfully stages three face-down commitments per side and reveals only the selected champions; Replay, Skip to result, and reduced-motion collapse preserve that information.
+- First-render table height follows the actual visual viewport with lifecycle remeasurement, while deck dimensions remain within their fixed seat rails. Compact Challenge explanation and action lanes no longer collide.
+- `Crippled` and `Neverending Stalemate`, verified Material icons, safe Campaign abandonment, and the English Swiss characteristics source are implemented release-polish outcomes.
 
 ### Deferred Rank-to-Unit Mapping
 
@@ -133,25 +138,25 @@ This mapping, suit-specific forces, battle-magnitude scaling, and recursive spec
 
 The runtime scene is not coupled to the rules-demo implementation. Deterministic game resolution remains in the existing engine.
 
-## 4. Final-Pass Release and UX Concerns
+## 4. Sprint-Closure UX Work (Implemented)
 
-These should be addressed after or alongside tightly scoped validation, without expanding Narrative Sprint 1 or demoting Sprint 2 into a generic bucket.
+These items were resolved in the Sprint 2 closure without expanding the game rules or creative architecture.
 
 ### Responsive Initial Layout / Redraw
 
-On mobile PWA/TWA launches, the player deck or seat information can initially appear partially below the visible viewport and correct after a later redraw. Treat this as a release-polish investigation involving physical devices, visual viewport stabilization, dynamic viewport units, safe-area insets, and measurement timing. Do not declare a root cause without evidence.
+The root container now measures `visualViewport.height` synchronously, remeasures after first layout and on resize/orientation/page-show/visibility changes, and observes root-size settlement. CSS still has a `100dvh` fallback. Decks are height-constrained to the fixed seat rail. Automated first-render geometry covers 360×740, 540×960, and 1280×800; broader physical TWA coverage remains release validation rather than unfinished Sprint work.
 
 ### Material Icons
 
-The Rules of Engagement Battle entry and early achievements reference icon names such as `swords` and `playing_cards` that are not reliably supplied by the configured Material Icons font. Audit and replace only with verified identifiers or an intentional local SVG.
+Affected Rules, achievement, and profile identifiers were audited against the configured `material-icons` package. Unsupported `swords`, `playing_cards`, and `crown` usages were replaced with supported identifiers; commander crests remain image assets.
 
 ### Combat-Math and Callout Composition
 
-Power badges, combat math, and announcements can compete spatially. Treat this as composition and timing work, not a `z-index` escalation contest. Sprint 2 may reduce the need for simultaneous explanatory overlays, but it must not remove accessible outcome text.
+Authored reactions suppress only the competing visual routine-message stack while the authoritative accessible status remains live. Compact Challenge copy and action controls occupy mirrored lanes, and browser geometry tests guard card/math/action separation.
 
 ### Campaign Abandonment
 
-There is no prominent dedicated flow to abandon/reset an active Three-War Campaign. A future deliberate affordance should confirm the action and preserve career history, achievements, unlocked chapters, and cosmetics. This is not a prerequisite for documenting or implementing the chapter order.
+Settings now has a dedicated, confirmed **Abandon Campaign** action separate from War restart/abandon. It resets only the active Campaign, grants no completion progress or rewards, and preserves earned career history, achievements, chapter/dossier progression, cosmetics, tokens, and preferences.
 
 ## 5. Longer-Term Candidates — Beyond the Final Two Sprints
 

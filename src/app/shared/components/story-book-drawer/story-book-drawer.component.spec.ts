@@ -565,5 +565,50 @@ describe('StoryBookDrawerComponent', () => {
       const compiled = fixture.nativeElement as HTMLElement;
       expect(compiled.querySelector('#panel-dossier')?.textContent).toContain('Matthias von Greyerz');
     });
+
+    it('renders canonical Calm portraits and keyboard-operable crest switchers', fakeAsync(() => {
+      authService.updateActiveProfileProgression((progression) => ({
+        ...progression,
+        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war'],
+        completedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war'],
+      }));
+      const compiled = fixture.nativeElement as HTMLElement;
+      (compiled.querySelector('#tab-dossier') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      const chips = compiled.querySelectorAll<HTMLButtonElement>('.commander-chip');
+      expect(chips.length).toBe(5);
+      for (const chip of Array.from(chips)) {
+        expect(chip.getAttribute('role')).toBe('tab');
+        expect(chip.textContent?.trim()).toBeTruthy();
+        const crest = chip.querySelector('img.commander-crest') as HTMLImageElement;
+        expect(crest.src).toContain('/assets/commanders/');
+        expect(crest.src).toContain('/crest.jpg');
+        expect(crest.alt).toBe('');
+      }
+
+      const portrait = compiled.querySelector('.dossier-portrait') as HTMLImageElement;
+      expect(portrait.src).toContain('/assets/commanders/quartermaster/calm.jpg');
+      expect(portrait.alt).toBe('');
+      expect(chips[0].id).toBe('commander-tab-quartermaster');
+      expect(chips[0].getAttribute('aria-controls')).toBe('commander-dossier-quartermaster');
+      expect(compiled.querySelector('.dossier-header-card')?.getAttribute('aria-labelledby'))
+        .toBe('commander-tab-quartermaster');
+
+      chips[0].dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      tick();
+
+      expect(component['selectedCommanderId']()).toBe('analyst');
+      const analystChip = compiled.querySelector(
+        '[data-commander-id="analyst"]',
+      ) as HTMLButtonElement;
+      expect(analystChip.getAttribute('aria-selected')).toBe('true');
+      expect(document.activeElement).toBe(analystChip);
+      expect((compiled.querySelector('.dossier-portrait') as HTMLImageElement).src)
+        .toContain('/assets/commanders/analyst/calm.jpg');
+    }));
   });
 });

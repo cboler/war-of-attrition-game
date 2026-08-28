@@ -28,6 +28,27 @@
   text-align: left;
 }
 
+.commander-portrait-frame {
+  display: block !important;
+  flex: 0 0 58px;
+  width: 58px;
+  height: 68px;
+  margin: 0 !important;
+  overflow: hidden;
+  border: 1px solid rgba(229, 193, 117, 0.52);
+  border-radius: 10px;
+  background: #e9dfc8;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.32);
+}
+
+.commander-portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 18%;
+}
+
 .identity-button {
   background: transparent;
   border: 1px solid transparent;
@@ -189,9 +210,13 @@
 
 .deck {
   position: relative;
-  width: clamp(74px, 9.5vw, 108px);
+  // The deck must fit inside the fixed seat rail on the first layout pass.
+  // Height is authoritative here because a width-only card could exceed the
+  // rail at short desktop and compact-phone viewport heights.
+  height: min(calc(100% - 18px), clamp(103.6px, 13.3vw, 151.2px));
+  width: auto;
   aspect-ratio: 2.5 / 3.5;
-  height: auto;
+  flex: 0 0 auto;
   padding: 0;
   border: 0;
   border-radius: 8px;
@@ -354,8 +379,12 @@
 
 @media (max-width: 620px) {
   .seat { justify-content: space-between; padding-inline: 14px; }
-  .identity { min-width: 0; }
-  .deck { width: 72px; }
+  .identity { min-width: 0; gap: 7px; padding-inline: 5px; }
+  .commander-portrait-frame {
+    flex-basis: 50px;
+    width: 50px;
+    height: 58px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -87,6 +87,89 @@
   gap: 10px;
 }
 
+.battle-escalation-cue {
+  display: block;
+  width: fit-content;
+  margin: 8px auto 0;
+  padding: 5px 10px;
+  border: 1px solid rgba(129, 212, 250, 0.48);
+  border-radius: 999px;
+  background: rgba(35, 89, 109, 0.3);
+  color: #b3e5fc;
+  font: 700 0.67rem/1 system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.battle-commitments {
+  display: grid;
+  gap: 5px;
+  align-content: center;
+  min-height: 186px;
+}
+
+.commitment-side {
+  display: grid;
+  grid-template-columns: minmax(78px, 1fr) auto minmax(90px, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.commitment-label {
+  color: rgba(247, 240, 225, 0.7);
+  font: 700 0.61rem/1.2 system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.committed-cards {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+}
+
+.committed-card {
+  position: relative;
+  animation: commitment-swipe 260ms ease-out both;
+
+  app-card {
+    --card-width: 48px;
+    --card-height: 67px;
+  }
+
+  + .committed-card { margin-left: -8px; }
+  &:nth-child(2) { animation-delay: 55ms; }
+  &:nth-child(3) { animation-delay: 110ms; }
+
+  &.selected::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border: 2px solid #81d4fa;
+    border-radius: 7px;
+    pointer-events: none;
+  }
+
+  &.revealed { z-index: 2; transform: translateY(-2px); }
+}
+
+.commitment-side .strength-value {
+  justify-self: start;
+}
+
+.commitment-divider {
+  color: #e5c175;
+  font: 700 0.65rem/1 Georgia, serif;
+  text-align: center;
+}
+
+@keyframes commitment-swipe {
+  from { opacity: 0; transform: translateX(22px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 .demo-card-slot {
   position: relative;
   display: flex;
@@ -284,14 +367,33 @@
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .commitment-side {
+    grid-template-columns: 68px auto minmax(74px, 1fr);
+    gap: 4px;
+  }
+
+  .committed-card app-card {
+    --card-width: 43px;
+    --card-height: 60px;
+  }
+
+  .commitment-side .strength-value {
+    min-width: 66px;
+    padding-inline: 4px;
+    font-size: 0.54rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .demo-card-slot {
     transition: none;
   }
+  .committed-card { animation: none; }
 }
 
 .rule-demo.motion-disabled .demo-card-slot {
   transition: none;
 }
+
+.rule-demo.motion-disabled .committed-card { animation: none; }

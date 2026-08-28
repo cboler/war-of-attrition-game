@@ -105,6 +105,7 @@ export class ProfileDialogComponent {
     Math.round((this.unlockedCount() / Math.max(1, this.totalAchievements())) * 100)
   );
   readonly hasActiveMatch = computed(() => this.gameController.hasMeaningfulUnresolvedGame());
+  readonly hasActiveCampaign = this.progression.hasActiveCampaign;
   readonly showPlayGamesButton = computed(
     () =>
       this.platformAchievements.isPlayGamesAvailable() &&
@@ -246,6 +247,23 @@ export class ProfileDialogComponent {
         this.gameController.startNewGame('abandon');
         this.dialogRef.close();
       }
+    );
+  }
+
+  onAbandonCampaign(): void {
+    this.confirm(
+      {
+        title: 'Abandon active Campaign?',
+        message:
+          'Abandon this three-War Campaign and its current War progress? The Campaign will not count as completed and grants no rewards. Career history, achievements, chapters, dossiers, cosmetics, tokens, and settings are preserved.',
+        confirmLabel: 'Abandon Campaign',
+        destructive: true,
+      },
+      () => {
+        if (this.gameController.abandonCampaign()) {
+          this.dialogRef.close();
+        }
+      },
     );
   }
 

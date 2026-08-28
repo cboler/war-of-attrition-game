@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { GameOutcome } from '../models/game-state.model';
 import {
   CAMPAIGN_CHAPTER_ORDER,
-  CampaignModeId
+  CampaignModeId,
+  getAuthoredCommanderSchedule,
 } from '../models/campaign-chapter.model';
 import {
   MAX_CAMPAIGN_HISTORY,
@@ -286,6 +287,69 @@ describe('CampaignProgressionService', () => {
 
       const result = service.recordResolvedWar(war('lr-w3', GameOutcome.PLAYER_WIN, 4, 0));
       expect(result.completedCampaign?.remainingReserves).toBe(2);
+    });
+  });
+
+  describe('Campaign abandonment', () => {
+    it('discards only active Campaign state and preserves earned profile progression', () => {
+      for (let i = 1; i <= 3; i++) {
+        service.recordResolvedWar(war(`earned-standard-${i}`, GameOutcome.PLAYER_WIN, 5, 0));
+      }
+      service.selectCampaignOrders('limited_reserves');
+      service.consumeHumanReserve();
+      service.recordResolvedWar(war('active-limited-war-1', GameOutcome.PLAYER_WIN, 2, 0));
+      service.purchaseCardBacking('burgundy-gold');
+
+      const before = service.progression();
+      const oldCampaignId = before.currentCampaign.campaignId;
+      const preserved = {
+        recentCampaigns: before.recentCampaigns,
+        unlockedChapterModes: before.unlockedChapterModes,
+        completedChapterModes: before.completedChapterModes,
+        tokenBalance: before.tokenBalance,
+        lifetimeTokensEarned: before.lifetimeTokensEarned,
+        lifetimeTokensSpent: before.lifetimeTokensSpent,
+        unlockedCosmetics: before.unlockedCosmetics,
+        selectedCosmetics: before.selectedCosmetics,
+        processedWarIds: before.processedWarIds,
+      };
+      const statsBefore = { ...authService.userStats() };
+
+      expect(service.hasActiveCampaign()).toBeTrue();
+      expect(service.abandonActiveCampaign()).toBeTrue();
+
+      const after = service.progression();
+      expect(after.currentCampaign.campaignId).not.toBe(oldCampaignId);
+      expect(after.currentCampaign.mode).toBe('limited_reserves');
+      expect(after.currentCampaign.ordersSelected).toBeFalse();
+      expect(after.currentCampaign.wars).toEqual([]);
+      expect(after.currentCampaign.commanderSchedule).toEqual(
+        getAuthoredCommanderSchedule('limited_reserves'),
+      );
+      expect(after.currentCampaign.limitedReserves).toEqual({
+        initialReserves: 5,
+        remainingReserves: 5,
+      });
+      expect(service.hasActiveCampaign()).toBeFalse();
+      expect({
+        recentCampaigns: after.recentCampaigns,
+        unlockedChapterModes: after.unlockedChapterModes,
+        completedChapterModes: after.completedChapterModes,
+        tokenBalance: after.tokenBalance,
+        lifetimeTokensEarned: after.lifetimeTokensEarned,
+        lifetimeTokensSpent: after.lifetimeTokensSpent,
+        unlockedCosmetics: after.unlockedCosmetics,
+        selectedCosmetics: after.selectedCosmetics,
+        processedWarIds: after.processedWarIds,
+      }).toEqual(preserved);
+      expect(authService.userStats()).toEqual(statsBefore);
+    });
+
+    it('does nothing when no Campaign Orders or Wars are active', () => {
+      const before = service.progression();
+      expect(service.hasActiveCampaign()).toBeFalse();
+      expect(service.abandonActiveCampaign()).toBeFalse();
+      expect(service.progression()).toEqual(before);
     });
   });
 

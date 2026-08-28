@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { CardComponent } from '../card/card.component';
+import { CommanderExpression } from '../../../core/models/commander-art.model';
 
 @Component({
   selector: 'app-player-seat',
@@ -21,6 +22,18 @@ import { CardComponent } from '../card/card.component';
           class="identity identity-button"
           [attr.aria-label]="'View dossier for ' + name()"
           (click)="dossierRequested.emit()">
+          @if (portraitSrc()) {
+            <span
+              class="commander-portrait-frame"
+              [attr.data-expression]="portraitExpression()"
+              aria-hidden="true">
+              <img
+                class="commander-portrait"
+                [src]="portraitSrc()"
+                alt=""
+                decoding="async" />
+            </span>
+          }
           <span class="status-dot" [class.thinking]="thinking()" aria-hidden="true"></span>
           <div class="identity-details">
             <div class="identity-name-row">
@@ -152,6 +165,8 @@ export class PlayerSeatComponent {
   motionDisabled = input(false);
   reserves = input<{ remaining: number; max: number } | null>(null);
   totalWarDifferential = input<number | null>(null);
+  portraitSrc = input<string | null>(null);
+  portraitExpression = input<CommanderExpression>('calm');
 
   deckActivated = output<void>();
   dossierRequested = output<void>();

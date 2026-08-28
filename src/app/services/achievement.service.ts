@@ -59,6 +59,7 @@ export class AchievementService {
   private readonly deferredBattleToasts: AchievementDefinition[] = [];
   private readonly toastQueue: AchievementDefinition[] = [];
   private currentPlayerDeckColor: DeckColor | null = null;
+  private consecutiveTieComparisons = 0;
   private readonly publicBoneyardCards = new Map<string, Card>();
   private readonly casualtiesByDecisiveCard = new Map<string, Set<string>>();
   private readonly juggernautsThisWar = new Set<string>();
@@ -74,6 +75,7 @@ export class AchievementService {
           this.publicBoneyardCards.clear();
           this.casualtiesByDecisiveCard.clear();
           this.juggernautsThisWar.clear();
+          this.consecutiveTieComparisons = 0;
         }
         // Rehydrate for same-profile statistic resets as well as profile
         // switches. Setting identical signal values is inert, while a reset
@@ -143,9 +145,11 @@ export class AchievementService {
         this.juggernautsThisWar.clear();
         this.battlePresentationActive = false;
         this.deferredBattleToasts.length = 0;
+        this.consecutiveTieComparisons = 0;
         break;
 
       case 'clash_resolved':
+        this.evaluateTieComparison(event.comparison, event.turnNumber);
         // ASSASSIN: Defeat an Ace with a 2
         if (event.specialRule && event.winner === PlayerType.PLAYER) {
           this.unlock('war.assassin', event.turnNumber);
@@ -162,9 +166,11 @@ export class AchievementService {
 
       case 'settlement_resolved':
         this.evaluateJuggernaut(event.attribution, event.turnNumber);
+        this.evaluateCrippled(event.attribution, event.turnNumber);
         break;
 
       case 'challenge_resolved':
+        this.evaluateTieComparison(event.comparison, event.turnNumber);
         if (event.challenger === PlayerType.PLAYER && event.challengerWon) {
           this.unlock('war.first_rescue', event.turnNumber);
         }
@@ -208,6 +214,7 @@ export class AchievementService {
         break;
 
       case 'battle_cards_revealed':
+        this.evaluateTieComparison(event.comparison, event.turnNumber);
         if (
           event.selection.specialRule &&
           event.selection.winner === PlayerType.PLAYER
@@ -334,6 +341,32 @@ export class AchievementService {
     }
     this.persistAchievementProgress();
     this.unlock('war.juggernaut', turnNumber);
+  }
+
+  private evaluateCrippled(attribution: SettlementAttribution, turnNumber: number): void {
+    if (attribution.winner !== PlayerType.OPPONENT || !this.currentPlayerDeckColor) return;
+
+    const playerIsRed = this.currentPlayerDeckColor === DeckColor.RED;
+    const lostPlayerTwoIds = new Set(
+      attribution.casualties
+        .filter((card) => card.isRed === playerIsRed && card.rank === Rank.TWO)
+        .map((card) => card.id),
+    );
+    if (lostPlayerTwoIds.size === 2) {
+      this.unlock('war.crippled', turnNumber);
+    }
+  }
+
+  private evaluateTieComparison(comparison: string, turnNumber: number): void {
+    if (comparison !== 'tie') {
+      this.consecutiveTieComparisons = 0;
+      return;
+    }
+
+    this.consecutiveTieComparisons++;
+    if (this.consecutiveTieComparisons >= 3) {
+      this.unlock('war.neverending_stalemate', turnNumber);
+    }
   }
 
   private updateBattleStreaks(winner: PlayerType, turnNumber: number): void {

@@ -1,15 +1,15 @@
 # War of Attrition — Current Development Status
 
-## 1. Project State: Core and Creative Initial Passes Complete
+## 1. Project State: Core and Two Creative Sprints Complete
 
 **War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity and is currently version 4.2.0 (Android `versionCode` 40200).
 
 The project is no longer in broad feature discovery. Both substantial creative sprints now have production implementations:
 
 1. **Progressive Narrative Unveiling** — named commanders, four-chapter access and disclosure, mode-aware characterization, compact framing, lore fragments, source links, persistence/migration, and tests.
-2. **Clash Visualizations / Battlefield Animations, V1** — every decisive comparison currently summons readable opposing infantry while cards remain authoritative.
+2. **Clash Visualizations / Battlefield Animations** — every decisive comparison summons readable opposing infantry while cards remain authoritative; the scoped portrait, rule-demo, layout, and callout closure work is complete.
 
-The remaining work returns to release validation, responsive/redraw fixes, accessibility, pacing, device compatibility, and store presentation. Rank-specific units and other richer battlefield ideas remain deliberate later refinements rather than part of the V1 animation.
+The next planned engineering task is a separate final simplification, cleanup, dependency/bundle review, and release-AAB pass. Physical-device breadth and store review remain release validation. Rank-specific units and richer battlefield ideas remain deliberate later refinements.
 
 Authoritative creative references:
 
@@ -17,6 +17,7 @@ Authoritative creative references:
 - [`developer-docs/narrative-canon.md`](../../developer-docs/narrative-canon.md) — private Mont-Rouge canon, commander dossiers, chapter disclosure, and narrative migration contract.
 - [`developer-docs/narrative-disclosure-matrix.md`](../../developer-docs/narrative-disclosure-matrix.md) — authored twelve-War encounter order, Reveal Ledger, progressive dossier plan, transitions, callbacks, sources, and Sprint 1 handoff.
 - [`developer-docs/commander-voice-bible.md`](../../developer-docs/commander-voice-bible.md) — canonical voices and curated implementation-ready dialogue bank.
+- [`developer-docs/commander-portrait-assets.md`](../../developer-docs/commander-portrait-assets.md) — canonical supplied portrait sheet, reproducible extraction, typed asset registry, and expression/accessibility contract.
 - [`developer-docs/opponent-commanders.md`](../../developer-docs/opponent-commanders.md) — permanent AI strategy assets and current dialogue architecture.
 - [`developer-docs/alternate-rules-campaigns.md`](../../developer-docs/alternate-rules-campaigns.md) — implemented mode mechanics and planned chapter availability.
 - [`developer-docs/future-gameplay-ideas.md`](../../developer-docs/future-gameplay-ideas.md) — completed sprint boundaries, later refinements, and backlog.
@@ -47,7 +48,8 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 - The existing global **Auto-play Animations** preference is the only toggle. Disabling it suppresses scene creation; a retired `battleAnimationsEnabled` storage key is ignored safely, and `prefers-reduced-motion` receives a short static winner/loser cue with no animated travel.
 - Routine deal/reveal/comparison/settlement status still updates the accessible current status but is not added to the prominent top-of-table message stack. Battles, reinforcements, milestones, and other exceptional events retain that channel.
 - Authored reactions carry semantic priority: they remain visible for 7.5 seconds and cannot be replaced by procedural quips. Procedural messages are dropped rather than queued, so they cannot create a backlog ahead of narrative.
-- `RuleDemoComponent` provides isolated, frame-based, replayable and skippable rules drills with reduced-motion support. It is a useful economy/readability reference for Sprint 2, not a requirement to turn the runtime table into a rule demo.
+- `RuleDemoComponent` provides isolated, frame-based, replayable and skippable rules drills with reduced-motion support. Its Battle drill visibly stages exactly three committed face-down cards per side before revealing the selected champions.
+- The active opponent has a compact decorative commander portrait. Explicit presentation metadata selects Calm, Smug, Determined, Angry, Sad, or Surprised for meaningful reactions; Calm is the default and returns after the reaction expires.
 
 ### Field Manual, Chronicle, and Hall of Valor
 
@@ -61,13 +63,13 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 
 - Three-War Campaign progression, history, signed margins, token rewards, one-commander-per-Campaign assignment, and post-Campaign commander rotation are implemented. That commander scope is a known Sprint 1 mismatch with the authored per-War narrative schedule.
 - The Campaign Orders modal is implemented and opens before War 1 when orders are unselected.
+- Settings exposes separate confirmed **Restart War**, **Abandon War**, and **Abandon Campaign** actions. Campaign abandonment creates a fresh Campaign without completion rewards while preserving earned history, achievements, chapters, dossiers, cosmetics, tokens, and preferences.
 - All four mechanical modes are implemented:
   - `standard`
   - `limited_reserves` — five human reinforcement reserves across the Three-War Campaign, including zero-reserve automatic concession.
   - `fog_of_war` — sealed Boneyard, redacted active Chronicle details, sealed Hall records, and telemetry redaction while fighting continues.
   - `total_war` — signed cumulative card differential determines the Campaign outcome.
-- Current code displays all four Campaign Orders to every profile and permits any selection before War 1. Progressive narrative chapter locks do **not** exist yet; that is Sprint 1 work.
-- The intended future chapter order is **Standard → Limited Reserves → Fog of War → Total War**, unlocked by chapter completion rather than victory. Existing profiles require a backward-compatible migration and sensible grandfathering.
+- Chapter availability follows **Standard → Limited Reserves → Fog of War → Total War**, unlocked by completing each Three-War chapter rather than by victory. The backward-compatible migration and legacy grandfathering are active.
 
 ### Opponent Commanders and Reactions
 
@@ -77,15 +79,14 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
   - `analyst`
   - `attritionist`
   - `cornered-general`
-- The current registry still exposes generic creative labels and event-specific dialogue pools. `TableReactionService` selects sparse lines for special/narrow clashes, successful and failed reinforcements, concessions, desperation, and notable Battle losses.
-- Dialogue is currently conditioned on commander and gameplay event only. It has no campaign-mode, chapter-progress, or narrative-flag condition layer.
-- Sprint 1 will map the existing strategies to Marcel de Brie, Sir Edmund Gloucester, Matthias von Greyerz, Bastien de Herve, and Lorenzo di Taleggio. It must not add commanders, change strategy fairness, or provide hidden information.
+- The permanent strategies are mapped to Marcel de Brie, Sir Edmund Gloucester, Matthias von Greyerz, Bastien de Herve, and Lorenzo di Taleggio. `NarrativeResolverService` supplies sparse chapter/mode-aware authored dialogue with a bounded fallback hierarchy.
+- The supplied commander art sheet is the canonical portrait set. Typed asset mapping links each existing commander ID to six expressions and one crest; Field Manual dossiers use Calm portraits and accessible crest-plus-name switchers.
 
 ### Progression, Personalization, and Telemetry
 
 - Profile-scoped Campaign progress, bounded Campaign history, career statistics, and cosmetic entitlements are persisted and normalized.
 - Card-backing cosmetics and token purchase/unlock flow are implemented.
-- Twenty-eight local tiered achievements are implemented, with the 2-defeats-Ace Battle achievement intentionally local-only pending final Play Games reconciliation.
+- Thirty local tiered achievements are implemented. `Against the Odds`, `Crippled`, and `Neverending Stalemate` are intentionally local-only pending final Play Games reconciliation; the existing 27 Play mappings remain unchanged.
 - Google Analytics 4 telemetry is consent-gated and denied by default until permission. Test and screenshot modes collect no analytics. Fog of War applies presentation and mapper-level information redaction while a War is active.
 
 ### Platform Packaging and Tooling
@@ -96,19 +97,16 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 
 ---
 
-## 3. Current Implementation Boundary vs. Settled Design
+## 3. Implemented Boundary and Intentional Later Refinements
 
-The documentation pass establishes creative decisions; it does not imply they are already in production code.
-
-| Area | Implemented now | Settled next state |
+| Area | Production reality | Boundary |
 | --- | --- | --- |
-| Commander mechanics & identities | Five named characters (Marcel, Edmund, Matthias, Bastien, Lorenzo) active in table UI, headers, and presentation | Same IDs and strategies, active in runtime and tests |
-| Commander schedule/history | Schema v2 authored per-War schedule, dynamic current encounter resolution, truthful 3-opponent Campaign history | Fully active in progression model, services, telemetry, and Hall of Valor |
-| Dialogue & narrative foundation | Chapter-I authored dialogue bank, transitions, progressive dossiers, deduplication, and `NarrativeResolverService` | Fully active in table reactions, game controller, dialogs, and summary |
-| Campaign chapter availability | Schema v2 chapter progression: Standard → Limited Reserves → Fog of War → Total War, canonical order and lock cues in Orders modal | Completed for Chapter I; Chapters II–IV data and presentation ready for subsequent passes |
-| Narrative persistence & migration | Schema v2 persistence with full v1 migration, legacy grandfathering, and reload determinism | Unlocked dossiers and story progress persisted cleanly |
-| Field Manual / Dossiers | Field Manual dossier tab, commander switcher chips, progressive records, evidence badges, safe external source links, table-header deep link | Fully active in runtime with keyboard navigation and ARIA support |
-| Table animation | Card movement, Battle layers, sequencing, skip/speed/motion controls, and optional V1 summoned-infantry Battle scenes | Rank-specific units, suit identities, recursive escalation, and the signature Two-vs-Ace scene remain later refinements |
+| Commander mechanics & identities | Five named characters are active in table UI, dossiers, authored reactions, portraits, crests, telemetry, and tests. | Existing strategy IDs remain permanent; no sixth commander or emotion engine. |
+| Commander schedule/history | Schema v2 authored per-War schedule, dynamic encounter resolution, replay randomization, and truthful three-opponent history are active. | First-play disclosure order remains canonical. |
+| Dialogue & narrative | All four chapters, transitions, progressive dossiers, deduplication, and fallback routing are active. | The private disclosure firewall remains authoritative. |
+| Campaign availability | Standard → Limited Reserves → Fog of War → Total War unlocks through chapter completion with migration and replay access. | No victory, achievement, token, or purchase gate. |
+| Field Manual | Chronicle, Hall of Valor, truthful rule demos, dossier portraits/crest switcher, evidence records, and safe links are active. | It does not become a visual-novel or persistent quest engine. |
+| Battlefield presentation | Card movement, Battle layers, sequencing, skip/speed/motion controls, and summoned-infantry scenes are active and presentation-only. | Rank/suit classes, magnitude scaling, recursive spectacle, bespoke Two-vs-Ace animation, skins, and sound remain later refinements. |
 
 The private mouse/hay cause in [`narrative-canon.md`](../../developer-docs/narrative-canon.md) is writer knowledge. It must not simply appear as an early player-facing explanation.
 
@@ -128,7 +126,7 @@ Sprint 1 is fully complete, validated, and tested end-to-end:
 - **Speech Bubble Visibility & Delivery Engine**:
   - Live opponent speech rendered in top rail with high-contrast military styling and guaranteed layering (`z-index: 10`).
   - Intro speech triggered on match start and after Orders modal closes; guaranteed Turn 1 context delivered when Turn 1 settles.
-  - 5.5s auto-dismissal timeout prevents stuck speech while protecting active dialogue from premature turn-draw wiping.
+  - Procedural speech auto-dismisses after 5.5 seconds; authored reactions receive 7.5 seconds and remain protected from premature turn-draw wiping.
 - **Post-Story Randomized Replay Scheduling**:
   - Canonical first playthrough remains 100% scripted across Chapters I–IV.
   - Completing all 4 chapters unlocks randomized replay scheduling: replaying any chapter generates a 3-War schedule of 3 distinct commanders chosen via Fisher-Yates from all 5 permanent commanders.
@@ -136,7 +134,8 @@ Sprint 1 is fully complete, validated, and tested end-to-end:
   - Campaign Orders modal indicates `"Replay Command: Opposition randomized"` for unlocked replay chapters.
 - **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-01` through `TR-C4-04`), resolution quotes, and dynamic next-war action buttons.
 - **Spoiler Firewall & Canonical Resolution**: Strict information boundaries across all four chapters; private Mont-Rouge mechanism (mouse/hay) safely protected in author knowledge; Chapter IV completes with the canonical resolution (`Matthias: “I never proved it.”` / `Marcel: “Non. Neither did I.”`) without an extraneous Bastien punchline.
-- **Comprehensive Test Suite**: Full unit and integration suite green at **547 / 547 tests passing**, including `chapter-one-narrative-flow.spec.ts`, `narrative-campaign-traversal.spec.ts` (12-War traversal, spoiler firewall audit, defeat/draw progression, randomized replay matrix), `narrative-resolver.service.spec.ts`, `game-controller.service.spec.ts`, and the skirmish/message-hierarchy presentation tests.
+- **Comprehensive Test Suite**: Full unit and integration suite green at **567 / 567 tests passing**, including narrative traversal/firewall coverage, authoritative achievement settlement/tie cases, portrait-expression lifecycle, Campaign abandonment preservation, rule-demo staging, viewport measurement, and table/message-hierarchy presentation tests.
+- **Browser and Visual Validation**: Full Playwright matrix green at **18 passed** with 36 intentional cross-project skips; all 11 store screenshots validate at their required phone, 7-inch tablet, and 10-inch tablet resolutions.
 - **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json`.
 
 Next steps for future work:
@@ -145,9 +144,9 @@ Next steps for future work:
 
 ---
 
-## 5. Sprint 2 Initial Pass — Implemented
+## 5. Sprint 2 — Closed and Implemented
 
-The first production pass is implemented as a small presentation-only layer.
+The production presentation layer and its scoped closure/polish pass are implemented.
 
 > **The cards do not merely represent the battle. They summon the battle.**
 
@@ -170,24 +169,24 @@ Implemented runtime guardrails:
 
 Routine comparison results are now retained in the Chronicle and accessible status without entering the prominent transient message stack. Exceptional game events still use the stack. Authored persona/story reactions are held longer and cannot be displaced by procedural quips; no routine-message queue is maintained.
 
+Closure work adds the canonical commander portraits/crests and explicit reaction expressions, truthful three-card Battle drill staging, first-render `visualViewport` measurement with lifecycle remeasurement, rail-height-aware deck sizing, compact Challenge callout/action lanes, a verified Material-icon set, Campaign abandonment, and the `Crippled` / `Neverending Stalemate` achievements. Automated browser geometry is covered at 360×740, 540×960, and 1280×800.
+
 The every-comparison trigger is intentionally an experiment. Its policy remains in `GameControllerService`, separate from the reusable ephemeral animation state and renderer, so later playtesting can narrow the frequency without rebuilding the presentation.
 
 Intentionally deferred: rank-specific classes, suit-specific armies, magnitude scaling, recursive spectacle escalation, the special Two-vs-Ace assassination treatment, skins, sound, and a general animation framework.
 
 ---
 
-## 6. Final-Pass Release Concerns
+## 6. Separate Final Cleanup / Release Pass
 
-These remain important but should not absorb or expand the creative sprint scopes:
+The creative sprint scopes are closed. The next pass may address:
 
 1. Google Play closed-testing feedback, crash review, and store compliance.
 2. Physical-device validation across compact phones, foldables, and tablets.
-3. Known initial responsive layout/redraw gremlins, including first-load mobile viewport/reflow behavior that can correct after a redraw. Diagnose on real devices; do not assert a root cause without evidence.
-4. Animation pacing and touch-target refinement for rapid one-handed play.
-5. Screen-reader, focus, contrast, and reduced-motion verification across dialogs and drawers.
-6. Store screenshots, feature graphics, and listing copy.
-7. Unsupported Material icon audit and combat-math/callout overlay composition where still reproducible.
-8. Monetization remains deferred (`ADS_ENABLED=false`) and cannot gate narrative.
+3. Broad code simplification, dead-code/dependency review, asset/bundle optimization, and final release-AAB preparation.
+4. Remaining physical-device-specific compatibility observations not reproducible in automated Chromium checks.
+5. Store screenshots, feature graphics, listing copy, and final accessibility smoke checks.
+6. Monetization remains deferred (`ADS_ENABLED=false`) and cannot gate narrative.
 
 ---
 

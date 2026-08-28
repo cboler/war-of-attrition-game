@@ -17,14 +17,14 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     id: 'war.first_casualty',
     name: 'First Casualty',
     description: 'Witness the first public card fall to the Boneyard.',
-    icon: 'playing_cards',
+    icon: 'style',
     category: 'milestone'
   },
   {
     id: 'war.first_battle',
     name: 'Baptism by Fire',
     description: 'Experience your first Battle.',
-    icon: 'swords',
+    icon: 'sports_martial_arts',
     category: 'battle'
   },
   {
@@ -110,6 +110,20 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     description: 'Lose both of your 2s while both enemy Aces remain at large.',
     icon: 'visibility',
     category: 'signature'
+  },
+  {
+    id: 'war.crippled',
+    name: 'Crippled',
+    description: 'Lose both of your 2s as casualties in one resolved combat event.',
+    icon: 'heart_broken',
+    category: 'signature'
+  },
+  {
+    id: 'war.neverending_stalemate',
+    name: 'Neverending Stalemate',
+    description: 'Reach three consecutive true tied comparisons.',
+    icon: 'all_inclusive',
+    category: 'endurance'
   },
   {
     id: 'war.cavalry_came',
@@ -206,7 +220,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     id: 'profile.centurion',
     name: 'Centurion',
     description: 'Complete 100 resolved games.',
-    icon: 'crown',
+    icon: 'workspace_premium',
     category: 'milestone'
   }
 ];

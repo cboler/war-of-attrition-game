@@ -74,6 +74,9 @@ export class CampaignProgressionService {
   );
   readonly activeCampaignMode = computed<CampaignModeId>(() => this.currentCampaign().mode);
   readonly ordersSelected = computed<boolean>(() => this.currentCampaign().ordersSelected);
+  readonly hasActiveCampaign = computed<boolean>(() =>
+    this.currentCampaign().ordersSelected || this.currentCampaign().wars.length > 0
+  );
   readonly isLimitedReserves = computed<boolean>(() => isLimitedReservesMode(this.currentCampaign()));
   readonly isTotalWar = computed<boolean>(() => isTotalWarMode(this.currentCampaign()));
   readonly isFogOfWar = computed<boolean>(() => isFogOfWarMode(this.currentCampaign()));
@@ -175,6 +178,28 @@ export class CampaignProgressionService {
         limitedReserves: undefined,
         ...(limitedReserves ? { limitedReserves } : {})
       }
+    }));
+    return true;
+  }
+
+  /**
+   * Discards only the in-progress three-War Campaign. Career history,
+   * chapter/dossier progression, currency, cosmetics, and processed War IDs
+   * remain untouched.
+   */
+  abandonActiveCampaign(): boolean {
+    const current = this.currentCampaign();
+    if (!current.ordersSelected && current.wars.length === 0) return false;
+
+    this.authService.updateActiveProfileProgression((previous) => ({
+      ...previous,
+      currentCampaign: {
+        campaignId: createProgressionId('campaign'),
+        mode: previous.currentCampaign.mode,
+        ordersSelected: false,
+        wars: [],
+        commanderSchedule: getAuthoredCommanderSchedule(previous.currentCampaign.mode),
+      },
     }));
     return true;
   }

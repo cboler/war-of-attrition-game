@@ -208,7 +208,7 @@
                     @switch (entry.badge) {
                       @case ('victory') { <mat-icon>shield</mat-icon> }
                       @case ('defeat') { <mat-icon>heart_broken</mat-icon> }
-                      @case ('battle') { <mat-icon>swords</mat-icon> }
+                      @case ('battle') { <mat-icon>sports_martial_arts</mat-icon> }
                       @case ('achievement') { <mat-icon>emoji_events</mat-icon> }
                       @case ('challenge') { <mat-icon>flag</mat-icon> }
                     }
@@ -371,7 +371,7 @@
                         }
                         @if (record.confirmedCasualties > 0) {
                           <span class="honor-tag tag-casualties">
-                            <mat-icon aria-hidden="true">swords</mat-icon>
+                            <mat-icon aria-hidden="true">sports_martial_arts</mat-icon>
                             {{ record.confirmedCasualties }} Casualties
                           </span>
                         }
@@ -509,17 +509,34 @@
             @for (cmd of unlockedCommanders(); track cmd.commanderId) {
               <button
                 type="button"
+                role="tab"
                 class="commander-chip"
                 [class.active]="selectedCommanderId() === cmd.commanderId"
                 [attr.aria-selected]="selectedCommanderId() === cmd.commanderId"
-                (click)="selectDossierCommander(cmd.commanderId)">
+                [attr.tabindex]="selectedCommanderId() === cmd.commanderId ? 0 : -1"
+                [id]="'commander-tab-' + cmd.commanderId"
+                [attr.data-commander-id]="cmd.commanderId"
+                [attr.aria-controls]="'commander-dossier-' + cmd.commanderId"
+                (click)="selectDossierCommander(cmd.commanderId)"
+                (keydown)="handleDossierKeyDown($event, cmd.commanderId)">
+                <img class="commander-crest" [src]="commanderCrest(cmd.commanderId)" alt="" aria-hidden="true" />
                 <span class="chip-name">{{ cmd.name }}</span>
               </button>
             }
           </div>
         }
 
-        <article class="dossier-header-card">
+        <article
+          class="dossier-header-card"
+          role="tabpanel"
+          [id]="'commander-dossier-' + selectedCommanderId()"
+          [attr.aria-labelledby]="unlockedCommanders().length > 1 ? 'commander-tab-' + selectedCommanderId() : 'tab-dossier'">
+          <img
+            class="dossier-portrait"
+            [src]="activeCommanderPortrait()"
+            alt=""
+            aria-hidden="true"
+            decoding="async" />
           <div class="dossier-header-main">
             <span class="dossier-faction">{{ activeCommanderIdentity().faction }}</span>
             <h3 class="dossier-name">{{ activeCommanderIdentity().name }}</h3>

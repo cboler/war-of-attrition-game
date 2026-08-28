@@ -627,6 +627,11 @@ describe('TableGame presentation', () => {
       expect(opponentSeat).toBeTruthy();
       expect(opponentSeat.textContent).toContain('Marcel de Brie');
       expect(opponentSeat.textContent).toContain('French Master Affineur');
+      const calmPortrait = opponentSeat.querySelector('.commander-portrait') as HTMLImageElement;
+      expect(calmPortrait.src).toContain('/assets/commanders/quartermaster/calm.jpg');
+      expect(calmPortrait.alt).toBe('');
+      expect(opponentSeat.querySelector('.commander-portrait-frame')?.getAttribute('data-expression'))
+        .toBe('calm');
 
       // Click opponent identity button
       const identityBtn = opponentSeat.querySelector('.identity-button') as HTMLButtonElement;
@@ -642,5 +647,34 @@ describe('TableGame presentation', () => {
       const drawer = fixture.nativeElement.querySelector('app-story-book-drawer');
       expect(drawer).toBeTruthy();
     }));
+
+    it('renders an explicit opponent reaction expression without changing accessible copy', () => {
+      controller.loadFixtureState({
+        phase: PresentationState.READY,
+        message: 'Draw when ready.',
+        battlefieldMessages: [{ id: 1, text: 'Routine comparison detail.' }],
+        commander: 'gambler',
+        reaction: {
+          speaker: PlayerType.OPPONENT,
+          message: 'The rule keeps one excellent surprise in its sleeve.',
+          category: 'special_clash',
+          authored: true,
+          expression: 'surprised',
+        },
+      });
+      fixture.detectChanges();
+
+      const opponentSeat = fixture.nativeElement.querySelector(
+        'app-player-seat:not(.current-player)',
+      ) as HTMLElement;
+      const portrait = opponentSeat.querySelector('.commander-portrait') as HTMLImageElement;
+      expect(portrait.src).toContain('/assets/commanders/gambler/surprised.jpg');
+      expect(portrait.alt).toBe('');
+      expect(opponentSeat.textContent).toContain('Sir Edmund Gloucester');
+      expect(opponentSeat.textContent).toContain('The rule keeps one excellent surprise');
+      expect(fixture.nativeElement.querySelector('.message-stack')).toBeFalsy();
+      expect(fixture.nativeElement.querySelector('.announcement .sr-only').textContent)
+        .toContain('Draw when ready.');
+    });
   });
 });

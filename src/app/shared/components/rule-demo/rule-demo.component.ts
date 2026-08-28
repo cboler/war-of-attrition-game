@@ -44,6 +44,14 @@ interface RuleDemoFrame {
   readonly special?: boolean;
   readonly playerDeckCount?: number;
   readonly opponentDeckCount?: number;
+  readonly battleEscalation?: boolean;
+  readonly battleCommitment?: {
+    readonly playerCards: readonly Card[];
+    readonly opponentCards: readonly Card[];
+    readonly playerSelectedIndex: number;
+    readonly opponentSelectedIndex: number;
+    readonly revealSelected: boolean;
+  };
 }
 
 interface RuleDemoDefinition {
@@ -74,6 +82,10 @@ const FIVE_DIAMONDS = card('five-diamonds', Suit.DIAMONDS, Rank.FIVE, 5);
 const KING_CLUBS = card('king-clubs', Suit.CLUBS, Rank.KING, 13);
 const QUEEN_SPADES = card('queen-spades', Suit.SPADES, Rank.QUEEN, 12);
 const NINE_DIAMONDS = card('nine-diamonds', Suit.DIAMONDS, Rank.NINE, 9);
+const FOUR_HEARTS = card('four-hearts', Suit.HEARTS, Rank.FOUR, 4);
+const JACK_DIAMONDS = card('jack-diamonds', Suit.DIAMONDS, Rank.JACK, 11);
+const THREE_CLUBS = card('three-clubs', Suit.CLUBS, Rank.THREE, 3);
+const QUEEN_CLUBS = card('queen-clubs', Suit.CLUBS, Rank.QUEEN, 12);
 
 const RULE_DEMOS: Readonly<Record<RuleDemoKind, RuleDemoDefinition>> = {
   objective: {
@@ -156,24 +168,47 @@ const RULE_DEMOS: Readonly<Record<RuleDemoKind, RuleDemoDefinition>> = {
         rightGlow: 'blue'
       },
       {
-        cue: 'Commit',
+        cue: 'Escalate',
+        narration: 'The equal comparison deadlocks. Battle now requires three new cards from each deck.',
+        leftCard: SEVEN_DIAMONDS,
+        rightCard: SEVEN_CLUBS,
+        leftStrength: 0,
+        rightStrength: 0,
+        leftGlow: 'blue',
+        rightGlow: 'blue',
+        battleEscalation: true
+      },
+      {
+        cue: 'Commit three each',
         narration: 'Both commanders commit three new cards face-down. A target is chosen blindly.',
-        leftCard: NINE_HEARTS,
-        rightCard: SIX_SPADES,
-        leftFaceDown: true,
-        rightFaceDown: true,
+        leftCard: null,
+        rightCard: null,
         leftStrength: null,
-        rightStrength: null
+        rightStrength: null,
+        battleCommitment: {
+          playerCards: [FOUR_HEARTS, NINE_HEARTS, JACK_DIAMONDS],
+          opponentCards: [SIX_SPADES, THREE_CLUBS, QUEEN_CLUBS],
+          playerSelectedIndex: 1,
+          opponentSelectedIndex: 0,
+          revealSelected: false
+        }
       },
       {
         cue: 'Reveal champions',
         narration: 'Only the selected champions reveal. 9 defeats 6 and resolves this Battle layer.',
-        leftCard: NINE_HEARTS,
-        rightCard: SIX_SPADES,
+        leftCard: null,
+        rightCard: null,
         leftStrength: 3,
         rightStrength: 0,
         leftGlow: 'green',
-        rightGlow: 'red'
+        rightGlow: 'red',
+        battleCommitment: {
+          playerCards: [FOUR_HEARTS, NINE_HEARTS, JACK_DIAMONDS],
+          opponentCards: [SIX_SPADES, THREE_CLUBS, QUEEN_CLUBS],
+          playerSelectedIndex: 1,
+          opponentSelectedIndex: 0,
+          revealSelected: true
+        }
       }
     ]
   },
@@ -341,7 +376,7 @@ export class RuleDemoComponent implements AfterViewInit {
       }
 
       this.frameIndex.update(index => index + 1);
-  this.playFrameSound(this.frame());
+      this.playFrameSound(this.frame());
       this.scheduleNextFrame();
     }, 950);
   }
@@ -373,7 +408,11 @@ export class RuleDemoComponent implements AfterViewInit {
       return;
     }
 
-    if (frame.leftFaceDown || frame.rightFaceDown) {
+    if (
+      frame.leftFaceDown ||
+      frame.rightFaceDown ||
+      (frame.battleCommitment && !frame.battleCommitment.revealSelected)
+    ) {
       this.sound.playCardDraw();
       return;
     }

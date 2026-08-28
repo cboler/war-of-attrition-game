@@ -105,8 +105,8 @@
 
           <div class="campaign-commander-callout">
             <span class="commander-label">Opposing Commander:</span>
-            <strong>{{ progression.currentCommander().name }} ({{ progression.currentCommander().title }})</strong>
-            <small>{{ progression.currentCommander().description }}</small>
+            <strong>{{ progression.currentCommanderIdentity().name }} ({{ progression.currentCommanderIdentity().title }})</strong>
+            <small>{{ progression.currentCommanderIdentity().publicSummary }}</small>
             <div class="campaign-orders-callout">
               <span class="commander-label">Campaign Orders:</span>
               <strong>{{ progression.isTotalWar() ? 'Total War' : progression.isLimitedReserves() ? 'Limited Reserves' : progression.isFogOfWar() ? 'Fog of War' : 'Standard Campaign' }}</strong>
@@ -224,7 +224,7 @@
           <h3 id="battle-records-title" class="section-subtitle">Battles & Challenges</h3>
           <div class="stats-grid">
             <div class="stat-card">
-              <div class="stat-icon battles"><mat-icon aria-hidden="true">swords</mat-icon></div>
+              <div class="stat-icon battles"><mat-icon aria-hidden="true">sports_martial_arts</mat-icon></div>
               <div class="stat-data">
                 <span class="stat-value">{{ stats().totalBattles || 0 }}</span>
                 <span class="stat-label">Resolved Battles</span>
@@ -540,6 +540,22 @@
               <button mat-stroked-button type="button" class="abandon-match-btn" (click)="onAbandonMatch()">
                 <mat-icon aria-hidden="true">flag</mat-icon>
                 Abandon War
+              </button>
+            </div>
+          </section>
+        }
+
+
+        @if (hasActiveCampaign()) {
+          <section class="settings-section match-actions-section campaign-abandon-section" aria-labelledby="active-campaign-title">
+            <div class="section-heading">
+              <h3 id="active-campaign-title" class="section-subtitle">Active Campaign</h3>
+              <p>Discard progress in the current three-War Campaign without affecting earned career progression.</p>
+            </div>
+            <div class="match-actions-grid">
+              <button mat-stroked-button type="button" class="abandon-match-btn" (click)="onAbandonCampaign()">
+                <mat-icon aria-hidden="true">delete_sweep</mat-icon>
+                Abandon Campaign
               </button>
             </div>
           </section>

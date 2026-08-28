@@ -1,6 +1,6 @@
 # Google Play Games Achievements Manifest
 
-This is the release manifest for all 27 canonical local achievements. Internal IDs are permanent and remain the source of truth; Google Play Games achievement IDs are an external synchronization mapping.
+This is the release manifest for the 27 achievements currently mapped to Google Play Games. The application has 30 canonical local achievements; internal IDs are permanent and remain the source of truth, while Google Play Games IDs are an external synchronization mapping.
 
 Veteran and Centurion are the only incremental achievements. `profile.campaigner` remains a standard achievement under its new War Tested display name.
 
@@ -33,6 +33,16 @@ Veteran and Centurion are the only incremental achievements. `profile.campaigner
 | `profile.campaigner` | War Tested | Complete 10 resolved Wars. | Standard | `CgkIz5juh94JEAIQAQ` |
 | `profile.veteran` | Veteran | Complete 25 resolved games. | Incremental, 25 steps | `CgkIz5juh94JEAIQEA` |
 | `profile.centurion` | Centurion | Complete 100 resolved games. | Incremental, 100 steps | `CgkIz5juh94JEAIQAw` |
+
+## Local-only achievements pending Play Console reconciliation
+
+| Internal ID | Local name | Condition |
+| --- | --- | --- |
+| `war.battle_assassin` | Against the Odds | Win a Battle by defeating an opposing Ace with a 2. |
+| `war.crippled` | Crippled | Lose both physical player-owned 2s as casualties in one authoritative settlement. |
+| `war.neverending_stalemate` | Neverending Stalemate | Reach three consecutive authoritative tied comparisons. |
+
+These achievements unlock and persist locally. No placeholder Play Games IDs are fabricated during Sprint 2 closure.
 
 ## Synchronization contract
 

@@ -28,6 +28,7 @@ import { TutorialOverlayComponent } from '../shared/components/tutorial-overlay/
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { CampaignOrdersDialogComponent } from '../shared/components/campaign-orders-dialog/campaign-orders-dialog.component';
 import { BattleAnimationComponent } from '../shared/components/battle-animation/battle-animation.component';
+import { getCommanderPortrait } from '../core/models/commander-art.model';
 
 @Component({
   selector: 'app-table-game',
@@ -79,6 +80,12 @@ export class TableGame implements OnInit {
     this.controller.tableReaction()?.speaker === PlayerType.OPPONENT
       ? this.controller.tableReaction()?.message ?? null
       : null
+  );
+  protected readonly opponentPortrait = computed(() =>
+    getCommanderPortrait(
+      this.controller.opponentCommanderIdentity().commanderId,
+      this.controller.opponentExpression(),
+    ),
   );
   protected readonly playerQuip = computed(() =>
     this.controller.tableReaction()?.speaker === PlayerType.PLAYER

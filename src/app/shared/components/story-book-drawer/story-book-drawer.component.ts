@@ -31,6 +31,7 @@ import { OpponentCommanderId } from '../../../core/models/commander.model';
 import { CommanderIdentity, getCommanderIdentity } from '../../../core/models/commander-identity.model';
 import { CommanderDossierRecord } from '../../../core/models/narrative.model';
 import { NarrativeResolverService } from '../../../narrative/narrative-resolver.service';
+import { getCommanderCrest, getCommanderPortrait } from '../../../core/models/commander-art.model';
 
 type FieldManualTab = 'chronicle' | 'valor' | 'rules' | 'dossier' | 'reference';
 
@@ -58,7 +59,7 @@ const RULE_ENTRIES: readonly RuleEntry[] = [
   },
   {
     id: 'battle',
-    icon: 'swords',
+    icon: 'sports_martial_arts',
     title: '3. Deadlocks & Battles',
     description:
       'Equal ranks tie and begin a Battle. Each commander commits three new cards face-down, then each selects one opposing target blindly. Only those champions reveal. Another tie can deepen the Battle when each deck can commit three more cards.'
@@ -149,9 +150,42 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   protected readonly activeCommanderDossier = computed<readonly CommanderDossierRecord[]>(() =>
     this.narrativeResolver?.dossierFor(this.selectedCommanderId()) ?? []
   );
+  protected readonly activeCommanderPortrait = computed(() =>
+    getCommanderPortrait(this.selectedCommanderId(), 'calm')
+  );
+
+  protected commanderCrest(commanderId: OpponentCommanderId): string {
+    return getCommanderCrest(commanderId);
+  }
 
   selectDossierCommander(commanderId: OpponentCommanderId): void {
     this.selectedCommanderId.set(commanderId);
+  }
+
+  protected handleDossierKeyDown(event: KeyboardEvent, current: OpponentCommanderId): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+
+    event.preventDefault();
+    const commanders = this.unlockedCommanders();
+    const currentIndex = Math.max(
+      0,
+      commanders.findIndex((commander) => commander.commanderId === current),
+    );
+    let nextIndex = currentIndex;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = commanders.length - 1;
+    if (event.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + commanders.length) % commanders.length;
+    }
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % commanders.length;
+
+    const nextId = commanders[nextIndex].commanderId;
+    this.selectDossierCommander(nextId);
+    queueMicrotask(() => {
+      this.drawerContainer?.nativeElement
+        .querySelector<HTMLElement>(`[data-commander-id="${nextId}"]`)
+        ?.focus();
+    });
   }
 
   protected entryText(entry: StoryBookEntry): string {

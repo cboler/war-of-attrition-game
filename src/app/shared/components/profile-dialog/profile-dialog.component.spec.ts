@@ -217,7 +217,8 @@ describe('ProfileDialogComponent', () => {
 
     component.onAbandonMatch();
     fixture.detectChanges();
-    const dialogContent = document.body.querySelector('mat-dialog-content');
+    const dialogContents = Array.from(document.body.querySelectorAll('mat-dialog-content'));
+    const dialogContent = dialogContents.at(-1);
     expect(dialogContent?.textContent).toContain('spent Limited Reserves remain unchanged');
 
     (document.body.querySelector('.profile-confirm-action') as HTMLButtonElement).click();
@@ -239,6 +240,40 @@ describe('ProfileDialogComponent', () => {
     tick();
 
     expect(startSpy).toHaveBeenCalledOnceWith('restart');
+    expect(dialogRefSpy.close).toHaveBeenCalled();
+  }));
+
+  it('offers and confirms a distinct Campaign abandonment action', fakeAsync(() => {
+    const progression = TestBed.inject(CampaignProgressionService);
+    progression.selectCampaignOrders('standard');
+    const abandonSpy = spyOn(gameController, 'abandonCampaign').and.returnValue(true);
+    let confirmation: {
+      message: string;
+      confirmLabel: string;
+      destructive: boolean;
+    } | undefined;
+    spyOn(component as any, 'confirm').and.callFake((data: typeof confirmation, onConfirm: () => void) => {
+      confirmation = data;
+      onConfirm();
+    });
+    component.activeTab.set('settings');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const campaignButton = root.querySelector(
+      '.campaign-abandon-section .abandon-match-btn',
+    ) as HTMLButtonElement;
+    expect(campaignButton).toBeTruthy();
+    expect(campaignButton.textContent).toContain('Abandon Campaign');
+    component.onAbandonCampaign();
+    tick();
+
+    expect(confirmation?.message).toContain('grants no rewards');
+    expect(confirmation?.message).toContain('achievements');
+    expect(confirmation?.confirmLabel).toBe('Abandon Campaign');
+    expect(confirmation?.destructive).toBeTrue();
+
+    expect(abandonSpy).toHaveBeenCalledTimes(1);
     expect(dialogRefSpy.close).toHaveBeenCalled();
   }));
 

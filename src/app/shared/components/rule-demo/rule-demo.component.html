@@ -22,6 +22,57 @@
       </div>
     }
 
+    @if (frame().battleCommitment; as commitment) {
+      <div class="battle-commitments" aria-label="Three face-down Battle cards committed by each side">
+        <div class="commitment-side opponent-commitment">
+          <span class="commitment-label">Opponent commits 3</span>
+          <div class="committed-cards">
+            @for (committedCard of commitment.opponentCards; track committedCard.id; let index = $index) {
+              <div
+                class="committed-card"
+                [class.selected]="commitment.opponentSelectedIndex === index"
+                [class.revealed]="commitment.revealSelected && commitment.opponentSelectedIndex === index"
+                [attr.aria-label]="commitment.revealSelected && commitment.opponentSelectedIndex === index ? 'Selected opponent champion revealed' : 'Opponent committed card ' + (index + 1) + ' of 3, face down'">
+                <app-card
+                  [card]="committedCard"
+                  [faceDown]="!commitment.revealSelected || commitment.opponentSelectedIndex !== index"
+                  [glow]="commitment.revealSelected && commitment.opponentSelectedIndex === index ? (frame().rightGlow ?? null) : null" />
+              </div>
+            }
+          </div>
+          @if (frame().rightStrength !== undefined && frame().rightStrength !== null) {
+            <span class="strength-value" [class.zero]="frame().rightStrength === 0">
+              Champion strength {{ frame().rightStrength }}
+            </span>
+          }
+        </div>
+
+        <div class="commitment-divider" aria-hidden="true">VS</div>
+
+        <div class="commitment-side player-commitment">
+          <span class="commitment-label">You commit 3</span>
+          <div class="committed-cards">
+            @for (committedCard of commitment.playerCards; track committedCard.id; let index = $index) {
+              <div
+                class="committed-card"
+                [class.selected]="commitment.playerSelectedIndex === index"
+                [class.revealed]="commitment.revealSelected && commitment.playerSelectedIndex === index"
+                [attr.aria-label]="commitment.revealSelected && commitment.playerSelectedIndex === index ? 'Your selected champion revealed' : 'Your committed card ' + (index + 1) + ' of 3, face down'">
+                <app-card
+                  [card]="committedCard"
+                  [faceDown]="!commitment.revealSelected || commitment.playerSelectedIndex !== index"
+                  [glow]="commitment.revealSelected && commitment.playerSelectedIndex === index ? (frame().leftGlow ?? null) : null" />
+              </div>
+            }
+          </div>
+          @if (frame().leftStrength !== undefined && frame().leftStrength !== null) {
+            <span class="strength-value" [class.zero]="frame().leftStrength === 0">
+              Champion strength {{ frame().leftStrength }}
+            </span>
+          }
+        </div>
+      </div>
+    } @else {
     <div class="comparison-row">
       <div class="demo-card-slot">
         <span class="side-label">Your card</span>
@@ -63,6 +114,11 @@
         }
       </div>
     </div>
+    }
+
+    @if (frame().battleEscalation) {
+      <strong class="battle-escalation-cue">True tie <span aria-hidden="true">â†’</span> Battle</strong>
+    }
 
     @if (frame().special) {
       <strong class="special-rule">Special rule · 2 defeats Ace</strong>

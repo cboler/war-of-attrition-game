@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CardImpl, Rank, Suit } from '../core/models/card.model';
-import { PlayerType } from '../core/models/game-state.model';
+import { GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { REACTION_RANDOM, TableReactionService } from './table-reaction.service';
 import { NarrativeResolverService } from '../narrative/narrative-resolver.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
@@ -76,6 +76,7 @@ describe('TableReactionService', () => {
       message: 'An exception is not anarchy, monsieur. It is a rule with dramatic tailoring.',
       category: 'special_clash',
       authored: true,
+      expression: 'surprised',
     });
   });
 
@@ -108,6 +109,7 @@ describe('TableReactionService', () => {
       message: 'There. Proper stock returns to the cellar.',
       category: 'rescue',
       authored: true,
+      expression: 'surprised',
     });
   });
 
@@ -124,6 +126,7 @@ describe('TableReactionService', () => {
     expect(reaction?.speaker).toBe(PlayerType.PLAYER);
     expect(reaction?.message).toBe('That reinforcement cost dearly.');
     expect(reaction?.category).toBe('failed_rescue');
+    expect(reaction?.expression).toBe('angry');
   });
 
   it('can narrate a deep Battle while keeping silence probabilistic', () => {
@@ -183,12 +186,16 @@ describe('TableReactionService', () => {
       expect(intro?.speaker).toBe(PlayerType.OPPONENT);
       expect(intro?.category).toBe('introduction');
       expect(intro?.authored).toBeTrue();
+      expect(intro?.expression).toBe('calm');
       expect(intro?.message).toBe('At Mont-Rouge, monsieur, we placed two ancient traditions at one table. Only one of them arrived with the dignity to remain seated.');
 
-      const result = service.forResult('quartermaster');
+      const result = service.forResult('quartermaster', GameOutcome.OPPONENT_WIN);
       expect(result?.speaker).toBe(PlayerType.OPPONENT);
       expect(result?.category).toBe('result');
       expect(result?.message).toBe('The cards have rendered a verdict. Naturally, history will appeal.');
+      expect(result?.expression).toBe('smug');
+      service.clearUsedDialogue();
+      expect(service.forResult('quartermaster', GameOutcome.PLAYER_WIN)?.expression).toBe('sad');
     });
 
     it('provides guaranteed context lines for active commanders', () => {

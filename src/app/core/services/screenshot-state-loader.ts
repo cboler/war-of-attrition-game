@@ -365,6 +365,12 @@ export class ScreenshotStateLoader {
         const remainingPlayer = redCards.slice(0, 24);
         const remainingOpponent = blackCards.slice(0, 24);
 
+        context.auth.updateActiveProfileProgression(previous => ({
+          ...previous,
+          unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war'],
+          completedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war']
+        }));
+
         context.gameState.loadFixtureState({
           playerDeckCards: remainingPlayer,
           opponentDeckCards: remainingOpponent,

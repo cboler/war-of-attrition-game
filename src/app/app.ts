@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,9 +29,12 @@ import { GameTelemetryService } from './services/game-telemetry.service';
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[style.--app-viewport-height.px]': 'viewportHeight()',
+  },
 })
-export class App {
+export class App implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private settingsService = inject(SettingsService);
   private dialog = inject(MatDialog);
@@ -36,6 +47,41 @@ export class App {
   protected readonly profileButtonLabel = computed(
     () => `Open profile for ${this.activeProfile().name}; career records, achievements, and settings`
   );
+  protected readonly viewportHeight = signal(this.measureViewportHeight());
+  private resizeObserver: ResizeObserver | null = null;
+  private settleFrame: number | null = null;
+  private readonly syncViewportHeight = () => {
+    this.viewportHeight.set(this.measureViewportHeight());
+  };
+
+  ngOnInit(): void {
+    if (typeof window === 'undefined') return;
+
+    window.addEventListener('resize', this.syncViewportHeight, { passive: true });
+    window.addEventListener('orientationchange', this.syncViewportHeight, { passive: true });
+    window.addEventListener('pageshow', this.syncViewportHeight, { passive: true });
+    window.visualViewport?.addEventListener('resize', this.syncViewportHeight, { passive: true });
+    document.addEventListener('visibilitychange', this.syncViewportHeight, { passive: true });
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(this.syncViewportHeight);
+      this.resizeObserver.observe(document.documentElement);
+    }
+
+    // Chromium/TWA can publish its final visual viewport after Angular's first
+    // layout. One post-layout measurement makes first entry match later redraws.
+    this.settleFrame = window.requestAnimationFrame(this.syncViewportHeight);
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window === 'undefined') return;
+    window.removeEventListener('resize', this.syncViewportHeight);
+    window.removeEventListener('orientationchange', this.syncViewportHeight);
+    window.removeEventListener('pageshow', this.syncViewportHeight);
+    window.visualViewport?.removeEventListener('resize', this.syncViewportHeight);
+    document.removeEventListener('visibilitychange', this.syncViewportHeight);
+    this.resizeObserver?.disconnect();
+    if (this.settleFrame !== null) window.cancelAnimationFrame(this.settleFrame);
+  }
 
   protected openProfileDialog(): void {
     this.dialog.open(ProfileDialogComponent, {
@@ -45,5 +91,12 @@ export class App {
       closeOnNavigation: true,
       panelClass: 'glass-dialog-panel'
     });
+  }
+
+  private measureViewportHeight(): number {
+    if (typeof window === 'undefined') return 0;
+    const visualHeight = window.visualViewport?.height;
+    const measured = visualHeight && visualHeight > 0 ? visualHeight : window.innerHeight;
+    return Math.max(1, Math.round(measured));
   }
 }

@@ -49,4 +49,32 @@ describe('App', () => {
     expect(toolbar.querySelector('.app-title-text')?.textContent).toContain('ATTRITION');
     settings.setDeckHand('right');
   });
+
+  it('measures the visual viewport on first render and reacts to its resize event', () => {
+    const originalViewport = Object.getOwnPropertyDescriptor(window, 'visualViewport');
+    const viewport = new EventTarget() as EventTarget & { height: number };
+    viewport.height = 640;
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: viewport,
+    });
+
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).style.getPropertyValue('--app-viewport-height'))
+      .toBe('640px');
+
+    viewport.height = 598;
+    viewport.dispatchEvent(new Event('resize'));
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).style.getPropertyValue('--app-viewport-height'))
+      .toBe('598px');
+
+    fixture.destroy();
+    if (originalViewport) {
+      Object.defineProperty(window, 'visualViewport', originalViewport);
+    } else {
+      delete (window as unknown as { visualViewport?: VisualViewport }).visualViewport;
+    }
+  });
 });

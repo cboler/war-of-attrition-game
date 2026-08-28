@@ -93,6 +93,18 @@ describe('NarrativeResolverService & Four-Chapter Data Architecture', () => {
       expect(new Set(dossierIds).size).toBe(24);
     });
 
+    it('keeps dossier source links HTTPS-safe and uses the available English Swiss source', () => {
+      const sources = ALL_COMMANDER_DOSSIERS.flatMap(record =>
+        record.source ? [record.source] : []
+      );
+
+      expect(sources.length).toBeGreaterThan(0);
+      expect(sources.every(source => source.url.startsWith('https://'))).toBeTrue();
+      expect(sources.some(source => source.url.includes('fr.wikipedia.org'))).toBeFalse();
+      expect(sources.find(source => source.id === 'S04')?.url)
+        .toBe('https://www.gruyere.com/en/le-gruyere-aop/characteristics');
+    });
+
 
     it('attaches valid reveal IDs to narrative data across all chapters', () => {
       // Chapter I sample

@@ -61,6 +61,44 @@ describe('RuleDemoComponent', () => {
     expect(component.frameIndex()).toBe(0);
   });
 
+  it('stages exactly three committed Battle cards per side before champion reveal', fakeAsync(() => {
+    fixture.componentRef.setInput('rule', 'battle');
+    component.replay();
+    fixture.detectChanges();
+
+    expect(component.frameIndex()).toBe(0);
+    expect(fixture.nativeElement.querySelector('.battle-commitments')).toBeNull();
+
+    tick(1900);
+    fixture.detectChanges();
+    const committed = fixture.nativeElement.querySelectorAll('.committed-card');
+    expect(committed.length).toBe(6);
+    expect(fixture.nativeElement.querySelectorAll('.player-commitment .committed-card').length).toBe(3);
+    expect(fixture.nativeElement.querySelectorAll('.opponent-commitment .committed-card').length).toBe(3);
+    expect(fixture.nativeElement.querySelectorAll('.committed-card.revealed').length).toBe(0);
+
+    tick(950);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.committed-card.revealed').length).toBe(2);
+    expect(fixture.nativeElement.querySelector('.demo-narration')?.textContent).toContain(
+      'Only the selected champions reveal',
+    );
+  }));
+
+  it('keeps all six Battle commitments visible in Skip and reduced-motion results', () => {
+    fixture.componentRef.setInput('rule', 'battle');
+    component.skip();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.committed-card').length).toBe(6);
+
+    const settings = TestBed.inject(SettingsService);
+    settings.setAutoPlayAnimations(false);
+    component.replay();
+    fixture.detectChanges();
+    expect(component.isFinalFrame()).toBeTrue();
+    expect(fixture.nativeElement.querySelectorAll('.committed-card').length).toBe(6);
+  });
+
   it('plays tutorial cues while sound effects are enabled', fakeAsync(() => {
     const sound = TestBed.inject(SoundService);
     const draw = spyOn(sound, 'playCardDraw');
