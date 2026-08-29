@@ -10,10 +10,9 @@ For domain-specific instructions and subsystem details, refer to the cascading i
 - [`src/INSTRUCTIONS.md`](src/INSTRUCTIONS.md) - Source root standards, TypeScript rules, and Angular configuration.
 - [`src/app/INSTRUCTIONS.md`](src/app/INSTRUCTIONS.md) - Application structure, routing, and Signal-based state architecture.
 - [`src/app/core/INSTRUCTIONS.md`](src/app/core/INSTRUCTIONS.md) - Core domain logic (models, card comparison, game state, turn resolution).
-- [`src/app/game/INSTRUCTIONS.md`](src/app/game/INSTRUCTIONS.md) - Game board UI component, animations, user action handling, and demo mode.
-- [`src/app/services/INSTRUCTIONS.md`](src/app/services/INSTRUCTIONS.md) - High-level controller services (`GameControllerService`, `ProgressService`).
+- [`src/app/services/INSTRUCTIONS.md`](src/app/services/INSTRUCTIONS.md) - High-level controller and presentation services.
 - [`src/app/settings/INSTRUCTIONS.md`](src/app/settings/INSTRUCTIONS.md) - Preferences and settings component (theme, card backings).
-- [`src/app/shared/INSTRUCTIONS.md`](src/app/shared/INSTRUCTIONS.md) - Reusable components (`GameBoardComponent`, `CardComponent`).
+- [`src/app/shared/INSTRUCTIONS.md`](src/app/shared/INSTRUCTIONS.md) - Reusable components and dialogs.
 
 ---
 
