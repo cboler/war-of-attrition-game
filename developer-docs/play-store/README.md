@@ -20,7 +20,7 @@ To build Android APKs and App Bundles (`.aab`) locally:
 
 ## 🚀 Building Android Artifacts
 
-The release-candidate AAB is produced by `.github/workflows/build-android-bundle.yml`. Run it manually or push a `v*` tag; version inputs are optional because Gradle and the workflow currently default to version code `40200` and version name `4.2.0`. The workflow publishes `app-release-aab` as its artifact and passes the configured `PLAY_GAMES_PROJECT_ID` repository variable, falling back to the supplied numeric ID `334487063631`.
+The release-candidate AAB is produced by `.github/workflows/build-android-bundle.yml`. Run it manually or push a `v*` tag; version inputs are optional because Gradle and the workflow currently default to version code `40201` and version name `4.2.1`. The workflow publishes `app-release-aab` as its artifact and passes the configured `PLAY_GAMES_PROJECT_ID` repository variable, falling back to the supplied numeric ID `334487063631`.
 
 ### 1. Build Angular PWA Production Assets
 ```bash

@@ -13,9 +13,9 @@ def twaManifest = [
     backgroundColor: '#0d221c',
     enableNotifications: false,
     splashScreenFadeOutDuration: 300,
-    // Keep this in sync with the CI's semver-packed release code: 4.2.0 -> 40200.
-    versionCode: 40200,
-    versionName: '4.2.0'
+    // Keep this in sync with the CI's semver-packed release code: 4.2.1 -> 40201.
+    versionCode: 40201,
+    versionName: '4.2.1'
 ]
 
 def resolveVersionCode(defaultCode) {

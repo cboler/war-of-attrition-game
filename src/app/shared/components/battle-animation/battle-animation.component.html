@@ -9,6 +9,8 @@
     class="army player-army"
     [class.winner]="scene().winner === player.PLAYER"
     [class.loser]="scene().loser === player.PLAYER"
+    [class.red-army]="scene().playerColor === deckColor.RED"
+    [class.steel-army]="scene().playerColor === deckColor.BLACK"
   >
     <div class="formation formation-facing">
       @for (unit of units; track unit) {
@@ -41,6 +43,8 @@
     class="army opponent-army"
     [class.winner]="scene().winner === player.OPPONENT"
     [class.loser]="scene().loser === player.OPPONENT"
+    [class.red-army]="scene().opponentColor === deckColor.RED"
+    [class.steel-army]="scene().opponentColor === deckColor.BLACK"
   >
     <div class="formation formation-facing">
       @for (unit of units; track unit) {

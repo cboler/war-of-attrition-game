@@ -268,7 +268,7 @@ describe('GameControllerService presentation integration', () => {
     // The final skirmish starts only after the public concession hold.
     tick(345);
     flushMicrotasks();
-    expect(request).toHaveBeenCalledOnceWith(PlayerType.PLAYER);
+    expect(request).toHaveBeenCalledOnceWith(PlayerType.PLAYER, DeckColor.RED);
     expect(controller.battleAnimation()).toEqual(jasmine.objectContaining({
       winner: PlayerType.PLAYER,
       loser: PlayerType.OPPONENT,
@@ -573,7 +573,7 @@ describe('GameControllerService presentation integration', () => {
     const chronicleReveal = storyBook.entries().find((entry) => entry.type === 'battle_reveal')!;
 
     expect(battleVictory).toHaveBeenCalledTimes(1);
-    expect(requestBattleAnimation).toHaveBeenCalledOnceWith(PlayerType.PLAYER);
+    expect(requestBattleAnimation).toHaveBeenCalledOnceWith(PlayerType.PLAYER, DeckColor.RED);
     expect(compare.calls.argsFor(1).map((card) => card.id)).toEqual([
       foeTarget.id,
       humanTarget.id,

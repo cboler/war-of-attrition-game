@@ -51,6 +51,14 @@
   transform: scaleX(-1);
 }
 
+.army.winner {
+  z-index: 2;
+}
+
+.army.loser {
+  z-index: 1;
+}
+
 .player-army.winner {
   animation: player-wins var(--battle-animation-duration, 920ms) cubic-bezier(0.2, 0.72, 0.3, 1)
     both;
@@ -79,14 +87,14 @@
   transform-origin: 50% 86%;
 }
 
-.player-army .soldier {
+.red-army .soldier {
   --army-main: #a9363f;
   --army-dark: #5b1721;
   --army-light: #f0c3a5;
   --army-metal: #e2c276;
 }
 
-.opponent-army .soldier {
+.steel-army .soldier {
   --army-main: #3f5262;
   --army-dark: #17242d;
   --army-light: #d8b69a;
@@ -140,6 +148,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
+  z-index: 3;
   width: clamp(34px, 8vw, 54px);
   color: #ffe292;
   opacity: 0;
@@ -162,36 +171,38 @@
   0% { opacity: 0; transform: translate(-112%, -50%); }
   8% { opacity: 1; }
   43% { transform: translate(0, -50%); }
-  54% { transform: translate(7%, -50%); }
-  78% { opacity: 1; transform: translate(5%, -50%); }
-  100% { opacity: 0; transform: translate(5%, -50%); }
+  50% { transform: translate(12%, -50%); }
+  68% { transform: translate(30%, -50%); }
+  84% { opacity: 1; transform: translate(28%, -50%); }
+  100% { opacity: 0; transform: translate(28%, -50%); }
 }
 
 @keyframes player-loses {
   0% { opacity: 0; transform: translate(-112%, -50%); }
   8% { opacity: 1; }
   43% { transform: translate(0, -50%); }
-  51% { transform: translate(-12%, -50%); }
-  72% { opacity: 0.88; transform: translate(-45%, -45%) rotate(-5deg); }
-  100% { opacity: 0; transform: translate(-72%, -40%) rotate(-8deg); }
+  49% { transform: translate(-16%, -50%); }
+  66% { opacity: 0.82; transform: translate(-58%, -45%) rotate(-7deg); }
+  82%, 100% { opacity: 0; transform: translate(-96%, -36%) rotate(-12deg); }
 }
 
 @keyframes opponent-wins {
   0% { opacity: 0; transform: translate(112%, -50%); }
   8% { opacity: 1; }
   43% { transform: translate(0, -50%); }
-  54% { transform: translate(-7%, -50%); }
-  78% { opacity: 1; transform: translate(-5%, -50%); }
-  100% { opacity: 0; transform: translate(-5%, -50%); }
+  50% { transform: translate(-12%, -50%); }
+  68% { transform: translate(-30%, -50%); }
+  84% { opacity: 1; transform: translate(-28%, -50%); }
+  100% { opacity: 0; transform: translate(-28%, -50%); }
 }
 
 @keyframes opponent-loses {
   0% { opacity: 0; transform: translate(112%, -50%); }
   8% { opacity: 1; }
   43% { transform: translate(0, -50%); }
-  51% { transform: translate(12%, -50%); }
-  72% { opacity: 0.88; transform: translate(45%, -45%) rotate(5deg); }
-  100% { opacity: 0; transform: translate(72%, -40%) rotate(8deg); }
+  49% { transform: translate(16%, -50%); }
+  66% { opacity: 0.82; transform: translate(58%, -45%) rotate(7deg); }
+  82%, 100% { opacity: 0; transform: translate(96%, -36%) rotate(12deg); }
 }
 
 @keyframes soldier-charge-bob {
@@ -233,8 +244,10 @@
   opacity: 1;
 }
 
-.reduced-motion .player-army { transform: translate(3%, -50%); }
-.reduced-motion .opponent-army { transform: translate(-3%, -50%); }
+.reduced-motion .player-army.winner { transform: translate(22%, -50%); }
+.reduced-motion .player-army.loser { transform: translate(-42%, -43%) rotate(-8deg); }
+.reduced-motion .opponent-army.winner { transform: translate(-22%, -50%); }
+.reduced-motion .opponent-army.loser { transform: translate(42%, -43%) rotate(8deg); }
 .reduced-motion .loser { opacity: 0.32; }
 .reduced-motion .loser .soldier:nth-child(odd) { rotate: 68deg; translate: 0 9px; }
 .reduced-motion .winner { filter: drop-shadow(0 0 5px rgba(255, 226, 146, 0.8)); }
@@ -253,8 +266,10 @@
   }
 
   .army { opacity: 1; }
-  .player-army { transform: translate(3%, -50%); }
-  .opponent-army { transform: translate(-3%, -50%); }
+  .player-army.winner { transform: translate(22%, -50%); }
+  .player-army.loser { transform: translate(-42%, -43%) rotate(-8deg); }
+  .opponent-army.winner { transform: translate(-22%, -50%); }
+  .opponent-army.loser { transform: translate(42%, -43%) rotate(8deg); }
   .loser { opacity: 0.32; }
   .loser .soldier:nth-child(odd) { rotate: 68deg; translate: 0 9px; }
   .winner { filter: drop-shadow(0 0 5px rgba(255, 226, 146, 0.8)); }

@@ -1332,7 +1332,10 @@ export class GameControllerService {
     winner: PlayerType,
     version: number,
   ): Promise<void> {
-    const scene = this.battleAnimationService.request(winner);
+    const scene = this.battleAnimationService.request(
+      winner,
+      this.gameState.currentPlayerDeckColor,
+    );
     try {
       await this.sequencer.pause(
         scene ? SKIRMISH_ANIMATION_BASE_DURATION_MS : 500,

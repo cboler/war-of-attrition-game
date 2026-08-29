@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { PlayerType } from '../core/models/game-state.model';
+import { DeckColor, PlayerType } from '../core/models/game-state.model';
 import { SettingsService } from '../core/services/settings.service';
 
 export type BattleAnimationMotion = 'full' | 'reduced';
@@ -8,6 +8,8 @@ export interface BattleAnimationScene {
   readonly id: number;
   readonly winner: PlayerType;
   readonly loser: PlayerType;
+  readonly playerColor: DeckColor;
+  readonly opponentColor: DeckColor;
   readonly motion: BattleAnimationMotion;
 }
 
@@ -19,7 +21,7 @@ export class BattleAnimationService {
 
   readonly scene = this.sceneSignal.asReadonly();
 
-  request(winner: PlayerType): BattleAnimationScene | null {
+  request(winner: PlayerType, playerColor: DeckColor): BattleAnimationScene | null {
     if (
       !this.settings.autoPlayAnimations() ||
       (winner !== PlayerType.PLAYER && winner !== PlayerType.OPPONENT)
@@ -32,6 +34,8 @@ export class BattleAnimationService {
       id: ++this.sceneId,
       winner,
       loser: winner === PlayerType.PLAYER ? PlayerType.OPPONENT : PlayerType.PLAYER,
+      playerColor,
+      opponentColor: playerColor === DeckColor.RED ? DeckColor.BLACK : DeckColor.RED,
       motion: this.prefersReducedMotion() ? 'reduced' : 'full',
     };
     this.sceneSignal.set(scene);
