@@ -58,11 +58,11 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
 
-## Mermaid diagram
+## Attrition Game Flow
 
 ```mermaid
 flowchart TD
-    START["Start War of Attrition"] --> SETUP["Split standard deck by color<br/>Player: Red · Opponent: Black"]
+    START["Start Attrition"] --> SETUP["Split standard deck by color<br/>Player: Red · Opponent: Black"]
     SETUP --> SHUFFLE["Shuffle both decks independently"]
     SHUFFLE --> READY["Ready for next turn"]
 
@@ -150,70 +150,3 @@ War of Attrition has a feature-complete core and production initial passes for *
 - **Narrative Disclosure Matrix**: [`developer-docs/narrative-disclosure-matrix.md`](developer-docs/narrative-disclosure-matrix.md) — Authored twelve-War sequence, Reveal Ledger, progressive dossier plan, transitions, callbacks, sources, audits, and Sprint 1 handoff.
 - **Commander Voice Bible**: [`developer-docs/commander-voice-bible.md`](developer-docs/commander-voice-bible.md) — Final voice guidance and curated implementation-ready dialogue bank.
 - **Completed Sprints & Backlog**: [`developer-docs/future-gameplay-ideas.md`](developer-docs/future-gameplay-ideas.md) — implemented Narrative Sprint 1 and Clash Visualization V1 boundaries, release polish, and later candidates.
-
-# Cadillac / 31
-
-Another game I used to play with friends. May be available soon!
-
-```mermaid
-flowchart TD
-    START["Start Cadillac / 31"] --> SETUP["4 seats<br/>Human + 3 AI"]
-    SETUP --> LIVES["Each player starts with 4 lives"]
-    LIVES --> DEAL["Shuffle deck<br/>Deal 3 cards to each player"]
-    DEAL --> DISCARD_START["Create face-up discard pile"]
-    DISCARD_START --> TURN["Active player's turn<br/>Proceed dealer-left"]
-
-    TURN --> ALIVE{"Player still has lives?"}
-    ALIVE -- No --> NEXT
-    ALIVE -- Yes --> HAS31{"Does player already hold 31?"}
-
-    HAS31 -- Yes --> DECLARE31["Declare 31 and reveal hand"]
-    DECLARE31 --> ALL_LOSE["Every OTHER active player loses 1 life"]
-    ALL_LOSE --> ELIMINATE
-
-    HAS31 -- No --> KNOCK_OR_PLAY{"Knock or take normal turn?"}
-
-    KNOCK_OR_PLAY -- Knock --> KNOCK["Knocker forfeits draw/discard<br/>Begin final-turn cycle"]
-    KNOCK --> FINAL_NEXT["Each other active player receives<br/>exactly 1 final turn"]
-
-    KNOCK_OR_PLAY -- Normal --> DRAW_CHOICE{"Draw from deck<br/>or face-up discard?"}
-    DRAW_CHOICE -- Deck --> DRAW_DECK["Draw top deck card"]
-    DRAW_CHOICE -- Discard --> DRAW_DISCARD["Take top face-up discard"]
-
-    DRAW_DECK --> FOUR["Hand temporarily contains 4 cards"]
-    DRAW_DISCARD --> FOUR
-    FOUR --> DISCARD["Choose 1 card to discard face-up"]
-    DISCARD --> AFTER_DRAW_31{"Hand now totals 31?"}
-
-    AFTER_DRAW_31 -- Yes --> DECLARE31
-    AFTER_DRAW_31 -- No --> NEXT["Advance to next active player"]
-    NEXT --> TURN
-
-    FINAL_NEXT --> FINAL_TURN["Final player draws from deck/discard<br/>then discards 1 card"]
-    FINAL_TURN --> FINAL31{"Did final-turn player make 31?"}
-    FINAL31 -- Yes --> DECLARE31
-    FINAL31 -- No --> MORE_FINAL{"More players still owed<br/>a final turn?"}
-    MORE_FINAL -- Yes --> FINAL_NEXT
-    MORE_FINAL -- No --> REVEAL["Reveal all active hands"]
-
-    REVEAL --> SCORE["Score each hand<br/>Best same-suit total<br/>Ace 11 · Face 10 · Other 5"]
-    SCORE --> LOWEST{"Determine lowest score"}
-
-    LOWEST --> KNOCKER_TIE{"Is knocker tied<br/>for lowest?"}
-    KNOCKER_TIE -- Yes --> KNOCKER_LOSS["Knocker loses 1 life"]
-    KNOCKER_TIE -- No --> LOW_TIE{"Multiple players tied<br/>for lowest?"}
-
-    LOW_TIE -- Yes --> TIED_LOSE["All tied-lowest players lose 1 life"]
-    LOW_TIE -- No --> LOW_LOSES["Lowest player loses 1 life"]
-
-    KNOCKER_LOSS --> ELIMINATE["Remove players at 0 lives"]
-    TIED_LOSE --> ELIMINATE
-    LOW_LOSES --> ELIMINATE
-
-    ELIMINATE --> WINNER{"Only 1 player remains?"}
-    WINNER -- Yes --> GAME_WIN["Remaining player wins Cadillac"]
-    WINNER -- No --> NEW_ROUND["Collect cards<br/>Shuffle / deal next round"]
-    NEW_ROUND --> DEAL
-
-    GAME_WIN --> END["Game Over"]
-```

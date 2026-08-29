@@ -95,10 +95,6 @@ Hall of Valor data is attached directly to the active local `UserProfile` in `Au
 | **Juggernaut Citation** | Awarded when a card achieves **5 consecutive decisive appearances in the same War without suffering an intervening defeat**. At most 1 Juggernaut Citation is awarded per card per War. Transient streaks reset on defeat, War end, or match abandonment. |
 | **Notable Losses & Rivals** | When a player card becomes a casualty in an opponent victory, record the opposing decisive card responsible and increment the rival's defeat counter in `notableLosses[rivalCardId]`. |
 
-> [!TIP]
-> **Planned Ledger Metric: 1v1 Duel Casualties vs. Mass Battle Casualties**
-> Future meta-progression passes will refine `confirmedCasualties` by breaking out single-combat clash casualties (`clash` / `challenge` sources) from mass Battle casualties (`battle` source with multi-card stakes) using the existing causal data in `SettlementAttribution.source`.
-
 ### Per-War Player Ownership
 Service credit is awarded only while a card is serving in the **human player's deck** for that War. Because deck colors rotate between Wars (Player can be Red or Black), any of the 52 cards may earn player service credit during its career based on authoritative per-War deck assignment (`playerDeckColor`).
 
@@ -137,10 +133,6 @@ The Hall of Valor is integrated into the in-game **Field Manual** drawer (`Story
 
 ---
 
-## 7. Deferred Integrations Note
+## 7. Achievement Integration Boundary
 
-> [!NOTE]
-> **Hall of Valor & Commander-Specific Achievements are Intentionally Deferred**
-> Hall-of-Valor and Commander-specific achievements are deferred to a subsequent milestone.
-> 
-> To support future systems cleanly without UI scraping, `HallOfValorService` emits the public domain event `valor_citation_awarded` when notable milestones (such as Juggernaut citations) occur. Future achievement handlers can subscribe to this event bus cleanly.
+The Hall of Valor itself is fully implemented. `HallOfValorService` emits the public domain event `valor_citation_awarded` when notable milestones such as Juggernaut Citations occur, providing a clean integration seam without UI scraping. No current achievement consumes that event.

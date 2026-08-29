@@ -6,12 +6,12 @@ Welcome to the **War of Attrition Game** codebase. This file serves as the top-l
 
 For domain-specific instructions and subsystem details, refer to the cascading instruction files:
 
-- [`.github/instructions/INSTRUCTIONS.md`](.github/instructions/INSTRUCTIONS.md) - Specifications, rules, milestone plans, and requirements.
+- [`.github/instructions/INSTRUCTIONS.md`](.github/instructions/INSTRUCTIONS.md) - Specifications, current status, architecture, and requirements.
 - [`src/INSTRUCTIONS.md`](src/INSTRUCTIONS.md) - Source root standards, TypeScript rules, and Angular configuration.
 - [`src/app/INSTRUCTIONS.md`](src/app/INSTRUCTIONS.md) - Application structure, routing, and Signal-based state architecture.
 - [`src/app/core/INSTRUCTIONS.md`](src/app/core/INSTRUCTIONS.md) - Core domain logic (models, card comparison, game state, turn resolution).
 - [`src/app/services/INSTRUCTIONS.md`](src/app/services/INSTRUCTIONS.md) - High-level controller and presentation services.
-- [`src/app/settings/INSTRUCTIONS.md`](src/app/settings/INSTRUCTIONS.md) - Preferences and settings component (theme, card backings).
+- [`src/app/settings/INSTRUCTIONS.md`](src/app/settings/INSTRUCTIONS.md) - Player preferences, account actions, and card-backing customization.
 - [`src/app/shared/INSTRUCTIONS.md`](src/app/shared/INSTRUCTIONS.md) - Reusable components and dialogs.
 
 ---

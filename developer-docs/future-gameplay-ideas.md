@@ -162,7 +162,6 @@ Settings now has a dedicated, confirmed **Abandon Campaign** action separate fro
 
 - **No Retreat:** A deliberately evaluated Campaign variant in which abandonment has Campaign consequences.
 - **Escalation:** A possible variant where repeated reinforcement or deep Battle changes later Campaign pressure while preserving physical-deck rules.
-- **Hall of Valor casualty granularity:** Split one-on-one clash casualties from mass Battle casualties using existing settlement source attribution.
 - **Alternate army themes:** Purely visual suit-army reskins after the default clash language proves readable and maintainable.
 - **Head-to-head multiplayer:** Long-term only, with strict cosmetic-only progression and fair-play integrity.
 - **Licensed partnerships:** Distant and permitted only with explicit rights; no unauthorized trademarks or trade dress.

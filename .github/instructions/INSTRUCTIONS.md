@@ -9,12 +9,9 @@ This directory contains specifications, architecture guides, and development sta
 
 ### 2. Current Project Status & Architecture
 - [`current-development-status.md`](./current-development-status.md) — Authoritative live status describing the feature-complete core, implemented Narrative and Clash Visualization initial passes, and final release priorities.
-- [`implementation-guidelines.md`](./implementation-guidelines.md) — Code quality standards, Angular signal conventions, and architectural rules.
 - [`copilot-instructions.md`](./copilot-instructions.md) — Detailed agent operating guidelines, build scripts, and issue workflows.
 
-### 3. Historical Planning & Backlog
-- [`development-milestones.md`](./development-milestones.md) — Master roadmap used during early development milestones (historical reference).
-- [`progress-data.json`](./progress-data.json) — Legacy development metadata formerly used by unrouted demo components. Live status is tracked in `current-development-status.md`.
+### 3. Creative Direction & Backlog
 - [`developer-docs/narrative-canon.md`](../../developer-docs/narrative-canon.md) — Private Mont-Rouge canon, five commander dossiers, four-chapter disclosure, and narrative migration contract.
 - [`developer-docs/narrative-disclosure-matrix.md`](../../developer-docs/narrative-disclosure-matrix.md) — Authored twelve-War narrative routing, progressive dossiers, callbacks, source map, audits, and Sprint 1 handoff.
 - [`developer-docs/commander-voice-bible.md`](../../developer-docs/commander-voice-bible.md) — Canonical commander voices and curated implementation-ready dialogue records.
