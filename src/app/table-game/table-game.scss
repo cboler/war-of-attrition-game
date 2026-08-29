@@ -1244,15 +1244,40 @@ app-card-table {
   // lanes without hiding either. The mirrored rule follows the chosen hand.
   .player-callout {
     box-sizing: border-box;
-    width: 172px;
+    width: 154px;
     min-width: 0;
-    padding: 10px 11px;
+    padding: 8px 10px;
+    font-size: 0.72rem;
+  }
+  .player-callout strong {
+    font-size: 0.78rem;
+    margin-bottom: 3px;
+  }
+  .player-callout > span {
+    font-size: 0.64rem;
+    line-height: 1.2;
   }
   .hand-right .player-callout {
-    transform: translateX(calc(-50% - 50px));
+    transform: translateX(calc(-50% - 56px));
   }
   .hand-left .player-callout {
-    transform: translateX(calc(-50% + 50px));
+    transform: translateX(calc(-50% + 56px));
+  }
+  .thumb-action-region {
+    bottom: 4px;
+    gap: 4px;
+  }
+  .thumb-action {
+    min-width: 70px;
+    min-height: 42px;
+    padding-inline: 8px;
+    font-size: 0.64rem;
+    gap: 2px;
+  }
+  .thumb-action mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
   }
 }
 
