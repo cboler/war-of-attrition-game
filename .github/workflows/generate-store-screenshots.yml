@@ -36,6 +36,7 @@ jobs:
         run: npm run screenshots:store
         env:
           CI: 'true'
+          SCREENSHOT_RELEASE_TAG: ${{ inputs.release_tag }}
 
       - name: Validate Generated Screenshot Artifacts
         run: npm run screenshots:validate

@@ -64,6 +64,24 @@ function findFixtureCard(cards: readonly Card[], suit: Suit, rank: Rank): Card {
   return found;
 }
 
+function withoutFixtureCards(cards: readonly Card[], excluded: readonly Card[]): Card[] {
+  const excludedIds = new Set(excluded.map((candidate) => candidate.id));
+  return cards.filter((candidate) => !excludedIds.has(candidate.id));
+}
+
+function assertFixtureTurnHistory(gameState: GameStateService): void {
+  const turnNumber = gameState.currentStats.turnNumber;
+  const completedTurns = gameState.currentState.activeTurn
+    ? Math.max(0, turnNumber - 1)
+    : turnNumber;
+  if (gameState.currentDiscardPile.length < completedTurns) {
+    throw new Error(
+      `Screenshot fixture cannot reach turn ${turnNumber} with only ` +
+        `${gameState.currentDiscardPile.length} settled casualties`,
+    );
+  }
+}
+
 export class ScreenshotStateLoader {
   static loadScene(
     sceneId: string,
@@ -92,15 +110,23 @@ export class ScreenshotStateLoader {
 
     switch (sceneId as ScreenshotSceneId) {
       case 'clash': {
-        const playerCard = card(Suit.HEARTS, Rank.KING, 13, 'hearts-king');
-        const opponentCard = card(Suit.CLUBS, Rank.TEN, 10, 'clubs-ten');
-        const remainingPlayer = redCards.slice(0, 23);
-        const remainingOpponent = blackCards.slice(0, 21);
+        const playerCard = findFixtureCard(redCards, Suit.HEARTS, Rank.KING);
+        const opponentCard = findFixtureCard(blackCards, Suit.CLUBS, Rank.TEN);
         const casualties = [
-          card(Suit.HEARTS, Rank.FOUR, 4, 'cas-1'),
-          card(Suit.CLUBS, Rank.FIVE, 5, 'cas-2'),
-          card(Suit.DIAMONDS, Rank.SIX, 6, 'cas-3')
+          findFixtureCard(redCards, Suit.HEARTS, Rank.FOUR),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.FIVE),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.SIX),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.THREE),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.EIGHT),
         ];
+        const remainingPlayer = withoutFixtureCards(
+          redCards,
+          [playerCard, ...casualties.filter((candidate) => candidate.isRed)],
+        );
+        const remainingOpponent = withoutFixtureCards(
+          blackCards,
+          [opponentCard, ...casualties.filter((candidate) => !candidate.isRed)],
+        );
 
         context.gameState.loadFixtureState({
           playerDeckCards: remainingPlayer,
@@ -170,16 +196,25 @@ export class ScreenshotStateLoader {
       }
 
       case 'challenge': {
-        const playerCard = card(Suit.DIAMONDS, Rank.FIVE, 5, 'diamonds-five');
-        const opponentCard = card(Suit.SPADES, Rank.TEN, 10, 'spades-ten');
-        const remainingPlayer = redCards.slice(0, 21);
-        const remainingOpponent = blackCards.slice(0, 23);
+        const playerCard = findFixtureCard(redCards, Suit.DIAMONDS, Rank.FIVE);
+        const opponentCard = findFixtureCard(blackCards, Suit.SPADES, Rank.TEN);
         const casualties = [
-          card(Suit.HEARTS, Rank.THREE, 3, 'cas-1'),
-          card(Suit.CLUBS, Rank.FOUR, 4, 'cas-2'),
-          card(Suit.DIAMONDS, Rank.EIGHT, 8, 'cas-3'),
-          card(Suit.SPADES, Rank.NINE, 9, 'cas-4')
+          findFixtureCard(redCards, Suit.HEARTS, Rank.THREE),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.FOUR),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.EIGHT),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.NINE),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.SIX),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.SEVEN),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.TWO),
         ];
+        const remainingPlayer = withoutFixtureCards(
+          redCards,
+          [playerCard, ...casualties.filter((candidate) => candidate.isRed)],
+        );
+        const remainingOpponent = withoutFixtureCards(
+          blackCards,
+          [opponentCard, ...casualties.filter((candidate) => !candidate.isRed)],
+        );
 
         context.gameState.loadFixtureState({
           playerDeckCards: remainingPlayer,
@@ -262,7 +297,16 @@ export class ScreenshotStateLoader {
 
         const casualties = [
           findFixtureCard(redCards, Suit.HEARTS, Rank.TWO),
-          findFixtureCard(blackCards, Suit.CLUBS, Rank.EIGHT)
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.EIGHT),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.THREE),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.FIVE),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.SIX),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.EIGHT),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.TWO),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.FOUR),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.FIVE),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.NINE),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.QUEEN),
         ];
         const tableCardIds = new Set([
           playerClash.id,
@@ -321,24 +365,31 @@ export class ScreenshotStateLoader {
       }
 
       case 'boneyard': {
-        const remainingPlayer = redCards.slice(0, 17);
-        const remainingOpponent = blackCards.slice(0, 19);
         const casualties: Card[] = [
-          card(Suit.HEARTS, Rank.ACE, 14, 'boneyard-1'),
-          card(Suit.CLUBS, Rank.TWO, 2, 'boneyard-2'),
-          card(Suit.DIAMONDS, Rank.KING, 13, 'boneyard-3'),
-          card(Suit.SPADES, Rank.QUEEN, 12, 'boneyard-4'),
-          card(Suit.HEARTS, Rank.JACK, 11, 'boneyard-5'),
-          card(Suit.CLUBS, Rank.TEN, 10, 'boneyard-6'),
-          card(Suit.DIAMONDS, Rank.NINE, 9, 'boneyard-7'),
-          card(Suit.SPADES, Rank.EIGHT, 8, 'boneyard-8'),
-          card(Suit.HEARTS, Rank.SEVEN, 7, 'boneyard-9'),
-          card(Suit.CLUBS, Rank.SIX, 6, 'boneyard-10'),
-          card(Suit.DIAMONDS, Rank.FIVE, 5, 'boneyard-11'),
-          card(Suit.SPADES, Rank.FOUR, 4, 'boneyard-12'),
-          card(Suit.HEARTS, Rank.THREE, 3, 'boneyard-13'),
-          card(Suit.CLUBS, Rank.ACE, 14, 'boneyard-14')
+          findFixtureCard(redCards, Suit.HEARTS, Rank.ACE),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.TWO),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.KING),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.QUEEN),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.JACK),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.TEN),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.NINE),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.EIGHT),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.SEVEN),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.SIX),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.FIVE),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.FOUR),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.THREE),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.ACE),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.TWO),
         ];
+        const remainingPlayer = withoutFixtureCards(
+          redCards,
+          casualties.filter((candidate) => candidate.isRed),
+        );
+        const remainingOpponent = withoutFixtureCards(
+          blackCards,
+          casualties.filter((candidate) => !candidate.isRed),
+        );
 
         context.gameState.loadFixtureState({
           playerDeckCards: remainingPlayer,
@@ -362,8 +413,21 @@ export class ScreenshotStateLoader {
       }
 
       case 'manual': {
-        const remainingPlayer = redCards.slice(0, 24);
-        const remainingOpponent = blackCards.slice(0, 24);
+        const casualties = [
+          findFixtureCard(redCards, Suit.HEARTS, Rank.EIGHT),
+          findFixtureCard(blackCards, Suit.CLUBS, Rank.SEVEN),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.THREE),
+          findFixtureCard(blackCards, Suit.SPADES, Rank.FOUR),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.SIX),
+        ];
+        const remainingPlayer = withoutFixtureCards(
+          redCards,
+          casualties.filter((candidate) => candidate.isRed),
+        );
+        const remainingOpponent = withoutFixtureCards(
+          blackCards,
+          casualties.filter((candidate) => !candidate.isRed),
+        );
 
         context.auth.updateActiveProfileProgression(previous => ({
           ...previous,
@@ -375,10 +439,7 @@ export class ScreenshotStateLoader {
           playerDeckCards: remainingPlayer,
           opponentDeckCards: remainingOpponent,
           playerDeckColor: DeckColor.RED,
-          discardCards: [
-            card(Suit.HEARTS, Rank.EIGHT, 8, 'cas-1'),
-            card(Suit.CLUBS, Rank.SEVEN, 7, 'cas-2')
-          ],
+          discardCards: casualties,
           turnNumber: 5,
           phase: GamePhase.NORMAL,
           activeTurn: null
@@ -415,15 +476,12 @@ export class ScreenshotStateLoader {
       }
 
       case 'profile': {
-        const remainingPlayer = redCards.slice(0, 20);
-        const remainingOpponent = blackCards.slice(0, 20);
-
         context.gameState.loadFixtureState({
-          playerDeckCards: remainingPlayer,
-          opponentDeckCards: remainingOpponent,
+          playerDeckCards: redCards,
+          opponentDeckCards: blackCards,
           playerDeckColor: DeckColor.RED,
           discardCards: [],
-          turnNumber: 1,
+          turnNumber: 0,
           phase: GamePhase.NORMAL,
           activeTurn: null
         });
@@ -439,14 +497,40 @@ export class ScreenshotStateLoader {
           totalTurns: 840,
           averageTurnsPerGame: 16.8,
           totalBattles: 112,
+          mostBattlesInGame: 6,
           deepestRecursiveBattle: 3,
           mostCardsAtStake: 14,
+          mostCardsLostInBattle: 7,
+          mostOpponentCardsDefeatedInBattle: 7,
+          currentBattleWinStreak: 2,
+          bestBattleWinStreak: 7,
+          currentBattleLossStreak: 0,
+          bestBattleLossStreak: 4,
           totalChallenges: 65,
           successfulChallenges: 42,
           challengeSuccessRate: 65,
+          mostChallengesInGame: 4,
+          mostSuccessfulChallengesInGame: 3,
           acesDefeatedByTwo: 14,
           twosSavedByChallenge: 9,
           acesRescuedByChallenge: 8,
+          acesRescuingTwos: 5,
+          acesLostInBattles: 6,
+          aceAndTwoLostInSameBattle: 2,
+          juggernautOccurrences: 3,
+          juggernautCardIds: ['hearts-A', 'diamonds-K', 'hearts-2'],
+          campaignsCompleted: 16,
+          campaignsWon: 11,
+          campaignsLost: 4,
+          campaignsDrawn: 1,
+          totalCampaignDifferential: 84,
+          bestCampaignDifferential: 22,
+          worstCampaignDifferential: -12,
+          highestCardsRemainingAtVictory: 23,
+          lowestCardsRemainingAtVictory: 1,
+          winsWithOneCardRemaining: 1,
+          comebackWins: 8,
+          largestComebackDeficit: 10,
           unlockedAchievements: [
             'first_victory',
             'ace_slayer',
@@ -467,9 +551,16 @@ export class ScreenshotStateLoader {
       }
 
       case 'victory': {
-        const casualties = generateStandardDeck(DeckColor.BLACK);
+        const playerCasualties = [
+          findFixtureCard(redCards, Suit.HEARTS, Rank.TWO),
+          findFixtureCard(redCards, Suit.HEARTS, Rank.FOUR),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.SIX),
+          findFixtureCard(redCards, Suit.DIAMONDS, Rank.NINE),
+        ];
+        const remainingPlayer = withoutFixtureCards(redCards, playerCasualties);
+        const casualties = [...blackCards, ...playerCasualties];
         context.gameState.loadFixtureState({
-          playerDeckCards: redCards,
+          playerDeckCards: remainingPlayer,
           opponentDeckCards: [],
           playerDeckColor: DeckColor.RED,
           discardCards: casualties,
@@ -496,7 +587,7 @@ export class ScreenshotStateLoader {
             largestBattleLoss: 0,
             playerChallengesCount: 3,
             playerChallengesWon: 2,
-            playerCardsRemaining: 26,
+            playerCardsRemaining: remainingPlayer.length,
             opponentCardsRemaining: 0,
             isComeback: true,
             maxDeficit: 4
@@ -508,6 +599,10 @@ export class ScreenshotStateLoader {
 
       default:
         console.warn(`Unknown screenshot scene: ${sceneId}`);
+        return;
     }
+
+    context.gameState.assertCardConservation();
+    assertFixtureTurnHistory(context.gameState);
   }
 }

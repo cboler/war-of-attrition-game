@@ -53,6 +53,7 @@ export const MODEST_COMEBACK_DEFICIT_THRESHOLD = 3;
 export const SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD = 15;
 export const SKIRMISH_ANIMATION_BASE_DURATION_MS = 800;
 export const SKIRMISH_ANIMATION_FAST_MIN_DURATION_MS = 720;
+const FIRST_PLAY_CONTEXTUAL_DECK_THRESHOLDS = [18, 10] as const;
 
 export enum PresentationState {
   READY = 'ready',
@@ -204,6 +205,7 @@ export class GameControllerService {
   private maxDeficitExperienced = 0;
   private abandonmentRecorded = false;
   private currentWarId = '';
+  private readonly reachedContextualDeckThresholds = new Set<number>();
   private lastMeaningfulDecision:
     | 'draw'
     | 'challenge'
@@ -433,6 +435,8 @@ export class GameControllerService {
       clearTimeout(this.reactionTimeout);
       this.reactionTimeout = null;
     }
+    this.reactions.clearUsedDialogue();
+    this.reachedContextualDeckThresholds.clear();
     this.gameState.initializeGame();
     this.phase.set(PresentationState.READY);
     this.gameMessage.set('Your deck is ready.');
@@ -1420,10 +1424,34 @@ export class GameControllerService {
         this.speakReaction(contextReaction);
       }
     }
+    this.speakFirstPlayContextualBeat();
     if (releaseBattleAchievements) {
       this.eventBus.emit({ type: 'battle_presentation_complete', turnNumber: this.turnsPlayed });
     }
     this.sequencer.end(version);
+  }
+
+  private speakFirstPlayContextualBeat(): void {
+    const mode = this.campaignProgression.activeCampaignMode();
+    if (this.campaignProgression.isChapterCompleted(mode)) return;
+
+    // Do not replace a still-readable authored tactical or framing beat. The
+    // milestone remains eligible at the next stable READY settlement.
+    if (this.reaction()?.authored) return;
+
+    const smallerArmy = Math.min(
+      this.gameState.playerCardCount(),
+      this.gameState.opponentCardCount(),
+    );
+    const threshold = FIRST_PLAY_CONTEXTUAL_DECK_THRESHOLDS.find(
+      candidate =>
+        smallerArmy <= candidate && !this.reachedContextualDeckThresholds.has(candidate),
+    );
+    if (threshold === undefined) return;
+
+    this.reachedContextualDeckThresholds.add(threshold);
+    const contextual = this.reactions.forContextual(this.opponentCommander().id);
+    if (contextual) this.speakReaction(contextual);
   }
 
   /**

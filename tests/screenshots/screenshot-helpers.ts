@@ -50,6 +50,14 @@ export async function loadScreenshotScene(page: Page, scene: string): Promise<vo
   // Wait for Angular app container to be ready
   await expect(page.locator('app-table-game')).toBeVisible({ timeout: 15_000 });
 
+  const angularDevMode = await page.evaluate(() =>
+    Boolean(Reflect.get(globalThis, 'ngDevMode'))
+  );
+  expect(
+    angularDevMode,
+    'Store screenshots must render the production Angular configuration'
+  ).toBe(false);
+
   // Wait for web fonts to finish loading for crisp rendering
   await page.evaluate(async () => {
     if (document.fonts?.ready) {
@@ -70,6 +78,14 @@ export async function captureStoreScreenshot(
   for (const selector of target.expectedSelectors) {
     const element = page.locator(selector).first();
     await expect(element).toBeVisible({ timeout: 10_000 });
+  }
+
+  // Locator readiness checks can scroll a low action into view. Store captures
+  // must always represent the application's canonical top-of-viewport frame.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  for (const selector of target.expectedSelectors) {
+    await expect(page.locator(selector).first()).toBeInViewport();
   }
 
   const categoryDir = path.join(baseOutputDir, target.deviceCategory);
@@ -99,11 +115,14 @@ export function writeManifestAndReadme(outputDir: string): void {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
+  const releaseTag = process.env['SCREENSHOT_RELEASE_TAG']?.trim() || null;
+
   // 1. Generate manifest.json
   const manifestPath = path.join(outputDir, 'manifest.json');
   const manifestData = {
     version: '1.0.0',
     generatedAt: new Date().toISOString(),
+    releaseTag,
     totalScreenshots: SCREENSHOT_TARGETS.length,
     targets: SCREENSHOT_TARGETS.map((t) => ({
       id: t.id,
@@ -141,7 +160,8 @@ export function writeManifestAndReadme(outputDir: string): void {
 
 Automated, deterministic Google Play Store listing screenshot package for **War of Attrition**.
 
-Generated at: \`${new Date().toISOString()}\`  
+Generated at: \`${new Date().toISOString()}\`<br>
+Release label: **${releaseTag ?? 'not supplied'}**<br>
 Total Screenshots: **${SCREENSHOT_TARGETS.length}**
 
 ---

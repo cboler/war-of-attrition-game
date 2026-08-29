@@ -590,6 +590,10 @@ app-card-table {
     order: 1;
     flex: 0 1 390px;
     width: min(390px, 42vw);
+    // The absolutely positioned 108px-wide cards are ~151px tall. Keeping
+    // their containing block at the old 94px minimum let both rows overflow
+    // beneath the commander/deck rails in the 1280x800 store layout.
+    min-height: 152px;
   }
 
   .stakes.in-battle .active-card-shell {

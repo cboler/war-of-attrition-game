@@ -9,6 +9,7 @@ import { AuthService } from '../core/services/auth.service';
 describe('TableReactionService', () => {
   let randomValues: number[];
   let service: TableReactionService;
+  let progression: CampaignProgressionService;
 
   beforeEach(() => {
     localStorage.clear();
@@ -25,6 +26,7 @@ describe('TableReactionService', () => {
       ]
     });
     service = TestBed.inject(TableReactionService);
+    progression = TestBed.inject(CampaignProgressionService);
   });
 
   afterEach(() => {
@@ -32,6 +34,13 @@ describe('TableReactionService', () => {
   });
 
   const card = (rank: Rank) => new CardImpl(Suit.HEARTS, rank);
+
+  const resolveCurrentWar = (warId: string) => progression.recordResolvedWar({
+    warId,
+    outcome: GameOutcome.PLAYER_WIN,
+    playerCardsRemaining: 8,
+    opponentCardsRemaining: 0,
+  });
 
   it('keeps silence as the normal response to an ordinary Battle loss', () => {
     expect(service.forBattleLoss(PlayerType.PLAYER, [card(Rank.SEVEN), card(Rank.FOUR)]))
@@ -142,6 +151,49 @@ describe('TableReactionService', () => {
   });
 
   describe('Commander Dialogue Personality Customization', () => {
+    it('delivers an exact first-play tactical record despite replay-level random silence', () => {
+      progression.selectCampaignOrders('standard');
+      resolveCurrentWar('dense-first-play-1');
+      resolveCurrentWar('dense-first-play-2');
+      expect(progression.campaignWarIndex()).toBe(3);
+
+      randomValues = [0.99];
+      const reaction = service.forBattleLoss(
+        PlayerType.OPPONENT,
+        [card(Rank.ACE)],
+        {},
+        'attritionist',
+      );
+
+      expect(reaction?.message).toBe(
+        'A great head falls. Somewhere, a very small guest remains uninvited.',
+      );
+      expect(reaction?.authored).toBeTrue();
+    });
+
+    it('keeps completed-chapter replay reactions sparse and does not consume a line on silence', () => {
+      progression.selectCampaignOrders('standard');
+      resolveCurrentWar('sparse-replay-1');
+      resolveCurrentWar('sparse-replay-2');
+      resolveCurrentWar('sparse-replay-3');
+      expect(progression.isChapterCompleted('standard')).toBeTrue();
+      expect(progression.selectCampaignOrders('standard')).toBeTrue();
+
+      const specialClash = {
+        playerCard: card(Rank.TWO),
+        opponentCard: card(Rank.ACE),
+        winner: PlayerType.PLAYER,
+        specialRule: true,
+      };
+      randomValues = [0.99];
+      expect(service.forClash(specialClash, 'quartermaster')).toBeNull();
+
+      randomValues = [0.1];
+      expect(service.forClash(specialClash, 'quartermaster')?.message).toBe(
+        'A card without pedigree fells an Ace. Barbaric. Lawful. I dislike it twice.',
+      );
+    });
+
     it('uses Gambler-specific fallback lines when Gambler loses to 2 vs Ace', () => {
       randomValues = [0.1, 0];
       const reaction = service.forClash({

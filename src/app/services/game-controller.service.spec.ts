@@ -21,6 +21,7 @@ import {
 import { StoryBookService } from './story-book.service';
 import { BattleAnimationService } from './battle-animation.service';
 import { PresentationSequencerService } from './presentation-sequencer.service';
+import { TableReactionService } from './table-reaction.service';
 
 describe('GameControllerService presentation integration', () => {
   let controller: GameControllerService;
@@ -1043,6 +1044,50 @@ describe('GameControllerService presentation integration', () => {
       expect(controller.tableReaction()?.category).toBe('introduction');
       expect(controller.tableReaction()?.speaker).toBe(PlayerType.OPPONENT);
       expect(controller.tableReaction()?.message).toContain('Mont-Rouge');
+    });
+
+    it('resets authored dialogue eligibility when the current War is restarted', fakeAsync(() => {
+      progression.selectCampaignOrders('standard');
+      controller.startNewGame();
+      const firstIntroduction = controller.tableReaction()?.message;
+      expect(firstIntroduction).toContain('Mont-Rouge');
+
+      controller.startNewGame();
+      expect(controller.tableReaction()?.message).toBe(firstIntroduction);
+      flush();
+    }));
+
+    it('delivers each first-play contextual threshold once without replacing authored speech', () => {
+      const reactions = TestBed.inject(TableReactionService);
+      const contextual = spyOn(reactions, 'forContextual').and.callThrough();
+      const playerCards = gameState.currentPlayerDeck.toArray();
+      const opponentCards = gameState.currentOpponentDeck.toArray();
+      const internal = controller as unknown as {
+        speakFirstPlayContextualBeat(): void;
+        reaction: { set(value: null): void };
+      };
+
+      gameState.loadFixtureState({
+        playerDeckCards: playerCards.slice(0, 18),
+        opponentDeckCards: opponentCards,
+      });
+      internal.speakFirstPlayContextualBeat();
+      expect(contextual).toHaveBeenCalledTimes(1);
+      expect(controller.tableReaction()?.category).toBe('contextual');
+
+      // The still-readable authored line protects the seam, and the same
+      // threshold cannot fire twice after its hold expires.
+      internal.speakFirstPlayContextualBeat();
+      internal.reaction.set(null);
+      internal.speakFirstPlayContextualBeat();
+      expect(contextual).toHaveBeenCalledTimes(1);
+
+      gameState.loadFixtureState({
+        playerDeckCards: playerCards.slice(0, 10),
+        opponentDeckCards: opponentCards,
+      });
+      internal.speakFirstPlayContextualBeat();
+      expect(contextual).toHaveBeenCalledTimes(2);
     });
 
     it('surfaces guaranteed context line after Turn 1 settles', fakeAsync(() => {

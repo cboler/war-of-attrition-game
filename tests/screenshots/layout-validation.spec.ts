@@ -92,6 +92,21 @@ test.describe('Table first-render layout and message composition', () => {
           ).toHaveCount(3);
           await expect(page.locator('.player-layers button.battle-card-shell')).toHaveCount(0);
 
+          const topRail = await bounds(page, '.rail-top');
+          const bottomRail = await bounds(page, '.rail-bottom');
+          const upperCards = await opponentTargets.all();
+          const lowerCards = await playerProxies.all();
+          for (const card of upperCards) {
+            const rect = await card.boundingBox();
+            expect(rect!.y, 'Opponent Battle targets must clear the commander rail')
+              .toBeGreaterThanOrEqual(topRail!.bottom - 1);
+          }
+          for (const card of lowerCards) {
+            const rect = await card.boundingBox();
+            expect(rect!.y + rect!.height, 'Player Battle cards must clear the player rail')
+              .toBeLessThanOrEqual(bottomRail!.top + 1);
+          }
+
           const upper = opponentTargets.nth(targetIndex);
           const lower = playerProxies.nth(targetIndex);
           const activeLaneCards = page.locator(
@@ -171,17 +186,26 @@ test.describe('Table first-render layout and message composition', () => {
     test.skip(testInfo.project.name !== 'store-phone');
     await page.setViewportSize({ width: 360, height: 740 });
     await loadScreenshotScene(page, 'challenge');
+    expect(await page.evaluate(() => window.scrollY), 'Challenge scene must not shift the viewport')
+      .toBe(0);
 
     const callout = await bounds(page, '.player-callout');
     const actions = await bounds(page, '.thumb-action-region');
     const announcement = await bounds(page, '.announcement');
     const playerCard = await bounds(page, '.player-stake > .active-card-shell');
     const opponentCard = await bounds(page, '.opponent-stake > .active-card-shell');
+    const playerRail = await bounds(page, '.rail-bottom');
+    const playerIdentity = await bounds(page, '.rail-bottom app-player-seat .identity');
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
 
     expect(intersects(callout, actions)).toBeFalsy();
     expect(intersects(announcement, callout)).toBeFalsy();
     expect(intersects(actions, playerCard), 'Challenge controls should not obscure the player card').toBeFalsy();
     expect(intersects(actions, opponentCard), 'Challenge controls should not obscure the opponent card').toBeFalsy();
+    expect(playerIdentity!.top, 'Player identity must remain inside its bottom rail')
+      .toBeGreaterThanOrEqual(playerRail!.top - 1);
+    expect(playerIdentity!.bottom, 'Player identity must remain inside the phone viewport')
+      .toBeLessThanOrEqual(viewportHeight);
   });
 
   test('visually stages all six Battle commitments in the Field Manual drill', async ({

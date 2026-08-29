@@ -12,6 +12,9 @@
     "move-build-files": "node scripts/move-build-files.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "prescreenshots:store": "npm run screenshots:clean",
+    "screenshots:clean": "node scripts/clean-screenshots.js",
+    "screenshots:serve": "node scripts/set-env.js && ng serve --configuration production --port 4200",
     "screenshots:store": "playwright test",
     "screenshots:validate": "node scripts/validate-screenshots.js"
   },

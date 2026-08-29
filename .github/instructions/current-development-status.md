@@ -9,7 +9,7 @@ The project is no longer in broad feature discovery. Both substantial creative s
 1. **Progressive Narrative Unveiling** — named commanders, four-chapter access and disclosure, mode-aware characterization, compact framing, lore fragments, source links, persistence/migration, and tests.
 2. **Clash Visualizations / Battlefield Animations** — every decisive comparison summons readable opposing infantry while cards remain authoritative; the scoped portrait, rule-demo, layout, and callout closure work is complete.
 
-The next planned engineering task is a separate final simplification, cleanup, dependency/bundle review, and release-AAB pass. Physical-device breadth and store review remain release validation. Rank-specific units and richer battlefield ideas remain deliberate later refinements.
+The final simplification and release-candidate audit is complete. Physical-device breadth, signed AAB verification, and Play Console review remain release validation. Rank-specific units and richer battlefield ideas remain deliberate later refinements.
 
 Authoritative creative references:
 
@@ -47,7 +47,7 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 - The V1 scene replaces each comparison's existing result hold: Fast is floored at about 0.72 seconds for readability, Normal remains about 0.92 seconds, Slow remains about 1.2 seconds, Continue collapses the active beat, and no extra resolution state is introduced.
 - The existing global **Auto-play Animations** preference is the only toggle. Disabling it suppresses scene creation; a retired `battleAnimationsEnabled` storage key is ignored safely, and `prefers-reduced-motion` receives a short static winner/loser cue with no animated travel.
 - Routine deal/reveal/comparison/settlement status still updates the accessible current status but is not added to the prominent top-of-table message stack. Battles, reinforcements, milestones, and other exceptional events retain that channel.
-- Authored reactions carry semantic priority: they remain visible for 7.5 seconds and cannot be replaced by procedural quips. Procedural messages are dropped rather than queued, so they cannot create a backlog ahead of narrative.
+- Authored reactions carry semantic priority: they remain visible for 7.5 seconds and cannot be replaced by procedural quips. Eligible encounter-specific `first_play` tactical lines bypass generic reaction randomness, while replay, `any`, evergreen, and procedural chatter retain sparse probabilities. Procedural messages are dropped rather than queued, so they cannot create a backlog ahead of narrative.
 - `RuleDemoComponent` provides isolated, frame-based, replayable and skippable rules drills with reduced-motion support. Its Battle drill visibly stages exactly three committed face-down cards per side before revealing the selected champions.
 - The active opponent has a compact decorative commander portrait. Explicit presentation metadata selects Calm, Smug, Determined, Angry, Sad, or Surprised for meaningful reactions; Calm is the default and returns after the reaction expires.
 
@@ -61,7 +61,7 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 
 ### Campaigns and Alternate Rules
 
-- Three-War Campaign progression, history, signed margins, token rewards, one-commander-per-Campaign assignment, and post-Campaign commander rotation are implemented. That commander scope is a known Sprint 1 mismatch with the authored per-War narrative schedule.
+- Three-War Campaign progression, history, signed margins, token rewards, canonical per-War commander schedules, and randomized post-story replay schedules are implemented.
 - The Campaign Orders modal is implemented and opens before War 1 when orders are unselected.
 - Settings exposes separate confirmed **Restart War**, **Abandon War**, and **Abandon Campaign** actions. Campaign abandonment creates a fresh Campaign without completion rewards while preserving earned history, achievements, chapters, dossiers, cosmetics, tokens, and preferences.
 - All four mechanical modes are implemented:
@@ -93,7 +93,7 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 
 - Android TWA wrapper targeting the current project Android configuration.
 - GitHub Pages deployment, Android bundle, secret scanning, and deterministic Playwright store-screenshot workflows.
-- Store screenshot matrix for phone, 7-inch tablet, and 10-inch tablet targets with validation tooling.
+- Store screenshot matrix for phone, 7-inch tablet, and 10-inch tablet targets with production-configuration serving, deterministic real-UI fixtures, exact artifact-inventory validation, and physical-card/turn-history assertions.
 
 ---
 
@@ -126,6 +126,7 @@ Sprint 1 is fully complete, validated, and tested end-to-end:
 - **Speech Bubble Visibility & Delivery Engine**:
   - Live opponent speech rendered in top rail with high-contrast military styling and guaranteed layering (`z-index: 10`).
   - Intro speech triggered on match start and after Orders modal closes; guaranteed Turn 1 context delivered when Turn 1 settles.
+  - During an incomplete chapter, encounter-specific `first_play` tactical lines are reliable when their exact public event occurs, and contextual lines receive at most two stable READY-state delivery opportunities as the smaller public army reaches 18 and 10 cards. Existing authored speech is never replaced, IDs remain deduplicated within the War, and replay/completed-story chatter stays sparse.
   - Procedural speech auto-dismisses after 5.5 seconds; authored reactions receive 7.5 seconds and remain protected from premature turn-draw wiping.
 - **Post-Story Randomized Replay Scheduling**:
   - Canonical first playthrough remains 100% scripted across Chapters I–IV.
@@ -134,9 +135,9 @@ Sprint 1 is fully complete, validated, and tested end-to-end:
   - Campaign Orders modal indicates `"Replay Command: Opposition randomized"` for unlocked replay chapters.
 - **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-01` through `TR-C4-04`), resolution quotes, and dynamic next-war action buttons.
 - **Spoiler Firewall & Canonical Resolution**: Strict information boundaries across all four chapters; private Mont-Rouge mechanism (mouse/hay) safely protected in author knowledge; Chapter IV completes with the canonical resolution (`Matthias: “I never proved it.”` / `Marcel: “Non. Neither did I.”`) without an extraneous Bastien punchline.
-- **Comprehensive Test Suite**: Full unit and integration suite green at **567 / 567 tests passing**, including narrative traversal/firewall coverage, authoritative achievement settlement/tie cases, portrait-expression lifecycle, Campaign abandonment preservation, rule-demo staging, viewport measurement, and table/message-hierarchy presentation tests.
-- **Browser and Visual Validation**: Full Playwright matrix green at **18 passed** with 36 intentional cross-project skips; all 11 store screenshots validate at their required phone, 7-inch tablet, and 10-inch tablet resolutions.
-- **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json`.
+- **Comprehensive Test Suite**: Full unit and integration suite green at **538 / 538 tests passing**, including narrative traversal/firewall and first-play/replay delivery-policy coverage, authoritative achievement settlement/tie cases, portrait-expression lifecycle, Campaign abandonment preservation, rule-demo staging, viewport measurement, and table/message-hierarchy presentation tests.
+- **Browser and Visual Validation**: Full production-configured Playwright matrix green at **19 passed** with 38 intentional cross-project skips; all 11 store screenshots validate at their required phone, 7-inch tablet, and 10-inch tablet resolutions and were visually reviewed in the release-candidate pass.
+- **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json` (908.18 kB raw / 214.96 kB estimated initial transfer in the release-candidate build).
 
 Next steps for future work:
 - Final release polish and device validation; richer battlefield variants remain optional later work.
@@ -177,16 +178,15 @@ Intentionally deferred: rank-specific classes, suit-specific armies, magnitude s
 
 ---
 
-## 6. Separate Final Cleanup / Release Pass
+## 6. Final Cleanup / Release Pass
 
-The creative sprint scopes are closed. The next pass may address:
+The bounded cleanup and release-candidate audit is complete. Retired route-unreachable table code and its isolated static milestone data were removed without touching active persistence. Production assets and the deterministic store screenshot package are current; advertising and monetization remain absent, with no ad SDK, ad configuration, ad runtime, payment flow, or purchase gate.
+
+Remaining release validation is external or device-specific:
 
 1. Google Play closed-testing feedback, crash review, and store compliance.
 2. Physical-device validation across compact phones, foldables, and tablets.
-3. Broad code simplification, dead-code/dependency review, asset/bundle optimization, and final release-AAB preparation.
-4. Remaining physical-device-specific compatibility observations not reproducible in automated Chromium checks.
-5. Store screenshots, feature graphics, listing copy, and final accessibility smoke checks.
-6. Advertising and monetization are absent: there is no ad SDK, ad configuration, ad runtime, payment flow, or purchase gate.
+3. Signed AAB verification with the owner-controlled release keystore and Play Console configuration.
 
 ---
 

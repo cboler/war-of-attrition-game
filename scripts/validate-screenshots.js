@@ -29,6 +29,18 @@ const EXPECTED_FILES = [
   { relativePath: 'tablet-10in/03-field-manual.png', expectedWidth: 2560, expectedHeight: 1600 },
 ];
 
+function listPngFiles(directory, relativeDirectory = '') {
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const relativePath = path.join(relativeDirectory, entry.name);
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return listPngFiles(fullPath, relativePath);
+    return entry.isFile() && path.extname(entry.name).toLowerCase() === '.png'
+      ? [relativePath.split(path.sep).join('/')]
+      : [];
+  });
+}
+
 function readPngDimensions(filePath) {
   const buffer = fs.readFileSync(filePath);
   
@@ -101,6 +113,18 @@ function validate() {
 
   // 3. Verify each image file
   console.log('\nVerifying Screenshot Images:');
+  const expectedPngPaths = EXPECTED_FILES.map((item) => item.relativePath).sort();
+  const actualPngPaths = listPngFiles(BASE_DIR).sort();
+  const unexpectedPngs = actualPngPaths.filter((item) => !expectedPngPaths.includes(item));
+  if (actualPngPaths.length !== expectedPngPaths.length || unexpectedPngs.length > 0) {
+    console.error(
+      `âŒ PNG inventory mismatch: expected ${expectedPngPaths.length}, found ${actualPngPaths.length}`
+    );
+    if (unexpectedPngs.length > 0) {
+      console.error(`âŒ Unexpected screenshot(s): ${unexpectedPngs.join(', ')}`);
+    }
+    errors++;
+  }
   for (const item of EXPECTED_FILES) {
     const fullPath = path.join(BASE_DIR, item.relativePath);
     if (!fs.existsSync(fullPath)) {

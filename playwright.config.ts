@@ -61,9 +61,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npx ng serve --port 4200',
+    command: 'npm run screenshots:serve',
     url: 'http://localhost:4200',
-    reuseExistingServer: !process.env['CI'],
+    // Store captures must never silently attach to a developer's existing
+    // development server; fail on a busy port instead of mislabelling a dev build.
+    reuseExistingServer: false,
     timeout: 120_000,
     stdout: 'pipe',
     stderr: 'pipe',

@@ -9,7 +9,7 @@ import {
 import { TableReactionCategory } from '../core/models/game-events.model';
 import { GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { CommanderExpression } from '../core/models/commander-art.model';
-import { NarrativeGameplayEvent } from '../core/models/narrative.model';
+import { AuthoredDialogueRecord, NarrativeGameplayEvent } from '../core/models/narrative.model';
 import { CampaignWarIndex } from '../core/models/campaign-chapter.model';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { NarrativeResolverService } from '../narrative/narrative-resolver.service';
@@ -109,7 +109,7 @@ export class TableReactionService {
 
     if (context.challengerWon) {
       let variants: readonly string[];
-      let authored: string | null = null;
+      let authored: AuthoredDialogueRecord | null = null;
       if (speaker === PlayerType.OPPONENT) {
         authored = this.getAuthoredLine(commander.id, 'rescue');
         variants = commander.dialogue.rescue;
@@ -163,13 +163,9 @@ export class TableReactionService {
       return null;
     }
 
-    // Even earned reactions should be exceptional; silence is the default.
-    const chance = largeLoss || decisiveRampage || deepBattle ? 0.22 : 0.16;
-    if (this.random() >= chance) return null;
-
     const commander = this.resolveCommander(commanderInput);
     let variants: readonly string[];
-    let authored: string | null = null;
+    let authored: AuthoredDialogueRecord | null = null;
 
     if (loser === PlayerType.OPPONENT) {
       if (lostAce) {
@@ -228,7 +224,14 @@ export class TableReactionService {
       }
     }
 
-    const message = authored ?? variants[Math.floor(this.random() * variants.length)];
+    // Replay and procedural Battle chatter stays exceptional. An exact
+    // first-play record is authored campaign delivery, so it must not be
+    // discarded by the generic reaction probability.
+    const chance = largeLoss || decisiveRampage || deepBattle ? 0.22 : 0.16;
+    if (!this.isReliableFirstPlay(authored) && this.random() >= chance) return null;
+
+    if (authored) this.usedDialogueIds.add(authored.id);
+    const message = authored?.text ?? variants[Math.floor(this.random() * variants.length)];
     return {
       speaker: loser,
       message,
@@ -249,10 +252,11 @@ export class TableReactionService {
     const commander = this.resolveCommander(commanderInput);
     const line = this.getAuthoredLine(commander.id, 'introduction');
     if (!line) return null;
+    this.usedDialogueIds.add(line.id);
     return {
       speaker: PlayerType.OPPONENT,
       category: 'introduction',
-      message: line,
+      message: line.text,
       authored: true,
       expression: 'calm',
     };
@@ -262,10 +266,11 @@ export class TableReactionService {
     const commander = this.resolveCommander(commanderInput);
     const line = this.getAuthoredLine(commander.id, 'context');
     if (!line) return null;
+    this.usedDialogueIds.add(line.id);
     return {
       speaker: PlayerType.OPPONENT,
       category: 'introduction',
-      message: line,
+      message: line.text,
       authored: true,
       expression: 'calm',
     };
@@ -278,10 +283,11 @@ export class TableReactionService {
     const commander = this.resolveCommander(commanderInput);
     const line = this.getAuthoredLine(commander.id, 'result');
     if (!line) return null;
+    this.usedDialogueIds.add(line.id);
     return {
       speaker: PlayerType.OPPONENT,
       category: 'result',
-      message: line,
+      message: line.text,
       authored: true,
       expression:
         outcome === GameOutcome.OPPONENT_WIN
@@ -301,10 +307,11 @@ export class TableReactionService {
     const commander = this.resolveCommander(commanderInput);
     const line = this.getAuthoredLine(commander.id, 'resolution');
     if (!line) return null;
+    this.usedDialogueIds.add(line.id);
     return {
       speaker: PlayerType.OPPONENT,
       category: 'result',
-      message: line,
+      message: line.text,
       authored: true,
       expression:
         outcome === GameOutcome.OPPONENT_WIN
@@ -335,10 +342,11 @@ export class TableReactionService {
     const commander = this.resolveCommander(commanderInput);
     const authored = this.getAuthoredLine(commander.id, 'contextual');
     if (!authored) return null;
+    this.usedDialogueIds.add(authored.id);
     return {
       speaker: PlayerType.OPPONENT,
       category: 'contextual',
-      message: authored,
+      message: authored.text,
       authored: true,
       expression: 'calm',
     };
@@ -354,7 +362,7 @@ export class TableReactionService {
     commanderId: OpponentCommanderId,
     event: NarrativeGameplayEvent,
     warIndexOverride?: CampaignWarIndex
-  ): string | null {
+  ): AuthoredDialogueRecord | null {
     if (!this.narrativeResolver) return null;
 
     const mode = this.progression?.activeCampaignMode() ?? 'standard';
@@ -385,11 +393,7 @@ export class TableReactionService {
       excludeIds: Array.from(this.usedDialogueIds)
     });
 
-    if (authored) {
-      this.usedDialogueIds.add(authored.id);
-      return authored.text;
-    }
-    return null;
+    return authored;
   }
 
   private pick(
@@ -397,12 +401,13 @@ export class TableReactionService {
     speaker: PlayerType,
     category: TableReaction['category'],
     variants: readonly string[],
-    authoredOverride: string | null = null,
+    authoredOverride: AuthoredDialogueRecord | null = null,
     expression: CommanderExpression = 'calm',
   ): TableReaction | null {
-    if (this.random() >= chance) return null;
+    if (!this.isReliableFirstPlay(authoredOverride) && this.random() >= chance) return null;
+    if (authoredOverride) this.usedDialogueIds.add(authoredOverride.id);
     const message =
-      authoredOverride ?? variants[Math.floor(this.random() * variants.length)];
+      authoredOverride?.text ?? variants[Math.floor(this.random() * variants.length)];
     return {
       speaker,
       category,
@@ -410,6 +415,10 @@ export class TableReactionService {
       authored: authoredOverride !== null,
       expression,
     };
+  }
+
+  private isReliableFirstPlay(record: AuthoredDialogueRecord | null): boolean {
+    return record?.mode !== undefined && record.availability === 'first_play';
   }
 
   private resolveCommander(commander?: OpponentCommander | OpponentCommanderId): OpponentCommander {
