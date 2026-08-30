@@ -140,7 +140,7 @@
                         [attr.aria-expanded]="isComparisonExpanded(entry.id)"
                         [attr.aria-controls]="'combat-math-' + entry.id"
                         [attr.aria-label]="'Combat math explanation for turn ' + entry.turnNumber"
-                        (click)="toggleComparisonExpanded(entry.id)">
+                        (click)="toggleComparisonExpanded(entry)">
                         <mat-icon aria-hidden="true">calculate</mat-icon>
                         <span class="trigger-label">Combat Math</span>
                         <span class="trigger-formula" aria-hidden="true">{{ comp.formulaText }}</span>

@@ -185,9 +185,21 @@ describe('GameTelemetryService', () => {
     expect(service.currentWarContext()?.warId).toBe('next-war');
   });
 
-  it('defers a mid-War consent grant until the next canonical War start', () => {
-    consent.setAnalyticsConsent('denied');
-    service.beginWar({ warId: 'denied-war', playerDeckColor: DeckColor.RED });
+  it('does not replay a completed first War when consent is granted afterward', () => {
+    consent.clearAnalyticsConsent();
+    service.beginWar({ warId: 'pre-consent-war', playerDeckColor: DeckColor.RED });
+    eventBus.emit({
+      type: 'game_resolved',
+      turnNumber: 8,
+      outcome: GameOutcome.PLAYER_WIN,
+      turns: 8,
+      playerCardsRemaining: 4,
+      opponentCardsRemaining: 0,
+      maxDeficitExperienced: 0,
+      isComeback: false,
+      battlesCount: 1,
+      playerReinforcementsSent: 0,
+    });
     consent.setAnalyticsConsent('granted');
     eventBus.emit({ type: 'turn_started', turnNumber: 1 });
     progression.recordResolvedWar(war('uncollected-1', GameOutcome.PLAYER_WIN, 4, 0));

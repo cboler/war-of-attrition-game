@@ -29,7 +29,7 @@ import { MatDividerModule } from '@angular/material/divider';
         </mat-card-header>
 
         <mat-card-content class="legal-content">
-          <div class="last-updated">Last Updated: August 28, 2026</div>
+          <div class="last-updated">Last Updated: August 29, 2026</div>
 
           <section>
             <h3>1. Overview & Developer Identity</h3>
@@ -47,7 +47,7 @@ import { MatDividerModule } from '@angular/material/divider';
               <li>
                 <strong>Local Game Profile & Career Statistics:</strong> We store player display names, match history, win/loss records, 
                 challenges, battle layers reached, Campaign progress, cosmetic tokens, and unlocked achievements locally in your browser/device storage.
-                Profile names, email addresses, Google account IDs, and avatar URLs are not included in gameplay analytics.
+                Profile names, email addresses, Google account IDs, and avatar URLs are not included in analytics records.
               </li>
               <li>
                 <strong>Optional Google Sign-In:</strong> If you choose to sign in with Google, we receive basic public profile information 
@@ -63,11 +63,12 @@ import { MatDividerModule } from '@angular/material/divider';
                 are saved exclusively in local storage.
               </li>
               <li>
-                <strong>Optional Anonymized Gameplay Statistics:</strong> When a release has Google Analytics configured and you grant analytics consent,
+                <strong>Optional Anonymized Gameplay & App-Usage Statistics:</strong> When a release has Google Analytics configured and you explicitly grant analytics consent,
                 the game sends anonymized gameplay statistics, including War outcomes and abandonment, turn and deck totals, Battle depth and casualties,
-                reinforcement decisions, public card ranks, suits, and comparisons, Campaign summaries, and cosmetic unlocks. These records use random,
-                game-scoped War/Campaign identifiers, event sequence numbers, and version fields; they do not include your name, email address, profile ID,
-                Google account ID, or avatar URL.
+                reinforcement decisions, public card ranks, suits, and comparisons, Campaign summaries, and cosmetic unlocks. It also sends semantic visits
+                to major areas such as the Chronicle, Field Manual, Rules, Profile, Achievements, and Settings, with coarse visible-duration ranges and ephemeral
+                in-memory ordering values. These records use random game- or app-session-scoped identifiers, event sequence numbers, and version fields; they do
+                not include your name, email address, profile ID, Google account ID, avatar URL, story or dossier text, hidden card identities, or user-entered values.
               </li>
             </ul>
           </section>
@@ -78,7 +79,7 @@ import { MatDividerModule } from '@angular/material/divider';
             <ul>
               <li><strong>Google Identity Services:</strong> Authentication and profile display (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>).</li>
               <li><strong>Google Play Games Services:</strong> Leaderboards and achievement synchronization on Android (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Play Terms</a>).</li>
-              <li><strong>Google Analytics:</strong> Consent-gated anonymized gameplay statistics when configured. Google may process online identifiers and technical information under its terms (<a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses partner data</a>).</li>
+              <li><strong>Google Analytics:</strong> Consent-gated anonymized gameplay and app-usage statistics when configured. Google may process online identifiers and technical information under its terms (<a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses partner data</a>).</li>
             </ul>
           </section>
 

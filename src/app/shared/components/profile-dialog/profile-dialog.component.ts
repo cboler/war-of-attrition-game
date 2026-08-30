@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   MAT_DIALOG_DATA,
@@ -22,6 +30,7 @@ import { GameControllerService } from '../../../services/game-controller.service
 import { TelemetryConsentService } from '../../../services/telemetry-consent.service';
 import { TutorialService } from '../../../services/tutorial.service';
 import { environment } from '../../../../environments/environment';
+import { UiTelemetryService } from '../../../services/ui-telemetry.service';
 
 type ProfileTab = 'stats' | 'achievements' | 'settings';
 
@@ -80,13 +89,14 @@ export class ProfileConfirmationDialogComponent {
   styleUrl: './profile-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ProfileDialogComponent {
+export class ProfileDialogComponent implements OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly platformAchievements = inject(PlatformAchievementsService);
   private readonly gameController = inject(GameControllerService);
   private readonly tutorial = inject(TutorialService);
   private readonly dialogRef = inject(MatDialogRef<ProfileDialogComponent>);
   private readonly dialog = inject(MatDialog);
+  private readonly uiTelemetry = inject(UiTelemetryService);
 
   readonly settings = inject(SettingsService);
   readonly progression = inject(CampaignProgressionService);
@@ -138,6 +148,26 @@ export class ProfileDialogComponent {
 
   isEditingName = false;
   editingName = '';
+
+  constructor() {
+    this.uiTelemetry.openSurface({ surface: 'profile' }, 'profile.dialog');
+    effect(() => {
+      const tab = this.activeTab();
+      this.uiTelemetry.openSurface(
+        tab === 'stats'
+          ? { surface: 'profile', subsurface: 'career_records', sourceSurface: 'profile' }
+          : tab === 'achievements'
+            ? { surface: 'achievements', sourceSurface: 'profile' }
+            : { surface: 'settings', sourceSurface: 'profile' },
+        'profile.active_tab',
+      );
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.uiTelemetry.closeSurface('profile.active_tab');
+    this.uiTelemetry.closeSurface('profile.dialog');
+  }
 
   selectTab(tab: ProfileTab): void {
     this.activeTab.set(tab);
@@ -315,8 +345,8 @@ export class ProfileDialogComponent {
     this.telemetryConsent.setAnalyticsConsent(consent);
     this.settingsStatus.set(
       consent === 'granted'
-        ? 'Anonymous gameplay analytics will begin with the next War.'
-        : 'Anonymous gameplay analytics are off.',
+        ? 'Anonymous app-usage analytics are on; gameplay analytics begin with the next War.'
+        : 'Anonymous gameplay and app-usage analytics are off.',
     );
   }
 

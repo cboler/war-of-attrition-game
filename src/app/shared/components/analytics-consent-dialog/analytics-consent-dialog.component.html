@@ -1,0 +1,32 @@
+<div class="consent-emblem" aria-hidden="true">
+  <mat-icon>volunteer_activism</mat-icon>
+</div>
+
+<h2 mat-dialog-title id="analytics-consent-title">Help improve Attrition</h2>
+
+<mat-dialog-content id="analytics-consent-description">
+  <p class="consent-question">
+    Would you like to share anonymous gameplay and app-usage statistics?
+  </p>
+  <p>
+    This helps us understand how the game is played, which parts people explore, and where
+    Attrition could improve.
+  </p>
+  <p class="privacy-summary">
+    We do not collect your name, email address, Google identity, story text, or hidden card
+    information. You can turn analytics off at any time.
+  </p>
+  <a mat-button routerLink="/privacy" target="_blank" rel="noopener">
+    <mat-icon aria-hidden="true">privacy_tip</mat-icon>
+    Learn more
+  </a>
+</mat-dialog-content>
+
+<mat-dialog-actions class="consent-actions">
+  <button mat-stroked-button type="button" class="consent-decline" (click)="choose('denied')">
+    No thanks
+  </button>
+  <button mat-stroked-button type="button" class="consent-share" (click)="choose('granted')">
+    Share anonymous data
+  </button>
+</mat-dialog-actions>

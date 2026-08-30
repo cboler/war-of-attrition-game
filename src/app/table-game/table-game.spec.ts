@@ -19,6 +19,7 @@ import { Card, Rank, Suit } from '../core/models/card.model';
 import { PlayerType } from '../core/models/game-state.model';
 import { MatDialog } from '@angular/material/dialog';
 import { TableGame } from './table-game';
+import { UiTelemetryService } from '../services/ui-telemetry.service';
 
 describe('TableGame presentation', () => {
   let fixture: ComponentFixture<TableGame>;
@@ -231,6 +232,19 @@ describe('TableGame presentation', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('app-story-book-drawer')).toBeTruthy();
+  });
+
+  it('tracks one semantic Table lifecycle without gameplay-detail events', () => {
+    const uiTelemetry = TestBed.inject(UiTelemetryService);
+    const open = spyOn(uiTelemetry, 'openSurface').and.callThrough();
+    const close = spyOn(uiTelemetry, 'closeSurface').and.callThrough();
+    const trackedFixture = TestBed.createComponent(TableGame);
+
+    trackedFixture.detectChanges();
+    expect(open).toHaveBeenCalledOnceWith({ surface: 'table' }, 'table.primary');
+
+    trackedFixture.destroy();
+    expect(close).toHaveBeenCalledWith('table.primary');
   });
 
   it('clears Story Book on new game and does not leak events between games', () => {

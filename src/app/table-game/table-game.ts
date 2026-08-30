@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { PlayerType } from '../core/models/game-state.model';
@@ -29,6 +37,7 @@ import { CampaignProgressionService } from '../core/services/campaign-progressio
 import { CampaignOrdersDialogComponent } from '../shared/components/campaign-orders-dialog/campaign-orders-dialog.component';
 import { BattleAnimationComponent } from '../shared/components/battle-animation/battle-animation.component';
 import { getCommanderPortrait } from '../core/models/commander-art.model';
+import { UiTelemetryService } from '../services/ui-telemetry.service';
 
 @Component({
   selector: 'app-table-game',
@@ -48,7 +57,7 @@ import { getCommanderPortrait } from '../core/models/commander-art.model';
   styleUrl: './table-game.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TableGame implements OnInit {
+export class TableGame implements OnInit, OnDestroy {
   protected readonly controller = inject(GameControllerService);
   protected readonly gameState = inject(GameStateService);
   protected readonly settings = inject(SettingsService);
@@ -58,6 +67,7 @@ export class TableGame implements OnInit {
   protected readonly storyBook = inject(StoryBookService);
   protected readonly progression = inject(CampaignProgressionService);
   protected readonly dialog = inject(MatDialog);
+  private readonly uiTelemetry = inject(UiTelemetryService);
   protected readonly state = PresentationState;
   protected readonly player = PlayerType;
   protected readonly boneyardOpen = signal(false);
@@ -66,6 +76,7 @@ export class TableGame implements OnInit {
   protected readonly dossierTargetCommander = signal<OpponentCommanderId | null>(null);
   protected readonly hoveredBattleLane = signal<number | null>(null);
   protected readonly focusedBattleLane = signal<number | null>(null);
+  private tableSurfaceTracked = false;
   protected readonly activeBattleLane = computed(
     () => this.focusedBattleLane() ?? this.hoveredBattleLane(),
   );
@@ -144,10 +155,17 @@ export class TableGame implements OnInit {
       return;
     }
 
+    this.uiTelemetry.openSurface({ surface: 'table' }, 'table.primary');
+    this.tableSurfaceTracked = true;
+
     this.controller.ensureGameStarted();
     if (!this.progression.ordersSelected() && this.progression.campaignWarIndex() === 1) {
       this.openCampaignOrdersDialog();
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.tableSurfaceTracked) this.uiTelemetry.closeSurface('table.primary');
   }
 
   protected openCampaignOrdersDialog(): void {

@@ -32,6 +32,8 @@ import { CommanderIdentity, getCommanderIdentity } from '../../../core/models/co
 import { CommanderDossierRecord } from '../../../core/models/narrative.model';
 import { NarrativeResolverService } from '../../../narrative/narrative-resolver.service';
 import { getCommanderCrest, getCommanderPortrait } from '../../../core/models/commander-art.model';
+import { UiSurfaceTelemetryContext } from '../../../core/models/telemetry.model';
+import { UiTelemetryService } from '../../../services/ui-telemetry.service';
 
 type FieldManualTab = 'chronicle' | 'valor' | 'rules' | 'dossier' | 'reference';
 
@@ -103,6 +105,7 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   protected readonly progression = inject(CampaignProgressionService, { optional: true });
   protected readonly gameState = inject(GameStateService, { optional: true });
   protected readonly narrativeResolver = inject(NarrativeResolverService, { optional: true });
+  private readonly uiTelemetry = inject(UiTelemetryService);
   protected readonly rules = RULE_ENTRIES;
   protected readonly activeTab = signal<FieldManualTab>('chronicle');
   protected readonly activeDemo = signal<RuleDemoKind | null>(null);
@@ -262,8 +265,10 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
     return this.expandedComparisonEntryIds().has(entryId);
   }
 
-  protected toggleComparisonExpanded(entryId: string): void {
+  protected toggleComparisonExpanded(entry: StoryBookEntry): void {
     if (this.isFogOfWarActive()) return;
+    const entryId = entry.id;
+    const wasExpanded = this.expandedComparisonEntryIds().has(entryId);
     this.expandedComparisonEntryIds.update(current => {
       const next = new Set(current);
       if (next.has(entryId)) {
@@ -273,6 +278,20 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
       }
       return next;
     });
+    const trackingKey = this.chronicleEntryTrackingKey(entryId);
+    if (wasExpanded) {
+      this.uiTelemetry.closeSurface(trackingKey);
+    } else {
+      this.uiTelemetry.openSurface(
+        {
+          surface: 'chronicle',
+          subsurface: 'entry_detail',
+          sourceSurface: 'chronicle',
+          chronicleEntry: entry.type,
+        },
+        trackingKey,
+      );
+    }
   }
 
   protected readonly selectedValorCard = computed<CardServiceRecord | null>(() => {
@@ -286,8 +305,15 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   private previousActiveElement: HTMLElement | null = null;
   private ruleDemoLauncherId: RuleDemoKind | null = null;
   private lastReferenceId: string | null = null;
+  private readonly fieldManualTrackingKey = 'field_manual.drawer';
+  private readonly fieldManualTabTrackingKey = 'field_manual.active_tab';
 
   constructor() {
+    this.uiTelemetry.openSurface(
+      { surface: 'field_manual', sourceSurface: 'table' },
+      this.fieldManualTrackingKey,
+    );
+
     effect(() => {
       const card = this.referenceCard();
       if (card && card.id !== this.lastReferenceId) {
@@ -312,6 +338,13 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
         this.activeTab.set(initial);
       }
     });
+
+    effect(() => {
+      this.uiTelemetry.openSurface(
+        this.telemetryContextForActiveTab(),
+        this.fieldManualTabTrackingKey,
+      );
+    });
   }
 
   ngAfterViewInit(): void {
@@ -322,12 +355,22 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    for (const entryId of this.expandedComparisonEntryIds()) {
+      this.uiTelemetry.closeSurface(this.chronicleEntryTrackingKey(entryId));
+    }
+    this.uiTelemetry.closeSurface(this.fieldManualTabTrackingKey);
+    this.uiTelemetry.closeSurface(this.fieldManualTrackingKey);
     if (this.previousActiveElement && typeof this.previousActiveElement.focus === 'function') {
       this.previousActiveElement.focus();
     }
   }
 
   protected selectTab(tab: FieldManualTab): void {
+    if (this.activeTab() === 'chronicle' && tab !== 'chronicle') {
+      for (const entryId of this.expandedComparisonEntryIds()) {
+        this.uiTelemetry.closeSurface(this.chronicleEntryTrackingKey(entryId));
+      }
+    }
     this.activeDemo.set(null);
     this.activeTab.set(tab);
   }
@@ -530,5 +573,49 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
       default:
         return '';
     }
+  }
+
+  private telemetryContextForActiveTab(): UiSurfaceTelemetryContext {
+    switch (this.activeTab()) {
+      case 'chronicle':
+        return { surface: 'chronicle', sourceSurface: 'field_manual' };
+      case 'rules': {
+        const ruleId = this.activeDemo();
+        return ruleId
+          ? {
+              surface: 'rules',
+              subsurface: 'rule_demo',
+              sourceSurface: 'field_manual',
+              ruleId,
+            }
+          : { surface: 'rules', sourceSurface: 'field_manual' };
+      }
+      case 'dossier':
+        return {
+          surface: 'field_manual',
+          subsurface: 'commander_dossier',
+          sourceSurface: 'field_manual',
+          commanderId: this.selectedCommanderId(),
+          manualEntryType: 'commander_dossier',
+        };
+      case 'reference':
+        return {
+          surface: 'field_manual',
+          subsurface: 'card_reference',
+          sourceSurface: 'field_manual',
+          manualEntryType: 'card_reference',
+        };
+      case 'valor':
+        return {
+          surface: 'field_manual',
+          subsurface: 'hall_of_valor',
+          sourceSurface: 'field_manual',
+          manualEntryType: 'hall_of_valor',
+        };
+    }
+  }
+
+  private chronicleEntryTrackingKey(entryId: string): string {
+    return `field_manual.chronicle_entry.${entryId}`;
   }
 }

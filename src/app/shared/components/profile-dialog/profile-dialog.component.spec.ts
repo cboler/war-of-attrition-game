@@ -8,6 +8,7 @@ import { CampaignProgressionService } from '../../../core/services/campaign-prog
 import { SettingsService } from '../../../core/services/settings.service';
 import { GameControllerService } from '../../../services/game-controller.service';
 import { TutorialService } from '../../../services/tutorial.service';
+import { UiTelemetryService } from '../../../services/ui-telemetry.service';
 
 describe('ProfileDialogComponent', () => {
   let component: ProfileDialogComponent;
@@ -61,6 +62,25 @@ describe('ProfileDialogComponent', () => {
     component.activeTab.set('settings');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.settings-tab')).toBeTruthy();
+  });
+
+  it('maps meaningful Profile tabs to typed semantic surfaces', () => {
+    const uiTelemetry = TestBed.inject(UiTelemetryService);
+    const open = spyOn(uiTelemetry, 'openSurface').and.callThrough();
+
+    component.selectTab('achievements');
+    TestBed.flushEffects();
+    expect(open).toHaveBeenCalledWith(
+      { surface: 'achievements', sourceSurface: 'profile' },
+      'profile.active_tab',
+    );
+
+    component.selectTab('settings');
+    TestBed.flushEffects();
+    expect(open).toHaveBeenCalledWith(
+      { surface: 'settings', sourceSurface: 'profile' },
+      'profile.active_tab',
+    );
   });
 
   it('keeps account and destructive controls inside Settings only', () => {
@@ -180,6 +200,7 @@ describe('ProfileDialogComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
     const allow = root.querySelector('.analytics-allow-btn') as HTMLButtonElement;
     const deny = root.querySelector('.analytics-deny-btn') as HTMLButtonElement;
+    expect(root.textContent).toContain('gameplay and app-usage analytics');
 
     allow.click();
     fixture.detectChanges();

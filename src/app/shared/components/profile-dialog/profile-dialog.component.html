@@ -473,19 +473,19 @@
         <section class="settings-section data-section" aria-labelledby="data-title">
           <div class="section-heading">
             <h3 id="data-title" class="section-subtitle">Data & Privacy</h3>
-            <p>Career Records are resettable profile data. Campaign currency and historical anonymous gameplay telemetry are managed separately.</p>
+            <p>Career Records are resettable profile data. Campaign currency and historical anonymous telemetry are managed separately.</p>
           </div>
           <div class="analytics-consent-control">
             <div>
-              <strong>Anonymous gameplay analytics</strong>
+              <strong>Anonymous gameplay and app-usage analytics</strong>
               <span>
                 {{ analyticsConsent() === 'granted' ? 'Allowed' : analyticsConsent() === 'denied' ? 'Off' : 'Not chosen' }}
               </span>
               <p>
-                No names, email addresses, or Google IDs are collected. Opt-in begins with the next War; turning it off stops new gameplay events immediately.
+                No names, email addresses, Google IDs, story text, or hidden card information are collected. App-usage collection begins only after opt-in; gameplay collection begins with the next War. Turning analytics off stops new events immediately.
               </p>
             </div>
-            <div class="analytics-consent-actions" role="group" aria-label="Anonymous gameplay analytics consent">
+            <div class="analytics-consent-actions" role="group" aria-label="Anonymous gameplay and app-usage analytics consent">
               <button
                 mat-stroked-button
                 type="button"

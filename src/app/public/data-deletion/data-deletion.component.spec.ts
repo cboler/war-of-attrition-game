@@ -71,6 +71,8 @@ describe('DataDeletionComponent', () => {
     expect(JSON.parse(profiles).length).toBe(1);
     expect(authService.activeProfile().provider).toBe('guest');
     expect(localStorage.getItem('war-of-attrition-telemetry-consent')).toBeNull();
+    expect(telemetryConsent.analyticsConsent()).toBe('unknown');
+    expect(telemetryConsent.canCollectAnalytics()).toBeFalse();
     expect(localStorage.getItem('unrelated-same-origin-key')).toBe('preserve-me');
     expect(sessionStorage.getItem('unrelated-session-key')).toBe('preserve-me-too');
   });

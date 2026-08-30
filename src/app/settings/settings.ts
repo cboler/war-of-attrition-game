@@ -1,4 +1,11 @@
-import { Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,6 +21,7 @@ import { Inject } from '@angular/core';
 import { SettingsService } from '../core/services/settings.service';
 import { GameControllerService } from '../services/game-controller.service';
 import { TutorialService } from '../services/tutorial.service';
+import { UiTelemetryService } from '../services/ui-telemetry.service';
 
 @Component({
   selector: 'app-settings',
@@ -30,16 +38,26 @@ import { TutorialService } from '../services/tutorial.service';
     RouterLink
   ],
   templateUrl: './settings.html',
-  styleUrl: './settings.scss'
+  styleUrl: './settings.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class Settings {
+export class Settings implements OnInit, OnDestroy {
   readonly settingsService = inject(SettingsService);
   private readonly gameController = inject(GameControllerService);
   private readonly tutorialService = inject(TutorialService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
+  private readonly uiTelemetry = inject(UiTelemetryService);
 
   readonly hasActiveMatch = computed(() => this.gameController.hasMeaningfulUnresolvedGame());
+
+  ngOnInit(): void {
+    this.uiTelemetry.openSurface({ surface: 'settings' }, 'settings.route');
+  }
+
+  ngOnDestroy(): void {
+    this.uiTelemetry.closeSurface('settings.route');
+  }
 
   onRestartMatch(): void {
     this.showConfirmDialog(

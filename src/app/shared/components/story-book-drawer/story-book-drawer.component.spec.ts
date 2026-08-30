@@ -8,6 +8,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { CampaignProgressionService } from '../../../core/services/campaign-progression.service';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { GamePhase } from '../../../core/models/game-state.model';
+import { UiTelemetryService } from '../../../services/ui-telemetry.service';
 
 describe('StoryBookDrawerComponent', () => {
   let component: StoryBookDrawerComponent;
@@ -80,6 +81,48 @@ describe('StoryBookDrawerComponent', () => {
 
     expect(compiled.querySelector('#panel-valor')).toBeTruthy();
     expect(compiled.querySelector('#panel-valor')?.textContent).toContain('The Hall of Valor is empty');
+  });
+
+  it('maps Rules demos and commander dossiers to stable semantic identifiers', () => {
+    const uiTelemetry = TestBed.inject(UiTelemetryService);
+    const open = spyOn(uiTelemetry, 'openSurface').and.callThrough();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('#tab-rules') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    expect(open).toHaveBeenCalledWith(
+      { surface: 'rules', sourceSurface: 'field_manual' },
+      'field_manual.active_tab',
+    );
+
+    (compiled.querySelector('[data-rule-demo-id="reinforcement"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    expect(open).toHaveBeenCalledWith(
+      {
+        surface: 'rules',
+        subsurface: 'rule_demo',
+        sourceSurface: 'field_manual',
+        ruleId: 'reinforcement',
+      },
+      'field_manual.active_tab',
+    );
+
+    component.selectDossierCommander('quartermaster');
+    (compiled.querySelector('#tab-dossier') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    expect(open).toHaveBeenCalledWith(
+      {
+        surface: 'field_manual',
+        subsurface: 'commander_dossier',
+        sourceSurface: 'field_manual',
+        commanderId: 'quartermaster',
+        manualEntryType: 'commander_dossier',
+      },
+      'field_manual.active_tab',
+    );
   });
 
   it('should render decorated cards in Hall of Valor roll of honor and open detail view', () => {
@@ -337,6 +380,8 @@ describe('StoryBookDrawerComponent', () => {
     const cardAce: Card = { id: 'c-a', suit: Suit.SPADES, rank: Rank.ACE, value: 14, isRed: false };
 
     it('renders combat math trigger and toggles breakdown on click/tap', () => {
+      const uiTelemetry = TestBed.inject(UiTelemetryService);
+      const open = spyOn(uiTelemetry, 'openSurface').and.callThrough();
       storyBook.addEntry({
         turnNumber: 3,
         type: 'challenge',
@@ -367,6 +412,17 @@ describe('StoryBookDrawerComponent', () => {
       // Click to toggle expansion
       trigger.click();
       fixture.detectChanges();
+
+      expect(open).toHaveBeenCalledWith(
+        {
+          surface: 'chronicle',
+          subsurface: 'entry_detail',
+          sourceSurface: 'chronicle',
+          chronicleEntry: 'challenge',
+        },
+        'field_manual.chronicle_entry.story-entry-1',
+      );
+      expect(JSON.stringify(open.calls.mostRecent().args)).not.toContain('Card rescued');
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
       const breakdown = compiled.querySelector('.combat-math-breakdown') as HTMLElement;

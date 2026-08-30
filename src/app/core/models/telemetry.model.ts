@@ -2,6 +2,7 @@ import { OpponentCommanderId } from './commander.model';
 import { CampaignModeId, DeckColor } from './progression.model';
 
 export const GAME_TELEMETRY_SCHEMA_VERSION = 1;
+export const UI_TELEMETRY_SCHEMA_VERSION = 1;
 
 export type TelemetryValue = string | number;
 export type TelemetryParameters = Readonly<Record<string, TelemetryValue>>;
@@ -33,3 +34,64 @@ export interface TelemetryEnvelope extends WarTelemetryContext {
   readonly rulesetVersion: string;
 }
 
+export type UiTelemetrySurface =
+  | 'table'
+  | 'chronicle'
+  | 'field_manual'
+  | 'rules'
+  | 'profile'
+  | 'achievements'
+  | 'settings';
+
+export type UiTelemetrySubsurface =
+  | 'career_records'
+  | 'entry_detail'
+  | 'hall_of_valor'
+  | 'commander_dossier'
+  | 'card_reference'
+  | 'rule_demo';
+
+export type UiTelemetryManualEntryType =
+  | 'hall_of_valor'
+  | 'commander_dossier'
+  | 'card_reference';
+
+export type UiTelemetryRuleId =
+  | 'objective'
+  | 'ranks'
+  | 'battle'
+  | 'reinforcement'
+  | 'boneyard'
+  | 'war-resolution';
+
+export type UiTelemetryChronicleEntry =
+  | 'clash'
+  | 'challenge'
+  | 'battle_header'
+  | 'battle_selection'
+  | 'battle_reveal'
+  | 'casualty'
+  | 'quip'
+  | 'achievement'
+  | 'game_over';
+
+export type UiTelemetryDurationBucket =
+  | 'lt_10s'
+  | '10_30s'
+  | '30_60s'
+  | '1_3m'
+  | '3m_plus';
+
+/**
+ * A deliberately small whitelist for semantic app-surface context. Feature
+ * code cannot attach free-form values to UI telemetry records.
+ */
+export interface UiSurfaceTelemetryContext {
+  readonly surface: UiTelemetrySurface;
+  readonly subsurface?: UiTelemetrySubsurface;
+  readonly sourceSurface?: UiTelemetrySurface;
+  readonly commanderId?: OpponentCommanderId;
+  readonly ruleId?: UiTelemetryRuleId;
+  readonly chronicleEntry?: UiTelemetryChronicleEntry;
+  readonly manualEntryType?: UiTelemetryManualEntryType;
+}

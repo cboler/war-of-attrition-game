@@ -7,7 +7,7 @@ Use this factual breakdown to complete the **Data Safety** questionnaire in Goog
 ## 1. Overview & Data Collection Summary
 
 * **Does your app collect or share any of the required user data types?**  
-  **Yes** (optional Google Account profile data and consent-gated pseudonymous gameplay telemetry when GA4 is configured).
+  **Yes** (optional Google Account profile data and consent-gated pseudonymous gameplay and app-interaction telemetry when GA4 is configured).
 * **Is all of the user data collected by your app encrypted in transit?**  
   **Yes** (All requests use HTTPS/TLS).
 * **Do you provide a way for users to request that their data be deleted?**  
@@ -38,10 +38,10 @@ Use this factual breakdown to complete the **Data Safety** questionnaire in Goog
 ### Category: App Activity
 
 #### Gameplay & App Interactions
-* **Collected?** Yes (local career state; when analytics is configured and consent is granted, pseudonymous War outcomes, public comparisons, challenge/Battle summaries, Campaign summaries, and cosmetic unlocks are transmitted to Google Analytics).
+* **Collected?** Yes (local career state; when analytics is configured and consent is explicitly granted, pseudonymous War outcomes, public comparisons, challenge/Battle summaries, Campaign summaries, cosmetic unlocks, major semantic surface visits, and coarse visible-duration ranges are transmitted to Google Analytics).
 * **Shared?** Google Analytics processes configured telemetry as a service provider; verify the current Play Console definition of collection/sharing when completing the form.
 * **Syncing:** Synchronized to Google Play Games Services if connected on Android.
-* **Required or optional?** Required for game state and career statistics.
+* **Required or optional?** Local game state and career statistics are required for app functionality; transmission to Google Analytics is optional and off until explicit consent.
 * **Purposes:** App functionality and analytics.
 
 ---
