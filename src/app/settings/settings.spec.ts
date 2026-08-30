@@ -58,4 +58,13 @@ describe('SettingsComponent', () => {
     expect(labels).toContain('Auto-play Animations');
     expect(labels).not.toContain('Battle Animations');
   });
+
+  it('does not offer turn-counter or card-detail visibility preferences', () => {
+    const labels = [...fixture.nativeElement.querySelectorAll('mat-slide-toggle')].map(
+      (toggle: Element) => toggle.textContent?.trim()
+    );
+
+    expect(labels).not.toContain('Show Turn Counter');
+    expect(labels).not.toContain('Show Card Details');
+  });
 });

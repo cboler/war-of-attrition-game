@@ -100,7 +100,6 @@ export class ScreenshotStateLoader {
     // 1. Enforce screenshot-safe environment (motion disabled for crisp raster, sound muted, tutorial inactive)
     context.settings.setSoundEnabled(false);
     context.settings.setTutorialEnabled(false);
-    context.settings.setShowTurnCounter(true);
     context.boneyardOpen.set(false);
     context.storyBookOpen.set(false);
     context.manualReferenceCard.set(null);

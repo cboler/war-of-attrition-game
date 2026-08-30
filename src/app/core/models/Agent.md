@@ -59,8 +59,8 @@ This directory contains the core data models and TypeScript interfaces that defi
 **Purpose**: Application settings and user preferences
 
 **Key Components**:
-- Theme settings (light/dark mode)
-- Game configuration options
+- Presentation timing, sound, handedness, and tutorial preferences
+- Cosmetic card-backing selection
 - User preference storage interfaces
 
 ## Usage Guidelines

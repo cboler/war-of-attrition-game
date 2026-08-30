@@ -13,5 +13,5 @@ This directory contains the settings configuration component and user preference
 
 1. **Card Back Customization**: Allows selection between classic, modern, geometric, and custom card back patterns.
 2. **Animation Settings**: Choose animation speed and automatic playback for comfort and performance.
-3. **Sound & Control Preferences**: Manages sound effects, deck handedness, turn counter, card details, and tutorial guidance.
+3. **Sound & Control Preferences**: Manages sound effects, deck handedness, and tutorial guidance. Turn information and useful card/reference details are always available rather than configurable.
 4. **Persistence**: Syncs settings changes with `SettingsService` for `localStorage` persistence.

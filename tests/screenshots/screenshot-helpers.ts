@@ -24,11 +24,9 @@ export async function setupPageEnvironment(page: Page): Promise<void> {
           selectedCardBacking: 'classic-blue',
           animationSpeed: 'normal',
           soundEnabled: false,
-          showTurnCounter: true,
           tutorialEnabled: false,
           confirmChallenges: false,
           autoPlayAnimations: false,
-          showCardDetails: true,
         })
       );
     } catch {

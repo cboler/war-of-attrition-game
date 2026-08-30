@@ -177,6 +177,21 @@ describe('TableGame presentation', () => {
     expect(deck.getAttribute('aria-label')).toBe('Draw from your deck');
   });
 
+  it('always displays the current turn beside the Field Manual', () => {
+    const gameState = TestBed.inject(GameStateService);
+    gameState.loadFixtureState({
+      playerDeckCards: gameState.currentPlayerDeck.toArray(),
+      opponentDeckCards: gameState.currentOpponentDeck.toArray(),
+      turnNumber: 7,
+    });
+    fixture.detectChanges();
+
+    const turnLabel = fixture.nativeElement.querySelector('.story-turn-label');
+
+    expect(turnLabel).toBeTruthy();
+    expect(turnLabel.textContent.trim()).toBe('Turn 7');
+  });
+
   it('binds handedness correctly to the player seat', () => {
     const seatElem = fixture.nativeElement.querySelector(
       'app-player-seat[table-seat-bottom] .seat',

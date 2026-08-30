@@ -367,11 +367,7 @@
           title="Field Manual"
         >
           <mat-icon>menu_book</mat-icon>
-          @if (settings.showTurnCounter()) {
-            <span class="story-turn-label">Turn {{ gameState.gameStats().turnNumber }}</span>
-          } @else {
-            <span class="story-turn-label">Manual</span>
-          }
+          <span class="story-turn-label">Turn {{ gameState.gameStats().turnNumber }}</span>
         </button>
 
         <button

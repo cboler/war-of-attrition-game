@@ -102,6 +102,17 @@ describe('ProfileDialogComponent', () => {
     expect(root.querySelector('.reset-tutorial-btn')).toBeTruthy();
   });
 
+  it('does not offer turn-counter or card-detail visibility preferences', () => {
+    component.activeTab.set('settings');
+    fixture.detectChanges();
+
+    const labels = [...fixture.nativeElement.querySelectorAll('mat-slide-toggle')].map(
+      (toggle: Element) => toggle.textContent?.trim()
+    );
+    expect(labels).not.toContain('Turn counter');
+    expect(labels).not.toContain('Card details');
+  });
+
   it('provides semantic, keyboard-operable tabs', fakeAsync(() => {
     const root = fixture.nativeElement as HTMLElement;
     const statsTab = root.querySelector('#profile-tab-stats') as HTMLButtonElement;

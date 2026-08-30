@@ -71,25 +71,12 @@
               </div>
 
               <div class="toggle-setting">
-                <mat-slide-toggle [checked]="settingsService.showTurnCounter()"
-                                 (change)="settingsService.setShowTurnCounter($event.checked)">
-                  Show Turn Counter
-                </mat-slide-toggle>
-              </div>
-
-              <div class="toggle-setting">
                 <mat-slide-toggle [checked]="settingsService.autoPlayAnimations()"
                                  (change)="settingsService.setAutoPlayAnimations($event.checked)">
                   Auto-play Animations
                 </mat-slide-toggle>
               </div>
 
-              <div class="toggle-setting">
-                <mat-slide-toggle [checked]="settingsService.showCardDetails()"
-                                 (change)="settingsService.setShowCardDetails($event.checked)">
-                  Show Card Details
-                </mat-slide-toggle>
-              </div>
             </div>
 
             <mat-divider></mat-divider>

@@ -7,7 +7,7 @@ The `src/app` directory contains the core application components, feature module
 - [`core/`](core/INSTRUCTIONS.md) - Domain models (`card.model.ts`, `deck.model.ts`, `game-state.model.ts`, `settings.model.ts`, `achievement.model.ts`) and pure business logic services.
 - [`table-game/`](table-game/) - Primary active game-table view (`TableGame` component), responsive layout, card playfield, stakes, and battle presentation.
 - [`services/`](services/INSTRUCTIONS.md) - High-level controller services (`GameControllerService`, `StoryBookService`, `TableReactionService`).
-- [`settings/`](settings/INSTRUCTIONS.md) - User preferences view (card-backing selection, animation speed, turn counter).
+- [`settings/`](settings/INSTRUCTIONS.md) - User preferences view (card-backing selection, animation speed, sound, and tutorial guidance).
 - [`shared/`](shared/INSTRUCTIONS.md) - Reusable components (`CardComponent`, `ComparisonStrengthComponent`, `GameOverSummaryComponent`, drawers, dialogs).
 
 ## 🔄 State Flow Architecture

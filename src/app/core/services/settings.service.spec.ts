@@ -81,11 +81,6 @@ describe('SettingsService', () => {
       expect(service.soundEnabled()).toBe(false);
     });
 
-    it('should update show turn counter', () => {
-      service.setShowTurnCounter(false);
-      expect(service.showTurnCounter()).toBe(false);
-    });
-
     it('should update confirm challenges', () => {
       service.setConfirmChallenges(true);
       expect(service.confirmChallenges()).toBe(true);
@@ -111,10 +106,12 @@ describe('SettingsService', () => {
         .toBeTrue();
     });
 
-    it('drops the retired Battle animation key when loading existing stored settings', () => {
+    it('drops retired presentation keys when loading existing stored settings', () => {
       (localStorage.getItem as jasmine.Spy).and.returnValue(JSON.stringify({
         ...DEFAULT_SETTINGS,
         battleAnimationsEnabled: false,
+        showTurnCounter: false,
+        showCardDetails: false,
       }));
 
       const loaded = (service as unknown as { loadSettings(): Record<string, unknown> })
@@ -122,11 +119,8 @@ describe('SettingsService', () => {
 
       expect(loaded['autoPlayAnimations']).toBeTrue();
       expect('battleAnimationsEnabled' in loaded).toBeFalse();
-    });
-
-    it('should update show card details', () => {
-      service.setShowCardDetails(false);
-      expect(service.showCardDetails()).toBe(false);
+      expect('showTurnCounter' in loaded).toBeFalse();
+      expect('showCardDetails' in loaded).toBeFalse();
     });
   });
 
@@ -160,6 +154,10 @@ describe('SettingsService', () => {
       expect(anyService.statistics).toBeUndefined();
       expect(anyService.updateStatistics).toBeUndefined();
       expect(anyService.resetStatistics).toBeUndefined();
+      expect(anyService.showTurnCounter).toBeUndefined();
+      expect(anyService.setShowTurnCounter).toBeUndefined();
+      expect(anyService.showCardDetails).toBeUndefined();
+      expect(anyService.setShowCardDetails).toBeUndefined();
     });
   });
 });

@@ -8,9 +8,11 @@ The Settings component provides the routed preferences screen for player control
 
 - Deck handedness
 - Animation speed and automatic animation playback
-- Sound effects, turn counter, and card detail visibility
+- Sound effects
 - Tutorial guidance and tutorial-progress reset
 - Reset all preferences to defaults
+
+The current turn and useful card/reference details are canonical presentation behavior, not player preferences.
 
 When a match is active, the screen also offers restart and abandon actions after confirmation.
 

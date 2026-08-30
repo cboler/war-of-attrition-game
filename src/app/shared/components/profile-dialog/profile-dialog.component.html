@@ -377,8 +377,6 @@
           <div class="settings-toggles">
             <mat-slide-toggle [checked]="settings.soundEnabled()" (change)="settings.setSoundEnabled($event.checked)">Sound</mat-slide-toggle>
             <mat-slide-toggle [checked]="settings.autoPlayAnimations()" (change)="settings.setAutoPlayAnimations($event.checked)">Animations</mat-slide-toggle>
-            <mat-slide-toggle [checked]="settings.showTurnCounter()" (change)="settings.setShowTurnCounter($event.checked)">Turn counter</mat-slide-toggle>
-            <mat-slide-toggle [checked]="settings.showCardDetails()" (change)="settings.setShowCardDetails($event.checked)">Card details</mat-slide-toggle>
             <mat-slide-toggle [checked]="settings.tutorialEnabled()" (change)="settings.setTutorialEnabled($event.checked)">Tutorial guidance</mat-slide-toggle>
             <mat-slide-toggle [checked]="settings.deckHand() === 'left'" (change)="settings.setDeckHand($event.checked ? 'left' : 'right')">Left-handed layout</mat-slide-toggle>
           </div>

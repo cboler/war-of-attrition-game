@@ -91,13 +91,11 @@ export interface AppSettings {
   // Game preferences
   animationSpeed: 'slow' | 'normal' | 'fast';
   soundEnabled: boolean;
-  showTurnCounter: boolean;
   tutorialEnabled: boolean;
 
   // Advanced settings
   confirmChallenges: boolean;
   autoPlayAnimations: boolean;
-  showCardDetails: boolean;
 }
 
 export const DEFAULT_STATISTICS: GameStatistics = {
@@ -160,11 +158,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   selectedCardBacking: 'classic-blue',
   animationSpeed: 'normal',
   soundEnabled: true,
-  showTurnCounter: true,
   tutorialEnabled: true,
   confirmChallenges: false,
-  autoPlayAnimations: true,
-  showCardDetails: true
+  autoPlayAnimations: true
 };
 
 export const CARD_BACKING_OPTIONS: CardBackingOption[] = [

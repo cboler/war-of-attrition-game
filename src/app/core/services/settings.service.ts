@@ -23,11 +23,9 @@ export class SettingsService {
   readonly selectedCardBacking = this.progressionService.selectedCardBackingId;
   readonly animationSpeed = computed(() => this.currentSettings().animationSpeed);
   readonly soundEnabled = computed(() => this.currentSettings().soundEnabled);
-  readonly showTurnCounter = computed(() => this.currentSettings().showTurnCounter);
   readonly tutorialEnabled = computed(() => this.currentSettings().tutorialEnabled ?? true);
   readonly confirmChallenges = computed(() => this.currentSettings().confirmChallenges);
   readonly autoPlayAnimations = computed(() => this.currentSettings().autoPlayAnimations);
-  readonly showCardDetails = computed(() => this.currentSettings().showCardDetails);
 
   // Card backing options
   readonly cardBackingOptions = signal<CardBackingOption[]>(CARD_BACKING_OPTIONS);
@@ -86,10 +84,6 @@ export class SettingsService {
     this.updateSettings({ soundEnabled: enabled });
   }
 
-  setShowTurnCounter(show: boolean): void {
-    this.updateSettings({ showTurnCounter: show });
-  }
-
   setTutorialEnabled(enabled: boolean): void {
     this.updateSettings({ tutorialEnabled: enabled });
   }
@@ -102,10 +96,6 @@ export class SettingsService {
     this.updateSettings({ autoPlayAnimations: autoPlay });
   }
 
-  setShowCardDetails(show: boolean): void {
-    this.updateSettings({ showCardDetails: show });
-  }
-
   // Persistence methods
   private loadSettings(): AppSettings {
     try {
@@ -114,10 +104,14 @@ export class SettingsService {
         const {
           theme: _legacyTheme,
           battleAnimationsEnabled: _legacyBattleAnimations,
+          showTurnCounter: _legacyShowTurnCounter,
+          showCardDetails: _legacyShowCardDetails,
           ...storedSettings
         } = JSON.parse(stored) as Partial<AppSettings> & {
           theme?: unknown;
           battleAnimationsEnabled?: unknown;
+          showTurnCounter?: unknown;
+          showCardDetails?: unknown;
         };
         return { ...DEFAULT_SETTINGS, ...storedSettings };
       }
