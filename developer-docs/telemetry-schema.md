@@ -1,6 +1,6 @@
 # Gameplay and UI engagement telemetry
 
-Status: gameplay schema version `2`, UI engagement schema version `1`, ruleset version `2026.09.1`.
+Status: gameplay schema version `3`, UI engagement schema version `1`, ruleset version `2026.09.1`.
 
 Gameplay telemetry is implemented behind `GameTelemetryService`. The service consumes the typed `GameEventBusService` and profile-progression events, maps them through an explicit scalar whitelist, and sends them through the replaceable `TelemetryTransport` interface. There are no direct analytics calls in gameplay controllers.
 
@@ -83,17 +83,24 @@ The mapper intentionally ignores presentation-complete events and all free-text 
 
 ### Reinforcement resolution semantics
 
-`reinforcement_resolved` records the resolution of a committed reinforcement card. In addition to the common envelope and public card identities (when not redacted by Fog of War), it emits:
+From gameplay schema `3`, `reinforcement_resolved` distinguishes the reinforcement comparison from its eventual settlement:
 
-- `challenger`: committing player (`player` or `opponent`).
-- `outcome`: `'battle'` if `winner === null`, `'success'` if `challengerWon`, or `'failure'`.
-- `escalated_to_battle`: `1` if `winner === null`, otherwise `0`.
-- `rescued_two`, `ace_rescued_two`, `two_defeated_ace`: indicator flags for special rank interactions.
+| Comparison | `outcome` | `escalated_to_battle` |
+| --- | --- | --- |
+| Challenger wins outright | `success` | `0` |
+| Challenger loses outright | `failure` | `0` |
+| Tie proceeding into Battle | `battle` | `1` |
+| Tie immediately resolved by attrition, including a true terminal tie | `tie` | `0` |
 
-**Semantic distinction regarding ties broken by attrition:**
-In current GA4 telemetry, the mapper classifies reinforcement resolution using `winner === null` and `challengerWon`. If a reinforcement comparison ties (`comparison === 'tie'`) and the table cannot deal a Battle layer because reserves are depleted, the controller falls back to immediate attrition resolution (`resolveAttrition()`). If attrition decides a winner, `TurnResult.winner` is set to that player, and `challengerWon` evaluates to `true` for that challenger. Consequently, the GA4 mapper emits `outcome: 'success'` and `escalated_to_battle: 0`, even though the reinforcement comparison itself tied.
+`ChallengeResolvedEvent.challengerWon` means an outright comparison win, oriented to `challenger`: `PLAYER_WINS` for the human, `OPPONENT_WINS` for the opponent. `winner` remains the separate turn/attrition winner and can be non-null on a comparison tie. The domain-only `escalatedToBattle` flag comes from the resolver's `nextPhase === BATTLE`; null winner alone cannot distinguish Battle from terminal attrition. No GA4 parameter was added: the existing outcome enum and escalation flag carry this distinction, retaining the rich non-Fog record's 25-parameter budget.
 
-By contrast, the Google Play Game Stats v1 contract defines `successful_reinforcements` strictly as an outright win of the reinforcement comparison (`comparison === PLAYER_WINS`). Under that definition, tied comparisons count as zero immediate successes regardless of subsequent Battle escalation or attrition victory. Analysts comparing GA4 historical reinforcement rates with Game Stats metrics must account for this difference.
+Local successful-challenge counters and rescue credit now use this same direct-win meaning. Two/Ace rescue flags require an outright win; Fog still omits rank-ledger fields. Ties do not produce rescue/failure dialogue, and the Chronicle describes either Battle initiation or the authoritative attrition result. Actual card settlement is unchanged.
+
+### Historical cohorts and versioning
+
+Gameplay schema advances from `2` to `3` for both corrected Orders-boundary attribution and reinforcement outcome semantics. Use `schema_version >= 3` for the corrected cohort. Earlier reinforcement ties could be mislabeled success/failure when attrition chose a winner, or Battle when immediate attrition produced a true tie. Earlier War 1 commander/modifier context may also be stale. Historical events and saved career totals are not rewritten, and no events are replayed.
+
+UI schema remains `1`: UI engagement semantics did not change. Ruleset remains `2026.09.1`: comparison, settlement, Battle mechanics, and AI decisions did not change. This is a recording/interpretation correction, not new gameplay rules. Future Game Stats direct-win definitions now align with newly recorded local and GA4 reinforcement successes; do not compare unqualified historical cohorts.
 
 ## UI engagement telemetry
 
@@ -166,21 +173,15 @@ campaignProgression.recordResolvedWar({
 
 `recordResolvedWar` is idempotent by War ID. The telemetry service is eagerly constructed by the root app because the event bus does not replay old events. It never invents a War from an arbitrary bus event: the controller must call `beginWar` first. Terminal context cleanup is deferred through synchronous nested achievement events and guarded by War ID so an immediate restart cannot close the new War.
 
-### Known implementation limitation: Campaign Orders context sequencing
+### Campaign Orders and the canonical War boundary
 
-There is a known telemetry-context lifecycle defect during War 1 startup:
+The controller owns the boundary for every normal War-creation path. `replaceGame` may prepare the decks before Campaign Orders, but closes the old telemetry context and keeps a pending start. For War 1 with unselected Orders it emits neither canonical telemetry nor the domain `war_started`; player draws are blocked at the controller boundary as well as by the Orders dialog.
 
-1. `TableGame.ngOnInit()` calls `controller.ensureGameStarted()`.
-2. If no game exists, `replaceGame()` initializes the game and calls `telemetry.beginWar(...)`, capturing the current commander and active modifier stack.
-3. Only afterward does `TableGame` check `!this.progression.ordersSelected() && this.progression.campaignWarIndex() === 1` and open `CampaignOrdersDialogComponent`.
-4. Confirming Campaign Orders may replace the commander schedule (specifically in post-story randomized custom Campaigns) and modify the modifier stack.
-5. When the dialog closes, its `afterClosed()` handler calls `ensureGameStarted()` again.
-6. Because `gameState.hasGame()` is already true, `ensureGameStarted()` does nothing, and `telemetry.beginWar(...)` is **not** re-invoked.
-7. Consequently, War 1 telemetry retains the stale commander and modifier context captured before Orders were finalized.
-8. This stale modifier context also affects runtime Fog-of-War redaction in telemetry, as `mapGameEventToTelemetry` checks `envelope.campaignModifiers`.
-9. Because both `war_started` and terminal records (`war_resolved`, `war_abandoned`) share this initial envelope, **affected War 1 records cannot necessarily be repaired merely by joining `war_id` to `war_started`**.
+After Orders are confirmed, `ensureGameStarted` calls `beginWarWhenOrdersReady`, which freezes the actual commander schedule, Campaign mode and modifier stack once, stores the stable War ID, and emits the domain start. Repeated calls do not restart collection. `playerDrawCard` also checks this boundary, so correctness does not depend on a dialog callback. Already-ordered Campaigns and Wars 2/3 start immediately through the same helper. Restart/Abandon War preserve Orders; Abandon Campaign and starting after Campaign completion wait for fresh Orders.
 
-This is a recognized runtime defect, not reliable behavior. It is documented here to prevent false assumptions during data analysis. See [google-play-game-stats-v1.md](google-play-game-stats-v1.md#9-telemetry-consistency-finding) for further architectural analysis. The proposed Google Play Game Stats adapter bypasses this issue by snapshotting its context at the first `turn_started` after Orders are locked, rather than inheriting the GA4 telemetry lifecycle.
+The pending deck preparation is not yet the collectible War boundary. Consent is evaluated at the one canonical start after Orders lock; grants after that start apply only to the next War, withdrawal remains immediate, and no event is replayed. Finalized modifiers therefore govern Fog redaction from the first collected event. The same War ID is used in start, terminal records and idempotent Campaign progression. Tutorial setup remains available during preparation; introductions and Limited Reserves Chronicle context use finalized Orders.
+
+The pre-schema-3 sequencing defect is historical: start and terminal records could agree on a stale commander/modifier snapshot, so a War-ID join cannot repair those cohorts by itself. The normalized join remains the intended analytics method for correctly captured context. The future [Game Stats design](google-play-game-stats-v1.md) is still unimplemented.
 
 ## Future community aggregate contract
 
@@ -217,9 +218,9 @@ Official references: [GA4 event collection](https://developers.google.com/analyt
 
 The Google Play Game Stats v1 integration specified in [google-play-game-stats-v1.md](google-play-game-stats-v1.md) is a separate future contract and data path:
 
-- **Separate schemas**: GA4 is a fine-grained, consent-gated event stream for gameplay analysis (schema version `2`). PGS Game Stats v1 is a career aggregation contract centered on a single self-contained `war_completed` event emitted at War resolution.
+- **Separate schemas**: GA4 is a fine-grained, consent-gated event stream for gameplay analysis (schema version `3`). PGS Game Stats v1 is a career aggregation contract centered on a single self-contained `war_completed` event emitted at War resolution.
 - **Commander inclusion**: PGS Game Stats v1 includes `commander_id` directly on every `war_completed` event within Google's 20-property Console limit. GA4 gameplay events omit `commander_id` from ordinary records to respect GA4's 25-parameter cap.
-- **Independent lifecycle snapshot**: The proposed PGS Game Stats adapter freezes its rules and commander context on the first `turn_started` event, deliberately avoiding the stale setup context present in the current GA4 `warContextSignal`.
+- **Independent lifecycle snapshot**: The proposed PGS Game Stats adapter freezes its rules and commander context on the first `turn_started` event for eligibility and starting-reserve inputs. GA4 now establishes its authoritative context after Campaign Orders lock, before that first turn.
 - **Distinct transport and privacy**: GA4 telemetry is transport-gated by web consent and `GA4_MEASUREMENT_ID`. PGS Game Stats uses a native Play Games bridge gated by native account authentication. No analytics identifiers are sent to PGS, and no PGS player identifiers enter GA4.
 
 ## Release SDK & Closed-Testing Status

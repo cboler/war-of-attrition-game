@@ -204,6 +204,7 @@ export class GameControllerService {
   private acesLostInBattles = 0;
   private aceAndTwoLostInSameBattle = 0;
   private maxDeficitExperienced = 0;
+  private pendingWarStart: 'new' | 'restart' | null = null;
   private abandonmentRecorded = false;
   private currentWarId = '';
   private readonly reachedContextualDeckThresholds = new Set<number>();
@@ -397,6 +398,7 @@ export class GameControllerService {
     if (!this.gameState.hasGame()) {
       this.replaceGame(false);
     } else if (this.turnsPlayed === 0 && this.phase() === PresentationState.READY) {
+      this.beginWarWhenOrdersReady();
       this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
     }
   }
@@ -491,14 +493,39 @@ export class GameControllerService {
       });
     }
 
+    // Deck preparation may precede Campaign Orders. End the old context now,
+    // but establish this War's one authoritative start only after Orders lock.
+    this.telemetry.endWarContext();
+    this.currentWarId = '';
+    this.pendingWarStart = didAbandon ? 'restart' : 'new';
+    this.beginWarWhenOrdersReady();
+
+    if (
+      this.campaignProgression.ordersSelected() ||
+      this.campaignProgression.campaignWarIndex() > 1
+    ) {
+      this.speakIntroduction();
+    }
+  }
+
+  private beginWarWhenOrdersReady(): boolean {
+    if (this.pendingWarStart === null) return true;
+    if (
+      !this.campaignProgression.ordersSelected() &&
+      this.campaignProgression.campaignWarIndex() === 1
+    ) {
+      return false;
+    }
+
     const warContext = this.telemetry.beginWar({
       playerDeckColor: this.gameState.currentPlayerDeckColor,
-      startType: didAbandon ? 'restart' : 'new',
+      startType: this.pendingWarStart,
       commanderId: this.opponentCommander().id,
       campaignMode: this.campaignProgression.activeCampaignMode(),
       campaignModifiers: this.campaignProgression.activeCampaignModifiers(),
     });
     this.currentWarId = warContext.warId;
+    this.pendingWarStart = null;
     this.eventBus.emit({
       type: 'war_started',
       turnNumber: 0,
@@ -518,12 +545,7 @@ export class GameControllerService {
       });
     }
 
-    if (
-      this.campaignProgression.ordersSelected() ||
-      this.campaignProgression.campaignWarIndex() > 1
-    ) {
-      this.speakIntroduction();
-    }
+    return true;
   }
 
   private recordCurrentWarAbandonment(
@@ -569,6 +591,7 @@ export class GameControllerService {
 
   playerDrawCard(): boolean {
     if (!this.canDraw() || this.gameState.currentPhase !== GamePhase.NORMAL) return false;
+    if (!this.beginWarWhenOrdersReady()) return false;
     this.lastMeaningfulDecision = 'draw';
     void this.playTurn();
     return true;
@@ -817,7 +840,7 @@ export class GameControllerService {
       }
       this.announce(result.message);
 
-      const challengerWon = result.winner === PlayerType.PLAYER;
+      const challengerWon = result.result === ComparisonResult.PLAYER_WINS;
       if (challengerWon) {
         this.playerChallengesWon++;
       }
@@ -854,21 +877,24 @@ export class GameControllerService {
           comparison: result.result,
           winner: result.winner,
           challengerWon,
+          escalatedToBattle: result.nextPhase === GamePhase.BATTLE,
           message: result.message,
           savedTwo,
         });
-        this.speakReaction(
-          this.reactions.forChallengeResolution(
-            {
-              challenger: PlayerType.PLAYER,
-              originalBeatenCard: turn.playerCard,
-              reinforcementCard: reinforcement,
-              originalWinnerCard: turn.opponentCard,
-              challengerWon,
-            },
-            this.opponentCommander(),
-          ),
-        );
+        if (result.result !== ComparisonResult.TIE) {
+          this.speakReaction(
+            this.reactions.forChallengeResolution(
+              {
+                challenger: PlayerType.PLAYER,
+                originalBeatenCard: turn.playerCard,
+                reinforcementCard: reinforcement,
+                originalWinnerCard: turn.opponentCard,
+                challengerWon,
+              },
+              this.opponentCommander(),
+            ),
+          );
+        }
       }
 
       if (result.winner) {
@@ -1045,22 +1071,25 @@ export class GameControllerService {
         originalBeatenCard: turn.opponentCard,
         comparison: challengeResult.result,
         winner: challengeResult.winner,
-      challengerWon: challengeResult.winner === PlayerType.OPPONENT,
+        challengerWon: challengeResult.result === ComparisonResult.OPPONENT_WINS,
+        escalatedToBattle: challengeResult.nextPhase === GamePhase.BATTLE,
         message: challengeResult.message,
         savedTwo: false,
       });
-      this.speakReaction(
-        this.reactions.forChallengeResolution(
-          {
-            challenger: PlayerType.OPPONENT,
-            originalBeatenCard: turn.opponentCard,
-            reinforcementCard: reinforcement,
-            originalWinnerCard: turn.playerCard,
-            challengerWon: challengeResult.winner === PlayerType.OPPONENT,
-          },
-          this.opponentCommander(),
-        ),
-      );
+      if (challengeResult.result !== ComparisonResult.TIE) {
+        this.speakReaction(
+          this.reactions.forChallengeResolution(
+            {
+              challenger: PlayerType.OPPONENT,
+              originalBeatenCard: turn.opponentCard,
+              reinforcementCard: reinforcement,
+              originalWinnerCard: turn.playerCard,
+              challengerWon: challengeResult.result === ComparisonResult.OPPONENT_WINS,
+            },
+            this.opponentCommander(),
+          ),
+        );
+      }
     }
 
     if (challengeResult.winner) {

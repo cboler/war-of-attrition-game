@@ -91,7 +91,7 @@ describe('GameTelemetryService', () => {
     const comparison = transport.records[1].parameters;
     expect(comparison['war_id']).toBe('war-explicit');
     expect(comparison['campaign_id']).toBe('campaign-explicit');
-    expect(comparison['schema_version']).toBe(2);
+    expect(comparison['schema_version']).toBe(3);
     expect(comparison['ruleset_version']).toBe('rules-test');
     expect(comparison['app_version']).toBe('1.2.3-test');
     expect(comparison['event_seq']).toBe(2);

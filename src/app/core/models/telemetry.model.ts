@@ -1,7 +1,7 @@
 import { OpponentCommanderId } from './commander.model';
 import { CampaignModifierId, CampaignModeId, DeckColor } from './progression.model';
 
-export const GAME_TELEMETRY_SCHEMA_VERSION = 2;
+export const GAME_TELEMETRY_SCHEMA_VERSION = 3;
 export const UI_TELEMETRY_SCHEMA_VERSION = 1;
 
 export type TelemetryValue = string | number;

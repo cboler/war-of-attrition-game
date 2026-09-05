@@ -166,6 +166,7 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('war.not_today')).toBe(false);
 
     eventBus.emit({
+      escalatedToBattle: false,
       type: 'challenge_resolved',
       turnNumber: 3,
       challenger: PlayerType.PLAYER,
@@ -460,6 +461,7 @@ describe('AchievementService', () => {
     const originalTwo = new CardImpl(Suit.HEARTS, Rank.TWO);
     const opposingKing = new CardImpl(Suit.CLUBS, Rank.KING);
     eventBus.emit({
+      escalatedToBattle: false,
       type: 'challenge_resolved',
       turnNumber: 1,
       challenger: PlayerType.PLAYER,
@@ -475,6 +477,7 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('war.cavalry_came')).toBeFalse();
 
     eventBus.emit({
+      escalatedToBattle: false,
       type: 'challenge_resolved',
       turnNumber: 2,
       challenger: PlayerType.PLAYER,
@@ -766,6 +769,7 @@ describe('AchievementService', () => {
 
   it('unlocks first rescue from a successful player reinforcement', () => {
     eventBus.emit({
+      escalatedToBattle: false,
       type: 'challenge_resolved',
       turnNumber: 3,
       challenger: PlayerType.PLAYER,

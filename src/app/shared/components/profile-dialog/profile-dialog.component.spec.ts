@@ -277,7 +277,7 @@ describe('ProfileDialogComponent', () => {
 
   it('offers and confirms a distinct Campaign abandonment action', fakeAsync(() => {
     const progression = TestBed.inject(CampaignProgressionService);
-    progression.selectCampaignOrders('standard');
+    progression.selectCampaignOrders(progression.activeCampaignMode());
     const abandonSpy = spyOn(gameController, 'abandonCampaign').and.returnValue(true);
     let confirmation: {
       message: string;

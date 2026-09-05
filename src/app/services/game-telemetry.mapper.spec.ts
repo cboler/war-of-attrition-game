@@ -7,7 +7,7 @@ import { normalizeTelemetryRecordForGa4 } from './telemetry-transport.service';
 
 describe('game telemetry mapper', () => {
   const envelope: TelemetryEnvelope = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     rulesetVersion: 'rules-test',
     appVersion: 'app-test',
     warId: 'war-test',
@@ -36,7 +36,7 @@ describe('game telemetry mapper', () => {
     expect(mapped?.parameters['opponent_card_id']).toBe(opponentCard.id);
     expect(mapped?.parameters['close_victory']).toBe(1);
     expect(JSON.stringify(mapped)).not.toContain('free text must never leave the app');
-    expect(mapped?.parameters['schema_version']).toBe(2);
+    expect(mapped?.parameters['schema_version']).toBe(3);
     expect(mapped?.parameters['ruleset_version']).toBe('rules-test');
     expect(mapped?.parameters['app_version']).toBe('app-test');
   });
@@ -90,6 +90,7 @@ describe('game telemetry mapper', () => {
     const reinforcement = new CardImpl(Suit.DIAMONDS, Rank.ACE);
     const opposingCard = new CardImpl(Suit.CLUBS, Rank.KING);
     const mapped = mapGameEventToTelemetry({
+      escalatedToBattle: false,
       type: 'challenge_resolved',
       turnNumber: 3,
       challenger: PlayerType.PLAYER,
@@ -112,6 +113,46 @@ describe('game telemetry mapper', () => {
     expect(normalized?.parameters['rescued_two']).toBe(1);
     expect(normalized?.parameters['ace_rescued_two']).toBe(1);
   });
+
+  const reinforcementOutcomes = [
+    [PlayerType.PLAYER, ComparisonResult.PLAYER_WINS, PlayerType.PLAYER, true, false, 'success'],
+    [PlayerType.PLAYER, ComparisonResult.OPPONENT_WINS, PlayerType.OPPONENT, false, false, 'failure'],
+    [PlayerType.OPPONENT, ComparisonResult.OPPONENT_WINS, PlayerType.OPPONENT, true, false, 'success'],
+    [PlayerType.OPPONENT, ComparisonResult.PLAYER_WINS, PlayerType.PLAYER, false, false, 'failure'],
+    [PlayerType.PLAYER, ComparisonResult.TIE, null, false, true, 'battle'],
+    [PlayerType.PLAYER, ComparisonResult.TIE, PlayerType.PLAYER, false, false, 'tie'],
+    [PlayerType.PLAYER, ComparisonResult.TIE, PlayerType.OPPONENT, false, false, 'tie'],
+    [PlayerType.PLAYER, ComparisonResult.TIE, null, false, false, 'tie'],
+    [PlayerType.OPPONENT, ComparisonResult.TIE, PlayerType.OPPONENT, false, false, 'tie'],
+  ] as const;
+
+  for (const [challenger, comparison, winner, challengerWon, escalatedToBattle, outcome] of reinforcementOutcomes) {
+    it(`maps ${challenger} reinforcement ${comparison}/${winner}/${escalatedToBattle} as ${outcome}`, () => {
+      const mapped = mapGameEventToTelemetry({
+        type: 'challenge_resolved',
+        turnNumber: 3,
+        challenger,
+        comparison,
+        winner,
+        challengerWon,
+        escalatedToBattle,
+        originalBeatenCard: new CardImpl(Suit.HEARTS, Rank.TWO),
+        reinforcementCard: new CardImpl(Suit.DIAMONDS,
+          comparison === ComparisonResult.TIE ? Rank.KING : challengerWon ? Rank.ACE : Rank.THREE),
+        originalWinnerCard: new CardImpl(Suit.CLUBS, Rank.KING),
+        savedTwo: challengerWon,
+        message: 'not collected',
+      }, envelope)!;
+      const normalized = normalizeTelemetryRecordForGa4(mapped);
+
+      expect(normalized).not.toBeNull();
+      expect(Object.keys(mapped.parameters).length).toBe(25);
+      expect(mapped.parameters['outcome']).toBe(outcome);
+      expect(mapped.parameters['escalated_to_battle']).toBe(escalatedToBattle ? 1 : 0);
+      expect(mapped.parameters['rescued_two']).toBe(challengerWon ? 1 : 0);
+      expect(mapped.parameters['ace_rescued_two']).toBe(challengerWon ? 1 : 0);
+    });
+  }
 
   it('maps public causal settlement attribution without casualty identities', () => {
     const decisiveCard = new CardImpl(Suit.HEARTS, Rank.QUEEN);
@@ -231,6 +272,7 @@ describe('game telemetry mapper', () => {
         const cardTwo = new CardImpl(Suit.HEARTS, Rank.TWO);
         const cardAce = new CardImpl(Suit.SPADES, Rank.ACE);
         const reinforceResolved = mapGameEventToTelemetry({
+          escalatedToBattle: false,
           type: 'challenge_resolved',
           turnNumber: 2,
           challenger: PlayerType.PLAYER,
@@ -334,6 +376,7 @@ describe('game telemetry mapper', () => {
       expect(reinforceAccepted?.parameters['reinforcement_rank']).toBeUndefined();
 
       const reinforceResolved = mapGameEventToTelemetry({
+        escalatedToBattle: false,
         type: 'challenge_resolved',
         turnNumber: 2,
         challenger: PlayerType.PLAYER,

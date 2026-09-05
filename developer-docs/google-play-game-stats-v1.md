@@ -1,6 +1,6 @@
 # Google Play Game Stats v1 design contract
 
-Design baseline: checked-in commit `67f8a5b`, app `4.2.1`, gameplay telemetry schema `2`, progression schema `3`, ruleset `2026.09.1`. Google documentation checked 2026-09-04. This document specifies a future implementation; none exists as a result of this pass.
+Design baseline: checked-in commit `67f8a5b`, app `4.2.1`, gameplay telemetry schema `2`, progression schema `3`, ruleset `2026.09.1`. Google documentation checked 2026-09-04. Runtime reconciliation: gameplay telemetry now uses schema `3` after the Orders-boundary and reinforcement-success fixes; the Game Stats feature remains unimplemented. This document specifies a future implementation; none exists as a result of this pass.
 
 ## 1. Scope and non-goals
 
@@ -34,7 +34,7 @@ Source abbreviations used in the table:
 
 | Event name | Property | Google property type | Semantic definition | Authoritative repository/domain source | Required? | Allowed values/range | Why it exists |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `war_completed` | `stats_schema_version` | `INT64` | Version of this event contract. | New adapter constant, specified here. | Yes | `1` | Separate interpretation from GA4 schema `2` and progression schema `3`. |
+| `war_completed` | `stats_schema_version` | `INT64` | Version of this event contract. | New adapter constant, specified here. | Yes | `1` | Separate interpretation from GA4 schema `3` and progression schema `3`. |
 | `war_completed` | `ruleset_version` | `STRING` | Released rules/AI version captured for this War. | Versions: `rulesetVersion`. | Yes | Release-controlled nonempty value, at most 100 characters; current `2026.09.1`. | Compare commanders under the same rules and strategy tuning. |
 | `war_completed` | `app_version` | `STRING` | Deployed application version captured for this War. | Versions: `appVersion`. | Yes | Release-controlled nonempty value, at most 100 characters; baseline `4.2.1`. | Identify implementation cohorts and regressions separately from rules. |
 | `war_completed` | `commander_id` | `STRING` | Actual opposing permanent strategy ID for this War. | Progression: `currentCommanderId()` / active `commanderSchedule[warIndex - 1]`, frozen at first turn. | Yes | `quartermaster`, `gambler`, `analyst`, `attritionist`, `cornered-general` | First-class commander filtering on every Game Stats event. Never emit display names. |
@@ -101,7 +101,7 @@ Personal records could eventually be accumulated locally by commander and compar
 
 ## 5. Campaign/modifier compatibility
 
-Freeze rules context on the **first `turn_started`**, after Campaign Orders have been confirmed and before any reinforcement. Keep that snapshot until the War closes, including War 3. Never read the next Campaign's state after `recordResolvedWar` advances progression. The current `war_started` setup event and telemetry context may precede Orders; they are not an authoritative source for the final custom commander/modifiers.
+Freeze the future Game Stats adapter's rules context on the **first `turn_started`**, after Campaign Orders have been confirmed and before any reinforcement. Keep that snapshot until the War closes, including War 3. Never read the next Campaign's state after `recordResolvedWar` advances progression. The controller now establishes canonical telemetry and domain `war_started` through `beginWarWhenOrdersReady`, after Orders lock; the first-turn snapshot remains suitable for the proposed adapter's eligibility and starting-reserve inputs.
 
 | `campaign_kind` | `campaign_mode` | `campaign_modifiers` |
 | --- | --- | --- |
@@ -142,10 +142,10 @@ Use a new application service subscribed eagerly to [GameEventBusService](../src
 
 | Input / seam | Mechanical projection |
 | --- | --- |
-| Controller `replaceGame`, immediately after obtaining the existing random `warId` | Call the new service's `beginWar(warId)`; reset its accumulators. This is a future integration hook, not a change to domain event semantics or GA4. |
+| Controller `beginWarWhenOrdersReady`, immediately after obtaining the existing random `warId` | Call the new service's `beginWar(warId)`; reset its accumulators. This is a future integration hook, not a change to domain event semantics or GA4. |
 | First `turn_started` | Freeze actual Progression commander, Campaign kind/mode/modifiers/index/reserves and release versions. Require selected Orders. Lock eligibility and the current local-profile/authentication epoch. Later turns cannot replace this context. |
 | `battle_started`, `battle_layer_added` | Accumulate `deepest_battle = max(previous, layerRound)`, initially zero. Do not count `battle_continues` as a newly dealt layer. |
-| Human `challenge_resolved` | Increment successful reinforcements only for `comparison=PLAYER_WINS`. Use the comparison result, not `challengerWon` or terminal `winner`; see the edge case below. |
+| Human `challenge_resolved` | Increment successful reinforcements only for `comparison=PLAYER_WINS`. Use the comparison result; corrected `challengerWon` now has the same direct-win meaning. Terminal `winner` remains separate. |
 | `clash_resolved` | Increment Aces felled iff the authoritative comparison is `PLAYER_WINS`, `specialRule=true`, player's card is TWO, and opponent's card is ACE. |
 | `challenge_resolved` from either side | Orient the pair by `challenger`: human challenger uses reinforcement vs original winner; opponent challenger uses original winner vs reinforcement. Increment Aces felled iff the oriented human TWO defeats the opponent ACE with `comparison=PLAYER_WINS`. Never include `originalBeatenCard` as the newly compared card. |
 | `battle_cards_revealed` | Use `event.selection` exclusively: increment Aces felled iff its comparison is `PLAYER_WINS`, special rule is true, and the human/opponent selected ranks are TWO/ACE. |
@@ -159,7 +159,7 @@ Relevant edge cases:
 - `enterBattle` can resolve attrition before the first layer: it emits no `battle_started`, and the normal controller path leaves `battlesCount=0`. An immediate tied clash is not automatically one dealt Battle.
 - A Battle with layers can end in a **true terminal tie without `battle_resolved`**. The `battlesCount` terminal field and layer accumulator retain its count/depth. Counting only `battle_resolved` would lose it.
 - Controller `deepestBattleLayer` is advanced before `dealBattleLayer`; its exceptional failed-deal branch can record an attempted layer. This contract requires successful dealt-layer events, never attempted commitments.
-- On a reinforcement tie, `resolveAttrition` can return a winning side even though `comparison=TIE`. Controller `challengerWon` and the local successful-challenge count can then mean an attrition win rather than a clean reinforcement win. Game Stats defines success strictly by the comparison. This is an intentional clarification, not permission to change local stats or achievements here.
+- On a reinforcement tie, `resolveAttrition` can return a winning side even though `comparison=TIE`. The runtime now derives `challengerWon` and local successful-challenge counters from the comparison alone. Domain `escalatedToBattle` distinguishes a tie entering Battle from immediate attrition, including a true terminal tie. This now agrees with the Game Stats direct-win definition; historical saved totals are not rewritten.
 - Two-over-Ace comparisons cannot be challenged. Count their direct comparison once; do not count it again through `battle_resolved`, `settlement_resolved`, or individual casualties. A Two winning a Battle against another rank does not directly fell collateral Aces.
 - `comeback_deficit` uses the Controller's maximum sampled immediately after the two ordinary cards are drawn. Equal draws preserve the turn-start army difference; transient challenge/Battle reserve differences are not sampled. A 1- or 2-card recovery is zero here, and the 15-card achievement threshold is unrelated.
 
@@ -201,7 +201,7 @@ Compare [GameStatistics](../src/app/core/models/settings.model.ts) and [AuthServ
 | Deepest Battle | `deepestRecursiveBattle` | Same normal-flow meaning; Google uses actually dealt layers, avoiding the controller's exceptional attempted-layer issue. Depth 1 is a Battle, not one recursion beyond it. |
 | Longest War | `longestGameTurns` | Same turn count; not `totalPlayTime` or wall-clock duration. |
 | Reinforcements Sent | `totalChallenges` | Same human committed-card meaning in completed normal play. “Challenge” is the code name for reinforcement. |
-| Successful Reinforcements | `successfulChallenges` | Same for outright wins; differs for the tied-comparison/attrition-win edge case above. Do not import this historical local total. |
+| Successful Reinforcements | `successfulChallenges` | Same direct-win meaning for newly recorded Wars. Older totals can include tied-comparison/attrition wins; do not import historical local totals. |
 | Aces Felled by Twos | `acesDefeatedByTwo` | Same player-owned Two vs opponent Ace comparison meaning across all three stages. Not all Ace casualties, either side's incidents, or achievement count. |
 
 None of the ten requires a new local durable field. The three adapter counters reset with each War. `war_margin` is already represented in durable Campaign War records. A later personal commander record could retain W/L/T, turns, Battles, peak depth, qualifying comeback count/maximum, reinforcements/rescues and Two-over-Ace counts by commander, using these same projections. That is a later Dossier decision, not five sets of Google stats.
@@ -210,9 +210,9 @@ The PGS-specific schema/version envelope, submission bookkeeping, and competitiv
 
 ## 9. Telemetry consistency finding
 
-This finding records the current discrepancies in this single design document; it does not alter telemetry code or the existing telemetry document.
+This finding incorporates the subsequent documentation correction and runtime fixes. Game Stats itself remains a design contract.
 
-**Commander placement:** [telemetry-schema.md](telemetry-schema.md#common-event-parameters) says every canonical gameplay record has `commander_id` when present. The actual [mapper](../src/app/services/game-telemetry.mapper.ts) `commonParameters` contains ten fields including `turn_number`, and **omits commander**. It adds commander explicitly for `game_resolved` → `war_resolved` and `game_abandoned` → `war_abandoned`. [GameTelemetryService](../src/app/services/game-telemetry.service.ts) separately includes it in canonical `war_started`. `TelemetryEnvelope.commanderId` existing in the [model](../src/app/core/models/telemetry.model.ts) does not make it an emitted parameter.
+**Commander placement:** [telemetry-schema.md](telemetry-schema.md#common-event-parameters) now correctly documents boundary-only `commander_id`. The [mapper](../src/app/services/game-telemetry.mapper.ts) `commonParameters` contains ten fields including `turn_number` and omits commander. It adds commander for `war_resolved` and `war_abandoned`; [GameTelemetryService](../src/app/services/game-telemetry.service.ts) includes it in canonical `war_started`. `TelemetryEnvelope.commanderId` in the [model](../src/app/core/models/telemetry.model.ts) does not make it a common emitted parameter.
 
 **Parameter pressure:** with all non-Fog card fields present, current mapper counts are:
 
@@ -227,11 +227,11 @@ This finding records the current discrepancies in this single design document; i
 
 Build the analytics War dimension primarily from `war_started`, with terminal context as a consistency check/fallback. Do not silently guess attribution for missing or conflicting context; exclude or mark unattributed. Consent is locked at a War boundary, withdrawal stops collection, and transport failure can still leave gaps. `campaign_resolved` carries three indexed commander IDs, not a single commander for the entire Campaign. `cosmetic_unlocked` has no War ID or commander, so “all records carry war_id” is also too broad outside game-bus records.
 
-**A separate implementation defect precedes the join:** [TableGame](../src/app/table-game/table-game.ts) calls `ensureGameStarted()` before opening Campaign Orders. Controller `replaceGame` calls `telemetry.beginWar`, freezing commander/modifiers. Confirming Orders can randomize the custom commander schedule and replace modifiers, but `afterClosed` only calls `ensureGameStarted()` again; an already initialized game does not re-run `beginWar`. Terminal mapper attribution reuses that stale envelope. Thus even agreement between start and terminal records cannot prove correct commander/rules attribution for affected War 1 records. This can also apply the wrong Fog redaction policy.
+**Orders-boundary correction (gameplay schema 3):** [TableGame](../src/app/table-game/table-game.ts) may prepare the decks before Campaign Orders, but Controller `replaceGame` now leaves the War start pending while Orders are unselected. `beginWarWhenOrdersReady` freezes the final schedule/modifiers exactly once after confirmation, called by `ensureGameStarted` and guarded by `playerDrawCard`. Already-ordered Wars start immediately; new Campaigns wait for Orders. This fixes commander attribution and Fog redaction without a corrective start or fake restart.
 
-Recommend a separate telemetry implementation correction to establish canonical collection/context after Orders are locked and before the first gameplay event; do not just append commander to every event. Preserve one canonical start record and next-War consent semantics. Existing affected records cannot be assumed repaired by a `war_id` join. The new Game Stats adapter must take its own first-turn snapshot as specified here, rather than reuse `currentWarContext()` for commander or modifiers.
+Canonical start, terminal events and progression retain one War ID. Mid-War consent grants still wait for the next boundary. Historical schema-2 War 1 records can share stale context at both ends and cannot be assumed repaired by a War-ID join. The future Game Stats first-turn snapshot remains valid, but no longer needs to work around an unfixed runtime sequencing defect.
 
-**Reinforcement semantics:** the mapper uses `winner === null` and `challengerWon` to classify success/Battle escalation, reproducing the attrition-tie ambiguity in section 7. Consequently a future community rescue rate needs that classification corrected/versioned or the affected cohort excluded before comparison with this contract's direct-win rate. Existing terminal `largest_deficit` and `comeback` otherwise align with the sampled local comeback definition. None of these corrections is implemented in this pass.
+**Reinforcement semantics (gameplay schema 3):** the mapper emits `success`/`failure` only for outright comparisons, `battle` for a tie entering Battle, and `tie` for immediate attrition. The domain escalation flag populates the existing `escalated_to_battle` parameter without exceeding 25 fields. Local rescue statistics, achievements and Hall records consume corrected direct-win `challengerWon`; Chronicle text preserves tie/attrition meaning. Use schema 3 or later for community-rate comparisons; older events and saved totals are not rewritten. UI schema remains 1 and ruleset `2026.09.1` because no engagement or game rules changed.
 
 ## 10. Play Console artifact inputs
 
@@ -267,7 +267,7 @@ Use the existing felt-green/gold military visual language; icons must remain dis
 ## 11. Implementation handoff
 
 1. Add a typed Game Stats model and pure `war_completed` mapper for section 2; keep Google aggregation values as per-War inputs. Add the protocol messages above without changing achievement mappings/behavior.
-2. Add the eagerly initialized application projection service: `beginWar(warId)`, first-turn context/eligibility snapshot, three counters, terminal emission and duplicate/lifecycle guards. Wire the controller's existing War-ID seam; do not use UI state or stale GA4 context.
+2. Add the eagerly initialized application projection service: `beginWar(warId)`, first-turn context/eligibility snapshot, three counters, terminal emission and duplicate/lifecycle guards. Wire the controller's `beginWarWhenOrdersReady` War-ID seam; do not use UI state or historical telemetry records.
 3. Add `PlatformGameStatsService` with verified-transport registration and web/unavailable no-op behavior. Implement the fixed native-session/profile-change and no-backfill policies; do not add a durable web queue.
 4. Upgrade the future native integration to Games v2 `22.0.0`; add `PlayGameStatsBridge`, exact validation, host-session deduplication, typed `long` properties, SDK recording/upload and truthful local-buffer receipts. Use the separately supplied verified channel; leave production unavailable until that prerequisite exists.
 5. Add targeted tests for all ten derivations, 3-card comeback threshold, depth 1/8 and terminal ties, zero-layer attrition, reinforcement tie vs outright win, both reinforcement actors' Two/Ace orientation, no casualty double counting, custom Orders snapshot, War 3 progression advance, Fog, resets/profile switches, duplicate terminal records, missing receipts, unsigned/web/fixture no-ops, and payload budget/types.

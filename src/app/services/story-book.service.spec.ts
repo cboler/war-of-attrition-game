@@ -213,6 +213,7 @@ describe('StoryBookService', () => {
 
   it('uses rescue/loss language for challenge results', () => {
     eventBus.emit({
+      escalatedToBattle: false,
       type: 'challenge_resolved',
       turnNumber: 4,
       challenger: PlayerType.PLAYER,
@@ -229,6 +230,7 @@ describe('StoryBookService', () => {
     expect(service.entries().at(-1)?.text).toContain('both of your cards survive');
 
     eventBus.emit({
+      escalatedToBattle: false,
       type: 'challenge_resolved',
       turnNumber: 5,
       challenger: PlayerType.PLAYER,
@@ -332,6 +334,7 @@ describe('StoryBookService', () => {
 
     it('uses the reinforcement card and not the originally beaten card for challenge comparison', () => {
       eventBus.emit({
+        escalatedToBattle: false,
         type: 'challenge_resolved',
         turnNumber: 5,
         challenger: PlayerType.PLAYER,
@@ -357,6 +360,7 @@ describe('StoryBookService', () => {
 
     it('attaches player-winning comparison to successful reinforcement challenge', () => {
       eventBus.emit({
+        escalatedToBattle: false,
         type: 'challenge_resolved',
         turnNumber: 6,
         challenger: PlayerType.PLAYER,
@@ -378,6 +382,7 @@ describe('StoryBookService', () => {
 
     it('attaches tie comparison to tied reinforcement challenge', () => {
       eventBus.emit({
+        escalatedToBattle: true,
         type: 'challenge_resolved',
         turnNumber: 7,
         challenger: PlayerType.PLAYER,
