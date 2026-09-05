@@ -10,6 +10,7 @@ describe('TableReactionService', () => {
   let randomValues: number[];
   let service: TableReactionService;
   let progression: CampaignProgressionService;
+  let auth: AuthService;
 
   beforeEach(() => {
     localStorage.clear();
@@ -27,6 +28,7 @@ describe('TableReactionService', () => {
     });
     service = TestBed.inject(TableReactionService);
     progression = TestBed.inject(CampaignProgressionService);
+    auth = TestBed.inject(AuthService);
   });
 
   afterEach(() => {
@@ -103,8 +105,8 @@ describe('TableReactionService', () => {
     expect(reaction?.category).toBe('narrow_clash');
   });
 
-  it('reacts to an Ace revealed as the successful reinforcement for a 2', () => {
-    randomValues = [0.1, 0];
+  it('guarantees the first eligible authored tactical line during the scripted run', () => {
+    randomValues = [0.99];
     const reaction = service.forChallengeResolution({
       challenger: PlayerType.PLAYER,
       originalBeatenCard: card(Rank.TWO),
@@ -177,6 +179,18 @@ describe('TableReactionService', () => {
       resolveCurrentWar('sparse-replay-2');
       resolveCurrentWar('sparse-replay-3');
       expect(progression.isChapterCompleted('standard')).toBeTrue();
+      auth.updateActiveProfileProgression(previous => ({
+        ...previous,
+        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war'],
+        completedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war'],
+        currentCampaign: {
+          ...previous.currentCampaign,
+          mode: 'standard',
+          modifiers: [],
+          ordersSelected: false,
+          wars: [],
+        },
+      }));
       expect(progression.selectCampaignOrders('standard')).toBeTrue();
 
       const specialClash = {

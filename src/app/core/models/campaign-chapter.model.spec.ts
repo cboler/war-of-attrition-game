@@ -5,6 +5,8 @@ import {
   getAuthoredCommanderId,
   getAuthoredCommanderSchedule,
   getCampaignChapter,
+  getScriptedChapterModifiers,
+  isCampaignModifierId,
   isCampaignModeId,
   nextCampaignChapter
 } from './campaign-chapter.model';
@@ -28,6 +30,22 @@ describe('CampaignChapterModel', () => {
       expect(isCampaignModeId('invalid_mode')).toBeFalse();
       expect(isCampaignModeId(null)).toBeFalse();
       expect(isCampaignModeId(undefined)).toBeFalse();
+    });
+
+    it('defines the exact progressive modifier stack for the scripted Chapters', () => {
+      expect(getScriptedChapterModifiers('standard')).toEqual([]);
+      expect(getScriptedChapterModifiers('limited_reserves')).toEqual(['limited_reserves']);
+      expect(getScriptedChapterModifiers('fog_of_war')).toEqual([
+        'limited_reserves',
+        'fog_of_war',
+      ]);
+      expect(getScriptedChapterModifiers('total_war')).toEqual([
+        'limited_reserves',
+        'fog_of_war',
+        'total_war',
+      ]);
+      expect(isCampaignModifierId('standard')).toBeFalse();
+      expect(isCampaignModifierId('total_war')).toBeTrue();
     });
   });
 

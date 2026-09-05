@@ -14,4 +14,9 @@ export class GameOverSummaryComponent {
   readonly summary = input<CurrentGameSummary | null>(null);
   readonly manualRequested = output<void>();
   readonly replayRequested = output<void>();
+
+  isTotalWar(): boolean {
+    const summary = this.summary();
+    return summary?.campaignModifiers?.includes('total_war') ?? summary?.campaignMode === 'total_war';
+  }
 }

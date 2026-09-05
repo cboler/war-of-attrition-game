@@ -6,10 +6,11 @@ import { getCommander } from '../models/commander.model';
 import { getCommanderIdentity } from '../models/commander-identity.model';
 import {
   CAMPAIGN_CHAPTER_ORDER,
+  CampaignModifierId,
   CampaignWarIndex,
   generateReplayCommanderSchedule,
   getAuthoredCommanderSchedule,
-  nextCampaignChapter
+  getScriptedChapterModifiers
 } from '../models/campaign-chapter.model';
 
 import {
@@ -32,6 +33,7 @@ import {
   createProgressionId,
   MAX_CAMPAIGN_HISTORY,
   MAX_PROCESSED_WAR_IDS,
+  normalizeCampaignModifiers,
   RecordResolvedWarResult,
   ResolvedWarInput,
   summarizeCampaign,
@@ -73,6 +75,9 @@ export class CampaignProgressionService {
     getCommanderIdentity(this.currentCommanderId())
   );
   readonly activeCampaignMode = computed<CampaignModeId>(() => this.currentCampaign().mode);
+  readonly activeCampaignModifiers = computed<readonly CampaignModifierId[]>(
+    () => this.currentCampaign().modifiers
+  );
   readonly ordersSelected = computed<boolean>(() => this.currentCampaign().ordersSelected);
   readonly hasActiveCampaign = computed<boolean>(() =>
     this.currentCampaign().ordersSelected || this.currentCampaign().wars.length > 0
@@ -80,6 +85,17 @@ export class CampaignProgressionService {
   readonly isLimitedReserves = computed<boolean>(() => isLimitedReservesMode(this.currentCampaign()));
   readonly isTotalWar = computed<boolean>(() => isTotalWarMode(this.currentCampaign()));
   readonly isFogOfWar = computed<boolean>(() => isFogOfWarMode(this.currentCampaign()));
+  readonly campaignRulesLabel = computed<string>(() => {
+    const modifiers = this.activeCampaignModifiers();
+    if (modifiers.length === 0) return 'Standard Campaign';
+    return modifiers
+      .map(modifier => modifier === 'limited_reserves'
+        ? 'Limited Reserves'
+        : modifier === 'fog_of_war'
+          ? 'Fog of War'
+          : 'Total War')
+      .join(' + ');
+  });
   readonly runningCampaignDifferential = computed<number>(() =>
     this.currentCampaign().wars.reduce((sum, w) => sum + w.margin, 0)
   );
@@ -115,7 +131,7 @@ export class CampaignProgressionService {
    * Authoritative check whether casualty inspection / historical ledgers are accessible.
    */
   canInspectCurrentWarCasualties(isWarResolved: boolean): boolean {
-    return canInspectCasualties(this.activeCampaignMode(), isWarResolved);
+    return canInspectCasualties(this.activeCampaignModifiers(), isWarResolved);
   }
 
   private randomSource: () => number = Math.random;
@@ -149,30 +165,42 @@ export class CampaignProgressionService {
    * Confirms the Campaign Orders (rules of engagement) for the active Campaign.
    * Only permitted before War 1 begins.
    */
-  selectCampaignOrders(mode: CampaignModeId): boolean {
+  selectCampaignOrders(
+    mode: CampaignModeId,
+    customModifiers?: readonly CampaignModifierId[]
+  ): boolean {
     const current = this.currentCampaign();
-    if (current.wars.length > 0 || !this.isChapterUnlocked(mode)) {
+    const isReplay = this.isAllChaptersCompleted();
+    if (
+      current.wars.length > 0 ||
+      (!isReplay && (mode !== current.mode || !this.isChapterUnlocked(mode)))
+    ) {
       return false; // Mode is immutable once Campaign play has begun.
     }
 
+    const selectedMode: CampaignModeId = isReplay ? 'standard' : mode;
+    const modifiers = isReplay
+      ? normalizeCampaignModifiers(customModifiers ?? (mode === 'standard' ? [] : [mode]))
+      : [...getScriptedChapterModifiers(mode)];
+
     const limitedReserves: LimitedReservesCampaignState | undefined =
-      mode === 'limited_reserves'
+      modifiers.includes('limited_reserves')
         ? {
             initialReserves: LIMITED_RESERVES_INITIAL_COUNT,
             remainingReserves: LIMITED_RESERVES_INITIAL_COUNT
           }
         : undefined;
 
-    const isReplay = this.isAllChaptersCompleted();
     const commanderSchedule = isReplay
       ? generateReplayCommanderSchedule(this.randomSource)
-      : getAuthoredCommanderSchedule(mode);
+      : getAuthoredCommanderSchedule(selectedMode);
 
     this.authService.updateActiveProfileProgression(previous => ({
       ...previous,
       currentCampaign: {
         ...previous.currentCampaign,
-        mode,
+        mode: selectedMode,
+        modifiers,
         ordersSelected: true,
         commanderSchedule,
         limitedReserves: undefined,
@@ -196,6 +224,7 @@ export class CampaignProgressionService {
       currentCampaign: {
         campaignId: createProgressionId('campaign'),
         mode: previous.currentCampaign.mode,
+        modifiers: previous.currentCampaign.modifiers,
         ordersSelected: false,
         wars: [],
         commanderSchedule: getAuthoredCommanderSchedule(previous.currentCampaign.mode),
@@ -211,7 +240,7 @@ export class CampaignProgressionService {
    */
   consumeHumanReserve(): boolean {
     const current = this.currentCampaign();
-    if (current.mode !== 'limited_reserves') {
+    if (!current.modifiers.includes('limited_reserves')) {
       return true; // Standard Campaign has no reserve pool limit.
     }
 
@@ -221,7 +250,7 @@ export class CampaignProgressionService {
     }
 
     this.authService.updateActiveProfileProgression(previous => {
-      if (previous.currentCampaign.mode !== 'limited_reserves') return previous;
+      if (!previous.currentCampaign.modifiers.includes('limited_reserves')) return previous;
       const lr = previous.currentCampaign.limitedReserves;
       if (!lr || lr.remainingReserves <= 0) return previous;
 
@@ -273,7 +302,8 @@ export class CampaignProgressionService {
           current.currentCampaign.campaignId,
           candidateWars,
           current.currentCampaign.mode,
-          current.currentCampaign.limitedReserves?.remainingReserves
+          current.currentCampaign.limitedReserves?.remainingReserves,
+          current.currentCampaign.modifiers
         )
       : null;
     const progression = this.authService.updateActiveProfileProgression(previous => {
@@ -295,28 +325,42 @@ export class CampaignProgressionService {
         previous.currentCampaign.campaignId,
         wars,
         previous.currentCampaign.mode,
-        previous.currentCampaign.limitedReserves?.remainingReserves
+        previous.currentCampaign.limitedReserves?.remainingReserves,
+        previous.currentCampaign.modifiers
       );
       const completedChapterModes = CAMPAIGN_CHAPTER_ORDER.filter(mode =>
         previous.completedChapterModes.includes(mode) || mode === completed.mode
       );
-      const nextMode = nextCampaignChapter(completed.mode);
-      const newlyUnlockedMode = nextMode && !previous.unlockedChapterModes.includes(nextMode)
-        ? nextMode
+      const firstIncompleteMode = CAMPAIGN_CHAPTER_ORDER.find(mode =>
+        !completedChapterModes.includes(mode)
+      ) ?? null;
+      const newlyUnlockedMode = firstIncompleteMode &&
+        !previous.unlockedChapterModes.includes(firstIncompleteMode)
+        ? firstIncompleteMode
         : null;
       const unlockedChapterModes = CAMPAIGN_CHAPTER_ORDER.filter(mode =>
         previous.unlockedChapterModes.includes(mode) || mode === newlyUnlockedMode
       );
-      const defaultNextMode = newlyUnlockedMode ?? completed.mode;
+      const storyNowComplete = firstIncompleteMode === null;
+      const isCustomReplay = this.isAllChaptersCompleted();
+      const nextCampaignMode: CampaignModeId = storyNowComplete
+        ? 'standard'
+        : firstIncompleteMode;
+      const nextModifiers = storyNowComplete
+        ? isCustomReplay
+          ? completed.modifiers
+          : []
+        : getScriptedChapterModifiers(nextCampaignMode);
 
       return {
         ...previous,
         currentCampaign: {
           campaignId: createProgressionId('campaign'),
-          mode: defaultNextMode,
+          mode: nextCampaignMode,
+          modifiers: nextModifiers,
           ordersSelected: false,
           wars: [],
-          commanderSchedule: getAuthoredCommanderSchedule(defaultNextMode)
+          commanderSchedule: getAuthoredCommanderSchedule(nextCampaignMode)
         },
         recentCampaigns: [...previous.recentCampaigns, completed]
           .slice(-MAX_CAMPAIGN_HISTORY),

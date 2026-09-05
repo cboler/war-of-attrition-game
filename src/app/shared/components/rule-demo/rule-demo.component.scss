@@ -58,6 +58,8 @@
 }
 
 .demo-scene {
+  position: relative;
+  overflow: hidden;
   min-height: 206px;
   padding: 10px;
   border: 1px solid rgba(228, 191, 114, 0.14);
@@ -65,6 +67,142 @@
   background:
     radial-gradient(circle at center, rgba(229, 193, 117, 0.08), transparent 62%),
     #102a23;
+}
+
+.boneyard-drill-scene .comparison-row {
+  padding-right: 86px;
+}
+
+.demo-boneyard {
+  position: absolute;
+  top: 46px;
+  right: 10px;
+  display: grid;
+  width: 76px;
+  justify-items: center;
+  gap: 5px;
+
+  > strong {
+    color: #ffb4ab;
+    font: 700 0.55rem/1.15 system-ui, sans-serif;
+    letter-spacing: 0.05em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+}
+
+.boneyard-target {
+  position: relative;
+  display: grid;
+  width: 62px;
+  height: 86px;
+  place-items: center;
+  overflow: hidden;
+  border: 2px dashed rgba(255, 180, 171, 0.5);
+  border-radius: 8px;
+  color: rgba(255, 180, 171, 0.72);
+  background: rgba(36, 14, 14, 0.42);
+
+  > mat-icon { width: 22px; height: 22px; font-size: 22px; }
+  > span { position: absolute; bottom: 8px; font: 700 0.52rem/1 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+}
+
+.arriving-casualty {
+  position: absolute;
+  inset: 4px;
+  z-index: 1;
+  animation: casualty-enters-boneyard 520ms cubic-bezier(0.22, 0.8, 0.28, 1) both;
+
+  app-card { --card-width: 52px; --card-height: 73px; }
+}
+
+.demo-card-slot.departing-to-boneyard app-card {
+  animation: casualty-leaves-clash 430ms ease-in both;
+}
+
+.war-celebration {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle, rgba(35, 88, 60, 0.9), rgba(7, 26, 21, 0.94) 70%);
+  animation: celebration-reveal 260ms ease-out both;
+}
+
+.victory-stamp {
+  z-index: 2;
+  display: grid;
+  min-width: 150px;
+  gap: 5px;
+  padding: 13px 18px 11px;
+  transform: rotate(-3deg);
+  border: 3px double #ffd54f;
+  color: #ffe082;
+  background: rgba(41, 63, 37, 0.88);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.42);
+  font: 800 1.15rem/1 Georgia, serif;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  animation: victory-stamp 460ms cubic-bezier(0.16, 1.35, 0.35, 1) both;
+
+  small { color: rgba(247, 240, 225, 0.76); font: 700 0.52rem/1.2 system-ui, sans-serif; letter-spacing: 0.11em; }
+}
+
+.streamer {
+  position: absolute;
+  top: -34px;
+  width: 8px;
+  height: 125px;
+  border-radius: 999px;
+  animation: streamer-fall 720ms cubic-bezier(0.18, 0.72, 0.32, 1) both;
+}
+
+.streamer-one { left: 14%; background: #a72f35; transform: rotate(18deg); }
+.streamer-two { left: 34%; background: #e5c175; transform: rotate(-12deg); animation-delay: 70ms; }
+.streamer-three { right: 31%; background: #8e2630; transform: rotate(14deg); animation-delay: 35ms; }
+.streamer-four { right: 12%; background: #d7aa50; transform: rotate(-20deg); animation-delay: 105ms; }
+
+.party-popper {
+  position: absolute;
+  bottom: 12px;
+  z-index: 2;
+  font-size: 1.7rem;
+  animation: popper-pop 420ms cubic-bezier(0.16, 1.35, 0.35, 1) both;
+
+  &.left { left: 18px; transform: rotate(-18deg); }
+  &.right { right: 18px; transform: scaleX(-1) rotate(-18deg); }
+}
+
+@keyframes casualty-enters-boneyard {
+  from { opacity: 0.2; transform: translate(-78px, -12px) rotate(-9deg) scale(1.2); }
+  to { opacity: 1; transform: translate(0, 0) rotate(4deg) scale(1); }
+}
+
+@keyframes casualty-leaves-clash {
+  to { opacity: 0; transform: translate(70px, 24px) rotate(8deg) scale(0.72); }
+}
+
+@keyframes celebration-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes victory-stamp {
+  from { opacity: 0; transform: rotate(-7deg) scale(1.55); }
+  to { opacity: 1; transform: rotate(-3deg) scale(1); }
+}
+
+@keyframes streamer-fall {
+  from { opacity: 0; translate: 0 -40px; }
+  to { opacity: 0.9; translate: 0 74px; }
+}
+
+@keyframes popper-pop {
+  from { opacity: 0; scale: 0.45; }
+  to { opacity: 1; scale: 1; }
 }
 
 .deck-readout {
@@ -378,6 +516,11 @@
     --card-height: 60px;
   }
 
+  .boneyard-drill-scene .comparison-row { padding-right: 72px; }
+  .demo-boneyard { right: 4px; width: 70px; }
+  .boneyard-target { width: 56px; height: 80px; }
+  .arriving-casualty app-card { --card-width: 46px; --card-height: 65px; }
+
   .commitment-side .strength-value {
     min-width: 66px;
     padding-inline: 4px;
@@ -390,6 +533,12 @@
     transition: none;
   }
   .committed-card { animation: none; }
+  .arriving-casualty,
+  .demo-card-slot.departing-to-boneyard app-card,
+  .war-celebration,
+  .victory-stamp,
+  .streamer,
+  .party-popper { animation: none; }
 }
 
 .rule-demo.motion-disabled .demo-card-slot {
@@ -397,3 +546,9 @@
 }
 
 .rule-demo.motion-disabled .committed-card { animation: none; }
+.rule-demo.motion-disabled .arriving-casualty,
+.rule-demo.motion-disabled .demo-card-slot.departing-to-boneyard app-card,
+.rule-demo.motion-disabled .war-celebration,
+.rule-demo.motion-disabled .victory-stamp,
+.rule-demo.motion-disabled .streamer,
+.rule-demo.motion-disabled .party-popper { animation: none; }

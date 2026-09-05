@@ -224,11 +224,11 @@ export class TableReactionService {
       }
     }
 
-    // Replay and procedural Battle chatter stays exceptional. An exact
-    // first-play record is authored campaign delivery, so it must not be
-    // discarded by the generic reaction probability.
+    // Replay and procedural Battle chatter stays exceptional. During the
+    // mandatory story traversal, each eligible authored tactical line is
+    // guaranteed on its first matching event.
     const chance = largeLoss || decisiveRampage || deepBattle ? 0.22 : 0.16;
-    if (!this.isReliableFirstPlay(authored) && this.random() >= chance) return null;
+    if (!this.isGuaranteedScriptedLine(authored) && this.random() >= chance) return null;
 
     if (authored) this.usedDialogueIds.add(authored.id);
     const message = authored?.text ?? variants[Math.floor(this.random() * variants.length)];
@@ -404,7 +404,7 @@ export class TableReactionService {
     authoredOverride: AuthoredDialogueRecord | null = null,
     expression: CommanderExpression = 'calm',
   ): TableReaction | null {
-    if (!this.isReliableFirstPlay(authoredOverride) && this.random() >= chance) return null;
+    if (!this.isGuaranteedScriptedLine(authoredOverride) && this.random() >= chance) return null;
     if (authoredOverride) this.usedDialogueIds.add(authoredOverride.id);
     const message =
       authoredOverride?.text ?? variants[Math.floor(this.random() * variants.length)];
@@ -417,8 +417,9 @@ export class TableReactionService {
     };
   }
 
-  private isReliableFirstPlay(record: AuthoredDialogueRecord | null): boolean {
-    return record?.mode !== undefined && record.availability === 'first_play';
+  private isGuaranteedScriptedLine(record: AuthoredDialogueRecord | null): boolean {
+    return record?.mode !== undefined &&
+      !(this.progression?.isChapterCompleted(record.mode) ?? false);
   }
 
   private resolveCommander(commander?: OpponentCommander | OpponentCommanderId): OpponentCommander {

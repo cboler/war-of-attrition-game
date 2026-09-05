@@ -41,6 +41,10 @@ interface RuleDemoFrame {
   readonly supportingCard?: Card;
   readonly supportingCardInactive?: boolean;
   readonly rightInBoneyard?: boolean;
+  readonly showBoneyard?: boolean;
+  readonly boneyardCard?: Card;
+  readonly rightMovesToBoneyard?: boolean;
+  readonly warCelebration?: boolean;
   readonly special?: boolean;
   readonly playerDeckCount?: number;
   readonly opponentDeckCount?: number;
@@ -261,7 +265,8 @@ const RULE_DEMOS: Readonly<Record<RuleDemoKind, RuleDemoDefinition>> = {
         leftStrength: 3,
         rightStrength: 0,
         leftGlow: 'green',
-        rightGlow: 'red'
+        rightGlow: 'red',
+        showBoneyard: true
       },
       {
         cue: 'Eliminate',
@@ -271,7 +276,10 @@ const RULE_DEMOS: Readonly<Record<RuleDemoKind, RuleDemoDefinition>> = {
         leftStrength: 12,
         rightStrength: 0,
         leftGlow: 'green',
-        rightInBoneyard: true
+        rightGlow: 'red',
+        showBoneyard: true,
+        boneyardCard: NINE_DIAMONDS,
+        rightMovesToBoneyard: true
       }
     ]
   },
@@ -299,6 +307,7 @@ const RULE_DEMOS: Readonly<Record<RuleDemoKind, RuleDemoDefinition>> = {
         leftGlow: 'green',
         rightGlow: 'red',
         rightInBoneyard: true,
+        warCelebration: true,
         playerDeckCount: 5,
         opponentDeckCount: 0
       }
@@ -403,7 +412,7 @@ export class RuleDemoComponent implements AfterViewInit {
   private playFrameSound(frame: RuleDemoFrame): void {
     if (!this.settings.soundEnabled()) return;
 
-    if (frame.rightInBoneyard) {
+    if (frame.rightInBoneyard || frame.boneyardCard) {
       this.sound.playBoneyard();
       return;
     }

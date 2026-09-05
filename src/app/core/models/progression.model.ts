@@ -2,18 +2,26 @@ import { GameOutcome } from './game-state.model';
 import { isCommanderId, OpponentCommanderId } from './commander.model';
 import {
   CAMPAIGN_CHAPTER_ORDER,
+  CAMPAIGN_MODIFIER_ORDER,
   CampaignCommanderSchedule,
+  CampaignModifierId,
   CampaignModeId,
   CampaignWarIndex,
   chapterPrerequisitesThrough,
   getAuthoredCommanderId,
   getAuthoredCommanderSchedule,
-  isCampaignModeId
+  getScriptedChapterModifiers,
+  isCampaignModeId,
+  isCampaignModifierId
 } from './campaign-chapter.model';
 
-export type { CampaignModeId, CampaignWarIndex } from './campaign-chapter.model';
+export type {
+  CampaignModifierId,
+  CampaignModeId,
+  CampaignWarIndex
+} from './campaign-chapter.model';
 
-export const CAMPAIGN_PROGRESSION_SCHEMA_VERSION = 2;
+export const CAMPAIGN_PROGRESSION_SCHEMA_VERSION = 3;
 export const WARS_PER_CAMPAIGN = 3;
 export const MAX_CAMPAIGN_HISTORY = 20;
 export const MAX_PROCESSED_WAR_IDS = 256;
@@ -42,7 +50,9 @@ export interface LimitedReservesCampaignState {
 
 export interface ActiveCampaign {
   readonly campaignId: string;
+  /** Story Chapter identity. Mechanical rules live in `modifiers`. */
   readonly mode: CampaignModeId;
+  readonly modifiers: readonly CampaignModifierId[];
   readonly ordersSelected: boolean;
   readonly wars: readonly CampaignWarRecord[];
   /** Stable encounter snapshot. Reloads never reroll or reinterpret an active Campaign. */
@@ -52,7 +62,9 @@ export interface ActiveCampaign {
 
 export interface CampaignHistoryEntry {
   readonly campaignId: string;
+  /** Story Chapter identity; custom post-story Campaigns use `standard`. */
   readonly mode: CampaignModeId;
+  readonly modifiers: readonly CampaignModifierId[];
   readonly wars: readonly CampaignWarRecord[];
   readonly wins: number;
   readonly losses: number;
@@ -120,7 +132,7 @@ export interface CosmeticPurchaseResult {
 
 export function canHumanReinforce(campaign: ActiveCampaign, deckCount: number): boolean {
   if (deckCount <= 0) return false;
-  if (campaign.mode === 'limited_reserves') {
+  if (campaign.modifiers.includes('limited_reserves')) {
     return (campaign.limitedReserves?.remainingReserves ?? 0) > 0;
   }
   return true;
@@ -129,22 +141,22 @@ export function canHumanReinforce(campaign: ActiveCampaign, deckCount: number): 
 export function getHumanReserves(
   campaign: ActiveCampaign
 ): { remaining: number; max: number } | null {
-  if (campaign.mode !== 'limited_reserves') return null;
+  if (!campaign.modifiers.includes('limited_reserves')) return null;
   const initial = campaign.limitedReserves?.initialReserves ?? LIMITED_RESERVES_INITIAL_COUNT;
   const remaining = campaign.limitedReserves?.remainingReserves ?? 0;
   return { remaining, max: initial };
 }
 
 export function isLimitedReservesMode(campaign: ActiveCampaign): boolean {
-  return campaign.mode === 'limited_reserves';
+  return campaign.modifiers.includes('limited_reserves');
 }
 
 export function isTotalWarMode(campaign: ActiveCampaign): boolean {
-  return campaign.mode === 'total_war';
+  return campaign.modifiers.includes('total_war');
 }
 
 export function isFogOfWarMode(campaign: ActiveCampaign): boolean {
-  return campaign.mode === 'fog_of_war';
+  return campaign.modifiers.includes('fog_of_war');
 }
 
 /**
@@ -152,12 +164,21 @@ export function isFogOfWarMode(campaign: ActiveCampaign): boolean {
  * While the War is active in Fog of War mode, casualties and historical combat details are sealed.
  * Once the War resolves, the seal is lifted.
  */
-export function isFogOfWarActive(mode: CampaignModeId, isWarResolved: boolean): boolean {
-  return mode === 'fog_of_war' && !isWarResolved;
+export function isFogOfWarActive(
+  modeOrModifiers: CampaignModeId | readonly CampaignModifierId[],
+  isWarResolved: boolean
+): boolean {
+  const hasFog = Array.isArray(modeOrModifiers)
+    ? modeOrModifiers.includes('fog_of_war')
+    : modeOrModifiers === 'fog_of_war';
+  return hasFog && !isWarResolved;
 }
 
-export function canInspectCasualties(mode: CampaignModeId, isWarResolved: boolean): boolean {
-  return !isFogOfWarActive(mode, isWarResolved);
+export function canInspectCasualties(
+  modeOrModifiers: CampaignModeId | readonly CampaignModifierId[],
+  isWarResolved: boolean
+): boolean {
+  return !isFogOfWarActive(modeOrModifiers, isWarResolved);
 }
 
 export function createProgressionId(prefix: 'campaign' | 'war' = 'campaign'): string {
@@ -196,6 +217,7 @@ export function createDefaultCampaignProgression(
     currentCampaign: {
       campaignId: createProgressionId('campaign'),
       mode: 'standard',
+      modifiers: [],
       ordersSelected: false,
       wars: [],
       commanderSchedule: getAuthoredCommanderSchedule('standard')
@@ -226,7 +248,10 @@ export function normalizeCampaignProgression(
       : fallback;
   }
 
-  const isLegacySchema = value['schemaVersion'] !== CAMPAIGN_PROGRESSION_SCHEMA_VERSION;
+  const storedSchemaVersion = nonNegativeInteger(value['schemaVersion']);
+  const usesLegacyCommanderShape = storedSchemaVersion < 2;
+  const grandfatherLegacyChapters =
+    options.grandfatherLegacyAccess === true || usesLegacyCommanderShape;
   const rawCurrent = isRecord(value['currentCampaign']) ? value['currentCampaign'] : null;
   const rawCampaignId = normalizeId(rawCurrent?.['campaignId']) || createProgressionId('campaign');
   const mode: CampaignModeId = isCampaignModeId(rawCurrent?.['mode'])
@@ -254,8 +279,24 @@ export function normalizeCampaignProgression(
     ? rawCurrent['ordersSelected']
     : currentWars.length > 0;
 
+  const completedChapterModes = orderedModes([
+    ...normalizeModeArray(value['completedChapterModes']),
+    ...recentCampaigns.map(campaign => campaign.mode)
+  ]);
+  const storyComplete = CAMPAIGN_CHAPTER_ORDER.every(chapter =>
+    completedChapterModes.includes(chapter)
+  );
+  const hasStoredModifiers = Array.isArray(rawCurrent?.['modifiers']);
+  const modifiers = hasStoredModifiers
+    ? normalizeModifierArray(rawCurrent?.['modifiers'])
+    : ordersSelected || currentWars.length > 0
+      ? legacyModifiersForMode(mode)
+      : storyComplete
+        ? []
+        : getScriptedChapterModifiers(mode);
+
   let limitedReserves: LimitedReservesCampaignState | undefined;
-  if (mode === 'limited_reserves') {
+  if (modifiers.includes('limited_reserves')) {
     const rawLr = isRecord(rawCurrent?.['limitedReserves']) ? rawCurrent['limitedReserves'] : null;
     const initial = LIMITED_RESERVES_INITIAL_COUNT;
     const remaining = rawLr && rawLr['remainingReserves'] !== undefined
@@ -276,17 +317,13 @@ export function normalizeCampaignProgression(
     ...discoveredWarIds
   ]).slice(-MAX_PROCESSED_WAR_IDS);
 
-  const completedChapterModes = orderedModes([
-    ...normalizeModeArray(value['completedChapterModes']),
-    ...recentCampaigns.map(campaign => campaign.mode)
-  ]);
   const reachedModes = [
     mode,
     ...recentCampaigns.map(campaign => campaign.mode),
     ...completedChapterModes
   ];
   const inferredPrerequisites = reachedModes.flatMap(chapterPrerequisitesThrough);
-  const unlockedChapterModes = isLegacySchema || options.grandfatherLegacyAccess
+  const unlockedChapterModes = grandfatherLegacyChapters
     ? [...CAMPAIGN_CHAPTER_ORDER]
     : orderedModes([
         'standard',
@@ -297,7 +334,7 @@ export function normalizeCampaignProgression(
   const commanderSchedule = normalizeCommanderSchedule(
     rawCurrent?.['commanderSchedule'],
     mode,
-    isLegacySchema ? legacyCommanderId : undefined,
+    usesLegacyCommanderShape ? legacyCommanderId : undefined,
     Math.min(WARS_PER_CAMPAIGN, currentWars.length + 1) as CampaignWarIndex
   );
 
@@ -306,6 +343,7 @@ export function normalizeCampaignProgression(
     currentCampaign: {
       campaignId: rawCampaignId,
       mode,
+      modifiers,
       ordersSelected,
       wars: currentWars,
       commanderSchedule,
@@ -338,7 +376,8 @@ export function summarizeCampaign(
   campaignId: string,
   wars: readonly CampaignWarRecord[],
   mode: CampaignModeId = 'standard',
-  remainingReserves?: number
+  remainingReserves?: number,
+  modifiers: readonly CampaignModifierId[] = legacyModifiersForMode(mode)
 ): CampaignHistoryEntry {
   if (wars.length !== WARS_PER_CAMPAIGN) {
     throw new Error(`A Campaign requires exactly ${WARS_PER_CAMPAIGN} resolved Wars.`);
@@ -349,7 +388,7 @@ export function summarizeCampaign(
   const ties = wars.length - wins - losses;
   const differential = wars.reduce((sum, war) => sum + war.margin, 0);
   const outcome: CampaignOutcome =
-    mode === 'total_war'
+    modifiers.includes('total_war')
       ? differential > 0
         ? 'victory'
         : differential < 0
@@ -365,6 +404,7 @@ export function summarizeCampaign(
   return {
     campaignId,
     mode,
+    modifiers: normalizeModifierArray(modifiers),
     wars: [...wars],
     wins,
     losses,
@@ -392,7 +432,10 @@ function normalizeCampaignHistory(value: unknown): CampaignHistoryEntry[] {
     const remainingReserves = candidate['remainingReserves'] !== undefined
       ? nonNegativeInteger(candidate['remainingReserves'])
       : undefined;
-    history.push(summarizeCampaign(campaignId, wars, mode, remainingReserves));
+    const modifiers = Array.isArray(candidate['modifiers'])
+      ? normalizeModifierArray(candidate['modifiers'])
+      : legacyModifiersForMode(mode);
+    history.push(summarizeCampaign(campaignId, wars, mode, remainingReserves, modifiers));
   }
   return history;
 }
@@ -448,6 +491,27 @@ function normalizeCommanderSchedule(
 
 function normalizeModeArray(value: unknown): CampaignModeId[] {
   return Array.isArray(value) ? value.filter(isCampaignModeId) : [];
+}
+
+export function normalizeCampaignModifiers(value: unknown): CampaignModifierId[] {
+  return normalizeModifierArray(value);
+}
+
+export function serializeCampaignModifiers(
+  modifiers: readonly CampaignModifierId[]
+): string {
+  const normalized = normalizeModifierArray(modifiers);
+  return normalized.length > 0 ? normalized.join('+') : 'none';
+}
+
+function normalizeModifierArray(value: unknown): CampaignModifierId[] {
+  if (!Array.isArray(value)) return [];
+  const unique = new Set(value.filter(isCampaignModifierId));
+  return CAMPAIGN_MODIFIER_ORDER.filter(modifier => unique.has(modifier));
+}
+
+function legacyModifiersForMode(mode: CampaignModeId): CampaignModifierId[] {
+  return mode === 'standard' ? [] : [mode];
 }
 
 function orderedModes(values: readonly CampaignModeId[]): CampaignModeId[] {

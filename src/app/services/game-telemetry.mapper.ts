@@ -6,13 +6,16 @@ import {
   TelemetryRecord
 } from '../core/models/telemetry.model';
 import { ProgressionDomainEvent } from '../core/services/campaign-progression.service';
+import { serializeCampaignModifiers } from '../core/models/progression.model';
 
 export function mapGameEventToTelemetry(
   event: GameEvent,
   envelope: TelemetryEnvelope
 ): TelemetryRecord | null {
   const common = commonParameters(envelope, event.turnNumber);
-  const isFog = envelope.campaignMode === 'fog_of_war';
+  const isFog = envelope.campaignModifiers
+    ? envelope.campaignModifiers.includes('fog_of_war')
+    : envelope.campaignMode === 'fog_of_war';
 
   switch (event.type) {
     // beginWar() owns the one canonical start record; the domain event exists
@@ -76,7 +79,6 @@ export function mapGameEventToTelemetry(
             event.originalWinnerCard.rank,
           ) && event.winner !== null ? 1 : 0
         }),
-        comparison: event.comparison,
         outcome: event.winner === null ? 'battle' : event.challengerWon ? 'success' : 'failure',
         escalated_to_battle: event.winner === null ? 1 : 0
       });
@@ -138,7 +140,6 @@ export function mapGameEventToTelemetry(
         ...common,
         battle_depth: outcome.battleDepth,
         winner: outcome.winner,
-        loser: outcome.loser,
         ...(isFog ? {} : {
           ...compactCardParameters('player_champion', outcome.selection?.playerCard),
           ...compactCardParameters('opponent_champion', outcome.selection?.opponentCard),
@@ -268,6 +269,7 @@ export function mapProgressionEventToTelemetry(
       war_id: campaign.wars[campaign.wars.length - 1].warId,
       campaign_war_index: 3,
       campaign_mode: campaign.mode ?? 'standard',
+      campaign_modifiers: serializeCampaignModifiers(campaign.modifiers),
       war_1_commander_id: campaign.wars[0].commanderId,
       war_2_commander_id: campaign.wars[1].commanderId,
       war_3_commander_id: campaign.wars[2].commanderId,
@@ -308,6 +310,7 @@ function commonParameters(envelope: TelemetryEnvelope, turnNumber: number): Tele
     campaign_id: envelope.campaignId,
     campaign_war_index: envelope.campaignWarIndex,
     campaign_mode: envelope.campaignMode ?? 'standard',
+    campaign_modifiers: serializeCampaignModifiers(envelope.campaignModifiers ?? []),
     event_seq: envelope.eventSeq,
     turn_number: turnNumber
   };

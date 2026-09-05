@@ -329,12 +329,15 @@ describe('ProfileDialogComponent', () => {
   });
 
   it('renders Fog of War campaign orders and sealed pill in Campaign Overview', () => {
-    const progressionService = TestBed.inject(CampaignProgressionService);
     authService.updateActiveProfileProgression(p => ({
       ...p,
-      unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war']
+      unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war'],
+      currentCampaign: {
+        ...p.currentCampaign,
+        mode: 'fog_of_war',
+        modifiers: ['limited_reserves', 'fog_of_war']
+      }
     }));
-    progressionService.selectCampaignOrders('fog_of_war');
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;

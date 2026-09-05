@@ -1,6 +1,6 @@
 # Gameplay and UI engagement telemetry
 
-Status: gameplay schema version `1`, UI engagement schema version `1`, ruleset version `2026.08.2`.
+Status: gameplay schema version `2`, UI engagement schema version `1`, ruleset version `2026.09.1`.
 
 Gameplay telemetry is implemented behind `GameTelemetryService`. The service consumes the typed `GameEventBusService` and profile-progression events, maps them through an explicit scalar whitelist, and sends them through the replaceable `TelemetryTransport` interface. There are no direct analytics calls in gameplay controllers.
 
@@ -23,7 +23,7 @@ Gameplay telemetry is implemented behind `GameTelemetryService`. The service con
 | --- | --- |
 | `GA4_MEASUREMENT_ID` | Public GA4 web-stream measurement ID; empty means no-op. |
 | `APP_VERSION` | Canonical deployed app version included in each record. |
-| `RULESET_VERSION` | Queryable rules version; defaults to `2026.08.2`. |
+| `RULESET_VERSION` | Queryable rules version; defaults to `2026.09.1`. |
 | `GOOGLE_CLIENT_ID` | Existing Google Identity configuration; never included in telemetry. |
 
 A measurement ID is public client configuration, not an API credential. Do not add a Google service-account key, Analytics Admin credential, BigQuery key, or other secret to the web bundle.
@@ -32,9 +32,11 @@ A measurement ID is public client configuration, not an API credential. Do not a
 
 Every canonical gameplay record contains:
 
-`schema_version`, `ruleset_version`, `app_version`, `war_id`, `campaign_id`, `campaign_war_index`, `commander_id` (when present), and `event_seq`.
+`schema_version`, `ruleset_version`, `app_version`, `war_id`, `campaign_id`, `campaign_war_index`, `campaign_mode`, `campaign_modifiers`, `commander_id` (when present), and `event_seq`.
 
 Game-bus records also include `turn_number`. Strings are capped at 100 characters, names/keys follow GA4 naming limits, non-finite values are rejected, and no more than 25 parameters are transmitted per event. Do not register high-cardinality War/Campaign IDs as GA custom dimensions; retain them for BigQuery analysis.
+
+`campaign_mode` identifies the authored story Chapter during the scripted traversal and is `standard` for post-story custom Campaigns. `campaign_modifiers` is `none` or a canonical `+`-joined scalar such as `limited_reserves+fog_of_war`. Gameplay and Fog-redaction policy use the modifier stack; the mode remains available for Chapter-level analysis.
 
 Current event names:
 

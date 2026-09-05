@@ -488,9 +488,13 @@ describe('StoryBookDrawerComponent', () => {
     it('redacts Chronicle narrative text, suppresses combat math and casualty strips during active War, and reveals upon GAME_OVER', () => {
       authService.updateActiveProfileProgression(p => ({
         ...p,
-        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war']
+        currentCampaign: {
+          ...p.currentCampaign,
+          mode: 'fog_of_war',
+          modifiers: ['limited_reserves', 'fog_of_war'],
+          ordersSelected: true
+        }
       }));
-      progressionService.selectCampaignOrders('fog_of_war');
       gameState.setPhase(GamePhase.NORMAL);
       fixture.detectChanges();
 

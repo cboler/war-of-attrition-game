@@ -4,6 +4,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { CampaignOrdersDialogComponent } from './campaign-orders-dialog.component';
 import { CampaignProgressionService } from '../../../core/services/campaign-progression.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { CAMPAIGN_CHAPTER_ORDER, getAuthoredCommanderSchedule } from '../../../core/models/campaign-chapter.model';
 
 describe('CampaignOrdersDialogComponent', () => {
   let component: CampaignOrdersDialogComponent;
@@ -25,71 +26,118 @@ describe('CampaignOrdersDialogComponent', () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(CampaignOrdersDialogComponent);
-    component = fixture.componentInstance;
     progressionService = TestBed.inject(CampaignProgressionService);
     authService = TestBed.inject(AuthService);
-    authService.updateActiveProfileProgression(p => ({
-      ...p,
-      unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war']
+  });
+
+  afterEach(() => localStorage.clear());
+
+  function createComponent(): void {
+    fixture = TestBed.createComponent(CampaignOrdersDialogComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  }
+
+  function enterCustomCampaign(modifiers: readonly ('limited_reserves' | 'fog_of_war' | 'total_war')[] = []): void {
+    authService.updateActiveProfileProgression(previous => ({
+      ...previous,
+      unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER],
+      completedChapterModes: [...CAMPAIGN_CHAPTER_ORDER],
+      currentCampaign: {
+        ...previous.currentCampaign,
+        mode: 'standard',
+        modifiers,
+        ordersSelected: false,
+        wars: [],
+        commanderSchedule: getAuthoredCommanderSchedule('standard')
+      }
     }));
-    fixture.detectChanges();
-  });
+  }
 
-  afterEach(() => {
-    localStorage.clear();
-  });
+  it('renders the fresh scripted Chapter as mandatory Classic orders', () => {
+    createComponent();
 
-  it('should create CampaignOrdersDialogComponent', () => {
-    expect(component).toBeTruthy();
+    const root = fixture.nativeElement as HTMLElement;
     expect(component.selectedMode()).toBe('standard');
+    expect(component.isReplay()).toBeFalse();
+    expect(root.querySelector('.scripted-order')?.textContent).toContain('The Accord');
+    expect(root.querySelector('.scripted-order')?.textContent).toContain('Classic rules');
+    expect(root.querySelectorAll('.modifier-toggle').length).toBe(0);
   });
 
-  it('should render all campaign order options', () => {
-    const cards = fixture.nativeElement.querySelectorAll('.order-card');
-    expect(cards.length).toBe(4);
-    expect(cards[0].textContent).toContain('Standard Campaign');
-    expect(cards[1].textContent).toContain('Limited Reserves');
-    expect(cards[2].textContent).toContain('Fog of War');
-    expect(cards[3].textContent).toContain('Total War');
+  it('displays the cumulative modifier stack for a later scripted Chapter', () => {
+    authService.updateActiveProfileProgression(previous => ({
+      ...previous,
+      unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war'],
+      completedChapterModes: ['standard', 'limited_reserves'],
+      currentCampaign: {
+        ...previous.currentCampaign,
+        mode: 'fog_of_war',
+        modifiers: ['limited_reserves', 'fog_of_war'],
+        commanderSchedule: getAuthoredCommanderSchedule('fog_of_war')
+      }
+    }));
+    createComponent();
+
+    const chips = Array.from(
+      fixture.nativeElement.querySelectorAll('.modifier-chip') as NodeListOf<HTMLElement>
+    ).map(chip => chip.textContent ?? '');
+    expect(chips.some(text => text.includes('Limited Reserves'))).toBeTrue();
+    expect(chips.some(text => text.includes('Fog of War'))).toBeTrue();
+    expect(fixture.nativeElement.querySelectorAll('.modifier-toggle').length).toBe(0);
   });
 
-  it('should allow selecting Limited Reserves mode', () => {
-    const cards = fixture.nativeElement.querySelectorAll('.order-card');
-    cards[1].click();
-    fixture.detectChanges();
-
-    expect(component.selectedMode()).toBe('limited_reserves');
-    expect(cards[1].classList).toContain('selected');
-  });
-
-  it('should allow selecting Fog of War mode', () => {
-    const cards = fixture.nativeElement.querySelectorAll('.order-card');
-    cards[2].click();
-    fixture.detectChanges();
-
-    expect(component.selectedMode()).toBe('fog_of_war');
-    expect(cards[2].classList).toContain('selected');
-  });
-
-  it('should allow selecting Total War mode', () => {
-    const cards = fixture.nativeElement.querySelectorAll('.order-card');
-    cards[3].click();
-    fixture.detectChanges();
-
-    expect(component.selectedMode()).toBe('total_war');
-    expect(cards[3].classList).toContain('selected');
-  });
-
-  it('should confirm orders and close dialog with selected mode', () => {
+  it('confirms mandatory scripted orders without allowing a different Chapter', () => {
+    createComponent();
     const selectSpy = spyOn(progressionService, 'selectCampaignOrders').and.callThrough();
 
-    component.selectMode('fog_of_war');
     component.confirmOrders();
 
-    expect(selectSpy).toHaveBeenCalledWith('fog_of_war');
-    expect(dialogRefSpy.close).toHaveBeenCalledWith('fog_of_war');
-    expect(progressionService.activeCampaignMode()).toBe('fog_of_war');
-    expect(progressionService.isFogOfWar()).toBeTrue();
+    expect(selectSpy).toHaveBeenCalledWith('standard', []);
+    expect(progressionService.activeCampaignModifiers()).toEqual([]);
+    expect(dialogRefSpy.close).toHaveBeenCalled();
+  });
+
+  it('offers three independent modifier toggles after the story is complete', () => {
+    enterCustomCampaign();
+    createComponent();
+
+    const toggles = fixture.nativeElement.querySelectorAll('.modifier-toggle');
+    expect(component.isReplay()).toBeTrue();
+    expect(toggles.length).toBe(3);
+    expect(component.selectedModifiers()).toEqual([]);
+
+    (toggles[0] as HTMLButtonElement).click();
+    (toggles[1] as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(component.selectedModifiers()).toEqual(['limited_reserves', 'fog_of_war']);
+    expect((toggles[0] as HTMLButtonElement).getAttribute('aria-checked')).toBe('true');
+    expect((toggles[1] as HTMLButtonElement).getAttribute('aria-checked')).toBe('true');
+    expect((toggles[2] as HTMLButtonElement).getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('starts a randomized custom Campaign with the selected modifier combination', () => {
+    enterCustomCampaign();
+    progressionService.setRandomSource(() => 0);
+    createComponent();
+    component.toggleModifier('limited_reserves');
+    component.toggleModifier('total_war');
+
+    component.confirmOrders();
+
+    expect(progressionService.activeCampaignMode()).toBe('standard');
+    expect(progressionService.activeCampaignModifiers()).toEqual([
+      'limited_reserves',
+      'total_war'
+    ]);
+    expect(progressionService.isLimitedReserves()).toBeTrue();
+    expect(progressionService.isFogOfWar()).toBeFalse();
+    expect(progressionService.isTotalWar()).toBeTrue();
+    expect(new Set(progressionService.currentCampaign().commanderSchedule).size).toBe(3);
+    expect(dialogRefSpy.close).toHaveBeenCalledWith({
+      mode: 'standard',
+      modifiers: ['limited_reserves', 'total_war']
+    });
   });
 });

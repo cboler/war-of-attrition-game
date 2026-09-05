@@ -24,6 +24,7 @@ describe('ProgressionModel and Rules', () => {
       const campaign: ActiveCampaign = {
         campaignId: 'camp-1',
         mode: 'standard',
+        modifiers: [],
         ordersSelected: true,
         wars: [],
         commanderSchedule: ['quartermaster', 'analyst', 'attritionist']
@@ -40,6 +41,7 @@ describe('ProgressionModel and Rules', () => {
       const campaign: ActiveCampaign = {
         campaignId: 'camp-fog',
         mode: 'fog_of_war',
+        modifiers: ['fog_of_war'],
         ordersSelected: true,
         wars: [],
         commanderSchedule: ['analyst', 'quartermaster', 'attritionist']
@@ -68,6 +70,7 @@ describe('ProgressionModel and Rules', () => {
       const campaign: ActiveCampaign = {
         campaignId: 'camp-2',
         mode: 'limited_reserves',
+        modifiers: ['limited_reserves'],
         ordersSelected: true,
         commanderSchedule: ['gambler', 'cornered-general', 'quartermaster'],
         limitedReserves: {
@@ -101,7 +104,7 @@ describe('ProgressionModel and Rules', () => {
     it('creates a fresh v2 profile with Standard only unlocked, Marcel first, and empty completion', () => {
       const fresh = createDefaultCampaignProgression();
 
-      expect(fresh.schemaVersion).toBe(2);
+      expect(fresh.schemaVersion).toBe(3);
       expect(fresh.unlockedChapterModes).toEqual(['standard']);
       expect(fresh.completedChapterModes).toEqual([]);
       expect(fresh.currentCampaign.mode).toBe('standard');
@@ -122,7 +125,7 @@ describe('ProgressionModel and Rules', () => {
   describe('normalizeCampaignProgression & Schema v2 Migration', () => {
     it('safely handles missing, null, undefined, or primitive invalid values', () => {
       const fromNull = normalizeCampaignProgression(null);
-      expect(fromNull.schemaVersion).toBe(2);
+      expect(fromNull.schemaVersion).toBe(3);
       expect(fromNull.unlockedChapterModes).toEqual(['standard']);
       expect(fromNull.currentCampaign.commanderSchedule).toEqual([
         'quartermaster',
@@ -131,11 +134,11 @@ describe('ProgressionModel and Rules', () => {
       ]);
 
       const fromString = normalizeCampaignProgression('corrupted-data');
-      expect(fromString.schemaVersion).toBe(2);
+      expect(fromString.schemaVersion).toBe(3);
       expect(fromString.unlockedChapterModes).toEqual(['standard']);
 
       const fromNumber = normalizeCampaignProgression(12345);
-      expect(fromNumber.schemaVersion).toBe(2);
+      expect(fromNumber.schemaVersion).toBe(3);
     });
 
     it('migrates a legacy v1 fresh Campaign, grandfathering all 4 modes and preserving tokens and cosmetics', () => {
@@ -172,7 +175,7 @@ describe('ProgressionModel and Rules', () => {
 
       const normalized = normalizeCampaignProgression(legacyFresh);
 
-      expect(normalized.schemaVersion).toBe(2);
+      expect(normalized.schemaVersion).toBe(3);
       // Grandfather legacy profile with all 4 modes
       expect(normalized.unlockedChapterModes).toEqual([
         'standard',
@@ -217,7 +220,7 @@ describe('ProgressionModel and Rules', () => {
 
       const normalized = normalizeCampaignProgression(legacyOneWar);
 
-      expect(normalized.schemaVersion).toBe(2);
+      expect(normalized.schemaVersion).toBe(3);
       expect(normalized.currentCampaign.wars.length).toBe(1);
       // Resolved war gets the legacy commander attribution
       expect(normalized.currentCampaign.wars[0].commanderId).toBe('gambler');
@@ -276,6 +279,7 @@ describe('ProgressionModel and Rules', () => {
       const normalized = normalizeCampaignProgression(legacyLR);
 
       expect(normalized.currentCampaign.mode).toBe('limited_reserves');
+      expect(normalized.currentCampaign.modifiers).toEqual(['limited_reserves']);
       expect(normalized.currentCampaign.limitedReserves?.initialReserves).toBe(5);
       expect(normalized.currentCampaign.limitedReserves?.remainingReserves).toBe(2);
       expect(normalized.currentCampaign.ordersSelected).toBeTrue();
@@ -299,6 +303,7 @@ describe('ProgressionModel and Rules', () => {
       const normalized = normalizeCampaignProgression(legacyFog);
 
       expect(normalized.currentCampaign.mode).toBe('fog_of_war');
+      expect(normalized.currentCampaign.modifiers).toEqual(['fog_of_war']);
       expect(normalized.processedWarIds).toContain('fog-w1');
     });
 
@@ -320,7 +325,56 @@ describe('ProgressionModel and Rules', () => {
       const normalized = normalizeCampaignProgression(legacyTotal);
 
       expect(normalized.currentCampaign.mode).toBe('total_war');
+      expect(normalized.currentCampaign.modifiers).toEqual(['total_war']);
       expect(normalized.currentCampaign.wars[0].margin).toBe(12);
+    });
+
+    it('preserves a schema-v2 in-progress Campaign single rule until that Campaign ends', () => {
+      const normalized = normalizeCampaignProgression({
+        schemaVersion: 2,
+        currentCampaign: {
+          campaignId: 'v2-active-fog',
+          mode: 'fog_of_war',
+          ordersSelected: true,
+          commanderSchedule: ['analyst', 'quartermaster', 'attritionist'],
+          wars: [
+            {
+              warId: 'v2-fog-w1',
+              commanderId: 'analyst',
+              outcome: GameOutcome.PLAYER_WIN,
+              margin: 2,
+              completedAt: '2026-08-20T00:00:00Z',
+            },
+          ],
+        },
+        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war'],
+        completedChapterModes: ['standard', 'limited_reserves'],
+      });
+
+      expect(normalized.currentCampaign.mode).toBe('fog_of_war');
+      expect(normalized.currentCampaign.modifiers).toEqual(['fog_of_war']);
+      expect(normalized.currentCampaign.wars.map(war => war.warId)).toEqual(['v2-fog-w1']);
+    });
+
+    it('upgrades an unstarted schema-v2 Chapter to its new mandatory modifier stack', () => {
+      const normalized = normalizeCampaignProgression({
+        schemaVersion: 2,
+        currentCampaign: {
+          campaignId: 'v2-unstarted-fog',
+          mode: 'fog_of_war',
+          ordersSelected: false,
+          commanderSchedule: ['analyst', 'quartermaster', 'attritionist'],
+          wars: [],
+        },
+        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war'],
+        completedChapterModes: ['standard', 'limited_reserves'],
+      });
+
+      expect(normalized.currentCampaign.modifiers).toEqual([
+        'limited_reserves',
+        'fog_of_war',
+      ]);
+      expect(normalized.currentCampaign.limitedReserves?.remainingReserves).toBe(5);
     });
 
     it('migrates legacy completed Campaign history, converting campaign commander to per-War attribution without data loss', () => {
@@ -390,7 +444,7 @@ describe('ProgressionModel and Rules', () => {
       const v2FirstPass = normalizeCampaignProgression(legacyRaw);
       const v2SecondPass = normalizeCampaignProgression(v2FirstPass);
 
-      expect(v2SecondPass.schemaVersion).toBe(2);
+      expect(v2SecondPass.schemaVersion).toBe(3);
       expect(v2SecondPass.unlockedChapterModes).toEqual(v2FirstPass.unlockedChapterModes);
       expect(v2SecondPass.completedChapterModes).toEqual(v2FirstPass.completedChapterModes);
       expect(v2SecondPass.tokenBalance).toBe(v2FirstPass.tokenBalance);
@@ -420,7 +474,7 @@ describe('ProgressionModel and Rules', () => {
 
       const normalized = normalizeCampaignProgression(partialMalformedV2);
 
-      expect(normalized.schemaVersion).toBe(2);
+      expect(normalized.schemaVersion).toBe(3);
       expect(normalized.currentCampaign.mode).toBe('standard');
       expect(normalized.currentCampaign.commanderSchedule).toEqual([
         'quartermaster',
@@ -436,10 +490,11 @@ describe('ProgressionModel and Rules', () => {
 
     it('ensures reload determinism: normalizing an active campaign never rerolls the schedule', () => {
       const activeProgression: CampaignProgression = {
-        schemaVersion: 2,
+        schemaVersion: 3,
         currentCampaign: {
           campaignId: 'stable-camp',
           mode: 'fog_of_war',
+          modifiers: ['fog_of_war'],
           ordersSelected: true,
           commanderSchedule: ['analyst', 'quartermaster', 'attritionist'],
           wars: [

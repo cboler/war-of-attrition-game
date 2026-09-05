@@ -91,7 +91,7 @@ describe('AuthService', () => {
     const freshService = new AuthService();
     const progression = freshService.activeProfile().progression;
 
-    expect(progression.schemaVersion).toBe(2);
+    expect(progression.schemaVersion).toBe(3);
     expect(progression.selectedCosmetics.cardBackingId).toBe('royal-purple');
     expect(progression.unlockedCosmetics).toContain(jasmine.objectContaining({
       cosmeticId: 'royal-purple',

@@ -1,6 +1,7 @@
 import { COMMANDER_IDS, OpponentCommanderId } from './commander.model';
 
 export type CampaignModeId = 'standard' | 'limited_reserves' | 'fog_of_war' | 'total_war';
+export type CampaignModifierId = Exclude<CampaignModeId, 'standard'>;
 export type CampaignWarIndex = 1 | 2 | 3;
 export type CampaignCommanderSchedule = readonly [
   OpponentCommanderId,
@@ -23,6 +24,22 @@ export const CAMPAIGN_CHAPTER_ORDER: readonly CampaignModeId[] = [
   'fog_of_war',
   'total_war'
 ];
+
+export const CAMPAIGN_MODIFIER_ORDER: readonly CampaignModifierId[] = [
+  'limited_reserves',
+  'fog_of_war',
+  'total_war'
+];
+
+/** Mechanical rules accumulated by each mandatory Chapter in the first story traversal. */
+export const SCRIPTED_CHAPTER_MODIFIERS: Readonly<
+  Record<CampaignModeId, readonly CampaignModifierId[]>
+> = {
+  standard: [],
+  limited_reserves: ['limited_reserves'],
+  fog_of_war: ['limited_reserves', 'fog_of_war'],
+  total_war: ['limited_reserves', 'fog_of_war', 'total_war']
+};
 
 export const CAMPAIGN_CHAPTERS: Readonly<Record<CampaignModeId, CampaignChapterDefinition>> = {
   standard: {
@@ -64,6 +81,16 @@ export const CAMPAIGN_CHAPTERS: Readonly<Record<CampaignModeId, CampaignChapterD
 
 export function isCampaignModeId(value: unknown): value is CampaignModeId {
   return CAMPAIGN_CHAPTER_ORDER.includes(value as CampaignModeId);
+}
+
+export function isCampaignModifierId(value: unknown): value is CampaignModifierId {
+  return CAMPAIGN_MODIFIER_ORDER.includes(value as CampaignModifierId);
+}
+
+export function getScriptedChapterModifiers(
+  mode: CampaignModeId
+): readonly CampaignModifierId[] {
+  return [...SCRIPTED_CHAPTER_MODIFIERS[mode]];
 }
 
 export function getCampaignChapter(mode: CampaignModeId): CampaignChapterDefinition {

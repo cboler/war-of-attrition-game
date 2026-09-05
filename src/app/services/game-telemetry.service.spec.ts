@@ -54,7 +54,8 @@ describe('GameTelemetryService', () => {
     authService = TestBed.inject(AuthService);
     authService.updateActiveProfileProgression(p => ({
       ...p,
-      unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
+      unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER],
+      completedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
     }));
     progression = TestBed.inject(CampaignProgressionService);
     eventBus = TestBed.inject(GameEventBusService);
@@ -90,7 +91,7 @@ describe('GameTelemetryService', () => {
     const comparison = transport.records[1].parameters;
     expect(comparison['war_id']).toBe('war-explicit');
     expect(comparison['campaign_id']).toBe('campaign-explicit');
-    expect(comparison['schema_version']).toBe(1);
+    expect(comparison['schema_version']).toBe(2);
     expect(comparison['ruleset_version']).toBe('rules-test');
     expect(comparison['app_version']).toBe('1.2.3-test');
     expect(comparison['event_seq']).toBe(2);
@@ -226,8 +227,8 @@ describe('GameTelemetryService', () => {
     expect(campaignRecord?.parameters['campaign_mode']).toBe('standard');
   });
 
-  it('emits campaign_mode and remaining_reserves for Limited Reserves Campaign', () => {
-    progression.selectCampaignOrders('limited_reserves');
+  it('emits Campaign modifiers and remaining_reserves for a custom Limited Reserves Campaign', () => {
+    progression.selectCampaignOrders('standard', ['limited_reserves']);
     progression.consumeHumanReserve();
     progression.consumeHumanReserve();
 
@@ -238,15 +239,17 @@ describe('GameTelemetryService', () => {
 
     const campaignRecord = transport.records.find(record => record.name === 'campaign_resolved');
     expect(campaignRecord).toBeTruthy();
-    expect(campaignRecord?.parameters['campaign_mode']).toBe('limited_reserves');
+    expect(campaignRecord?.parameters['campaign_mode']).toBe('standard');
+    expect(campaignRecord?.parameters['campaign_modifiers']).toBe('limited_reserves');
     expect(campaignRecord?.parameters['remaining_reserves']).toBe(3);
 
     const warStarted = transport.records.find(record => record.name === 'war_started');
-    expect(warStarted?.parameters['campaign_mode']).toBe('limited_reserves');
+    expect(warStarted?.parameters['campaign_mode']).toBe('standard');
+    expect(warStarted?.parameters['campaign_modifiers']).toBe('limited_reserves');
   });
 
-  it('emits campaign_mode: total_war for Total War Campaign', () => {
-    progression.selectCampaignOrders('total_war');
+  it('emits total_war in the modifier set for a custom Total War Campaign', () => {
+    progression.selectCampaignOrders('standard', ['total_war']);
 
     service.beginWar({ warId: 'tw-war-3', playerDeckColor: DeckColor.RED });
     progression.recordResolvedWar(war('tw-war-1', GameOutcome.PLAYER_WIN, 4, 0));
@@ -255,14 +258,16 @@ describe('GameTelemetryService', () => {
 
     const campaignRecord = transport.records.find(record => record.name === 'campaign_resolved');
     expect(campaignRecord).toBeTruthy();
-    expect(campaignRecord?.parameters['campaign_mode']).toBe('total_war');
+    expect(campaignRecord?.parameters['campaign_mode']).toBe('standard');
+    expect(campaignRecord?.parameters['campaign_modifiers']).toBe('total_war');
 
     const warStarted = transport.records.find(record => record.name === 'war_started');
-    expect(warStarted?.parameters['campaign_mode']).toBe('total_war');
+    expect(warStarted?.parameters['campaign_mode']).toBe('standard');
+    expect(warStarted?.parameters['campaign_modifiers']).toBe('total_war');
   });
 
-  it('emits campaign_mode: fog_of_war for Fog of War Campaign', () => {
-    progression.selectCampaignOrders('fog_of_war');
+  it('emits fog_of_war in the modifier set for a custom Fog Campaign', () => {
+    progression.selectCampaignOrders('standard', ['fog_of_war']);
 
     service.beginWar({ warId: 'fog-war-3', playerDeckColor: DeckColor.RED });
     progression.recordResolvedWar(war('fog-war-1', GameOutcome.PLAYER_WIN, 4, 0));
@@ -271,10 +276,12 @@ describe('GameTelemetryService', () => {
 
     const campaignRecord = transport.records.find(record => record.name === 'campaign_resolved');
     expect(campaignRecord).toBeTruthy();
-    expect(campaignRecord?.parameters['campaign_mode']).toBe('fog_of_war');
+    expect(campaignRecord?.parameters['campaign_mode']).toBe('standard');
+    expect(campaignRecord?.parameters['campaign_modifiers']).toBe('fog_of_war');
 
     const warStarted = transport.records.find(record => record.name === 'war_started');
-    expect(warStarted?.parameters['campaign_mode']).toBe('fog_of_war');
+    expect(warStarted?.parameters['campaign_mode']).toBe('standard');
+    expect(warStarted?.parameters['campaign_modifiers']).toBe('fog_of_war');
   });
 
   it('reports actual current War commander_id on war_started, war_resolved, and war_abandoned', () => {

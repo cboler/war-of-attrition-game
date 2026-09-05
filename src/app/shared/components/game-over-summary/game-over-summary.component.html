@@ -5,7 +5,7 @@
   aria-atomic="true"
   aria-labelledby="game-over-title"
 >
-  @if (summary()?.campaignMode === 'total_war') {
+  @if (isTotalWar()) {
     <span class="game-over-eyebrow">TOTAL WAR · WAR {{ summary()?.warIndex }} OF 3 · {{ summary()?.commanderIdentity?.name ?? 'COMMANDER' }}</span>
     <h2 id="game-over-title">{{ message() }}</h2>
 

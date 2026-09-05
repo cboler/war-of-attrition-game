@@ -679,9 +679,13 @@ describe('TableGame presentation', () => {
       const authService = TestBed.inject(AuthService);
       authService.updateActiveProfileProgression(p => ({
         ...p,
-        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war']
+        currentCampaign: {
+          ...p.currentCampaign,
+          mode: 'fog_of_war',
+          modifiers: ['limited_reserves', 'fog_of_war'],
+          ordersSelected: true
+        }
       }));
-      progressionService.selectCampaignOrders('fog_of_war');
       fixture.detectChanges();
 
       expect(progressionService.isFogOfWar()).toBeTrue();

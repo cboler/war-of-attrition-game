@@ -4,7 +4,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { CampaignProgressionService } from '../../../core/services/campaign-progression.service';
-import { CampaignModeId } from '../../../core/models/progression.model';
+import { CampaignModifierId, CampaignModeId } from '../../../core/models/progression.model';
+import { getScriptedChapterModifiers } from '../../../core/models/campaign-chapter.model';
 import { CommanderIdentity } from '../../../core/models/commander-identity.model';
 import { NarrativeTransitionRecord } from '../../../core/models/narrative.model';
 import { NarrativeResolverService } from '../../../narrative/narrative-resolver.service';
@@ -18,7 +19,12 @@ export interface CampaignOrderOption {
   readonly description: string;
   readonly ruleSummary: string;
   readonly reinforcementPolicy: string;
+  readonly modifiers: readonly CampaignModifierId[];
 }
+
+type CampaignModifierOption = Omit<CampaignOrderOption, 'id'> & {
+  readonly id: CampaignModifierId;
+};
 
 export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
   {
@@ -29,7 +35,8 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     tag: 'Chapter I · Classic Attrition',
     description: 'Traditional War of Attrition rules across a three-War series.',
     ruleSummary: 'Reinforcement opportunities are limited only by the cards in your physical deck.',
-    reinforcementPolicy: 'Deck Count Only'
+    reinforcementPolicy: 'Deck Count Only',
+    modifiers: []
   },
   {
     id: 'limited_reserves',
@@ -39,7 +46,8 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     tag: 'Chapter II · 5 Reserves',
     description: 'A strict strategic constraint testing long-range resource management.',
     ruleSummary: 'You begin with exactly 5 reinforcements for the entire Three-War Campaign. Used reserves do not return between Wars.',
-    reinforcementPolicy: '5 Reserves (Entire Campaign)'
+    reinforcementPolicy: '5 Reserves (Entire Campaign)',
+    modifiers: ['limited_reserves']
   },
   {
     id: 'fog_of_war',
@@ -47,9 +55,10 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     chapterTitle: 'The Blind Wheel',
     title: 'Fog of War',
     tag: 'Chapter III · Imperfect Information',
-    description: 'The Boneyard is sealed during each War. Fallen cards cannot be reviewed until the fighting ends. Trust your memory.',
-    ruleSummary: 'Casualties and past clashes are sealed from inspection while fighting continues. Fallen cards are revealed at War conclusion.',
-    reinforcementPolicy: 'Deck Count Only'
+    description: 'Five reserves now operate under imperfect information. The Boneyard stays sealed until each War ends.',
+    ruleSummary: 'Limited Reserves remains active. Casualties and past clashes are also sealed from inspection while fighting continues.',
+    reinforcementPolicy: '5 Reserves (Entire Campaign)',
+    modifiers: ['limited_reserves', 'fog_of_war']
   },
   {
     id: 'total_war',
@@ -57,11 +66,14 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     chapterTitle: 'The War of Attrition',
     title: 'Total War',
     tag: 'Chapter IV · Cumulative Differential',
-    description: 'The Campaign is decided by cumulative card differential across all three Wars. Every card matters, even in defeat.',
-    ruleSummary: 'Individual Wars contribute signed card margins. Final Campaign victory belongs to the commander with positive cumulative differential.',
-    reinforcementPolicy: 'Deck Count Only'
+    description: 'All three constraints converge: scarce reserves, sealed casualties, and a cumulative Campaign differential.',
+    ruleSummary: 'Limited Reserves and Fog of War remain active. Every War also contributes its signed card margin to the final Campaign result.',
+    reinforcementPolicy: '5 Reserves (Entire Campaign)',
+    modifiers: ['limited_reserves', 'fog_of_war', 'total_war']
   }
 ];
+
+const MODIFIER_OPTIONS = CAMPAIGN_ORDER_OPTIONS.slice(1) as readonly CampaignModifierOption[];
 
 @Component({
   selector: 'app-campaign-orders-dialog',
@@ -84,32 +96,55 @@ export class CampaignOrdersDialogComponent {
   );
 
   readonly options = CAMPAIGN_ORDER_OPTIONS;
+  readonly modifierOptions = MODIFIER_OPTIONS;
 
-  readonly selectedMode = signal<CampaignModeId>('standard');
+  readonly selectedMode = signal<CampaignModeId>(this.progression.activeCampaignMode());
+  readonly selectedModifiers = signal<readonly CampaignModifierId[]>(
+    this.progression.activeCampaignModifiers()
+  );
+  readonly scriptedOption = computed(() =>
+    CAMPAIGN_ORDER_OPTIONS.find(option => option.id === this.selectedMode()) ??
+      CAMPAIGN_ORDER_OPTIONS[0]
+  );
+  readonly scriptedModifiers = computed(() =>
+    getScriptedChapterModifiers(this.selectedMode())
+  );
 
   readonly chapterFraming = computed<NarrativeTransitionRecord | null>(() => {
-    if (!this.narrativeResolver) return null;
+    if (!this.narrativeResolver || this.isReplay()) return null;
     return this.narrativeResolver.transitionFor(this.selectedMode(), 'orders') ??
       this.narrativeResolver.transitionFor('standard', 'orders');
   });
 
-  isModeUnlocked(mode: CampaignModeId): boolean {
-    return this.progression.isChapterUnlocked(mode);
+  isModifierEnabled(modifier: CampaignModifierId): boolean {
+    return this.selectedModifiers().includes(modifier);
   }
 
-  isModeCompleted(mode: CampaignModeId): boolean {
-    return this.progression.isChapterCompleted(mode);
-  }
-
-  selectMode(mode: CampaignModeId): void {
-    if (!this.isModeUnlocked(mode)) return;
-    this.selectedMode.set(mode);
+  toggleModifier(modifier: CampaignModifierId): void {
+    if (!this.isReplay()) return;
+    const selected = new Set(this.selectedModifiers());
+    if (selected.has(modifier)) {
+      selected.delete(modifier);
+    } else {
+      selected.add(modifier);
+    }
+    this.selectedModifiers.set(
+      this.modifierOptions
+        .map(option => option.id)
+        .filter(candidate => selected.has(candidate))
+    );
   }
 
   confirmOrders(): void {
-    const success = this.progression.selectCampaignOrders(this.selectedMode());
+    const success = this.progression.selectCampaignOrders(
+      this.selectedMode(),
+      this.isReplay() ? this.selectedModifiers() : this.scriptedModifiers()
+    );
     if (success) {
-      this.dialogRef.close(this.selectedMode());
+      this.dialogRef.close({
+        mode: this.selectedMode(),
+        modifiers: this.progression.activeCampaignModifiers()
+      });
     }
   }
 }

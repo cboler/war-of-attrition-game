@@ -1,195 +1,118 @@
-# Alternate Rules Campaigns — Architecture, Mechanics, and Chapter Availability
+# Alternate Rules Campaigns
 
-Status: **All four campaign modes are mechanically implemented. Progressive chapter availability is settled design for Narrative Sprint 1 and is not yet implemented.**
+Status: Implemented. The first story traversal is a mandatory four-Chapter sequence with cumulative rules. Completing Chapter IV unlocks configurable custom Campaigns.
 
-## 1. Overview and Strategic Philosophy
+## 1. Campaign structure
 
-Alternate Rules Campaigns provide structured modifiers, altered information states, and campaign-level constraints across the canonical Three-War Campaign.
+Every Campaign contains three Wars. The Chapter identity and the active mechanical modifiers are separate concepts:
 
-### Mechanical Guardrails
+- `mode` identifies the authored story Chapter and routes its commander schedule and narrative.
+- `modifiers` identifies the rules currently applied by gameplay.
+- Story Chapters prescribe their modifier stack and do not allow configuration.
+- Custom Campaigns use the neutral `standard` narrative identity and allow each modifier to be toggled independently.
 
-1. **Physical-deck fidelity:** Modes never grant magical card abilities, rank changes, deck-building effects, or hidden-information access.
-2. **Three-War scope:** Campaign Orders are selected before War 1, remain fixed through Wars 1–3, and affect only the stated rules or information boundary.
-3. **Profile isolation:** Each profile owns its active mode, War history, Limited Reserves balance, and future narrative unlock state.
-4. **Truthful records:** Domain events and durable statistics record what actually happened even when Fog of War temporarily conceals presentation details.
-5. **Narrative access is not monetized or skill-gated:** Completing a chapter—not winning it—unlocks the next chapter. Tokens, purchases, achievements, ads, and win rate never control chapter access.
+This separation prevents a custom rules choice from reopening finished story beats.
 
-The current production schema predates the narrative progression decision. It displays all four modes immediately. That current reality and the Sprint 1 target are deliberately distinguished below.
+## 2. Mandatory first traversal
 
-## 2. Canonical Modes in Narrative Progression Order
+Completing a Chapter, regardless of victory, defeat, or draw, advances to the next Chapter. Players cannot replay an earlier Chapter or alter its rules until the full story is complete.
 
-The permanent mode IDs and intended chapter order are:
-
-> **`standard` → `limited_reserves` → `fog_of_war` → `total_war`**
-
-Each chapter is a completed Three-War Campaign in its associated mode. See [`narrative-canon.md`](./narrative-canon.md) for chapter-specific may/must-not-reveal rules.
-
-The canonical first-play opponent schedule is authored per War:
-
-| Mode/chapter | War I | War II | War III |
+| Chapter | Story ID | Mandatory modifiers | Authored commanders |
 | --- | --- | --- | --- |
-| `standard` | Marcel de Brie | Matthias von Greyerz | Bastien de Herve |
-| `limited_reserves` | Sir Edmund Gloucester | Lorenzo di Taleggio | Marcel de Brie |
-| `fog_of_war` | Matthias von Greyerz | Marcel de Brie | Bastien de Herve |
-| `total_war` | Sir Edmund Gloucester | Lorenzo di Taleggio | Matthias von Greyerz |
+| I: The Accord | `standard` | None | Marcel, Matthias, Bastien |
+| II: The Closing Passes | `limited_reserves` | Limited Reserves | Edmund, Lorenzo, Marcel |
+| III: The Blind Wheel | `fog_of_war` | Limited Reserves + Fog of War | Matthias, Marcel, Bastien |
+| IV: The War of Attrition | `total_war` | Limited Reserves + Fog of War + Total War | Edmund, Lorenzo, Matthias |
 
-This is settled creative routing for Sprint 1. The current one-commander-per-Campaign schema is not a constraint to preserve. See [`narrative-disclosure-matrix.md`](./narrative-disclosure-matrix.md) for encounter beats and implementation implications.
+Campaign Orders displays the next Chapter and its complete stack as locked Story Orders. The stack remains fixed for all three Wars.
 
-### A. Standard Campaign (`standard`) — Chapter I, “The Accord”
+Narrative dialogue authored for the current Chapter is guaranteed the first time its eligible event occurs during this traversal. Once that Chapter is complete, replay and procedural chatter return to their lower probabilistic frequency.
 
-- **Rules:** Classic War of Attrition across a Three-War series.
-- **Reinforcements:** Limited only by physical deck depth.
-- **Campaign scoring:** Best Campaign record across the three Wars; ties remain truthful.
-- **Narrative resonance:** Establishes the surface Mont-Rouge story and sincere accusations without revealing the natural cause or absence of evidence.
+## 3. Custom Campaigns
 
-### B. Limited Reserves (`limited_reserves`) — Chapter II, “The Closing Passes”
+After Chapter IV, Campaign Orders becomes a rules configurator over Classic play. The player may independently enable or disable:
 
-- **Rules:** The player receives exactly **5 reinforcement reserves** for the complete Three-War Campaign (`LIMITED_RESERVES_INITIAL_COUNT = 5`).
-- **Persistence:** Remaining reserves carry across Wars 1, 2, and 3 and do not replenish between Wars.
-- **Authoritative consumption:**
-  - One reserve is consumed only when the human accepts a challenge and commits a reinforcement card.
-  - Declining or conceding consumes no reserve.
-  - Opponent reinforcements do not use the human reserve pool.
-  - Ordinary clash draws and Battle commitments do not use the pool.
-- **Zero reserves:** The human cannot reinforce a beaten clash. The controller bypasses the choice, announces that the position must be conceded, records it in the Chronicle, and performs standard concession settlement.
-- **Completion:** War 3 archives the remaining count in `CampaignHistoryEntry`; the current code then creates a fresh unselected Standard Campaign.
-- **Narrative resonance:** Scarcity, closed passes, impounded shipments, and reciprocal defensive escalation.
+- Limited Reserves
+- Fog of War
+- Total War
 
-### C. Fog of War (`fog_of_war`) — Chapter III, “The Blind Wheel”
+Any combination is valid, including no modifiers or all three. The selected stack is immutable once War 1 begins. A completed custom Campaign carries its selected stack into the next briefing as the default, where it can be changed before play.
 
-- **Rules:** Standard scoring and reinforcement rules with constrained access to past casualty information while a War is active.
-- **Core principle:** **Record truth; present according to information access.** Domain events, achievements, statistics, and internal attribution stay truthful.
-- **Active-War sealing:**
-  - **Boneyard:** Face-down top card, non-numeric `Sealed` state, and disabled casualty inspection.
-  - **Chronicle:** Exact past card identities, comparison explanations, and casualty strips are replaced by operational summaries.
-  - **Hall of Valor:** Service records are hidden while internal attribution continues.
-  - **Rules of Engagement:** Always available.
-- **Current live event:** Cards presently clashing or battling remain visible with ordinary glows and comparison presentation.
-- **War-end reveal:** At genuine `GamePhase.GAME_OVER`, all seals lift. A subsequent War engages the seal again.
-- **Opponent AI:** Uses the same legal public information as normal and neither cheats nor receives artificial memory loss.
-- **Narrative resonance:** Conflicting records, missing proof, mundane dairy fragments, natural eye-formation context, and retrospective meaning in Bastien's warnings.
+Custom Campaigns use three distinct randomized commanders selected from the permanent roster. They use evergreen and replay-safe dialogue only; modifiers affect mechanics and presentation, not narrative progression.
 
-### D. Total War (`total_war`) — Chapter IV, “The War of Attrition”
+## 4. Modifier mechanics
 
-- **Rules:** Ordinary in-War mechanics; Campaign outcome is determined solely by signed cumulative card differential across all three Wars.
-- **Outcome:**
-  - `differential > 0` → Campaign Victory
-  - `differential < 0` → Campaign Defeat
-  - `differential === 0` → Campaign Draw
-- **Truthful records:** Individual War wins/losses/ties remain intact for career statistics and Hall of Valor.
-- **Presentation:** Wars 1 and 2, and the War phase of War 3, foreground signed War and running Campaign differential. War 3 presents the final differential verdict.
-- **Seat badge:** The player seat shows the running value (`TOTAL WAR · DIFF +8`).
-- **Token rewards:** One token for Campaign Victory plus one for a positive differential, preserving the existing two-token maximum.
-- **Narrative resonance:** Every accumulated action matters; loyal accelerants confront their roles; Marcel and Matthias confront the absence of proof and the human cost.
+### Limited Reserves
 
-## 3. Current Availability vs. Sprint 1 Unlock Contract
+- The player receives five reinforcement reserves for the whole three-War Campaign.
+- One reserve is consumed only when the human accepts a challenge and commits a reinforcement card.
+- Declining, conceding, ordinary clash draws, Battle commitments, and opponent reinforcements do not consume the pool.
+- Remaining reserves persist between Wars and are archived in Campaign history.
+- At zero reserves, the human cannot reinforce a beaten clash.
 
-### Current Version 4.2.0 Behavior
+### Fog of War
 
-- `CampaignOrdersDialogComponent` renders all four options in this UI order: Standard, Limited Reserves, Total War, Fog of War.
-- Any fresh or newly completed Campaign with `ordersSelected: false` may choose any of the four modes before War 1.
-- `CampaignProgressionService.selectCampaignOrders()` validates that no War has been recorded but does not validate an unlock entitlement.
-- `CampaignProgression` schema version 1 stores `mode` and `ordersSelected`, but no chapter completion or unlocked-mode field.
-- Completing War 3 rotates the commander and initializes a fresh `standard` Campaign with `ordersSelected: false`.
+- While a War is unresolved, the Boneyard, Chronicle casualty details, and Hall of Valor are sealed.
+- Currently clashing or battling cards remain visible.
+- Truthful domain events, statistics, achievements, and internal attribution are still recorded.
+- The seal lifts at genuine game over and engages again in the next War.
+- Telemetry suppresses card-ledger fields whenever Fog is present in the modifier stack.
 
-The UI order and immediate availability are implementation reality, not the new narrative progression. Sprint 1 should reorder Campaign Orders to Standard, Limited Reserves, Fog of War, Total War and present locked/completed/replay states without altering mode mechanics.
+### Total War
 
-### Sprint 1 Required Behavior
+- Individual War results remain truthful, but the Campaign result is determined by cumulative signed card differential.
+- Positive differential is victory, negative is defeat, and zero is a draw.
+- The table and summaries foreground the running and final differential.
+- A Campaign victory earns one token, plus one more when the final differential is positive.
 
-1. A new narrative-schema profile begins with Standard available.
-2. Completing all three Wars of the current chapter unlocks the next mode regardless of Campaign outcome.
-3. Every unlocked mode remains replayable.
-4. Campaign Orders remain immutable after War 1 begins.
-5. No token, cosmetic, purchase, achievement, ad, or victory requirement may gate narrative access.
-6. Only a minimal durable unlock/completion field should be added; do not reinterpret `ordersSelected` as narrative progress.
+## 5. Data contract
 
-### Backward-Compatible Migration
-
-- Preserve the active Campaign's ID, legacy current opponent, mode, orders state, recorded Wars, and Limited Reserves count. Do not reroll an in-progress opponent during migration.
-- Inspect active mode and `recentCampaigns` to infer the highest chapter played or completed, then include its prerequisites.
-- Preserve completed history and processed War IDs exactly through normalization.
-- The old schema gave every profile all four choices and did not record modes merely viewed or intended. Profiles known to predate the narrative schema should therefore be grandfathered conservatively—full access is safer than silently revoking an option a player previously had.
-- New-profile gating should apply only after the new schema can reliably distinguish a newly created profile from migrated data.
-- Add migration tests for active Campaigns in all four modes, incomplete Campaigns, history-only evidence, malformed stored data, and legacy profiles with no alternate-mode history.
-
-## 4. Current Data Models and Domain Contracts
-
-```typescript
-export type CampaignModeId =
+```ts
+type CampaignModeId =
   | 'standard'
   | 'limited_reserves'
-  | 'total_war'
-  | 'fog_of_war';
+  | 'fog_of_war'
+  | 'total_war';
 
-export interface LimitedReservesCampaignState {
-  readonly initialReserves: number;
-  readonly remainingReserves: number;
-}
+type CampaignModifierId = Exclude<CampaignModeId, 'standard'>;
 
-export interface ActiveCampaign {
+interface ActiveCampaign {
   readonly campaignId: string;
-  readonly commanderId: OpponentCommanderId;
   readonly mode: CampaignModeId;
+  readonly modifiers: readonly CampaignModifierId[];
   readonly ordersSelected: boolean;
   readonly wars: readonly CampaignWarRecord[];
+  readonly commanderSchedule: CampaignCommanderSchedule;
   readonly limitedReserves?: LimitedReservesCampaignState;
-}
-
-export interface CampaignHistoryEntry {
-  readonly campaignId: string;
-  readonly commanderId?: OpponentCommanderId;
-  readonly mode: CampaignModeId;
-  readonly wars: readonly CampaignWarRecord[];
-  readonly wins: number;
-  readonly losses: number;
-  readonly ties: number;
-  readonly differential: number;
-  readonly outcome: 'victory' | 'defeat' | 'draw';
-  readonly tokensEarned: number;
-  readonly completedAt: string;
-  readonly remainingReserves?: number;
 }
 ```
 
-`CampaignProgression` additionally stores schema version, recent Campaigns, tokens, cosmetic unlocks/selections, and processed War IDs. Chapter unlock data does not yet exist and should be introduced through an explicit schema bump in Sprint 1.
+The progression schema is version 3. Modifier arrays are normalized to the canonical order `limited_reserves`, `fog_of_war`, `total_war` and deduplicated.
 
-The displayed interfaces are the current schema, not the Sprint 1 target. `CampaignWarRecord` must preserve the actual opponent commander; active commander selection must derive from the current authored War; and completed history must represent all three opponents accurately. A minimal schedule keyed by `mode + warIndex` is sufficient. Randomized replay scheduling remains deferred pre-production polish.
+Mechanics must consult `modifiers`, not infer rules from `mode`. Chapter and narrative systems may continue to consult `mode`.
 
-### Current Pure Rule Functions
+## 6. Save migration
 
-- `canHumanReinforce(campaign, deckCount)` requires a positive deck count and, only in Limited Reserves, a positive reserve count.
-- `getHumanReserves(campaign)` returns the Limited Reserves pair or `null` in every other mode.
-- `isLimitedReservesMode`, `isFogOfWarMode`, and `isTotalWarMode` identify exact current modes.
-- `isFogOfWarActive(mode, isWarResolved)` seals only an unresolved Fog War.
-- `canInspectCasualties(mode, isWarResolved)` is the inverse of the active Fog seal.
-- `summarizeCampaign` derives Total War outcomes from differential and all other outcomes from War record.
+- Existing in-progress Campaigns without a stored modifier array retain the former single rule represented by their `mode` until that Campaign ends.
+- Their Campaign ID, recorded Wars, commander schedule, processed War IDs, and remaining reserves are preserved.
+- After that Campaign ends, routing selects the first unfinished scripted Chapter; that Chapter receives its new cumulative stack.
+- Existing schema-v1 profiles retain their previously granted Chapter access, but an unfinished story still proceeds from its current Chapter.
+- A completed story migrates to the custom Campaign flow.
+- Normalization is idempotent and never rerolls an active commander schedule.
 
-Do not change these mechanical meanings when adding chapter availability.
+## 7. Presentation surfaces
 
-## 5. Current UI and Presentation Surfaces
+- Campaign Orders shows one mandatory locked order during the story and three independent checkbox-style modifiers afterward.
+- The Profile dialog reports the active rule stack rather than treating Chapter identity as the only rule.
+- Limited Reserves shows its remaining pool on the player seat.
+- Total War shows running Campaign differential.
+- Fog changes access at the Boneyard, Chronicle, and Hall of Valor instead of adding a redundant seat badge.
 
-### Campaign Orders
+## 8. Telemetry
 
-`CampaignOrdersDialogComponent` is a forced, non-dismissible pre-War-1 briefing with dark felt/gold styling, one current campaign-level opposing commander name/title, four radio-card choices, rule summaries, and reinforcement policy. Sprint 1 should extend this surface rather than create a separate chapter-select application: show lock/completion/replay state and the three authored War opponents rather than implying one commander owns the Campaign.
+Gameplay telemetry schema version 2 includes both:
 
-### Table Badges
+- `campaign_mode`: the story Chapter identity, or `standard` for custom Campaigns.
+- `campaign_modifiers`: `none` or the canonical modifier IDs joined with `+`.
 
-- Limited Reserves displays remaining/max reserves on the player seat.
-- Total War displays running Campaign differential.
-- Fog of War avoids a redundant seat badge and instead changes information access at the Boneyard and Field Manual.
-
-### Field Manual and Profile
-
-- The Profile dialog shows active Campaign Orders.
-- The Field Manual Chronicle and Hall of Valor apply Fog sealing based on active mode and War resolution.
-- Narrative chapter labels and replay/completion status are not currently displayed.
-
-## 6. Telemetry and Privacy
-
-- Telemetry context includes `campaign_mode` across War, turn, comparison, reinforcement, Battle, settlement, game, abandonment, and Campaign events.
-- `campaign_resolved` includes mode, final differential, and remaining reserves when applicable.
-- All custom events remain within the GA4 parameter budget.
-
-During an unresolved Fog of War War, mapper-level redaction suppresses card-ledger fields such as exact card IDs, ranks, suits, values, casualty indexes/counts, decisive IDs, and high-value indicators while retaining non-identifying operational metrics. Aggregate resolved-War values may transmit after the seal lifts. Because play is local, Fog is an information-access design, not a cryptographic anti-cheat boundary.
-
-Sprint 1 narrative unlocks must not weaken consent, test/screenshot suppression, Fog redaction, or the existing telemetry privacy contract.
+Both fields are scalar and low-cardinality. All events remain within the 25-parameter GA4 limit, and Fog redaction is driven by the modifier stack with a legacy mode fallback.

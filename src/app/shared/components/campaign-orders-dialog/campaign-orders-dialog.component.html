@@ -1,18 +1,17 @@
 <div class="campaign-orders-dialog" role="dialog" aria-labelledby="campaign-orders-title">
   <header class="dialog-header">
     <div class="header-content">
-      <span class="eyebrow">CAMPAIGN ORDERS · RULES OF ENGAGEMENT</span>
+      <span class="eyebrow">CAMPAIGN ORDERS &middot; RULES OF ENGAGEMENT</span>
       <h2 id="campaign-orders-title">Field Command Briefing</h2>
       <div class="commander-briefing" aria-label="Campaign opposing commander">
         <span class="briefing-label">OPPOSING FORCE:</span>
         <strong class="commander-name">{{ commanderIdentity().name }}</strong>
         <span class="commander-title">({{ commanderIdentity().title }})</span>
-        <span class="commander-faction">· {{ commanderIdentity().faction }}</span>
+        <span class="commander-faction">&middot; {{ commanderIdentity().faction }}</span>
         @if (isReplay()) {
-          <span class="replay-cue">· Replay Command: Opposition randomized</span>
+          <span class="replay-cue">&middot; Custom Campaign: opposition randomized</span>
         }
       </div>
-
     </div>
   </header>
 
@@ -27,76 +26,82 @@
       </div>
     }
 
-    <p class="dialog-intro">
-      Choose the strategic orders governing your three-War Campaign. Your selection is locked for all three Wars of this Campaign.
-    </p>
+    @if (!isReplay()) {
+      <p class="dialog-intro">
+        These are the mandatory rules for this Chapter. Its modifiers remain locked together for all three Wars.
+      </p>
 
-    <div
-      class="orders-grid"
-      role="radiogroup"
-      aria-label="Campaign rules of engagement options">
-      @for (option of options; track option.id) {
-        <button
-          type="button"
-          class="order-card"
-          [class.selected]="selectedMode() === option.id"
-          [class.locked]="!isModeUnlocked(option.id)"
-          [class.completed]="isModeCompleted(option.id)"
-          [disabled]="!isModeUnlocked(option.id)"
-          role="radio"
-          [attr.aria-checked]="selectedMode() === option.id"
-          [attr.aria-disabled]="!isModeUnlocked(option.id)"
-          [attr.aria-label]="'Chapter ' + option.chapterNumber + ': ' + option.title + (isModeCompleted(option.id) ? ' (Completed)' : !isModeUnlocked(option.id) ? ' (Locked)' : '')"
-          (click)="selectMode(option.id)">
-          <div class="card-radio-indicator" aria-hidden="true">
-            @if (!isModeUnlocked(option.id)) {
-              <mat-icon class="lock-icon">lock</mat-icon>
-            } @else {
-              <span class="radio-dot" [class.checked]="selectedMode() === option.id"></span>
-            }
+      <article class="scripted-order" aria-label="Mandatory scripted Campaign orders">
+        <div class="card-title-row">
+          <div class="chapter-label-group">
+            <span class="chapter-num">Chapter {{ scriptedOption().chapterNumber }}</span>
+            <strong class="card-title">{{ scriptedOption().chapterTitle }}</strong>
           </div>
-
-          <div class="card-body">
-            <div class="card-title-row">
-              <div class="chapter-label-group">
-                <span class="chapter-num">Chapter {{ option.chapterNumber }}</span>
-                <strong class="card-title">{{ option.title }}</strong>
-              </div>
-              @if (isModeCompleted(option.id)) {
-                <span class="card-status-badge completed">
-                  <mat-icon>check_circle</mat-icon> Completed
-                </span>
-              } @else if (!isModeUnlocked(option.id)) {
-                <span class="card-status-badge locked">
-                  <mat-icon>lock</mat-icon> Locked
-                </span>
-              } @else {
-                <span class="card-status-badge available">Available</span>
-              }
+          <span class="card-status-badge required">
+            <mat-icon aria-hidden="true">lock</mat-icon> Story Orders
+          </span>
+        </div>
+        <p class="card-desc">{{ scriptedOption().description }}</p>
+        <div class="rule-box">
+          <mat-icon class="rule-icon" aria-hidden="true">gavel</mat-icon>
+          <span class="rule-text">{{ scriptedOption().ruleSummary }}</span>
+        </div>
+        <div class="active-modifier-list" aria-label="Active Campaign modifiers">
+          @if (scriptedModifiers().length === 0) {
+            <span class="modifier-chip base">
+              <mat-icon aria-hidden="true">verified</mat-icon> Classic rules
+            </span>
+          } @else {
+            @for (modifier of scriptedModifiers(); track modifier) {
+              <span class="modifier-chip">
+                <mat-icon aria-hidden="true">add_circle</mat-icon>
+                {{ modifier === 'limited_reserves' ? 'Limited Reserves' : modifier === 'fog_of_war' ? 'Fog of War' : 'Total War' }}
+              </span>
+            }
+          }
+        </div>
+        <div class="quota-badge">
+          <span class="quota-label">Reinforcements:</span>
+          <strong class="quota-val">{{ scriptedOption().reinforcementPolicy }}</strong>
+        </div>
+      </article>
+    } @else {
+      <p class="dialog-intro">
+        The Chronicle is complete. Configure any combination of modifiers for this custom three-War Campaign.
+      </p>
+      <div class="base-rules-note">
+        <mat-icon aria-hidden="true">verified</mat-icon>
+        <span><strong>Classic rules</strong> always form the base. All modifiers are optional.</span>
+      </div>
+      <div class="orders-grid" aria-label="Optional Campaign modifiers">
+        @for (option of modifierOptions; track option.id) {
+          <button
+            type="button"
+            class="order-card modifier-toggle"
+            [class.selected]="isModifierEnabled(option.id)"
+            role="checkbox"
+            [attr.aria-checked]="isModifierEnabled(option.id)"
+            (click)="toggleModifier(option.id)">
+            <div class="card-check-indicator" aria-hidden="true">
+              <mat-icon>{{ isModifierEnabled(option.id) ? 'check' : 'add' }}</mat-icon>
             </div>
-
-            <p class="card-desc">{{ option.description }}</p>
-
-            @if (!isModeUnlocked(option.id)) {
-              <div class="lock-prereq-msg">
-                <mat-icon>info</mat-icon>
-                <span>Complete Chapter {{ option.chapterNumber - 1 }} to unseal these orders.</span>
+            <div class="card-body">
+              <div class="card-title-row">
+                <strong class="card-title">{{ option.title }}</strong>
+                <span class="card-status-badge" [class.enabled]="isModifierEnabled(option.id)">
+                  {{ isModifierEnabled(option.id) ? 'Enabled' : 'Optional' }}
+                </span>
               </div>
-            } @else {
+              <p class="card-desc">{{ option.description }}</p>
               <div class="rule-box">
-                <span class="rule-icon" aria-hidden="true">⚔️</span>
+                <mat-icon class="rule-icon" aria-hidden="true">tune</mat-icon>
                 <span class="rule-text">{{ option.ruleSummary }}</span>
               </div>
-
-              <div class="quota-badge">
-                <span class="quota-label">Reinforcements:</span>
-                <strong class="quota-val">{{ option.reinforcementPolicy }}</strong>
-              </div>
-            }
-          </div>
-        </button>
-      }
-    </div>
+            </div>
+          </button>
+        }
+      </div>
+    }
   </mat-dialog-content>
 
   <mat-dialog-actions class="dialog-actions" align="end">
@@ -105,7 +110,7 @@
       type="button"
       class="confirm-orders-btn"
       (click)="confirmOrders()"
-      aria-label="Confirm selected campaign orders and begin War 1">
+      aria-label="Confirm Campaign modifiers and begin War 1">
       <mat-icon aria-hidden="true">military_tech</mat-icon>
       <span>Issue Orders & Engage</span>
     </button>

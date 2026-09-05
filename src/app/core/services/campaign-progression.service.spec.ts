@@ -6,6 +6,7 @@ import {
   getAuthoredCommanderSchedule,
 } from '../models/campaign-chapter.model';
 import {
+  CampaignModifierId,
   MAX_CAMPAIGN_HISTORY,
   WARS_PER_CAMPAIGN
 } from '../models/progression.model';
@@ -26,6 +27,22 @@ describe('CampaignProgressionService', () => {
   });
 
   afterEach(() => localStorage.clear());
+
+  function enterCustomCampaign(modifiers: readonly CampaignModifierId[] = []): void {
+    authService.updateActiveProfileProgression(previous => ({
+      ...previous,
+      unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER],
+      completedChapterModes: [...CAMPAIGN_CHAPTER_ORDER],
+      currentCampaign: {
+        ...previous.currentCampaign,
+        mode: 'standard',
+        modifiers,
+        ordersSelected: false,
+        wars: [],
+        commanderSchedule: getAuthoredCommanderSchedule('standard')
+      }
+    }));
+  }
 
   describe('Initial Fresh Profile State', () => {
     it('initializes a new profile with Standard chapter only unlocked, unselected orders, and Marcel first', () => {
@@ -136,10 +153,50 @@ describe('CampaignProgressionService', () => {
       expect(service.unlockedChapterModes()).toEqual(['standard', 'limited_reserves']);
       expect(service.isChapterUnlocked('limited_reserves')).toBeTrue();
     });
+
+    it('routes a grandfathered later-mode save to its first unfinished story Chapter', () => {
+      authService.updateActiveProfileProgression(previous => ({
+        ...previous,
+        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER],
+        completedChapterModes: [],
+        currentCampaign: {
+          ...previous.currentCampaign,
+          mode: 'total_war',
+          modifiers: ['total_war'],
+          ordersSelected: true,
+          wars: [
+            {
+              warId: 'legacy-total-1',
+              commanderId: 'gambler',
+              outcome: GameOutcome.PLAYER_WIN,
+              margin: 3,
+              playerDeckColor: 'red',
+              completedAt: '2026-08-01T00:00:00Z',
+            },
+            {
+              warId: 'legacy-total-2',
+              commanderId: 'cornered-general',
+              outcome: GameOutcome.OPPONENT_WIN,
+              margin: -2,
+              playerDeckColor: 'red',
+              completedAt: '2026-08-01T01:00:00Z',
+            },
+          ],
+          commanderSchedule: getAuthoredCommanderSchedule('total_war'),
+        },
+      }));
+
+      service.recordResolvedWar(war('legacy-total-3', GameOutcome.PLAYER_WIN, 1, 0));
+
+      expect(service.completedChapterModes()).toEqual(['total_war']);
+      expect(service.activeCampaignMode()).toBe('standard');
+      expect(service.activeCampaignModifiers()).toEqual([]);
+      expect(service.ordersSelected()).toBeFalse();
+    });
   });
 
-  describe('Full 4-Chapter Sequential Unlocking and Replay Availability', () => {
-    it('progresses Standard -> Limited Reserves -> Fog of War -> Total War, leaving all chapters replayable', () => {
+  describe('Full 4-Chapter Sequential Unlocking and Custom Campaign Availability', () => {
+    it('progresses through mandatory stacked Chapters, then opens randomized custom Campaigns', () => {
       // 1. Complete Standard Chapter I
       for (let i = 1; i <= 3; i++) {
         service.recordResolvedWar(war(`std-w${i}`, GameOutcome.PLAYER_WIN, 2, 0));
@@ -147,6 +204,7 @@ describe('CampaignProgressionService', () => {
       expect(service.completedChapterModes()).toEqual(['standard']);
       expect(service.unlockedChapterModes()).toEqual(['standard', 'limited_reserves']);
       expect(service.activeCampaignMode()).toBe('limited_reserves');
+      expect(service.activeCampaignModifiers()).toEqual(['limited_reserves']);
 
       // Confirm Limited Reserves orders and check schedule: Edmund -> Lorenzo -> Marcel
       service.selectCampaignOrders('limited_reserves');
@@ -161,6 +219,7 @@ describe('CampaignProgressionService', () => {
       expect(service.completedChapterModes()).toEqual(['standard', 'limited_reserves']);
       expect(service.unlockedChapterModes()).toEqual(['standard', 'limited_reserves', 'fog_of_war']);
       expect(service.activeCampaignMode()).toBe('fog_of_war');
+      expect(service.activeCampaignModifiers()).toEqual(['limited_reserves', 'fog_of_war']);
 
       // Confirm Fog of War orders and check schedule: Matthias -> Marcel -> Bastien
       service.selectCampaignOrders('fog_of_war');
@@ -184,6 +243,11 @@ describe('CampaignProgressionService', () => {
         'total_war'
       ]);
       expect(service.activeCampaignMode()).toBe('total_war');
+      expect(service.activeCampaignModifiers()).toEqual([
+        'limited_reserves',
+        'fog_of_war',
+        'total_war',
+      ]);
 
       // Confirm Total War orders and check schedule: Edmund -> Lorenzo -> Matthias
       service.selectCampaignOrders('total_war');
@@ -208,14 +272,17 @@ describe('CampaignProgressionService', () => {
         'total_war'
       ]);
 
-      // Can select and replay any chapter (generates 3-commander randomized schedule)
+      // Story completion opens a neutral custom Campaign with randomized opposition.
+      expect(service.activeCampaignMode()).toBe('standard');
+      expect(service.activeCampaignModifiers()).toEqual([]);
       expect(service.selectCampaignOrders('standard')).toBeTrue();
       expect(service.activeCampaignMode()).toBe('standard');
       expect(service.currentCampaign().commanderSchedule.length).toBe(3);
       expect(new Set(service.currentCampaign().commanderSchedule).size).toBe(3);
 
-      expect(service.selectCampaignOrders('limited_reserves')).toBeTrue();
-      expect(service.activeCampaignMode()).toBe('limited_reserves');
+      expect(service.selectCampaignOrders('standard', ['limited_reserves'])).toBeTrue();
+      expect(service.activeCampaignMode()).toBe('standard');
+      expect(service.activeCampaignModifiers()).toEqual(['limited_reserves']);
       expect(service.currentCampaign().commanderSchedule.length).toBe(3);
       expect(new Set(service.currentCampaign().commanderSchedule).size).toBe(3);
     });
@@ -224,36 +291,48 @@ describe('CampaignProgressionService', () => {
 
   describe('Campaign Orders Immutability & Selection', () => {
     it('prevents changing campaign orders once War 1 play has begun', () => {
-      // Grandfather all modes for test
-      authService.updateActiveProfileProgression(p => ({
-        ...p,
-        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
-      }));
-
-      service.selectCampaignOrders('limited_reserves');
-      expect(service.activeCampaignMode()).toBe('limited_reserves');
+      enterCustomCampaign();
+      service.selectCampaignOrders('standard', ['limited_reserves']);
+      expect(service.activeCampaignModifiers()).toEqual(['limited_reserves']);
 
       // Before war resolution, changing order is allowed
-      expect(service.selectCampaignOrders('fog_of_war')).toBeTrue();
-      expect(service.activeCampaignMode()).toBe('fog_of_war');
+      expect(service.selectCampaignOrders('standard', ['fog_of_war'])).toBeTrue();
+      expect(service.activeCampaignModifiers()).toEqual(['fog_of_war']);
 
       // Once War 1 is recorded, changing orders is forbidden
       service.recordResolvedWar(war('locked-w1', GameOutcome.PLAYER_WIN, 2, 0));
-      expect(service.selectCampaignOrders('standard')).toBeFalse();
-      expect(service.activeCampaignMode()).toBe('fog_of_war');
+      expect(service.selectCampaignOrders('standard', [])).toBeFalse();
+      expect(service.activeCampaignModifiers()).toEqual(['fog_of_war']);
+    });
+
+    it('supports all three independent modifiers together in a custom Campaign', () => {
+      enterCustomCampaign();
+
+      expect(service.selectCampaignOrders('standard', [
+        'total_war',
+        'fog_of_war',
+        'limited_reserves',
+      ])).toBeTrue();
+      expect(service.activeCampaignModifiers()).toEqual([
+        'limited_reserves',
+        'fog_of_war',
+        'total_war',
+      ]);
+      expect(service.isLimitedReserves()).toBeTrue();
+      expect(service.isFogOfWar()).toBeTrue();
+      expect(service.isTotalWar()).toBeTrue();
+      expect(service.remainingReserves()).toBe(5);
+      expect(service.canInspectCurrentWarCasualties(false)).toBeFalse();
     });
   });
 
   describe('Limited Reserves Mechanics', () => {
     beforeEach(() => {
-      authService.updateActiveProfileProgression(p => ({
-        ...p,
-        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
-      }));
+      enterCustomCampaign();
     });
 
     it('initializes exactly 5 reserves and decrements on consumption', () => {
-      service.selectCampaignOrders('limited_reserves');
+      service.selectCampaignOrders('standard', ['limited_reserves']);
       expect(service.isLimitedReserves()).toBeTrue();
       expect(service.remainingReserves()).toBe(5);
       expect(service.initialReserves()).toBe(5);
@@ -271,7 +350,7 @@ describe('CampaignProgressionService', () => {
     });
 
     it('persists remaining reserves across Wars in a Campaign', () => {
-      service.selectCampaignOrders('limited_reserves');
+      service.selectCampaignOrders('standard', ['limited_reserves']);
       service.consumeHumanReserve();
       service.consumeHumanReserve();
       expect(service.remainingReserves()).toBe(3);
@@ -355,14 +434,11 @@ describe('CampaignProgressionService', () => {
 
   describe('Total War Mechanics & Scoring', () => {
     beforeEach(() => {
-      authService.updateActiveProfileProgression(p => ({
-        ...p,
-        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
-      }));
+      enterCustomCampaign();
     });
 
     it('tracks running differential and determines victory by cumulative differential', () => {
-      service.selectCampaignOrders('total_war');
+      service.selectCampaignOrders('standard', ['total_war']);
       expect(service.isTotalWar()).toBeTrue();
       expect(service.runningCampaignDifferential()).toBe(0);
 
@@ -384,14 +460,11 @@ describe('CampaignProgressionService', () => {
 
   describe('Fog of War Mechanics', () => {
     beforeEach(() => {
-      authService.updateActiveProfileProgression(p => ({
-        ...p,
-        unlockedChapterModes: [...CAMPAIGN_CHAPTER_ORDER]
-      }));
+      enterCustomCampaign();
     });
 
     it('seals casualties while War is active and unseals upon War resolution', () => {
-      service.selectCampaignOrders('fog_of_war');
+      service.selectCampaignOrders('standard', ['fog_of_war']);
       expect(service.isFogOfWar()).toBeTrue();
 
       expect(service.canInspectCurrentWarCasualties(false)).toBeFalse();

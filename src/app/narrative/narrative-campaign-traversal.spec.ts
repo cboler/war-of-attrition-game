@@ -263,8 +263,7 @@ describe('Twelve-War Narrative Traversal & Spoiler Firewall', () => {
   });
 
   describe('Post-Story Randomized Replay Commander Scheduling', () => {
-    it('maintains strict canonical schedule prior to completing all four chapters', () => {
-      // Replaying Chapter I while only Chapter I is completed
+    it('enforces the next canonical Chapter prior to completing all four chapters', () => {
       progression.selectCampaignOrders('standard');
       progression.recordResolvedWar({ warId: 'w1', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 5, opponentCardsRemaining: 0 });
       progression.recordResolvedWar({ warId: 'w2', outcome: GameOutcome.PLAYER_WIN, playerCardsRemaining: 5, opponentCardsRemaining: 0 });
@@ -273,10 +272,13 @@ describe('Twelve-War Narrative Traversal & Spoiler Firewall', () => {
       expect(progression.isChapterCompleted('standard')).toBeTrue();
       expect(progression.isAllChaptersCompleted()).toBeFalse();
 
-      // Replay Chapter I
-      progression.selectCampaignOrders('standard');
-      const replaySchedule = progression.currentCampaign().commanderSchedule;
-      expect(replaySchedule).toEqual(['quartermaster', 'analyst', 'attritionist']);
+      expect(progression.activeCampaignMode()).toBe('limited_reserves');
+      expect(progression.currentCampaign().commanderSchedule).toEqual([
+        'gambler',
+        'cornered-general',
+        'quartermaster'
+      ]);
+      expect(progression.selectCampaignOrders('standard')).toBeFalse();
     });
 
     it('generates a 3-distinct-commander randomized schedule only after all four chapters are completed', () => {

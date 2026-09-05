@@ -69,7 +69,13 @@ describe('RuleDemoComponent', () => {
     expect(component.frameIndex()).toBe(0);
     expect(fixture.nativeElement.querySelector('.battle-commitments')).toBeNull();
 
-    tick(1900);
+    tick(950);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.battle-escalation-cue')?.textContent).toContain(
+      'True tie → Battle',
+    );
+
+    tick(950);
     fixture.detectChanges();
     const committed = fixture.nativeElement.querySelectorAll('.committed-card');
     expect(committed.length).toBe(6);
@@ -98,6 +104,37 @@ describe('RuleDemoComponent', () => {
     expect(component.isFinalFrame()).toBeTrue();
     expect(fixture.nativeElement.querySelectorAll('.committed-card').length).toBe(6);
   });
+
+  it('shows an empty Boneyard before the defeated clash card moves into it', fakeAsync(() => {
+    fixture.componentRef.setInput('rule', 'boneyard');
+    component.replay();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.demo-boneyard')?.getAttribute('aria-label')).toBe('Empty Boneyard');
+    expect(root.querySelector('.arriving-casualty')).toBeNull();
+
+    tick(950);
+    fixture.detectChanges();
+
+    expect(root.querySelector('.demo-card-slot.departing-to-boneyard')).toBeTruthy();
+    expect(root.querySelector('.demo-boneyard')?.getAttribute('aria-label')).toContain('defeated 9');
+    expect(root.querySelector('.arriving-casualty app-card')).toBeTruthy();
+  }));
+
+  it('celebrates the final War result with a restrained victory dispatch', fakeAsync(() => {
+    fixture.componentRef.setInput('rule', 'war-resolution');
+    component.replay();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.war-celebration')).toBeNull();
+    tick(950);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.victory-stamp')?.textContent).toContain('War Won');
+    expect(fixture.nativeElement.querySelectorAll('.streamer').length).toBe(4);
+    expect(fixture.nativeElement.querySelectorAll('.party-popper').length).toBe(2);
+  }));
 
   it('plays tutorial cues while sound effects are enabled', fakeAsync(() => {
     const sound = TestBed.inject(SoundService);

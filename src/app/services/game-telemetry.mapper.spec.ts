@@ -7,7 +7,7 @@ import { normalizeTelemetryRecordForGa4 } from './telemetry-transport.service';
 
 describe('game telemetry mapper', () => {
   const envelope: TelemetryEnvelope = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     rulesetVersion: 'rules-test',
     appVersion: 'app-test',
     warId: 'war-test',
@@ -36,7 +36,7 @@ describe('game telemetry mapper', () => {
     expect(mapped?.parameters['opponent_card_id']).toBe(opponentCard.id);
     expect(mapped?.parameters['close_victory']).toBe(1);
     expect(JSON.stringify(mapped)).not.toContain('free text must never leave the app');
-    expect(mapped?.parameters['schema_version']).toBe(1);
+    expect(mapped?.parameters['schema_version']).toBe(2);
     expect(mapped?.parameters['ruleset_version']).toBe('rules-test');
     expect(mapped?.parameters['app_version']).toBe('app-test');
   });
@@ -267,8 +267,12 @@ describe('game telemetry mapper', () => {
       }
     });
 
-    it('suppresses card-ledger and Boneyard reconstruction parameters during active Fog of War', () => {
-      const fogEnvelope: TelemetryEnvelope = { ...envelope, campaignMode: 'fog_of_war' };
+    it('suppresses card-ledger and Boneyard reconstruction parameters when Fog is in a modifier stack', () => {
+      const fogEnvelope: TelemetryEnvelope = {
+        ...envelope,
+        campaignMode: 'standard',
+        campaignModifiers: ['limited_reserves', 'fog_of_war'],
+      };
 
       // 1. Clash: retains comparison and winner, suppresses exact card IDs/ranks/values
       const clash = mapGameEventToTelemetry({
@@ -281,7 +285,8 @@ describe('game telemetry mapper', () => {
         specialRule: true,
         message: 'Opponent card survives.'
       }, fogEnvelope);
-      expect(clash?.parameters['campaign_mode']).toBe('fog_of_war');
+      expect(clash?.parameters['campaign_mode']).toBe('standard');
+      expect(clash?.parameters['campaign_modifiers']).toBe('limited_reserves+fog_of_war');
       expect(clash?.parameters['stage']).toBe('clash');
       expect(clash?.parameters['comparison']).toBe(ComparisonResult.OPPONENT_WINS);
       expect(clash?.parameters['winner']).toBe(PlayerType.OPPONENT);
@@ -342,7 +347,7 @@ describe('game telemetry mapper', () => {
         message: 'Card rescued.'
       }, fogEnvelope);
       expect(reinforceResolved?.parameters['challenger']).toBe(PlayerType.PLAYER);
-      expect(reinforceResolved?.parameters['comparison']).toBe(ComparisonResult.PLAYER_WINS);
+      expect(reinforceResolved?.parameters['comparison']).toBeUndefined();
       expect(reinforceResolved?.parameters['outcome']).toBe('success');
       expect(reinforceResolved?.parameters['reinforcement_id']).toBeUndefined();
       expect(reinforceResolved?.parameters['original_card_id']).toBeUndefined();

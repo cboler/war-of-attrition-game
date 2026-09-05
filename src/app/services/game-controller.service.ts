@@ -22,7 +22,7 @@ import { CardComparisonService, ComparisonResult } from '../core/services/card-c
 import { AuthService } from '../core/services/auth.service';
 import { SettingsService } from '../core/services/settings.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
-import { CampaignModeId } from '../core/models/progression.model';
+import { CampaignModifierId, CampaignModeId } from '../core/models/progression.model';
 import {
   PresentationSequenceCancelled,
   PresentationSequencerService,
@@ -122,6 +122,7 @@ export interface CurrentGameSummary {
   readonly isComeback: boolean;
   readonly maxDeficit: number;
   readonly campaignMode?: CampaignModeId;
+  readonly campaignModifiers?: readonly CampaignModifierId[];
   readonly warDifferential?: number;
   readonly runningCampaignDifferential?: number;
   readonly warIndex?: number;
@@ -495,6 +496,7 @@ export class GameControllerService {
       startType: didAbandon ? 'restart' : 'new',
       commanderId: this.opponentCommander().id,
       campaignMode: this.campaignProgression.activeCampaignMode(),
+      campaignModifiers: this.campaignProgression.activeCampaignModifiers(),
     });
     this.currentWarId = warContext.warId;
     this.eventBus.emit({
@@ -1736,6 +1738,7 @@ export class GameControllerService {
       isComeback,
       maxDeficit: this.maxDeficitExperienced,
       campaignMode: this.campaignProgression.activeCampaignMode(),
+      campaignModifiers: this.campaignProgression.activeCampaignModifiers(),
       warDifferential,
       runningCampaignDifferential: runningCampaignDiff,
       warIndex,

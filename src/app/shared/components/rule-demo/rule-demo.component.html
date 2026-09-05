@@ -14,11 +14,15 @@
     </button>
   </header>
 
-  <div class="demo-scene" [class.special-scene]="frame().special">
+  <div
+    class="demo-scene"
+    [class.special-scene]="frame().special"
+    [class.boneyard-drill-scene]="frame().showBoneyard"
+    [class.war-celebration-scene]="frame().warCelebration">
     @if (frame().playerDeckCount !== undefined || frame().opponentDeckCount !== undefined) {
       <div class="deck-readout" aria-label="Demonstration deck counts">
-        <span>Your deck <strong>{{ frame().playerDeckCount ?? '—' }}</strong></span>
-        <span>Opponent deck <strong>{{ frame().opponentDeckCount ?? '—' }}</strong></span>
+        <span>Your deck <strong>{{ frame().playerDeckCount ?? '--' }}</strong></span>
+        <span>Opponent deck <strong>{{ frame().opponentDeckCount ?? '--' }}</strong></span>
       </div>
     }
 
@@ -82,7 +86,7 @@
             [class.inactive]="frame().supportingCardInactive"
             [attr.aria-label]="frame().supportingCardInactive ? 'Original card inactive and not compared' : 'Original card rescued'">
             <app-card [card]="frame().supportingCard ?? null" [faceDown]="false" />
-            <span>{{ frame().supportingCardInactive ? 'Inactive · not compared' : 'Rescued' }}</span>
+            <span>{{ frame().supportingCardInactive ? 'Inactive - not compared' : 'Rescued' }}</span>
           </div>
         }
         <app-card
@@ -98,7 +102,10 @@
 
       <span class="versus" aria-hidden="true">VS</span>
 
-      <div class="demo-card-slot" [class.in-boneyard]="frame().rightInBoneyard">
+      <div
+        class="demo-card-slot"
+        [class.in-boneyard]="frame().rightInBoneyard"
+        [class.departing-to-boneyard]="frame().rightMovesToBoneyard">
         <span class="side-label">Opponent card</span>
         <app-card
           [card]="frame().rightCard"
@@ -114,14 +121,45 @@
         }
       </div>
     </div>
+
+    @if (frame().showBoneyard) {
+      <div
+        class="demo-boneyard"
+        [class.has-casualty]="frame().boneyardCard"
+        [attr.aria-label]="frame().boneyardCard ? 'Boneyard containing the defeated 9' : 'Empty Boneyard'">
+        <div class="boneyard-target" aria-hidden="true">
+          <mat-icon>dangerous</mat-icon>
+          @if (frame().boneyardCard; as casualty) {
+            <div class="arriving-casualty">
+              <app-card [card]="casualty" [faceDown]="false" glow="red" />
+            </div>
+          } @else {
+            <span>Empty</span>
+          }
+        </div>
+        <strong>Public Boneyard</strong>
+      </div>
+    }
     }
 
     @if (frame().battleEscalation) {
-      <strong class="battle-escalation-cue">True tie <span aria-hidden="true">â†’</span> Battle</strong>
+      <strong class="battle-escalation-cue">True tie <span aria-hidden="true">&rarr;</span> Battle</strong>
     }
 
     @if (frame().special) {
-      <strong class="special-rule">Special rule · 2 defeats Ace</strong>
+      <strong class="special-rule">Special rule &middot; 2 defeats Ace</strong>
+    }
+
+    @if (frame().warCelebration) {
+      <div class="war-celebration" aria-label="War won. Opposition exhausted.">
+        <i class="streamer streamer-one" aria-hidden="true"></i>
+        <i class="streamer streamer-two" aria-hidden="true"></i>
+        <i class="streamer streamer-three" aria-hidden="true"></i>
+        <i class="streamer streamer-four" aria-hidden="true"></i>
+        <span class="victory-stamp">War Won<small>Opposition exhausted</small></span>
+        <span class="party-popper left" aria-hidden="true">&#127881;</span>
+        <span class="party-popper right" aria-hidden="true">&#127881;</span>
+      </div>
     }
   </div>
 

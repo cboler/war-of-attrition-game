@@ -904,9 +904,26 @@ describe('GameControllerService presentation integration', () => {
       }));
     });
 
+    const configureCustomCampaign = (
+      modifiers: readonly ('limited_reserves' | 'fog_of_war' | 'total_war')[]
+    ): void => {
+      auth.updateActiveProfileProgression(previous => ({
+        ...previous,
+        completedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war'],
+        currentCampaign: {
+          ...previous.currentCampaign,
+          mode: 'standard',
+          modifiers,
+          ordersSelected: false,
+          wars: []
+        }
+      }));
+      progression.selectCampaignOrders('standard', modifiers);
+    };
+
     it('consumes a reserve upon human challenge commitment and chronicles exhaustion when reaching 0', fakeAsync(() => {
       settings.setAutoPlayAnimations(false);
-      progression.selectCampaignOrders('limited_reserves');
+      configureCustomCampaign(['limited_reserves']);
       expect(progression.remainingReserves()).toBe(5);
 
       spyOn(comparison, 'compareCards').and.returnValues(
@@ -933,7 +950,7 @@ describe('GameControllerService presentation integration', () => {
 
     it('automatically concedes beaten clash without offering challenge when reserves are exhausted', fakeAsync(() => {
       settings.setAutoPlayAnimations(false);
-      progression.selectCampaignOrders('limited_reserves');
+      configureCustomCampaign(['limited_reserves']);
 
       // Exhaust all 5 reserves
       for (let i = 0; i < 5; i++) {
@@ -956,7 +973,7 @@ describe('GameControllerService presentation integration', () => {
     }));
 
     it('preserves campaignId, mode, and spent reserves on Restart War and does not advance resolved wars', () => {
-      progression.selectCampaignOrders('limited_reserves');
+      configureCustomCampaign(['limited_reserves']);
       progression.consumeHumanReserve();
       progression.consumeHumanReserve();
       expect(progression.remainingReserves()).toBe(3);
@@ -972,14 +989,14 @@ describe('GameControllerService presentation integration', () => {
       expect(progression.currentCampaign().campaignId).toBe(campaignIdBefore);
       expect(progression.currentCommanderId()).toBe(commanderBefore);
       expect(progression.currentCampaign().commanderSchedule).toEqual(scheduleBefore);
-      expect(progression.activeCampaignMode()).toBe('limited_reserves');
+      expect(progression.activeCampaignModifiers()).toEqual(['limited_reserves']);
       expect(progression.remainingReserves()).toBe(3);
       expect(progression.currentCampaign().wars.length).toBe(warsBefore);
       expect(progression.ordersSelected()).toBeTrue();
     });
 
     it('preserves campaignId, mode, and spent reserves on Abandon War', () => {
-      progression.selectCampaignOrders('limited_reserves');
+      configureCustomCampaign(['limited_reserves']);
       progression.consumeHumanReserve();
       expect(progression.remainingReserves()).toBe(4);
 
@@ -993,14 +1010,14 @@ describe('GameControllerService presentation integration', () => {
       expect(progression.currentCampaign().campaignId).toBe(campaignIdBefore);
       expect(progression.currentCommanderId()).toBe(commanderBefore);
       expect(progression.currentCampaign().commanderSchedule).toEqual(scheduleBefore);
-      expect(progression.activeCampaignMode()).toBe('limited_reserves');
+      expect(progression.activeCampaignModifiers()).toEqual(['limited_reserves']);
       expect(progression.remainingReserves()).toBe(4);
       expect(progression.currentCampaign().wars.length).toBe(0);
       expect(progression.ordersSelected()).toBeTrue();
     });
 
     it('exhausted reserves (0/5) remain exhausted after Restart War or Abandon War', () => {
-      progression.selectCampaignOrders('limited_reserves');
+      configureCustomCampaign(['limited_reserves']);
       for (let i = 0; i < 5; i++) {
         progression.consumeHumanReserve();
       }
@@ -1018,7 +1035,7 @@ describe('GameControllerService presentation integration', () => {
     });
 
     it('manages isFogOfWarActive and canInspectCasualties signals correctly across phases', () => {
-      progression.selectCampaignOrders('fog_of_war');
+      configureCustomCampaign(['fog_of_war']);
       expect(controller.isFogOfWarActive()).toBeTrue();
       expect(controller.canInspectCasualties()).toBeFalse();
 
