@@ -282,6 +282,8 @@ describe('GameControllerService presentation integration', () => {
   }));
 
   it('keeps challenge and concession branches presentation-equivalent while the AI considers', fakeAsync(() => {
+    progression.selectCampaignOrders('standard');
+    spyOn(controller, 'speakIntroduction');
     settings.setAutoPlayAnimations(true);
     settings.setAnimationSpeed('normal');
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
@@ -707,6 +709,9 @@ describe('GameControllerService presentation integration', () => {
     expect(auth.userStats().campaignsCompleted).toBe(completedBefore);
     expect(recordWar).not.toHaveBeenCalled();
     expect(events.filter((event) => event.type === 'game_abandoned').length).toBe(1);
+    expect(events.filter((event) => event.type === 'war_started').length).toBe(0);
+    progression.selectCampaignOrders(progression.activeCampaignMode());
+    controller.ensureGameStarted();
     expect(events.filter((event) => event.type === 'war_started').length).toBe(1);
     subscription.unsubscribe();
   });

@@ -79,6 +79,7 @@ describe('TableGame presentation', () => {
   });
 
   it('preserves the exact unresolved match across a component remount', fakeAsync(() => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
     const gameState = TestBed.inject(GameStateService);
     const opponentAI = TestBed.inject(OpponentAIService);
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
@@ -103,6 +104,7 @@ describe('TableGame presentation', () => {
   }));
 
   it('records one abandonment only for an explicit restart after meaningful play', fakeAsync(() => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
     const auth = TestBed.inject(AuthService);
     const opponentAI = TestBed.inject(OpponentAIService);
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
@@ -144,6 +146,7 @@ describe('TableGame presentation', () => {
   });
 
   it('emits no challenge offer for either initial 2-vs-Ace orientation', fakeAsync(() => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
     const events: GameEvent[] = [];
     const eventBus = TestBed.inject(GameEventBusService);
     const opponentAI = TestBed.inject(OpponentAIService);
@@ -280,6 +283,7 @@ describe('TableGame presentation', () => {
   });
 
   it('exposes only sanitized hidden views and newest-layer target actions', fakeAsync(() => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
     const compareSpy = spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.TIE);
     spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
 
@@ -394,6 +398,7 @@ describe('TableGame presentation', () => {
   });
 
   it('publishes casualties without leaking hidden Battle winner identities', fakeAsync(() => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
     const events: GameEvent[] = [];
     const eventBus = TestBed.inject(GameEventBusService);
     const gameState = TestBed.inject(GameStateService);
@@ -453,6 +458,7 @@ describe('TableGame presentation', () => {
   }));
 
   it('accepts only one champion selection and ignores obsolete work after a new game', fakeAsync(() => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
     settings.setAutoPlayAnimations(true);
     const events: GameEvent[] = [];
     const eventBus = TestBed.inject(GameEventBusService);
@@ -483,6 +489,7 @@ describe('TableGame presentation', () => {
   }));
 
   it('keeps a settled ordinary casualty out of the visible Boneyard until it arrives', fakeAsync(() => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
     settings.setAutoPlayAnimations(true);
     settings.setAnimationSpeed('normal');
     const gameState = TestBed.inject(GameStateService);
@@ -527,6 +534,7 @@ describe('TableGame presentation', () => {
   }));
 
   it('opens an exact Boneyard casualty reference without mutating the War', fakeAsync(() => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
     const gameState = TestBed.inject(GameStateService);
     const opponentAI = TestBed.inject(OpponentAIService);
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
@@ -637,6 +645,7 @@ describe('TableGame presentation', () => {
     });
 
     it('correctly transitions between opposite consecutive comparison outcomes without leaking stale glow', fakeAsync(() => {
+      TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
       const opponentAI = TestBed.inject(OpponentAIService);
       const compareSpy = spyOn(comparison, 'compareCards');
       spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);

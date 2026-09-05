@@ -1,5 +1,6 @@
 import { Rank } from '../core/models/card.model';
 import { GameEvent } from '../core/models/game-events.model';
+import { ComparisonResult } from '../core/models/game-state.model';
 import {
   TelemetryEnvelope,
   TelemetryParameters,
@@ -79,8 +80,10 @@ export function mapGameEventToTelemetry(
             event.originalWinnerCard.rank,
           ) && event.winner !== null ? 1 : 0
         }),
-        outcome: event.winner === null ? 'battle' : event.challengerWon ? 'success' : 'failure',
-        escalated_to_battle: event.winner === null ? 1 : 0
+        outcome: event.comparison === ComparisonResult.TIE
+          ? event.escalatedToBattle ? 'battle' : 'tie'
+          : event.challengerWon ? 'success' : 'failure',
+        escalated_to_battle: event.escalatedToBattle ? 1 : 0
       });
 
     case 'battle_started':

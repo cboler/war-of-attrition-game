@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Card } from '../core/models/card.model';
-import { GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { ComparisonResult, GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { CardComparisonService, ComparisonExplanation } from '../core/services/card-comparison.service';
 import { GameEvent, GameEventBusService } from './game-event-bus.service';
 import { battleCasualtySummary, hiddenCardsReturn } from './table-copy';
@@ -122,13 +122,15 @@ export class StoryBookService {
         const reinfStr = this.formatCard(event.reinforcementCard);
         const origStr = this.formatCard(event.originalWinnerCard);
         let text = '';
-        if (event.challengerWon) {
+        if (event.comparison === ComparisonResult.TIE) {
+          text = `Reinforcement ${reinfStr} tied ${origStr}. ${
+            event.escalatedToBattle ? 'Battle initiated!' : event.message
+          }`;
+        } else if (event.challengerWon) {
           text =
             event.challenger === PlayerType.PLAYER
               ? `Card rescued. ${reinfStr} defeated ${origStr}, and both of your cards survive.`
               : `Opponent rescues their card. ${reinfStr} defeated ${origStr}.`;
-        } else if (event.winner === null) {
-          text = `Reinforcement ${reinfStr} tied ${origStr}. Battle initiated!`;
         } else {
           text =
             event.challenger === PlayerType.PLAYER

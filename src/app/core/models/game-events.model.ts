@@ -84,8 +84,12 @@ export interface ChallengeResolvedEvent extends BaseGameEvent {
   readonly reinforcementCard: Card;
   readonly originalWinnerCard: Card;
   readonly comparison: ComparisonResult;
+  /** Turn/attrition winner; may be non-null even when the comparison tied. */
   readonly winner: PlayerType | null;
+  /** True iff the challenger won the reinforcement comparison outright. */
   readonly challengerWon: boolean;
+  /** The tie proceeds into Battle; false for immediate terminal attrition, including a true tie. */
+  readonly escalatedToBattle: boolean;
   readonly message: string;
   readonly savedTwo: boolean; // challenger's initial beaten card was a 2 and saved
   /** Explicit original card avoids reconstructing challenge causality from presentation state. */

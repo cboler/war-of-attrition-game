@@ -140,6 +140,7 @@ describe('HallOfValorService', () => {
     });
 
     eventBus.emit({
+      escalatedToBattle: false,
       type: 'challenge_resolved',
       turnNumber: 2,
       challenger: PlayerType.PLAYER,
