@@ -24,7 +24,9 @@ import { CampaignProgressionService } from '../../../core/services/campaign-prog
 import { PlatformAchievementsService } from '../../../core/services/platform-achievements.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { ACHIEVEMENTS } from '../../../core/models/achievement.model';
+import { getCommanderIdentity } from '../../../core/models/commander-identity.model';
 import { CardBackingOption } from '../../../core/models/settings.model';
+import { CampaignModifierId, CampaignWarRecord } from '../../../core/models/progression.model';
 import { GameOutcome } from '../../../core/models/game-state.model';
 import { GameControllerService } from '../../../services/game-controller.service';
 import { TelemetryConsentService } from '../../../services/telemetry-consent.service';
@@ -39,6 +41,16 @@ interface ProfileConfirmationData {
   readonly message: string;
   readonly confirmLabel: string;
   readonly destructive?: boolean;
+}
+
+interface LocalWarDispatch {
+  readonly id: string;
+  readonly commanderName: string;
+  readonly commanderTitle: string;
+  readonly context: string;
+  readonly outcome: GameOutcome;
+  readonly outcomeLabel: string;
+  readonly margin: number;
 }
 
 @Component({
@@ -114,6 +126,8 @@ export class ProfileDialogComponent implements OnDestroy {
   readonly unlockedPercentage = computed(() =>
     Math.round((this.unlockedCount() / Math.max(1, this.totalAchievements())) * 100)
   );
+  readonly hasCareerWars = computed(() => this.stats().gamesPlayed > 0);
+  readonly hasCompletedCampaigns = computed(() => this.stats().campaignsCompleted > 0);
   readonly hasActiveMatch = computed(() => this.gameController.hasMeaningfulUnresolvedGame());
   readonly hasActiveCampaign = this.progression.hasActiveCampaign;
   readonly showPlayGamesButton = computed(
@@ -142,6 +156,23 @@ export class ProfileDialogComponent implements OnDestroy {
       drawn: statistics.campaignsDrawn,
       bestDifferential: statistics.bestCampaignDifferential,
     };
+  });
+
+  readonly recentWarDispatches = computed<readonly LocalWarDispatch[]>(() => {
+    const progression = this.progression.progression();
+    const dispatches = this.toWarDispatches(
+      progression.currentCampaign.wars,
+      progression.currentCampaign.modifiers,
+      'Current Campaign',
+    ).reverse();
+
+    for (const campaign of [...progression.recentCampaigns].reverse()) {
+      dispatches.push(
+        ...this.toWarDispatches(campaign.wars, campaign.modifiers, 'Completed Campaign').reverse(),
+      );
+    }
+
+    return dispatches.slice(0, 6);
   });
 
   readonly campaignPips = [0, 1, 2] as const;
@@ -393,6 +424,44 @@ export class ProfileDialogComponent implements OnDestroy {
 
   signed(value: number): string {
     return value > 0 ? `+${value}` : `${value}`;
+  }
+
+  private toWarDispatches(
+    wars: readonly CampaignWarRecord[],
+    modifiers: readonly CampaignModifierId[],
+    source: string,
+  ): LocalWarDispatch[] {
+    const orders = this.campaignOrdersLabel(modifiers);
+    return wars.map((war, index) => {
+      const commander = getCommanderIdentity(war.commanderId);
+      return {
+        id: war.warId,
+        commanderName: commander.name,
+        commanderTitle: commander.title,
+        context: `${source} · War ${index + 1} · ${orders}`,
+        outcome: war.outcome,
+        outcomeLabel:
+          war.outcome === GameOutcome.PLAYER_WIN
+            ? 'Victory'
+            : war.outcome === GameOutcome.OPPONENT_WIN
+              ? 'Defeat'
+              : 'Tie',
+        margin: war.margin,
+      };
+    });
+  }
+
+  private campaignOrdersLabel(modifiers: readonly CampaignModifierId[]): string {
+    if (modifiers.length === 0) return 'Standard Orders';
+    return modifiers
+      .map(modifier =>
+        modifier === 'limited_reserves'
+          ? 'Limited Reserves'
+          : modifier === 'fog_of_war'
+            ? 'Fog of War'
+            : 'Total War',
+      )
+      .join(' + ');
   }
 
   onAvatarError(event: Event): void {

@@ -24,5 +24,9 @@ describe('PrivacyComponent', () => {
     expect(compiled.textContent).toContain('War of Attrition');
     expect(compiled.textContent).toContain('contains no advertising SDK');
     expect(compiled.textContent).toContain('displays no ads');
+    expect(compiled.textContent).toContain('When that verified connection is unavailable');
+    expect(compiled.textContent).toContain('completed-War Game Stats');
+    expect(compiled.textContent).not.toContain('Leaderboards');
+    expect(compiled.textContent).toContain('Hall of Valor service history');
   });
 });

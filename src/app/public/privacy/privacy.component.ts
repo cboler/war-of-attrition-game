@@ -29,7 +29,7 @@ import { MatDividerModule } from '@angular/material/divider';
         </mat-card-header>
 
         <mat-card-content class="legal-content">
-          <div class="last-updated">Last Updated: August 29, 2026</div>
+          <div class="last-updated">Last Updated: September 5, 2026</div>
 
           <section>
             <h3>1. Overview & Developer Identity</h3>
@@ -55,8 +55,10 @@ import { MatDividerModule } from '@angular/material/divider';
                 and associate your gameplay statistics with your profile.
               </li>
               <li>
-                <strong>Google Play Games Services:</strong> On Android devices, if you connect Google Play Games, achievement unlocks and progress 
-                are submitted to Google Play Games Services to update your Google Play Games account and XP.
+                <strong>Google Play Games Services:</strong> Achievements and career records always work locally. If an Android host establishes
+                a verified connection and Play Games is signed in, mapped achievement progress and completed-War Game Stats may also be submitted
+                to Google Play Games Services. When that verified connection is unavailable, browser and app play remain local and no web fallback
+                submits those records to Play Games.
               </li>
               <li>
                 <strong>Gameplay State & Preferences:</strong> User settings (deck handedness, sound effects, animation speed, and card backings)
@@ -78,7 +80,7 @@ import { MatDividerModule } from '@angular/material/divider';
             <p>The application integrates with the following third-party services:</p>
             <ul>
               <li><strong>Google Identity Services:</strong> Authentication and profile display (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>).</li>
-              <li><strong>Google Play Games Services:</strong> Leaderboards and achievement synchronization on Android (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Play Terms</a>).</li>
+              <li><strong>Google Play Games Services:</strong> Conditional achievement and completed-War Game Stats synchronization when a verified Android connection is available (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Play Terms</a>).</li>
               <li><strong>Google Analytics:</strong> Consent-gated anonymized gameplay and app-usage statistics when configured. Google may process online identifiers and technical information under its terms (<a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses partner data</a>).</li>
             </ul>
           </section>
@@ -94,8 +96,8 @@ import { MatDividerModule } from '@angular/material/divider';
           <section>
             <h3>5. Data Retention & Deletion</h3>
             <p>
-              Local gameplay data is retained until you reset or delete it. "Reset Stats" clears resettable career statistics only and preserves
-              Campaign progression, tokens, and cosmetic entitlements. The <a routerLink="/delete-account">Data Deletion Page</a> resets all
+              Local gameplay data is retained until you reset or delete it. "Reset Career Records" clears resettable career statistics and Hall of
+              Valor service history while preserving Campaign progression, tokens, and cosmetic entitlements. The <a routerLink="/delete-account">Data Deletion Page</a> resets all
               War of Attrition application-owned local data. Local deletion does not delete your Google Account, synchronized Google Play records,
               or analytics records already transmitted to Google. Analytics consent can be withdrawn for future collection.
             </p>

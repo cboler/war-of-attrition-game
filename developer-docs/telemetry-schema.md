@@ -181,7 +181,7 @@ After Orders are confirmed, `ensureGameStarted` calls `beginWarWhenOrdersReady`,
 
 The pending deck preparation is not yet the collectible War boundary. Consent is evaluated at the one canonical start after Orders lock; grants after that start apply only to the next War, withdrawal remains immediate, and no event is replayed. Finalized modifiers therefore govern Fog redaction from the first collected event. The same War ID is used in start, terminal records and idempotent Campaign progression. Tutorial setup remains available during preparation; introductions and Limited Reserves Chronicle context use finalized Orders.
 
-The pre-schema-3 sequencing defect is historical: start and terminal records could agree on a stale commander/modifier snapshot, so a War-ID join cannot repair those cohorts by itself. The normalized join remains the intended analytics method for correctly captured context. The future [Game Stats design](google-play-game-stats-v1.md) is still unimplemented.
+The pre-schema-3 sequencing defect is historical: start and terminal records could agree on a stale commander/modifier snapshot, so a War-ID join cannot repair those cohorts by itself. The normalized join remains the intended analytics method for correctly captured context. The separate [Game Stats v1 implementation](google-play-game-stats-v1.md) now uses the corrected Orders boundary; its runtime native transport remains unavailable until a verified host channel exists.
 
 ## Future community aggregate contract
 
@@ -216,12 +216,12 @@ Official references: [GA4 event collection](https://developers.google.com/analyt
 
 ## Relationship to Google Play Game Stats v1
 
-The Google Play Game Stats v1 integration specified in [google-play-game-stats-v1.md](google-play-game-stats-v1.md) is a separate future contract and data path:
+The Google Play Game Stats v1 integration specified in [google-play-game-stats-v1.md](google-play-game-stats-v1.md) is a separate implemented projection and platform data path. It safely remains a no-op in ordinary web/PWA play and in the current TWA because no verified native channel is registered:
 
 - **Separate schemas**: GA4 is a fine-grained, consent-gated event stream for gameplay analysis (schema version `3`). PGS Game Stats v1 is a career aggregation contract centered on a single self-contained `war_completed` event emitted at War resolution.
 - **Commander inclusion**: PGS Game Stats v1 includes `commander_id` directly on every `war_completed` event within Google's 20-property Console limit. GA4 gameplay events omit `commander_id` from ordinary records to respect GA4's 25-parameter cap.
-- **Independent lifecycle snapshot**: The proposed PGS Game Stats adapter freezes its rules and commander context on the first `turn_started` event for eligibility and starting-reserve inputs. GA4 now establishes its authoritative context after Campaign Orders lock, before that first turn.
-- **Distinct transport and privacy**: GA4 telemetry is transport-gated by web consent and `GA4_MEASUREMENT_ID`. PGS Game Stats uses a native Play Games bridge gated by native account authentication. No analytics identifiers are sent to PGS, and no PGS player identifiers enter GA4.
+- **Independent lifecycle snapshot**: The PGS Game Stats adapter freezes its rules and commander context on the first `turn_started` event for eligibility and starting-reserve inputs. GA4 establishes its authoritative context after Campaign Orders lock, before that first turn.
+- **Distinct transport and privacy**: GA4 telemetry is transport-gated by web consent and `GA4_MEASUREMENT_ID`. PGS Game Stats requires a verified native Play Games bridge and native account authentication. No analytics identifiers are sent to PGS, and no PGS player identifiers enter GA4.
 
 ## Release SDK & Closed-Testing Status
 

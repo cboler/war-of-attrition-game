@@ -145,13 +145,49 @@
           </div>
         </section>
 
+        <section class="records-section local-dispatches" aria-labelledby="local-dispatches-title">
+          <div class="records-heading">
+            <h3 id="local-dispatches-title" class="section-subtitle">Local War Dispatches</h3>
+            <p>Recent resolved Wars retained with Campaign progress on this device.</p>
+          </div>
+          @if (recentWarDispatches().length > 0) {
+            <ol class="dispatch-list">
+              @for (dispatch of recentWarDispatches(); track dispatch.id) {
+                <li class="dispatch-row">
+                  <div class="dispatch-commander">
+                    <strong>{{ dispatch.commanderName }}</strong>
+                    <span>{{ dispatch.commanderTitle }}</span>
+                    <small>{{ dispatch.context }}</small>
+                  </div>
+                  <div
+                    class="dispatch-result"
+                    [class.victory]="dispatch.outcome === 'player_win'"
+                    [class.defeat]="dispatch.outcome === 'opponent_win'"
+                    [class.tie]="dispatch.outcome === 'tie'">
+                    <strong>{{ dispatch.outcomeLabel }}</strong>
+                    <span>{{ signed(dispatch.margin) }} margin</span>
+                  </div>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="dispatch-empty">No Campaign dispatches yet. Your first resolved War will name the commander here.</p>
+          }
+        </section>
+
+        @if (!hasCareerWars()) {
+          <p class="career-empty-state" role="note">
+            Career rates and records begin with your first resolved War after the most recent Career Records reset.
+          </p>
+        }
+
         <section class="records-section" aria-labelledby="basic-records-title">
           <h3 id="basic-records-title" class="section-subtitle">Basic Records</h3>
           <div class="stats-grid">
             <div class="stat-card win-rate" [class.high]="(stats().winRatePercentage || 0) >= 60">
               <div class="stat-icon"><mat-icon aria-hidden="true">emoji_events</mat-icon></div>
               <div class="stat-data">
-                <span class="stat-value">{{ stats().winRatePercentage || 0 }}%</span>
+                <span class="stat-value">{{ hasCareerWars() ? (stats().winRatePercentage || 0) + '%' : '—' }}</span>
                 <span class="stat-label">Win Rate</span>
               </div>
             </div>
@@ -213,7 +249,7 @@
             <div class="stat-card">
               <div class="stat-icon"><mat-icon aria-hidden="true">trending_up</mat-icon></div>
               <div class="stat-data">
-                <span class="stat-value">{{ signed(campaignCareer().bestDifferential) }}</span>
+                <span class="stat-value">{{ hasCompletedCampaigns() ? signed(campaignCareer().bestDifferential) : '—' }}</span>
                 <span class="stat-label">Best Attrition Differential</span>
               </div>
             </div>
@@ -233,7 +269,7 @@
             <div class="stat-card">
               <div class="stat-icon"><mat-icon aria-hidden="true">layers</mat-icon></div>
               <div class="stat-data">
-                <span class="stat-value">Depth {{ stats().deepestRecursiveBattle || 0 }}</span>
+                <span class="stat-value">{{ (stats().totalBattles || 0) > 0 ? 'Depth ' + (stats().deepestRecursiveBattle || 1) : '—' }}</span>
                 <span class="stat-label">Deepest Battle</span>
               </div>
             </div>
@@ -248,7 +284,9 @@
               <div class="stat-icon"><mat-icon aria-hidden="true">shield</mat-icon></div>
               <div class="stat-data">
                 <span class="stat-value">{{ stats().successfulChallenges || 0 }} / {{ stats().totalChallenges || 0 }}</span>
-                <span class="stat-label">Challenges Won · {{ stats().challengeSuccessRate || 0 }}%</span>
+                <span class="stat-label">
+                  {{ (stats().totalChallenges || 0) > 0 ? 'Challenges Won · ' + (stats().challengeSuccessRate || 0) + '%' : 'No Challenges Yet' }}
+                </span>
               </div>
             </div>
             <div class="stat-card">
@@ -295,13 +333,15 @@
               <div class="stat-icon"><mat-icon aria-hidden="true">whatshot</mat-icon></div>
               <div class="stat-data">
                 <span class="stat-value">{{ stats().juggernautOccurrences || 0 }}</span>
-                <span class="stat-label">Juggernaut Cards</span>
+                <span class="stat-label">Juggernaut Citations</span>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon"><mat-icon aria-hidden="true">trending_up</mat-icon></div>
               <div class="stat-data">
-                <span class="stat-value">{{ stats().comebackWins || 0 }} · Max −{{ stats().largestComebackDeficit || 0 }}</span>
+                <span class="stat-value">
+                  {{ (stats().comebackWins || 0) > 0 ? (stats().comebackWins || 0) + ' · Max −' + (stats().largestComebackDeficit || 0) : '0' }}
+                </span>
                 <span class="stat-label">Comeback Wins</span>
               </div>
             </div>

@@ -23,5 +23,8 @@ describe('SupportComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('mat-card-title')?.textContent).toContain('Player Support');
     expect(compiled.textContent).toContain('requiredcheese@gmail.com');
+    expect(compiled.textContent).toContain(`Version: ${component.appVersion}`);
+    expect(compiled.textContent).toContain('never forces a reload during an active War');
+    expect(compiled.textContent).not.toContain('applies it on your next match');
   });
 });

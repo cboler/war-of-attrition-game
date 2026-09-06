@@ -22,7 +22,11 @@ import { CardComparisonService, ComparisonResult } from '../core/services/card-c
 import { AuthService } from '../core/services/auth.service';
 import { SettingsService } from '../core/services/settings.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
-import { CampaignModifierId, CampaignModeId } from '../core/models/progression.model';
+import {
+  CampaignModifierId,
+  CampaignModeId,
+  calculateWarMargin,
+} from '../core/models/progression.model';
 import {
   PresentationSequenceCancelled,
   PresentationSequencerService,
@@ -1720,7 +1724,15 @@ export class GameControllerService {
     const pCardsRemaining = this.gameState.playerCardCount();
     const oCardsRemaining = this.gameState.opponentCardCount();
 
-    const warDifferential = pCardsRemaining - oCardsRemaining;
+    // Total War, Campaign history, telemetry, and Game Stats all use the signed
+    // survivor margin. An attrition loser may still hold undealt cards, so a raw
+    // deck subtraction can contradict the durable Campaign record.
+    const warDifferential = calculateWarMargin({
+      warId: this.currentWarId || 'pending-resolution',
+      outcome,
+      playerCardsRemaining: pCardsRemaining,
+      opponentCardsRemaining: oCardsRemaining,
+    });
     const isTotalWar = this.campaignProgression.isTotalWar();
     const warIndex = this.campaignProgression.campaignWarIndex();
     const runningCampaignDiff = this.campaignProgression.runningCampaignDifferential() + warDifferential;

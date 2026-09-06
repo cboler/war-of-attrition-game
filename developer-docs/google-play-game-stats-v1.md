@@ -138,11 +138,11 @@ The `turns <= 51` validation envelope is conservative, not a claimed attainable 
 
 ### Domain projection
 
-Use a new application service subscribed eagerly to [GameEventBusService](../src/app/services/game-event-bus.service.ts), as telemetry is eagerly constructed in [app.ts](../src/app/app.ts). The bus is synchronous and non-replaying. Keep the mapper pure; never read `presentedTurn`, a dialog summary, animation state, Chronicle text, or Hall of Valor to derive these values.
+The implemented [GameStatsProjectionService](../src/app/services/game-stats-projection.service.ts) subscribes eagerly to [GameEventBusService](../src/app/services/game-event-bus.service.ts), as telemetry is eagerly constructed in [app.ts](../src/app/app.ts). The bus is synchronous and non-replaying. The projection never reads `presentedTurn`, a dialog summary, animation state, Chronicle text, or Hall of Valor to derive these values.
 
 | Input / seam | Mechanical projection |
 | --- | --- |
-| Controller `beginWarWhenOrdersReady`, immediately after obtaining the existing random `warId` | Call the new service's `beginWar(warId)`; reset its accumulators. This is a future integration hook, not a change to domain event semantics or GA4. |
+| Controller `beginWarWhenOrdersReady`, immediately after obtaining the existing random `warId` | Calls the projection service's `beginWar(warId)` and resets its accumulators. This does not change domain event semantics or GA4. |
 | First `turn_started` | Freeze actual Progression commander, Campaign kind/mode/modifiers/index/reserves and release versions. Require selected Orders. Lock eligibility and the current local-profile/authentication epoch. Later turns cannot replace this context. |
 | `battle_started`, `battle_layer_added` | Accumulate `deepest_battle = max(previous, layerRound)`, initially zero. Do not count `battle_continues` as a newly dealt layer. |
 | Human `challenge_resolved` | Increment successful reinforcements only for `comparison=PLAYER_WINS`. Use the comparison result; corrected `challengerWon` now has the same direct-win meaning. Terminal `winner` remains separate. |
@@ -152,7 +152,7 @@ Use a new application service subscribed eagerly to [GameEventBusService](../src
 | `game_resolved` | Copy outcome, turns, battles and human reinforcements; derive `player_win`, `comeback_deficit`, and `calculateWarMargin`; attach the three accumulated values and the frozen context. Emit at most one `war_completed` for this War. Close before accepting a duplicate terminal event; preserve a newly started War on reentrant/nested events. |
 | `game_abandoned`, replacement, profile change, local deletion, authentication/channel loss | Discard the unfinished War's accumulator and invalidate eligibility. A later sign-in/reconnect starts eligibility with the next War, never reconstructs this War. Visibility alone is not abandonment. |
 
-The three aggregate values `deepest_battle`, `successful_reinforcements`, and `aces_felled_by_twos` are **not fields of the current `GameResolvedEvent`**. They are nevertheless authoritatively derivable from the public events above; the future adapter needs three counters, not new durable career state or new domain events. `campaign_kind` and starting-reserve snapshot are also new projections of existing Progression state. All other metric inputs already exist on the terminal event. No v1 metric requires unavailable hidden information.
+The three aggregate values `deepest_battle`, `successful_reinforcements`, and `aces_felled_by_twos` are **not fields of the current `GameResolvedEvent`**. They are nevertheless authoritatively derived from the public events above; the adapter retains three in-memory counters, not new durable career state or new domain events. `campaign_kind` and starting-reserve snapshot are projections of existing Progression state. All other metric inputs already exist on the terminal event. No v1 metric requires unavailable hidden information.
 
 Relevant edge cases:
 
@@ -167,9 +167,9 @@ Relevant edge cases:
 
 [PlatformAchievementsService](../src/app/core/services/platform-achievements.service.ts) accepts an explicitly registered `VerifiedTwaTransport`; [MainActivity](../android/app/src/main/java/com/cboler/warofattrition/MainActivity.java) initializes Play Games but registers no verified channel or response callback. Native achievement sync is therefore not operational end to end. Preserve the boundary described in the [Play Store bridge documentation](play-store/README.md#native-play-games-bridge-status); a URL flag, arbitrary `window.message`, or WebView interface is not authorization/readiness.
 
-The future implementation uses a separate `PlatformGameStatsService` and native `PlayGameStatsBridge` wrapper, sharing only the future verified host transport and native authentication lifecycle. Do not refactor or reconcile achievements. The currently pinned [Android dependency](../android/app/build.gradle) is `play-services-games-v2:20.1.2`; use `22.0.0` for this integration, which added `GameStatsClient` and `PlayerGameEvent`. [Official SDK release notes](https://developers.google.com/android/guides/releases#july_29_2026).
+The implementation uses a separate [PlatformGameStatsService](../src/app/core/services/platform-game-stats.service.ts) and native `PlayGameStatsBridge` wrapper, sharing only the future verified host transport and native authentication lifecycle. Achievements remain separate. The pinned [Android dependency](../android/app/build.gradle) is `play-services-games-v2:22.0.0`, which provides `GameStatsClient` and `PlayerGameEvent`. Runtime capability remains unavailable until a verified host channel is supplied. [Official SDK release notes](https://developers.google.com/android/guides/releases#july_29_2026).
 
-Extend the [typed bridge protocol](../src/app/core/models/twa-bridge.model.ts) additively with these Game Stats messages, still protocol `v1`:
+The [typed bridge protocol](../src/app/core/models/twa-bridge.model.ts) includes these additive Game Stats messages, still protocol `v1`:
 
 | Direction | Type | Fields / meaning |
 | --- | --- | --- |
@@ -189,7 +189,7 @@ Only aggregate scalars leave the app at completed-War time. This respects Fog's 
 
 ## 8. Local-stat overlap
 
-Compare [GameStatistics](../src/app/core/models/settings.model.ts) and [AuthService.recordGameResult](../src/app/core/services/auth.service.ts). Local career totals are profile-scoped and resettable; Google records are account-career totals from eligible future submissions. Equal definitions do not imply equal totals across web play, resets, transport availability, or integration dates.
+Compare [GameStatistics](../src/app/core/models/settings.model.ts) and [AuthService.recordGameResult](../src/app/core/services/auth.service.ts). Local career totals are profile-scoped and resettable; Google records are account-career totals from eligible submissions after runtime transport becomes available. Equal definitions do not imply equal totals across web play, resets, transport availability, or integration dates.
 
 | Game Stat | Existing local field | Overlap / mismatch |
 | --- | --- | --- |
@@ -210,7 +210,7 @@ The PGS-specific schema/version envelope, submission bookkeeping, and competitiv
 
 ## 9. Telemetry consistency finding
 
-This finding incorporates the subsequent documentation correction and runtime fixes. Game Stats itself remains a design contract.
+This finding incorporates the subsequent documentation correction, runtime fixes, and completed Game Stats v1 implementation. The verified native transport remains an external prerequisite.
 
 **Commander placement:** [telemetry-schema.md](telemetry-schema.md#common-event-parameters) now correctly documents boundary-only `commander_id`. The [mapper](../src/app/services/game-telemetry.mapper.ts) `commonParameters` contains ten fields including `turn_number` and omits commander. It adds commander for `war_resolved` and `war_abandoned`; [GameTelemetryService](../src/app/services/game-telemetry.service.ts) includes it in canonical `war_started`. `TelemetryEnvelope.commanderId` in the [model](../src/app/core/models/telemetry.model.ts) does not make it a common emitted parameter.
 
@@ -229,7 +229,7 @@ Build the analytics War dimension primarily from `war_started`, with terminal co
 
 **Orders-boundary correction (gameplay schema 3):** [TableGame](../src/app/table-game/table-game.ts) may prepare the decks before Campaign Orders, but Controller `replaceGame` now leaves the War start pending while Orders are unselected. `beginWarWhenOrdersReady` freezes the final schedule/modifiers exactly once after confirmation, called by `ensureGameStarted` and guarded by `playerDrawCard`. Already-ordered Wars start immediately; new Campaigns wait for Orders. This fixes commander attribution and Fog redaction without a corrective start or fake restart.
 
-Canonical start, terminal events and progression retain one War ID. Mid-War consent grants still wait for the next boundary. Historical schema-2 War 1 records can share stale context at both ends and cannot be assumed repaired by a War-ID join. The future Game Stats first-turn snapshot remains valid, but no longer needs to work around an unfixed runtime sequencing defect.
+Canonical start, terminal events and progression retain one War ID. Mid-War consent grants still wait for the next boundary. Historical schema-2 War 1 records can share stale context at both ends and cannot be assumed repaired by a War-ID join. The implemented Game Stats first-turn snapshot uses the corrected boundary and does not reuse historical telemetry records.
 
 **Reinforcement semantics (gameplay schema 3):** the mapper emits `success`/`failure` only for outright comparisons, `battle` for a tie entering Battle, and `tie` for immediate attrition. The domain escalation flag populates the existing `escalated_to_battle` parameter without exceeding 25 fields. Local rescue statistics, achievements and Hall records consume corrected direct-win `challengerWon`; Chronicle text preserves tie/attrition meaning. Use schema 3 or later for community-rate comparisons; older events and saved totals are not rewritten. UI schema remains 1 and ruleset `2026.09.1` because no engagement or game rules changed.
 
@@ -264,12 +264,12 @@ Use the existing felt-green/gold military visual language; icons must remain dis
 
 **Remaining artifact gates:** confirm the game's default locale, settle Google's competitive-bound interpretation/outer-bound acceptance in section 6, and supply final icons from these briefs. If a tight reachable comeback maximum is required instead of a conservative envelope, complete the exact rules proof described there. No event-name, stat selection, aggregation, commander mapping, payload-source, or transport-ownership decision is left to the implementation agent. The verified TWA channel blocks real device integration, not schema/CSV preparation once the artifact gates are met.
 
-## 11. Implementation handoff
+## 11. Implementation status and remaining handoff
 
-1. Add a typed Game Stats model and pure `war_completed` mapper for section 2; keep Google aggregation values as per-War inputs. Add the protocol messages above without changing achievement mappings/behavior.
-2. Add the eagerly initialized application projection service: `beginWar(warId)`, first-turn context/eligibility snapshot, three counters, terminal emission and duplicate/lifecycle guards. Wire the controller's `beginWarWhenOrdersReady` War-ID seam; do not use UI state or historical telemetry records.
-3. Add `PlatformGameStatsService` with verified-transport registration and web/unavailable no-op behavior. Implement the fixed native-session/profile-change and no-backfill policies; do not add a durable web queue.
-4. Upgrade the future native integration to Games v2 `22.0.0`; add `PlayGameStatsBridge`, exact validation, host-session deduplication, typed `long` properties, SDK recording/upload and truthful local-buffer receipts. Use the separately supplied verified channel; leave production unavailable until that prerequisite exists.
-5. Add targeted tests for all ten derivations, 3-card comeback threshold, depth 1/8 and terminal ties, zero-layer attrition, reinforcement tie vs outright win, both reinforcement actors' Two/Ace orientation, no casualty double counting, custom Orders snapshot, War 3 progression advance, Fog, resets/profile switches, duplicate terminal records, missing receipts, unsigned/web/fixture no-ops, and payload budget/types.
-6. With the channel prerequisite satisfied, validate the signed-in Play-installed Android path and offline SDK buffering using a test account. Verify server-visible stats separately from the bridge receipt; regression-check the existing achievement boundary after the SDK upgrade. No leaderboard, backend, or transport workaround is part of this feature.
-7. Generate/import artifacts only in a separately requested artifact pass after section-10 gates; update this contract's implementation status and focused verification evidence when the feature is actually delivered.
+1. **Complete:** typed payload model, strict `war_completed` validation, and additive protocol messages without changing achievement mappings or behavior.
+2. **Complete:** eagerly initialized projection service with the Orders-locked War ID, first-turn context/eligibility snapshot, three per-War counters, terminal emission, and lifecycle guards.
+3. **Complete:** `PlatformGameStatsService` with explicit verified-transport registration and safe web/unavailable no-op behavior. There is no durable web queue or backfill.
+4. **Complete but unavailable end to end:** Games v2 `22.0.0`, `PlayGameStatsBridge`, exact native validation, session deduplication, typed properties, and truthful local-buffer receipts. No verified Custom Tabs channel is registered by the distributed wrapper, so production capability remains false.
+5. **Complete:** focused model, projection, platform-service, native-bridge, and gameplay-correctness regression coverage for the v1 contract.
+6. **Deferred native release:** after an official verified channel seam is available, connect it and validate the signed-in Play-installed path and offline SDK buffering with a test account. Verify server-visible stats separately from the bridge receipt and regression-check achievements. This requires a future native/AAB pass and is not part of hosted web deployment.
+7. Generate/import Play Console artifacts only in a separately requested artifact pass after section-10 gates. No leaderboard, backend, or transport workaround is part of this feature.

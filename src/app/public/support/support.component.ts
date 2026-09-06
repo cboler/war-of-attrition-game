@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-support',
@@ -73,8 +74,10 @@ import { MatExpansionModule } from '@angular/material/expansion';
                   <mat-panel-title>Offline Play & Updates</mat-panel-title>
                 </mat-expansion-panel-header>
                 <p>
-                  War of Attrition is a Progressive Web App (PWA). Once loaded, the game works entirely offline. 
-                  When an update is published, the app downloads it in the background and applies it on your next match or refresh.
+                  War of Attrition is a Progressive Web App (PWA). Once loaded, the game works entirely offline.
+                  Opening it while online lets the app check for and download a newer hosted version. A ready update is used after
+                  you close and reopen the app or refresh it; the game never forces a reload during an active War. If you remain
+                  offline, the last cached version continues to work.
                 </p>
               </mat-expansion-panel>
 
@@ -104,6 +107,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
             <h3>App Version & Details</h3>
             <p class="app-version-info">
               Application: <strong>War of Attrition</strong><br />
+              Version: <strong>{{ appVersion }}</strong><br />
               Target Platform: Progressive Web App / Android Trusted Web Activity<br />
               Repository: <a href="https://github.com/cboler/war-of-attrition-game" target="_blank" rel="noopener">cboler/war-of-attrition-game</a>
             </p>
@@ -128,4 +132,6 @@ import { MatExpansionModule } from '@angular/material/expansion';
   `,
   styleUrls: ['./legal-pages.scss']
 })
-export class SupportComponent { }
+export class SupportComponent {
+  readonly appVersion = environment.appVersion;
+}

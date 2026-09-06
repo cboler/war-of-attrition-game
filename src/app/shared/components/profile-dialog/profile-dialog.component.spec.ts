@@ -9,6 +9,7 @@ import { SettingsService } from '../../../core/services/settings.service';
 import { GameControllerService } from '../../../services/game-controller.service';
 import { TutorialService } from '../../../services/tutorial.service';
 import { UiTelemetryService } from '../../../services/ui-telemetry.service';
+import { GameOutcome } from '../../../core/models/game-state.model';
 
 describe('ProfileDialogComponent', () => {
   let component: ProfileDialogComponent;
@@ -186,6 +187,65 @@ describe('ProfileDialogComponent', () => {
     expect(root.querySelectorAll('.backing-option').length).toBe(settingsService.cardBackingOptions().length);
   });
 
+  it('names commanders in recent local Campaign dispatches without inventing career aggregates', () => {
+    authService.updateActiveProfileProgression(previous => ({
+      ...previous,
+      currentCampaign: {
+        ...previous.currentCampaign,
+        ordersSelected: true,
+        wars: [
+          {
+            warId: 'local-dispatch-war',
+            commanderId: 'quartermaster',
+            outcome: GameOutcome.PLAYER_WIN,
+            margin: 4,
+            playerDeckColor: 'red',
+            completedAt: '2026-09-05T12:00:00.000Z',
+          },
+        ],
+      },
+    }));
+    fixture.detectChanges();
+
+    const dispatches = (fixture.nativeElement as HTMLElement).querySelector('.local-dispatches');
+    expect(dispatches?.textContent).toContain('Recent resolved Wars retained with Campaign progress on this device');
+    expect(dispatches?.textContent).toContain('Marcel de Brie');
+    expect(dispatches?.textContent).toContain('Current Campaign · War 1 · Standard Orders');
+    expect(dispatches?.textContent).toContain('Victory');
+    expect(dispatches?.textContent).toContain('+4 margin');
+  });
+
+  it('does not present undefined rates or records as measured zeroes', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.career-empty-state')?.textContent).toContain('first resolved War');
+    expect(root.querySelector('.win-rate .stat-value')?.textContent?.trim()).toBe('—');
+    expect(root.textContent).toContain('No Challenges Yet');
+    expect(root.textContent).not.toContain('Max −0');
+
+    authService.updateStatistics({
+      gamesPlayed: 2,
+      gamesWon: 1,
+      gamesLost: 1,
+      winRatePercentage: 50,
+      totalBattles: 1,
+      deepestRecursiveBattle: 2,
+      totalChallenges: 2,
+      successfulChallenges: 1,
+      challengeSuccessRate: 50,
+      comebackWins: 1,
+      largestComebackDeficit: 3,
+      campaignsCompleted: 1,
+      bestCampaignDifferential: 4,
+    });
+    fixture.detectChanges();
+
+    expect(root.querySelector('.career-empty-state')).toBeNull();
+    expect(root.querySelector('.win-rate .stat-value')?.textContent?.trim()).toBe('50%');
+    expect(root.textContent).toContain('Challenges Won · 50%');
+    expect(root.textContent).toContain('Depth 2');
+    expect(root.textContent).toContain('1 · Max −3');
+  });
+
   it('uses a handedness switch and animation-speed radio group in settings', () => {
     component.activeTab.set('settings');
     fixture.detectChanges();
@@ -202,7 +262,7 @@ describe('ProfileDialogComponent', () => {
     expect(text).toContain('Battle streaks');
     expect(text).toContain('2s / Aces Rescued');
     expect(text).toContain('Aces That Rescued a 2');
-    expect(text).toContain('Juggernaut Cards');
+    expect(text).toContain('Juggernaut Citations');
   });
 
   it('offers explicit analytics opt-in and immediate opt-out in Data & Privacy', () => {

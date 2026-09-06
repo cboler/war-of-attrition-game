@@ -4,7 +4,7 @@ import {
   BattleCardsRevealedEvent,
   GameEvent,
 } from '../core/models/game-events.model';
-import { DeckColor, GameOutcome, PlayerType } from '../core/models/game-state.model';
+import { DeckColor, GameOutcome, GamePhase, PlayerType } from '../core/models/game-state.model';
 import { AuthService } from '../core/services/auth.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { CardComparisonService, ComparisonResult } from '../core/services/card-comparison.service';
@@ -731,6 +731,42 @@ describe('GameControllerService presentation integration', () => {
     internal.finishAtGameOver();
     expect(victory).toHaveBeenCalledTimes(1);
     expect(defeat).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the canonical survivor margin when an attrition loser still holds cards', () => {
+    auth.updateActiveProfileProgression(previous => ({
+      ...previous,
+      currentCampaign: {
+        ...previous.currentCampaign,
+        mode: 'total_war',
+        modifiers: ['limited_reserves', 'fog_of_war', 'total_war'],
+        ordersSelected: true,
+      },
+    }));
+    const playerCards = gameState.currentPlayerDeck.toArray();
+    const opponentCards = gameState.currentOpponentDeck.toArray();
+    gameState.loadFixtureState({
+      playerDeckCards: playerCards.slice(0, 2),
+      opponentDeckCards: opponentCards.slice(0, 8),
+      discardCards: [...playerCards.slice(2), ...opponentCards.slice(8)],
+      playerDeckColor: DeckColor.RED,
+      phase: GamePhase.GAME_OVER,
+      turnNumber: 12,
+      outcome: GameOutcome.OPPONENT_WIN,
+      winner: PlayerType.OPPONENT,
+    });
+    const internal = controller as unknown as {
+      currentWarId: string;
+      finishAtGameOver(): void;
+    };
+    internal.currentWarId = 'attrition-margin-regression';
+
+    internal.finishAtGameOver();
+
+    expect(controller.currentGameSummary()?.warDifferential).toBe(-8);
+    expect(controller.currentGameSummary()?.runningCampaignDifferential).toBe(-8);
+    expect(controller.tableMessage()).toContain('War Diff: -8');
+    expect(progression.currentCampaign().wars[0].margin).toBe(-8);
   });
 
   it('primes Ace vs 8 as neutral/ready and resolves Ace as winner with remainder 6 and 8 as defeated at zero', () => {

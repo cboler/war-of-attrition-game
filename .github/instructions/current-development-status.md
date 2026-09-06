@@ -84,10 +84,11 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 
 ### Progression, Personalization, and Telemetry
 
-- Profile-scoped Campaign progress, bounded Campaign history, career statistics, and cosmetic entitlements are persisted and normalized.
+- Profile-scoped Campaign progress, bounded Campaign history, career statistics, and cosmetic entitlements are persisted and normalized. Profile surfaces recent local War dispatches with truthful commander, result, and signed-margin attribution; it does not claim lifetime commander aggregates or community data.
 - Card-backing cosmetics and token purchase/unlock flow are implemented.
 - Thirty local tiered achievements are implemented. `Against the Odds`, `Crippled`, and `Neverending Stalemate` are intentionally local-only pending final Play Games reconciliation; the existing 27 Play mappings remain unchanged.
 - Google Analytics 4 telemetry is consent-gated and denied by default until permission. Test and screenshot modes collect no analytics. Fog of War applies presentation and mapper-level information redaction while a War is active.
+- Game Stats v1 payload validation, public-event projection, web platform adapter, and native buffer wrapper are implemented and tested. Ordinary web/PWA play is a safe no-op, and the distributed TWA still reports the capability unavailable because it has no origin-verified bidirectional host channel; completing that channel is explicitly deferred to a future native/AAB pass.
 
 ### Platform Packaging and Tooling
 
@@ -135,9 +136,9 @@ Sprint 1 is fully complete, validated, and tested end-to-end:
   - Campaign Orders modal indicates `"Replay Command: Opposition randomized"` for unlocked replay chapters.
 - **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-01` through `TR-C4-04`), resolution quotes, and dynamic next-war action buttons.
 - **Spoiler Firewall & Canonical Resolution**: Strict information boundaries across all four chapters; private Mont-Rouge mechanism (mouse/hay) safely protected in author knowledge; Chapter IV completes with the canonical resolution (`Matthias: “I never proved it.”` / `Marcel: “Non. Neither did I.”`) without an extraneous Bastien punchline.
-- **Comprehensive Test Suite**: Full unit and integration suite green at **538 / 538 tests passing**, including narrative traversal/firewall and first-play/replay delivery-policy coverage, authoritative achievement settlement/tie cases, portrait-expression lifecycle, Campaign abandonment preservation, rule-demo staging, viewport measurement, and table/message-hierarchy presentation tests.
+- **Comprehensive Test Suite**: Full unit and integration suite green at **633 / 633 tests passing**, including narrative traversal/firewall and first-play/replay delivery-policy coverage, authoritative achievement settlement/tie cases, portrait-expression lifecycle, Campaign abandonment preservation, canonical survivor-margin handling, truthful Profile dispatch/empty-state semantics, rule-demo staging, viewport measurement, and table/message-hierarchy presentation tests.
 - **Browser and Visual Validation**: Full production-configured Playwright matrix green at **19 passed** with 38 intentional cross-project skips; all 11 store screenshots validate at their required phone, 7-inch tablet, and 10-inch tablet resolutions and were visually reviewed in the release-candidate pass.
-- **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json` (908.18 kB raw / 214.96 kB estimated initial transfer in the release-candidate build).
+- **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json` (934.51 kB raw / 221.27 kB estimated initial transfer in the September 5 tester-readiness build).
 
 Next steps for future work:
 - Final release polish and device validation; richer battlefield variants remain optional later work.
