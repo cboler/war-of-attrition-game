@@ -1,6 +1,6 @@
 {
   "name": "war-of-attrition-game",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -12,6 +12,7 @@
     "move-build-files": "node scripts/move-build-files.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:version": "node --test scripts/verify-version-match.spec.js",
     "prescreenshots:store": "npm run screenshots:clean",
     "screenshots:clean": "node scripts/clean-screenshots.js",
     "screenshots:serve": "node scripts/set-env.js && ng serve --configuration production --port 4200",

@@ -56,6 +56,8 @@ export interface OpponentCommanderDialogue {
   readonly concession?: readonly string[];
   /** Defiant low-deck reaction line when reinforcing near exhaustion. */
   readonly desperateRescue?: readonly string[];
+  /** Bounded, public-information-only escalation when the player pokes the face-down deck. */
+  readonly deckPoke: readonly string[];
 }
 
 export interface OpponentCommander {
@@ -137,6 +139,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
       desperateRescue: [
         'Emergency reserves authorized.',
         'Spend what remains to hold the line.'
+      ],
+      deckPoke: [
+        'Monsieur, the reserve is accounted for.',
+        'The cellar inventory does not improve under tapping.',
+        'Kindly remove your hand from my stock.',
+        'Touch that deck again and I shall record you as spoilage.'
       ]
     }
   },
@@ -200,6 +208,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
       desperateRescue: [
         'All in on this draw.',
         'Nothing left to lose. Let us see the card.'
+      ],
+      deckPoke: [
+        'Checking whether fortune is awake?',
+        'Careful. Curiosity has dreadful odds.',
+        'Again? Splendid nerve, questionable judgment.',
+        'One more poke and we shall call it a wager.'
       ]
     }
   },
@@ -263,6 +277,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
       desperateRescue: [
         'Critical deck threshold reached. Altering parameters.',
         'Exhaustion models dictate a commitment here.'
+      ],
+      deckPoke: [
+        'Observation noted. No variable has changed.',
+        'Repeated contact remains statistically unhelpful.',
+        'Third disturbance of a controlled sample.',
+        'Stop. You are contaminating the procedure.'
       ]
     }
   },
@@ -326,6 +346,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
       desperateRescue: [
         'No reserve left to protect. Stand here.',
         'Our depth is spent. Every card must count.'
+      ],
+      deckPoke: [
+        'The rind heard you.',
+        'Tap again and the cave will remember.',
+        'The deck has no eyes. It is watching anyway.',
+        'Enough. Even prophecy requires an undisturbed shelf.'
       ]
     }
   },
@@ -390,6 +416,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'No ground left to give! Spend everything!',
         'Then we spend everything. Attack!',
         'This is our last line. Hold at all costs!'
+      ],
+      deckPoke: [
+        'A small tap. A larger consequence waits.',
+        'Touch the reserve and tomorrow acquires a flank.',
+        'Again? Now the road narrows, amico.',
+        'Remove your hand before this becomes an encirclement.'
       ]
     }
   }

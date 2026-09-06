@@ -10,11 +10,11 @@ import {
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from './core/services/auth.service';
 import { SettingsService } from './core/services/settings.service';
-import { ProfileDialogComponent } from './shared/components/profile-dialog/profile-dialog.component';
+import { ProfileDialogService } from './shared/components/profile-dialog/profile-dialog.service';
 import { GameTelemetryService } from './services/game-telemetry.service';
 import { GameStatsProjectionService } from './services/game-stats-projection.service';
 import { AnalyticsConsentPromptService } from './services/analytics-consent-prompt.service';
@@ -39,7 +39,7 @@ import { AnalyticsConsentPromptService } from './services/analytics-consent-prom
 export class App implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private settingsService = inject(SettingsService);
-  private dialog = inject(MatDialog);
+  private readonly profileDialog = inject(ProfileDialogService);
   // Eager construction is required because GameEventBusService is non-replaying.
   private readonly gameTelemetry = inject(GameTelemetryService);
   // Game Stats projection also observes the non-replaying game bus eagerly.
@@ -90,13 +90,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   protected openProfileDialog(): void {
-    this.dialog.open(ProfileDialogComponent, {
-      width: '720px',
-      maxWidth: 'calc(100vw - 20px)',
-      maxHeight: 'calc(100dvh - 20px)',
-      closeOnNavigation: true,
-      panelClass: 'glass-dialog-panel'
-    });
+    this.profileDialog.open();
   }
 
   private measureViewportHeight(): number {

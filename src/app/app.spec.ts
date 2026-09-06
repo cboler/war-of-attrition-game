@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { App } from './app';
 import { SettingsService } from './core/services/settings.service';
+import { ProfileDialogService } from './shared/components/profile-dialog/profile-dialog.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -35,6 +36,17 @@ describe('App', () => {
     expect(profileButton.querySelector('.profile-settings-icon')).toBeFalsy();
     expect(profileButton.querySelector('.provider-indicator')).toBeFalsy();
     expect(profileButton.querySelector('img')?.alt).toBe('');
+  });
+
+  it('opens Profile through the shared dialog service', () => {
+    const fixture = TestBed.createComponent(App);
+    const profileDialog = TestBed.inject(ProfileDialogService);
+    const open = spyOn(profileDialog, 'open');
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.profile-toolbar-btn') as HTMLButtonElement).click();
+
+    expect(open).toHaveBeenCalledTimes(1);
   });
 
   it('moves the Profile control to the selected mobile-hand side without changing content', () => {

@@ -9,11 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       version_code:
-        description: 'Override Android Version Code (optional positive integer, e.g. 40201)'
+        description: 'Override Android Version Code (optional positive integer, e.g. 40202)'
         required: false
         type: string
       version_name:
-        description: 'Override Android Version Name (optional string, e.g. 4.2.1)'
+        description: 'Android Version Name (optional; must match package.json, e.g. 4.2.2)'
         required: false
         type: string
 
@@ -32,6 +32,7 @@ jobs:
         id: versioning
         run: |
           # 1. Determine Version Name
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
           if [ -n "${{ inputs.version_name }}" ]; then
             RAW_NAME="${{ inputs.version_name }}"
           elif [ -n "${{ github.event.release.tag_name }}" ]; then
@@ -39,7 +40,7 @@ jobs:
           elif [ "${{ github.ref_type }}" = "tag" ]; then
             RAW_NAME="${{ github.ref_name }}"
           else
-            RAW_NAME="4.2.1"
+            RAW_NAME="$PACKAGE_VERSION"
           fi
 
           # Strip leading 'v' or 'V'
@@ -58,11 +59,13 @@ jobs:
             MINOR_NUM="0"
             PATCH_NUM="0"
           else
-            FINAL_NAME="4.2.1"
-            MAJOR_NUM="4"
-            MINOR_NUM="2"
-            PATCH_NUM="1"
+            echo "Android Version Name must be a semantic version such as $PACKAGE_VERSION."
+            exit 1
           fi
+
+          # Never produce an Android artifact whose displayed identity silently
+          # diverges from the hosted application built from package.json.
+          node scripts/verify-version-match.js "$FINAL_NAME"
 
           # 2. Determine Version Code (Integer)
           if [ -n "${{ inputs.version_code }}" ]; then

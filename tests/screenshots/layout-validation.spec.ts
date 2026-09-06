@@ -65,6 +65,40 @@ async function assertFixedTableFits(page: Page, width: number, height: number): 
 }
 
 test.describe('Table first-render layout and message composition', () => {
+  test('opens Profile from You and keeps opponent-deck chatter presentation-only', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'store-phone');
+    await page.setViewportSize({ width: 360, height: 740 });
+    await loadScreenshotScene(page, 'clash');
+
+    const playerIdentity = page.getByRole('button', { name: 'Open your Profile and Career' });
+    await expect(playerIdentity).toBeVisible();
+    expect((await playerIdentity.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await playerIdentity.focus();
+    await expect(playerIdentity).toBeFocused();
+    await playerIdentity.press('Enter');
+    await expect(page.locator('app-profile-dialog')).toBeVisible();
+    await page.getByRole('button', { name: 'Close Profile' }).click();
+
+    const opponentDeck = page.getByRole('button', {
+      name: 'Prompt Marcel de Brie to react to their deck',
+    });
+    const playerCountBefore = await page.locator('.rail-bottom .deck-count').textContent();
+    const opponentCountBefore = await page.locator('.rail-top .deck-count').textContent();
+
+    await opponentDeck.click();
+    await expect(page.locator('.rail-top .quip')).toContainText(
+      'Monsieur, the reserve is accounted for.',
+    );
+    await opponentDeck.click();
+    await expect(page.locator('.rail-top .quip')).toContainText(
+      'The cellar inventory does not improve under tapping.',
+    );
+    await expect(page.locator('.rail-bottom .deck-count')).toHaveText(playerCountBefore ?? '');
+    await expect(page.locator('.rail-top .deck-count')).toHaveText(opponentCountBefore ?? '');
+  });
+
   test('makes all three desktop Battle lanes selectable from either card', async ({
     page,
   }, testInfo) => {

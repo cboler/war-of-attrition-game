@@ -214,6 +214,7 @@ export class GameControllerService {
   private abandonmentRecorded = false;
   private currentWarId = '';
   private readonly reachedContextualDeckThresholds = new Set<number>();
+  private opponentDeckPokeCount = 0;
   private lastMeaningfulDecision:
     | 'draw'
     | 'challenge'
@@ -446,6 +447,7 @@ export class GameControllerService {
     }
     this.reactions.clearUsedDialogue();
     this.reachedContextualDeckThresholds.clear();
+    this.opponentDeckPokeCount = 0;
     this.gameState.initializeGame();
     this.phase.set(PresentationState.READY);
     this.gameMessage.set('Your deck is ready.');
@@ -594,6 +596,18 @@ export class GameControllerService {
     if (introReaction) {
       this.speakReaction(introReaction);
     }
+  }
+
+  /** Presentation-only commander response; it never draws, inspects, or records a card. */
+  pokeOpponentDeck(): boolean {
+    if (this.gameState.opponentCardCount() <= 0) return false;
+    const reaction = this.reactions.forOpponentDeckPoke(
+      this.opponentDeckPokeCount,
+      this.opponentCommander().id,
+    );
+    const presented = this.speakReaction(reaction, false, 3500);
+    if (presented) this.opponentDeckPokeCount = Math.min(this.opponentDeckPokeCount + 1, 4);
+    return presented;
   }
 
   playerDrawCard(): boolean {
@@ -1521,27 +1535,34 @@ export class GameControllerService {
 
   private reactionTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  private speakReaction(reaction: TableReaction | null): void {
-    if (!reaction) return;
+  private speakReaction(
+    reaction: TableReaction | null,
+    emitDomainEvent = true,
+    durationMs?: number,
+  ): boolean {
+    if (!reaction) return false;
     const current = this.reaction();
-    if (current?.authored && !reaction.authored) return;
+    if (current?.authored && !reaction.authored) return false;
     if (this.reactionTimeout) {
       clearTimeout(this.reactionTimeout);
       this.reactionTimeout = null;
     }
     this.reaction.set(reaction);
-    this.eventBus.emit({
-      type: 'quip_spoken',
-      turnNumber: this.turnsPlayed,
-      speaker: reaction.speaker,
-      message: reaction.message,
-      category: reaction.category,
-    });
+    if (emitDomainEvent) {
+      this.eventBus.emit({
+        type: 'quip_spoken',
+        turnNumber: this.turnsPlayed,
+        speaker: reaction.speaker,
+        message: reaction.message,
+        category: reaction.category,
+      });
+    }
     this.reactionTimeout = setTimeout(() => {
       if (this.reaction() === reaction) {
         this.reaction.set(null);
       }
-    }, reaction.authored ? 7500 : 5500);
+    }, durationMs ?? (reaction.authored ? 7500 : 5500));
+    return true;
   }
 
 
@@ -2063,6 +2084,7 @@ export class GameControllerService {
     readonly commander?: OpponentCommander | OpponentCommanderId | null;
   }): void {
     this.sequencer.cancel();
+    this.opponentDeckPokeCount = 0;
     this.phase.set(state.phase);
     this.gameMessage.set(state.message);
     this.battlefieldMessagesSignal.set(

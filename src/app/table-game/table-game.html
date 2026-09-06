@@ -17,15 +17,19 @@
       [faction]="controller.opponentCommanderIdentity().faction"
       [portraitSrc]="opponentPortrait()"
       [portraitExpression]="controller.opponentExpression()"
-      [dossierAccessible]="true"
-      (dossierRequested)="openCommanderDossier()"
+      [identityInteractive]="true"
+      [identityAccessibleLabel]="'View dossier for ' + controller.opponentCommanderIdentity().name"
+      identityActionIcon="assignment_ind"
+      (identityActivated)="openCommanderDossier()"
       position="top"
       [cardCount]="controller.opponentDeckDisplayCount()"
+      [deckPokeable]="controller.opponentDeckDisplayCount() > 0"
       [cardsAtRisk]="controller.opponentCardsAtRisk()"
       [thinking]="opponentThinking()"
       [quip]="opponentQuip()"
       [defeatPopping]="controller.deckDefeatPopOwner() === player.OPPONENT"
       [motionDisabled]="!settings.autoPlayAnimations()"
+      (deckPoked)="pokeOpponentDeck()"
     />
 
     <div
@@ -457,6 +461,9 @@
       table-seat-bottom
       name="You"
       position="bottom"
+      [identityInteractive]="true"
+      identityAccessibleLabel="Open your Profile and Career"
+      identityActionIcon="person"
       [cardCount]="controller.playerDeckDisplayCount()"
       [cardsAtRisk]="controller.playerCardsAtRisk()"
       [deckInteractive]="controller.canDraw()"
@@ -466,6 +473,7 @@
       [motionDisabled]="!settings.autoPlayAnimations()"
       [reserves]="playerReserves()"
       [totalWarDifferential]="playerTotalWarDiff()"
+      (identityActivated)="openProfileDialog()"
       (deckActivated)="draw()"
     />
   </app-card-table>

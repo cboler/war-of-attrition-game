@@ -50,6 +50,7 @@
 }
 
 .identity-button {
+  min-height: 44px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -62,7 +63,7 @@
     background: rgba(229, 193, 117, 0.12);
     border-color: rgba(229, 193, 117, 0.35);
 
-    .dossier-icon {
+    .identity-action-icon {
       color: #ffd54f;
       transform: scale(1.08);
     }
@@ -82,7 +83,7 @@
   gap: 6px;
 }
 
-.dossier-icon {
+.identity-action-icon {
   font-size: 16px;
   width: 16px;
   height: 16px;
@@ -280,6 +281,7 @@
 }
 
 .deck.actionable { cursor: pointer; animation: deck-breathe 1.9s ease-in-out infinite; }
+.deck.pokeable { cursor: pointer; }
 .deck[class*='urgency-'] { animation: deck-quiver var(--quiver-time, 5.4s) ease-in-out infinite; }
 .deck.actionable[class*='urgency-'] {
   animation: deck-breathe 1.9s ease-in-out infinite, deck-quiver var(--quiver-time, 5.4s) ease-in-out infinite;
@@ -289,7 +291,9 @@
 .deck.urgency-2 { --quiver-time: 3.4s; }
 .deck.urgency-1 { --quiver-time: 2.8s; }
 .deck.actionable:hover { transform: translateY(-4px) rotate(-1deg); }
-.deck.actionable:focus-visible { outline: 3px solid #ffd54f; outline-offset: 5px; }
+.deck.pokeable:hover { transform: translateY(2px) rotate(0.5deg); filter: drop-shadow(0 0 7px rgba(229, 193, 117, 0.34)); }
+.deck.actionable:focus-visible,
+.deck.pokeable:focus-visible { outline: 3px solid #ffd54f; outline-offset: 5px; }
 .deck:disabled { color: inherit; }
 .empty-deck { position: absolute; inset: 0; border: 1.5px dashed rgba(255, 255, 255, 0.3); border-radius: 8px; }
 

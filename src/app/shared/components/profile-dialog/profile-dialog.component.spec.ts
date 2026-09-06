@@ -22,6 +22,7 @@ describe('ProfileDialogComponent', () => {
   let dialogRefSpy: jasmine.SpyObj<MatDialogRef<ProfileDialogComponent>>;
 
   beforeEach(async () => {
+    localStorage.clear();
     dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
 
     await TestBed.configureTestingModule({
@@ -46,7 +47,10 @@ describe('ProfileDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => dialog.closeAll());
+  afterEach(() => {
+    dialog.closeAll();
+    localStorage.clear();
+  });
 
   it('should create ProfileDialogComponent', () => {
     expect(component).toBeTruthy();

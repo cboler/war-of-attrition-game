@@ -1,12 +1,12 @@
 # Opponent Commanders & AI Personalities
 
-Status: **Five fair-play strategy assets are implemented. Canonical fictional identities are settled for Sprint 1 but are not yet reflected in production data.**
+Status: **Five fair-play strategies and their canonical fictional identities are implemented in production.**
 
 The private biographies, knowledge/belief boundaries, and relationships live in [`narrative-canon.md`](./narrative-canon.md). The authored twelve-War routing lives in [`narrative-disclosure-matrix.md`](./narrative-disclosure-matrix.md), and final voice/copy lives in [`commander-voice-bible.md`](./commander-voice-bible.md). This document describes the permanent mechanical layer and the exact boundary between current code and the named cast.
 
 ## 1. Permanent Strategy IDs and Canonical Identities
 
-| Permanent strategy ID | Current production label | Canonical Sprint 1 identity | Faction and role |
+| Permanent strategy ID | Strategy label | Production identity | Faction and role |
 | --- | --- | --- | --- |
 | `quartermaster` | The Quartermaster | **Marcel de Brie** | French master affineur; principal French negotiator of the Mont-Rouge Accord |
 | `gambler` | The Gambler | **Sir Edmund Gloucester** | English artisan-adventurer; Marcel's confidant |
@@ -14,7 +14,7 @@ The private biographies, knowledge/belief boundaries, and relationships live in 
 | `attritionist` | The Attritionist | **Bastien de Herve** | Belgian tyromancer and apolitical itinerant rind-seer |
 | `cornered-general` | The Cornered General | **Lorenzo di Taleggio** | Italian Alpine merchant-prince, cheesemaker, and Matthias's confidant |
 
-The IDs are permanent mechanical assets. Sprint 1 changes the player-facing `name`, `title`, `description`, biography, and dialogue data; it does not replace the strategies or introduce a sixth commander. Bastien is intentionally both the Belgian commander and the Tyromancer.
+The IDs are permanent mechanical assets. The player-facing `name`, `title`, `description`, biography, and dialogue data use the named cast without replacing the strategies or introducing a sixth commander. Bastien is intentionally both the Belgian commander and the Tyromancer.
 
 ## 2. Physical-Deck Integrity and Fair Play
 
@@ -74,13 +74,14 @@ The implemented model is relatively controlled while healthy and receives the sh
 1. **`commander.model.ts`** defines IDs, strategy configuration, current generic presentation metadata, and fixed dialogue pools.
 2. **`OpponentAIService`** evaluates legal public candidate cards against the active strategy and produces challenge decisions.
 3. **`TableReactionService`** emits sparse contextual reactions. Opponent lines come from the active commander; player lines remain generic.
-4. **`CampaignProgressionService`** persists one commander across all three Wars of a Campaign and rotates after Campaign completion without immediate repetition.
-5. **`normalizeCampaignProgression`** deterministically derives a commander from `campaignId` for legacy data missing `commanderId`, preventing reload rerolls.
+4. **`CampaignProgressionService`** persists the authored per-War commander schedule and creates a stable randomized three-commander schedule for post-story replay.
+5. **`normalizeCampaignProgression`** migrates legacy Campaign data and preserves stable commander attribution across reloads.
 6. **Telemetry** carries `commander_id` in War/Campaign context without changing privacy guarantees.
+7. **Opponent-deck pokes** select a bounded line using only public commander identity and a local poke tier. They reuse transient reaction presentation without emitting a domain/telemetry event or inspecting deck state.
 
-That campaign-level identity is an intentional Sprint 1 mismatch, not a narrative requirement. `CampaignWarRecord` does not retain commander identity, `currentCommander` derives from the Campaign, and completed history identifies only one commander. Sprint 1 must move active/persisted attribution to the War encounter and use the authored `chapter/mode + warIndex → commanderId` schedule. Randomized replay selection is deferred until after the canonical four-chapter first-play sequence has been completed at least once.
+Canonical first-play scheduling uses the authored `chapter/mode + warIndex → commanderId` mapping. Randomized replay selection begins only after the canonical four-chapter first-play sequence has been completed at least once.
 
-## 5. Current Dialogue Contract and Sprint 1 Extension
+## 5. Current Dialogue Contract
 
 `OpponentCommanderDialogue` currently holds pools for:
 
@@ -88,11 +89,12 @@ That campaign-level identity is an intentional Sprint 1 mismatch, not a narrativ
 - Jack-over-Ten narrow clashes;
 - successful and failed reinforcement rescues;
 - notable Battle losses, split by Ace/Two loss, deep Battle, large loss, and general loss;
-- optional concessions and low-deck desperate rescues.
+- optional concessions and low-deck desperate rescues;
+- four bounded, personality-specific opponent-deck poke tiers per commander.
 
-`TableReactionService` applies event-specific probabilities, so silence remains the default. It has no mode, chapter, completion, or narrative-flag context, and it does not currently supply pre-War, War-resolution, or Campaign-completion dialogue.
+`TableReactionService` applies event-specific probabilities, so silence remains the default for gameplay reactions. `NarrativeResolverService` supplies chapter-, mode-, encounter-, availability-, and progression-aware authored dialogue. Guaranteed story surfaces handle required pre-War, War-resolution, and Campaign-completion material.
 
-Sprint 1 should use the smallest data extension capable of selecting a line by:
+The conditioned dialogue model can select a line by:
 
 - commander;
 - campaign mode/chapter;
@@ -101,7 +103,7 @@ Sprint 1 should use the smallest data extension capable of selecting a line by:
 - relevant gameplay event;
 - optionally, prior chapter completion or a very small set of major narrative flags.
 
-A compact conditioned-line record or keyed pool overlay is sufficient. The present model declares concession and desperate-rescue pools, but `TableReactionService` does not emit them; introductions, War results, guaranteed resolution beats, and between-War transitions also need small reliable seams. Do not build a branching RPG engine, persistent relationship system, quest graph, or unrestricted scripting language.
+The compact conditioned-line records and keyed fallback pools remain the boundary. Do not build a branching RPG engine, persistent relationship system, quest graph, or unrestricted scripting language.
 
 The complete preferred line bank, stable creative IDs, replay safety, and truthfulness classifications are in [`commander-voice-bible.md`](./commander-voice-bible.md). Required plot is carried by guaranteed surfaces and progressive dossiers as well as dialogue, so missing a sparse gameplay quip never breaks comprehension.
 

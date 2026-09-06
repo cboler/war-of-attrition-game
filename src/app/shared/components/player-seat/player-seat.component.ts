@@ -16,12 +16,12 @@ import { CommanderExpression } from '../../../core/models/commander-art.model';
       [class.motion-disabled]="motionDisabled()"
       [attr.aria-label]="name() + ' seat'">
       
-      @if (dossierAccessible()) {
+      @if (identityInteractive()) {
         <button
           type="button"
           class="identity identity-button"
-          [attr.aria-label]="'View dossier for ' + name()"
-          (click)="dossierRequested.emit()">
+          [attr.aria-label]="identityAccessibleLabel() || 'Open details for ' + name()"
+          (click)="identityActivated.emit()">
           @if (portraitSrc()) {
             <span
               class="commander-portrait-frame"
@@ -38,7 +38,9 @@ import { CommanderExpression } from '../../../core/models/commander-art.model';
           <div class="identity-details">
             <div class="identity-name-row">
               <strong>{{ name() }}</strong>
-              <mat-icon class="dossier-icon" aria-hidden="true">assignment_ind</mat-icon>
+              @if (identityActionIcon()) {
+                <mat-icon class="identity-action-icon" aria-hidden="true">{{ identityActionIcon() }}</mat-icon>
+              }
             </div>
             @if (title()) {
               <span class="seat-title">{{ title() }}</span>
@@ -114,9 +116,16 @@ import { CommanderExpression } from '../../../core/models/commander-art.model';
         [ngClass]="[thicknessClass(), urgencyClass()]"
         type="button"
         [class.actionable]="deckInteractive()"
-        [disabled]="!deckInteractive()"
-        [attr.aria-label]="deckInteractive() ? 'Draw from your deck' : name() + ' deck, ' + cardCount() + ' cards'"
-        (click)="deckActivated.emit()">
+        [class.pokeable]="deckPokeable() && !deckInteractive()"
+        [disabled]="!deckInteractive() && !deckPokeable()"
+        [attr.aria-label]="
+          deckInteractive()
+            ? 'Draw from your deck'
+            : deckPokeable()
+              ? 'Prompt ' + name() + ' to react to their deck'
+              : name() + ' deck, ' + cardCount() + ' cards'
+        "
+        (click)="activateDeck()">
         @if (cardCount() > 0) {
           @if (cardCount() >= 21) {
             <span class="deck-shadow shadow-four" aria-hidden="true"></span>
@@ -153,11 +162,14 @@ export class PlayerSeatComponent {
   name = input.required<string>();
   title = input<string | null>(null);
   faction = input<string | null>(null);
-  dossierAccessible = input(false);
+  identityInteractive = input(false);
+  identityAccessibleLabel = input<string | null>(null);
+  identityActionIcon = input<string | null>(null);
   position = input<'top' | 'right' | 'bottom' | 'left'>('bottom');
   cardCount = input(0);
   cardsAtRisk = input(0);
   deckInteractive = input(false);
+  deckPokeable = input(false);
   thinking = input(false);
   quip = input<string | null>(null);
   deckHand = input<'right' | 'left'>('right');
@@ -169,7 +181,16 @@ export class PlayerSeatComponent {
   portraitExpression = input<CommanderExpression>('calm');
 
   deckActivated = output<void>();
-  dossierRequested = output<void>();
+  deckPoked = output<void>();
+  identityActivated = output<void>();
+
+  protected activateDeck(): void {
+    if (this.deckInteractive()) {
+      this.deckActivated.emit();
+    } else if (this.deckPokeable()) {
+      this.deckPoked.emit();
+    }
+  }
 
   protected dangerLabel = computed(() =>
     this.cardsAtRisk() > 0 ? ` · ${this.cardsAtRisk()} at stake` : ''

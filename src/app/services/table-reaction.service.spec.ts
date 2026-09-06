@@ -5,6 +5,7 @@ import { REACTION_RANDOM, TableReactionService } from './table-reaction.service'
 import { NarrativeResolverService } from '../narrative/narrative-resolver.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { AuthService } from '../core/services/auth.service';
+import { COMMANDER_IDS } from '../core/models/commander.model';
 
 describe('TableReactionService', () => {
   let randomValues: number[];
@@ -150,6 +151,31 @@ describe('TableReactionService', () => {
     );
 
     expect(reaction?.message).toBe('Layer upon layer. Even a rind knows when thickness has become stubbornness.');
+  });
+
+  it('advances through a bounded opponent-deck poke sequence without card context', () => {
+    const messages = [0, 1, 2, 3, 4, 40].map(
+      pokeCount => service.forOpponentDeckPoke(pokeCount, 'quartermaster').message,
+    );
+
+    expect(messages.slice(0, 4)).toEqual([
+      'Monsieur, the reserve is accounted for.',
+      'The cellar inventory does not improve under tapping.',
+      'Kindly remove your hand from my stock.',
+      'Touch that deck again and I shall record you as spoilage.',
+    ]);
+    expect(messages[4]).toBe(messages[3]);
+    expect(messages[5]).toBe(messages[3]);
+  });
+
+  it('gives every commander a distinct public-information-only deck response', () => {
+    const reactions = COMMANDER_IDS.map(commanderId =>
+      service.forOpponentDeckPoke(0, commanderId),
+    );
+
+    expect(new Set(reactions.map(reaction => reaction.message)).size).toBe(COMMANDER_IDS.length);
+    expect(reactions.every(reaction => reaction.speaker === PlayerType.OPPONENT)).toBeTrue();
+    expect(reactions.every(reaction => reaction.category === 'contextual')).toBeTrue();
   });
 
   describe('Commander Dialogue Personality Customization', () => {

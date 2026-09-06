@@ -20,6 +20,7 @@ import { PlayerType } from '../core/models/game-state.model';
 import { MatDialog } from '@angular/material/dialog';
 import { TableGame } from './table-game';
 import { UiTelemetryService } from '../services/ui-telemetry.service';
+import { ProfileDialogService } from '../shared/components/profile-dialog/profile-dialog.service';
 
 describe('TableGame presentation', () => {
   let fixture: ComponentFixture<TableGame>;
@@ -179,6 +180,104 @@ describe('TableGame presentation', () => {
     expect(deck.disabled).toBeFalse();
     expect(deck.getAttribute('aria-label')).toBe('Draw from your deck');
   });
+
+  it('opens the existing Profile from the bottom identity while leaving draw on the player deck', () => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
+    const profileDialog = TestBed.inject(ProfileDialogService);
+    const openProfile = spyOn(profileDialog, 'open');
+    const draw = spyOn(controller, 'playerDrawCard');
+    fixture.detectChanges();
+
+    const playerSeat = fixture.nativeElement.querySelector(
+      'app-player-seat[table-seat-bottom]',
+    ) as HTMLElement;
+    const identity = playerSeat.querySelector('.identity-button') as HTMLButtonElement;
+    const deck = playerSeat.querySelector('.deck') as HTMLButtonElement;
+    expect(identity).toBeTruthy();
+    expect(identity.getAttribute('aria-label')).toBe('Open your Profile and Career');
+
+    identity.click();
+    expect(openProfile).toHaveBeenCalledTimes(1);
+    expect(draw).not.toHaveBeenCalled();
+
+    deck.click();
+    expect(draw).toHaveBeenCalledTimes(1);
+    expect(openProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses opponent-deck pokes only for bounded commander presentation', fakeAsync(() => {
+    const gameState = TestBed.inject(GameStateService);
+    const eventBus = TestBed.inject(GameEventBusService);
+    const events: GameEvent[] = [];
+    eventBus.events$.subscribe(event => events.push(event));
+    const before = gameState.currentState;
+    const playerCards = gameState.currentPlayerDeck.toArray().map(card => card.id);
+    const opponentCards = gameState.currentOpponentDeck.toArray().map(card => card.id);
+    const draw = spyOn(controller, 'playerDrawCard');
+    const selectTarget = spyOn(controller, 'selectBattleCard');
+
+    const opponentDeck = fixture.nativeElement.querySelector(
+      'app-player-seat[table-seat-top] button.deck',
+    ) as HTMLButtonElement;
+    expect(opponentDeck.disabled).toBeFalse();
+    expect(opponentDeck.getAttribute('aria-label')).toContain('react to their deck');
+
+    const messages: string[] = [];
+    for (let poke = 0; poke < 6; poke++) {
+      opponentDeck.click();
+      fixture.detectChanges();
+      messages.push(controller.tableReaction()?.message ?? '');
+    }
+
+    expect(messages.slice(0, 4)).toEqual([
+      'Monsieur, the reserve is accounted for.',
+      'The cellar inventory does not improve under tapping.',
+      'Kindly remove your hand from my stock.',
+      'Touch that deck again and I shall record you as spoilage.',
+    ]);
+    expect(messages[4]).toBe(messages[3]);
+    expect(messages[5]).toBe(messages[3]);
+    expect(draw).not.toHaveBeenCalled();
+    expect(selectTarget).not.toHaveBeenCalled();
+    expect(gameState.currentState).toEqual(before);
+    expect(gameState.currentPlayerDeck.toArray().map(card => card.id)).toEqual(playerCards);
+    expect(gameState.currentOpponentDeck.toArray().map(card => card.id)).toEqual(opponentCards);
+    expect(events.some(event => event.type === 'quip_spoken')).toBeFalse();
+
+    tick(3500);
+    fixture.detectChanges();
+    expect(controller.tableReaction()).toBeNull();
+  }));
+
+  it('keeps Battle targets eligible when the opponent deck is poked', fakeAsync(() => {
+    TestBed.inject(CampaignProgressionService).selectCampaignOrders('standard');
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.TIE);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+    controller.playerDrawCard();
+    continuePastReadableHold();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const targetsBefore = root.querySelectorAll(
+      '.opponent-layers .battle-card-shell.eligible',
+    );
+    expect(targetsBefore.length).toBe(3);
+    expect(controller.presentationState()).toBe(PresentationState.PLAYER_TARGET_SELECTION);
+
+    (root.querySelector(
+      'app-player-seat[table-seat-top] button.deck',
+    ) as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const targetsAfter = Array.from(
+      root.querySelectorAll<HTMLButtonElement>(
+        '.opponent-layers .battle-card-shell.eligible',
+      ),
+    );
+    expect(targetsAfter.length).toBe(3);
+    expect(targetsAfter.every(target => !target.disabled)).toBeTrue();
+    expect(controller.presentationState()).toBe(PresentationState.PLAYER_TARGET_SELECTION);
+    tick(3500);
+  }));
 
   it('always displays the current turn beside the Field Manual', () => {
     const gameState = TestBed.inject(GameStateService);

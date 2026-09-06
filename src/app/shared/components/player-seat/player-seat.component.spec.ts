@@ -55,10 +55,12 @@ describe('PlayerSeatComponent', () => {
     expect(factionEl.textContent.trim()).toBe('French Delegation');
   });
 
-  it('renders identity button and emits dossierRequested when dossierAccessible is true', () => {
+  it('renders a labelled identity button and emits the shared identity action', () => {
     fixture.componentRef.setInput('name', 'Marcel de Brie');
     fixture.componentRef.setInput('title', 'French Master Affineur');
-    fixture.componentRef.setInput('dossierAccessible', true);
+    fixture.componentRef.setInput('identityInteractive', true);
+    fixture.componentRef.setInput('identityAccessibleLabel', 'View dossier for Marcel de Brie');
+    fixture.componentRef.setInput('identityActionIcon', 'assignment_ind');
     fixture.detectChanges();
 
     const button = fixture.nativeElement.querySelector('.identity-button') as HTMLButtonElement;
@@ -66,7 +68,7 @@ describe('PlayerSeatComponent', () => {
     expect(button.getAttribute('aria-label')).toBe('View dossier for Marcel de Brie');
 
     let emitted = false;
-    fixture.componentInstance.dossierRequested.subscribe(() => {
+    fixture.componentInstance.identityActivated.subscribe(() => {
       emitted = true;
     });
 
@@ -74,12 +76,37 @@ describe('PlayerSeatComponent', () => {
     expect(emitted).toBeTrue();
   });
 
-  it('renders plain non-interactive identity when dossierAccessible is false', () => {
+  it('renders plain non-interactive identity when no identity action is supplied', () => {
     fixture.componentRef.setInput('name', 'You');
-    fixture.componentRef.setInput('dossierAccessible', false);
+    fixture.componentRef.setInput('identityInteractive', false);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.identity-button')).toBeNull();
     expect(fixture.nativeElement.querySelector('.identity-static')).toBeTruthy();
+  });
+
+  it('keeps draw activation separate from an opponent deck poke', () => {
+    let draws = 0;
+    let pokes = 0;
+    fixture.componentInstance.deckActivated.subscribe(() => draws++);
+    fixture.componentInstance.deckPoked.subscribe(() => pokes++);
+
+    fixture.componentRef.setInput('deckInteractive', true);
+    fixture.componentRef.setInput('deckPokeable', false);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.deck') as HTMLButtonElement).click();
+    expect(draws).toBe(1);
+    expect(pokes).toBe(0);
+
+    fixture.componentRef.setInput('deckInteractive', false);
+    fixture.componentRef.setInput('deckPokeable', true);
+    fixture.detectChanges();
+    const opponentDeck = fixture.nativeElement.querySelector('.deck') as HTMLButtonElement;
+    expect(opponentDeck.disabled).toBeFalse();
+    expect(opponentDeck.getAttribute('aria-label')).toContain('react to their deck');
+    opponentDeck.click();
+
+    expect(draws).toBe(1);
+    expect(pokes).toBe(1);
   });
 });

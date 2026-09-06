@@ -2,7 +2,7 @@
 
 ## 1. Project State: Core and Two Creative Sprints Complete
 
-**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity and is currently version 4.2.1 (Android `versionCode` 40201).
+**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity. The hosted release and the currently distributed wrapper now share version identity **4.2.2**.
 
 The project is no longer in broad feature discovery. Both substantial creative sprints now have production implementations:
 
@@ -50,6 +50,7 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 - Authored reactions carry semantic priority: they remain visible for 7.5 seconds and cannot be replaced by procedural quips. Eligible encounter-specific `first_play` tactical lines bypass generic reaction randomness, while replay, `any`, evergreen, and procedural chatter retain sparse probabilities. Procedural messages are dropped rather than queued, so they cannot create a backlog ahead of narrative.
 - `RuleDemoComponent` provides isolated, frame-based, replayable and skippable rules drills with reduced-motion support. Its Battle drill visibly stages exactly three committed face-down cards per side before revealing the selected champions.
 - The active opponent has a compact decorative commander portrait. Explicit presentation metadata selects Calm, Smug, Determined, Angry, Sad, or Surprised for meaningful reactions; Calm is the default and returns after the reaction expires.
+- Table interaction grammar is explicit: the bottom **You** identity opens the shared Profile/Career dialog, the opponent identity opens its Dossier, the player deck remains the draw surface, and the opponent deck provides bounded commander-specific flavor reactions without changing game state or hidden information.
 
 ### Field Manual, Chronicle, and Hall of Valor
 
@@ -94,6 +95,7 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 
 - Android TWA wrapper targeting the current project Android configuration.
 - GitHub Pages deployment, Android bundle, secret scanning, and deterministic Playwright store-screenshot workflows.
+- Android bundle version names are checked against the authoritative `package.json` version; a manual input or tag mismatch fails the workflow instead of producing a silently divergent wrapper identity.
 - Store screenshot matrix for phone, 7-inch tablet, and 10-inch tablet targets with production-configuration serving, deterministic real-UI fixtures, exact artifact-inventory validation, and physical-card/turn-history assertions.
 
 ---
@@ -136,9 +138,9 @@ Sprint 1 is fully complete, validated, and tested end-to-end:
   - Campaign Orders modal indicates `"Replay Command: Opposition randomized"` for unlocked replay chapters.
 - **Between-War & Completion Transitions**: `GameOverSummaryComponent` renders narrative transition cards (`TR-C1-01` through `TR-C4-04`), resolution quotes, and dynamic next-war action buttons.
 - **Spoiler Firewall & Canonical Resolution**: Strict information boundaries across all four chapters; private Mont-Rouge mechanism (mouse/hay) safely protected in author knowledge; Chapter IV completes with the canonical resolution (`Matthias: “I never proved it.”` / `Marcel: “Non. Neither did I.”`) without an extraneous Bastien punchline.
-- **Comprehensive Test Suite**: Full unit and integration suite green at **633 / 633 tests passing**, including narrative traversal/firewall and first-play/replay delivery-policy coverage, authoritative achievement settlement/tie cases, portrait-expression lifecycle, Campaign abandonment preservation, canonical survivor-margin handling, truthful Profile dispatch/empty-state semantics, rule-demo staging, viewport measurement, and table/message-hierarchy presentation tests.
+- **Comprehensive Test Suite**: Full unit and integration suite green at **642 / 642 tests passing**, including narrative traversal/firewall and first-play/replay delivery-policy coverage, authoritative achievement settlement/tie cases, portrait-expression lifecycle, Campaign abandonment preservation, canonical survivor-margin handling, truthful Profile dispatch/empty-state semantics, Profile identity/deck action separation, bounded opponent-deck reactions, Battle-target preservation, rule-demo staging, viewport measurement, and table/message-hierarchy presentation tests.
 - **Browser and Visual Validation**: Full production-configured Playwright matrix green at **19 passed** with 38 intentional cross-project skips; all 11 store screenshots validate at their required phone, 7-inch tablet, and 10-inch tablet resolutions and were visually reviewed in the release-candidate pass.
-- **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json` (934.51 kB raw / 221.27 kB estimated initial transfer in the September 5 tester-readiness build).
+- **Zero Build Budget Increase**: Production build passes cleanly with 0 errors and zero budget increases in `angular.json` (936.32 kB raw / 221.77 kB estimated initial transfer in the September 6 tester wrap-up build).
 
 Next steps for future work:
 - Final release polish and device validation; richer battlefield variants remain optional later work.

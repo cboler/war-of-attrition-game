@@ -352,6 +352,24 @@ export class TableReactionService {
     };
   }
 
+  forOpponentDeckPoke(
+    pokeCount: number,
+    commanderInput?: OpponentCommander | OpponentCommanderId,
+  ): TableReaction {
+    const commander = this.resolveCommander(commanderInput);
+    const tier = Math.min(
+      Math.max(0, Math.floor(pokeCount)),
+      commander.dialogue.deckPoke.length - 1,
+    );
+    return {
+      speaker: PlayerType.OPPONENT,
+      category: 'contextual',
+      message: commander.dialogue.deckPoke[tier],
+      authored: false,
+      expression: tier === 0 ? 'calm' : tier === 1 ? 'determined' : 'angry',
+    };
+  }
+
 
   clearUsedDialogue(): void {
     this.usedDialogueIds.clear();

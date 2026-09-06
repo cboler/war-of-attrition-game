@@ -38,6 +38,7 @@ import { CampaignOrdersDialogComponent } from '../shared/components/campaign-ord
 import { BattleAnimationComponent } from '../shared/components/battle-animation/battle-animation.component';
 import { getCommanderPortrait } from '../core/models/commander-art.model';
 import { UiTelemetryService } from '../services/ui-telemetry.service';
+import { ProfileDialogService } from '../shared/components/profile-dialog/profile-dialog.service';
 
 @Component({
   selector: 'app-table-game',
@@ -67,6 +68,7 @@ export class TableGame implements OnInit, OnDestroy {
   protected readonly storyBook = inject(StoryBookService);
   protected readonly progression = inject(CampaignProgressionService);
   protected readonly dialog = inject(MatDialog);
+  private readonly profileDialog = inject(ProfileDialogService);
   private readonly uiTelemetry = inject(UiTelemetryService);
   protected readonly state = PresentationState;
   protected readonly player = PlayerType;
@@ -190,6 +192,14 @@ export class TableGame implements OnInit, OnDestroy {
       return;
     }
     this.controller.playerDrawCard();
+  }
+
+  protected openProfileDialog(): void {
+    this.profileDialog.open();
+  }
+
+  protected pokeOpponentDeck(): void {
+    this.controller.pokeOpponentDeck();
   }
 
   protected chooseChallenge(accept: boolean): void {
