@@ -70,7 +70,7 @@ cd android
 Local achievements and career stats are fully operational and canonical. Native Play synchronization, achievements UI, and Game Stats submission are deliberately protected behind a verified transport boundary until an origin-verified bidirectional Custom Tabs channel is installed.
 
 During the Game Stats v1 implementation pass, dependency evaluation confirmed **Outcome B**:
-- `com.google.androidbrowserhelper:androidbrowserhelper` is upgraded to `2.7.3` (latest official release on Google Maven).
+- `com.google.androidbrowserhelper:androidbrowserhelper` is retained at `2.5.0` (inspection of `2.7.3` confirmed PR #584 remains unmerged, while `2.7.3` transitively pulls `browser:1.10.0` and `core:1.17.0` requiring AGP 8.9.1+).
 - `com.google.android.gms:play-services-games-v2` is upgraded to `22.0.0` (which provides `GameStatsClient` and `PlayerGameEvent`).
 - `androidx.browser:browser:1.8.0` remains unchanged.
 - Upstream PR #584 (which proposes public Custom Tabs session access on `LauncherActivity` / `TwaLauncher`) has **never been merged into an official release of Android Browser Helper up through 2.7.3**. `TwaLauncher.mSession` remains private.

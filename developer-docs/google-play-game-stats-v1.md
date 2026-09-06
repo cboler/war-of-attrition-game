@@ -1,6 +1,6 @@
 # Google Play Game Stats v1 design contract
 
-Design baseline: checked-in commit `67f8a5b`, app `4.2.1`, gameplay telemetry schema `3`, progression schema `3`, ruleset `2026.09.1`. Implementation pass completed for Game Stats v1: all web models (`game-stats.model.ts`), projection service (`game-stats-projection.service.ts`), platform service (`platform-game-stats.service.ts`), native bridge (`PlayGameStatsBridge.java`), and test suites delivered. Upstream evaluation confirmed Outcome B: Android Browser Helper 2.7.3 does not yet expose a public Custom Tabs session accessor (PR #584 unmerged in official releases), so runtime transport availability securely remains false until an upstream session hook is released.
+Design baseline: checked-in commit `67f8a5b`, app `4.2.1`, gameplay telemetry schema `3`, progression schema `3`, ruleset `2026.09.1`. Implementation pass completed for Game Stats v1: all web models (`game-stats.model.ts`), projection service (`game-stats-projection.service.ts`), platform service (`platform-game-stats.service.ts`), native bridge (`PlayGameStatsBridge.java`), and test suites delivered. Upstream evaluation confirmed Outcome B: Android Browser Helper 2.7.3 does not expose a public Custom Tabs session accessor (PR #584 unmerged in official releases) and transitively requires AGP 8.9.1+, so `androidbrowserhelper:2.5.0` is retained and runtime transport availability securely remains false until an official upstream session hook is released.
 
 ## 1. Scope and non-goals
 
