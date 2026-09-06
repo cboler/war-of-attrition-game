@@ -33,6 +33,7 @@ import { StoryBookService } from './story-book.service';
 import { TutorialService } from './tutorial.service';
 import { TutorialStep } from '../core/models/tutorial.model';
 import { GameTelemetryService } from './game-telemetry.service';
+import { GameStatsProjectionService } from './game-stats-projection.service';
 import { CommanderIdentity, getCommanderIdentity } from '../core/models/commander-identity.model';
 import { CommanderExpression } from '../core/models/commander-art.model';
 import {
@@ -159,6 +160,7 @@ export class GameControllerService {
   private readonly settings = inject(SettingsService);
   private readonly campaignProgression = inject(CampaignProgressionService);
   private readonly telemetry = inject(GameTelemetryService);
+  private readonly gameStatsProjection = inject(GameStatsProjectionService);
   private readonly storyBook = inject(StoryBookService);
   private readonly tutorial = inject(TutorialService);
   private readonly narrativeResolver = inject(NarrativeResolverService, { optional: true });
@@ -525,6 +527,7 @@ export class GameControllerService {
       campaignModifiers: this.campaignProgression.activeCampaignModifiers(),
     });
     this.currentWarId = warContext.warId;
+    this.gameStatsProjection.beginWar(warContext.warId);
     this.pendingWarStart = null;
     this.eventBus.emit({
       type: 'war_started',

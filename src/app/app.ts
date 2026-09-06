@@ -16,6 +16,7 @@ import { AuthService } from './core/services/auth.service';
 import { SettingsService } from './core/services/settings.service';
 import { ProfileDialogComponent } from './shared/components/profile-dialog/profile-dialog.component';
 import { GameTelemetryService } from './services/game-telemetry.service';
+import { GameStatsProjectionService } from './services/game-stats-projection.service';
 import { AnalyticsConsentPromptService } from './services/analytics-consent-prompt.service';
 
 @Component({
@@ -41,6 +42,8 @@ export class App implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   // Eager construction is required because GameEventBusService is non-replaying.
   private readonly gameTelemetry = inject(GameTelemetryService);
+  // Game Stats projection also observes the non-replaying game bus eagerly.
+  private readonly gameStatsProjection = inject(GameStatsProjectionService);
   // The post-War consent invitation also observes the non-replaying game bus.
   private readonly analyticsConsentPrompt = inject(AnalyticsConsentPromptService);
 

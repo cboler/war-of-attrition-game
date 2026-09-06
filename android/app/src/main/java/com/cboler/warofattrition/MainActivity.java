@@ -9,12 +9,15 @@ import com.google.androidbrowserhelper.trusted.LauncherActivity;
  */
 public class MainActivity extends LauncherActivity {
     private PlayGamesBridge playGamesBridge;
+    private PlayGameStatsBridge playGameStatsBridge;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         playGamesBridge = new PlayGamesBridge(this);
         playGamesBridge.initialize();
+        playGameStatsBridge = new PlayGameStatsBridge(this);
+        playGameStatsBridge.initialize();
     }
 
     @Override
