@@ -1,0 +1,11 @@
+Stat Id,Event Name,Event Property Name,Aggregation Type,Stat Display Name,Stat Description,Filter Property,Filter Operator,Filter Value,Is Competitive,Min limit,Max limit,Icon File Name,Good value direction,Unit
+wars_fought,war_completed,turns,COUNT,Wars Fought,"Wars you have completed, including victories, defeats, and ties.",,,,false,,,wars_fought.png,INCREASING,UNITLESS
+wars_won,war_completed,player_win,SUM,Wars Won,Completed Wars ending in your victory.,,,,false,,,wars_won.png,INCREASING,UNITLESS
+comeback_victories,war_completed,comeback_deficit,COUNT,Comeback Victories,Victories after trailing by at least 3 cards at the start of a turn.,comeback_deficit,>=,3,false,,,comeback_victories.png,INCREASING,UNITLESS
+greatest_comeback,war_completed,comeback_deficit,MAX,Greatest Comeback,"Largest turn-start card deficit overcome in victory, counting comebacks of 3 or more cards.",,,,true,0,25,greatest_comeback.png,INCREASING,UNITLESS
+battles_fought,war_completed,battles,SUM,Battles Fought,Distinct Battles entered in your completed Wars. Recursive layers count as one Battle.,,,,false,,,battles_fought.png,INCREASING,UNITLESS
+deepest_battle,war_completed,deepest_battle,MAX,Deepest Battle,Most three-card layers dealt per side in one Battle during a completed War.,,,,true,0,8,deepest_battle.png,INCREASING,UNITLESS
+longest_war,war_completed,turns,MAX,Longest War,Most turns in one completed War.,,,,false,,,longest_war.png,INCREASING,UNITLESS
+reinforcements_sent,war_completed,reinforcements_sent,SUM,Reinforcements Sent,Reinforcement cards you committed in completed Wars.,,,,false,,,reinforcements_sent.png,INCREASING,UNITLESS
+successful_reinforcements,war_completed,successful_reinforcements,SUM,Successful Reinforcements,Your reinforcements that won their comparison outright in completed Wars. Ties are excluded.,,,,false,,,successful_reinforcements.png,INCREASING,UNITLESS
+aces_felled_by_twos,war_completed,aces_felled_by_twos,SUM,Aces Felled by Twos,Opponent Aces directly defeated by your Twos in completed Wars.,,,,false,,,aces_felled_by_twos.png,INCREASING,UNITLESS

@@ -1,0 +1,20 @@
+Event Name,Property Name,Property Type
+war_completed,stats_schema_version,INT64
+war_completed,ruleset_version,STRING
+war_completed,app_version,STRING
+war_completed,commander_id,STRING
+war_completed,campaign_kind,STRING
+war_completed,campaign_mode,STRING
+war_completed,campaign_modifiers,STRING
+war_completed,campaign_war_index,INT64
+war_completed,reserves_at_war_start,INT64
+war_completed,outcome,STRING
+war_completed,player_win,INT64
+war_completed,turns,INT64
+war_completed,comeback_deficit,INT64
+war_completed,battles,INT64
+war_completed,deepest_battle,INT64
+war_completed,reinforcements_sent,INT64
+war_completed,successful_reinforcements,INT64
+war_completed,aces_felled_by_twos,INT64
+war_completed,war_margin,INT64

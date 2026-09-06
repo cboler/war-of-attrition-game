@@ -5,6 +5,8 @@
 /tmp
 /out-tsc
 /bazel-out
+/developer-docs/assets/Play Games/generated/
+/developer-docs/assets/Play Games/game-stats-v1.zip
 
 # Node
 /node_modules
