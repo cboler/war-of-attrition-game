@@ -94,4 +94,21 @@ describe('ExpressiveTextComponent', () => {
 
     expect(dismissedSpy).toHaveBeenCalled();
   });
+
+  it('fast-forwards when fastForward input becomes true during animation', fakeAsync(() => {
+    fixture.componentRef.setInput('text', 'Another test line for fast-forward.');
+    fixture.componentRef.setInput('animate', true);
+    fixture.componentRef.setInput('motionDisabled', false);
+    fixture.detectChanges();
+
+    tick(40);
+    fixture.detectChanges();
+    const visible = fixture.nativeElement.querySelector('.expressive-text-content');
+    expect(visible.textContent.length).toBeLessThan('Another test line for fast-forward.'.length);
+
+    fixture.componentRef.setInput('fastForward', true);
+    fixture.detectChanges();
+
+    expect(visible.textContent.trim()).toBe('Another test line for fast-forward.');
+  }));
 });

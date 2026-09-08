@@ -459,7 +459,8 @@ describe('GameControllerService presentation integration', () => {
     });
 
     expect(controller.tableReaction()).toBe(authored);
-    tick(7499);
+    const authoredDuration = controller.calculateReactionDuration(authored);
+    tick(authoredDuration - 1);
     expect(controller.tableReaction()).toBe(authored);
     tick(1);
     expect(controller.tableReaction()).toBeNull();
@@ -478,16 +479,18 @@ describe('GameControllerService presentation integration', () => {
     const before = gameState.cardConservationReport();
     expect(controller.opponentExpression()).toBe('calm');
 
-    internal.speakReaction({
+    const battleReaction = {
       speaker: PlayerType.OPPONENT,
       message: 'A costly exchange.',
-      category: 'battle',
-      expression: 'angry',
-    });
+      category: 'battle' as const,
+      expression: 'angry' as const,
+    };
+    internal.speakReaction(battleReaction);
     expect(controller.opponentExpression()).toBe('angry');
     expect(gameState.cardConservationReport()).toEqual(before);
 
-    tick(5499);
+    const battleDuration = controller.calculateReactionDuration(battleReaction);
+    tick(battleDuration - 1);
     expect(controller.opponentExpression()).toBe('angry');
     tick(1);
     expect(controller.opponentExpression()).toBe('calm');
@@ -1167,8 +1170,22 @@ describe('GameControllerService presentation integration', () => {
       expect(controller.tableReaction()?.message).toContain('Witness Wheel');
 
       // Authored dialogue receives a longer, readable hold than procedural quips.
-      tick(8000);
+      tick(controller.calculateReactionDuration(controller.tableReaction()!));
       expect(controller.tableReaction()).toBeNull();
+    }));
+    it('speeds up dialogue on first advance and dismisses on subsequent advance', fakeAsync(() => {
+      progression.selectCampaignOrders('standard');
+      controller.startNewGame();
+      expect(controller.tableReaction()).not.toBeNull();
+      expect(controller.reactionFastForwarded()).toBeFalse();
+
+      controller.advancePresentation();
+      expect(controller.tableReaction()).not.toBeNull();
+      expect(controller.reactionFastForwarded()).toBeTrue();
+
+      controller.advancePresentation();
+      expect(controller.tableReaction()).toBeNull();
+      expect(controller.reactionFastForwarded()).toBeFalse();
     }));
   });
 });

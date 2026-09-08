@@ -12,7 +12,9 @@ import {
   OpponentCommander,
   OpponentCommanderId,
   getCommander,
+  getCommanderCadence,
 } from '../core/models/commander.model';
+import { stripDialogueMarkup } from '../core/utils/dialogue-markup';
 import type { PublicBattleResolution } from '../core/models/game-events.model';
 import { GameStateService } from '../core/services/game-state.service';
 import { OpponentAIService } from '../core/services/opponent-ai.service';
@@ -605,7 +607,7 @@ export class GameControllerService {
       this.opponentDeckPokeCount,
       this.opponentCommander().id,
     );
-    const presented = this.speakReaction(reaction, false, 3500);
+    const presented = this.speakReaction(reaction, false);
     if (presented) this.opponentDeckPokeCount = Math.min(this.opponentDeckPokeCount + 1, 4);
     return presented;
   }
@@ -639,6 +641,7 @@ export class GameControllerService {
   }
 
   advancePresentation(): boolean {
+    this.speedUpOrDismissReaction();
     const skippedPhase = this.phase();
     const advanced = this.sequencer.advance();
     if (advanced) {
@@ -1534,6 +1537,59 @@ export class GameControllerService {
   }
 
   private reactionTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly reactionFastForwardedSignal = signal(false);
+  private readonly reactionCompletedSignal = signal(false);
+
+  readonly reactionFastForwarded = this.reactionFastForwardedSignal.asReadonly();
+  readonly reactionCompleted = this.reactionCompletedSignal.asReadonly();
+
+  setReactionCompleted(): void {
+    this.reactionCompletedSignal.set(true);
+  }
+
+  speedUpOrDismissReaction(): void {
+    if (!this.reaction()) return;
+    if (!this.reactionCompletedSignal() && !this.reactionFastForwardedSignal()) {
+      this.reactionFastForwardedSignal.set(true);
+      this.reactionCompletedSignal.set(true);
+    } else {
+      this.dismissReaction();
+    }
+  }
+
+  calculateReactionDuration(
+    reaction: TableReaction,
+    explicitDurationMs?: number,
+  ): number {
+    if (explicitDurationMs !== undefined) {
+      return explicitDurationMs;
+    }
+
+    const commanderId =
+      reaction.speaker === PlayerType.OPPONENT
+        ? this.opponentCommander().id
+        : 'vance';
+    const motionDisabled = !this.settings.autoPlayAnimations();
+    const clean = stripDialogueMarkup(reaction.message);
+    const cadence = getCommanderCadence(commanderId);
+
+    let typingDurationMs = 0;
+    if (!motionDisabled) {
+      const punctMajor = (clean.match(/[.!?]/g) || []).length;
+      const punctMinor = (clean.match(/[,;:]/g) || []).length;
+      const punctDash = (clean.match(/[—…]/g) || []).length;
+
+      typingDurationMs =
+        clean.length * cadence.charDelayMs +
+        punctMajor * cadence.punctuationDelayMs +
+        punctMinor * Math.round(cadence.punctuationDelayMs * 0.55) +
+        punctDash * Math.round(cadence.punctuationDelayMs * 0.8);
+    }
+
+    // Full reading window after typing completes (7500ms for authored story lines, 5500ms for regular quips)
+    const readingWindowMs = reaction.authored ? 7500 : 5500;
+    return typingDurationMs + readingWindowMs;
+  }
 
   private speakReaction(
     reaction: TableReaction | null,
@@ -1547,6 +1603,8 @@ export class GameControllerService {
       clearTimeout(this.reactionTimeout);
       this.reactionTimeout = null;
     }
+    this.reactionFastForwardedSignal.set(false);
+    this.reactionCompletedSignal.set(false);
     this.reaction.set(reaction);
     if (emitDomainEvent) {
       this.eventBus.emit({
@@ -1557,11 +1615,12 @@ export class GameControllerService {
         category: reaction.category,
       });
     }
+    const finalDuration = this.calculateReactionDuration(reaction, durationMs);
     this.reactionTimeout = setTimeout(() => {
       if (this.reaction() === reaction) {
         this.reaction.set(null);
       }
-    }, durationMs ?? (reaction.authored ? 7500 : 5500));
+    }, finalDuration);
     return true;
   }
 
@@ -1571,6 +1630,8 @@ export class GameControllerService {
       this.reactionTimeout = null;
     }
     this.reaction.set(null);
+    this.reactionFastForwardedSignal.set(false);
+    this.reactionCompletedSignal.set(false);
   }
 
 

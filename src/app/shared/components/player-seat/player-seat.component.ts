@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewChild, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { CardComponent } from '../card/card.component';
@@ -109,12 +109,19 @@ import { ExpressiveTextComponent } from '../expressive-text/expressive-text.comp
       }
 
       @if (quip()) {
-        <p class="quip" role="region" aria-label="Spoken dialogue">
+        <p
+          class="quip"
+          role="region"
+          aria-label="Spoken dialogue"
+          (click)="onQuipClick($event)">
           <app-expressive-text
+            #expressive
             [text]="quip()"
             [commanderId]="commanderId()"
             [animate]="true"
+            [fastForward]="fastForward()"
             [motionDisabled]="motionDisabled()"
+            (completed)="quipCompleted.emit()"
             (dismissed)="quipDismissed.emit()" />
         </p>
       }
@@ -184,6 +191,7 @@ export class PlayerSeatComponent {
   deckHand = input<'right' | 'left'>('right');
   defeatPopping = input(false);
   motionDisabled = input(false);
+  fastForward = input(false);
   reserves = input<{ remaining: number; max: number } | null>(null);
   totalWarDifferential = input<number | null>(null);
   portraitSrc = input<string | null>(null);
@@ -192,7 +200,20 @@ export class PlayerSeatComponent {
   deckActivated = output<void>();
   deckPoked = output<void>();
   identityActivated = output<void>();
+  quipCompleted = output<void>();
   quipDismissed = output<void>();
+
+  @ViewChild('expressive') expressiveText?: ExpressiveTextComponent;
+
+  protected onQuipClick(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.expressiveText && !this.expressiveText.isComplete()) {
+      this.expressiveText.fastForward();
+      this.quipCompleted.emit();
+    } else {
+      this.quipDismissed.emit();
+    }
+  }
 
   protected activateDeck(): void {
     if (this.deckInteractive()) {

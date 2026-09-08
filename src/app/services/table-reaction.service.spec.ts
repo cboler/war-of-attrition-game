@@ -64,7 +64,7 @@ describe('TableReactionService', () => {
     );
 
     expect(reaction?.speaker).toBe(PlayerType.PLAYER);
-    expect(reaction?.message).toBe('That was catastrophic.');
+    expect(reaction?.message).toBe('That was [shout]catastrophic[/shout].');
     expect(reaction?.category).toBe('battle');
   });
 
@@ -102,7 +102,7 @@ describe('TableReactionService', () => {
     });
 
     expect(reaction?.speaker).toBe(PlayerType.PLAYER);
-    expect(reaction?.message).toBe('Too close.');
+    expect(reaction?.message).toBe('*Too* close.');
     expect(reaction?.category).toBe('narrow_clash');
   });
 
@@ -136,7 +136,7 @@ describe('TableReactionService', () => {
     });
 
     expect(reaction?.speaker).toBe(PlayerType.PLAYER);
-    expect(reaction?.message).toBe('That reinforcement cost dearly.');
+    expect(reaction?.message).toBe('That reinforcement cost *dearly*.');
     expect(reaction?.category).toBe('failed_rescue');
     expect(reaction?.expression).toBe('angry');
   });

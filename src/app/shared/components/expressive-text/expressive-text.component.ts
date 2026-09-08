@@ -40,8 +40,9 @@ import { getCommanderCadence } from '../../../core/models/commander.model';
   `,
   styles: [`
     :host {
-      display: inline-block;
-      max-width: 100%;
+      display: block;
+      width: 100%;
+      cursor: pointer;
     }
     .expressive-text-content {
       display: inline;
@@ -83,6 +84,7 @@ export class ExpressiveTextComponent {
   commanderId = input<string | null>(null);
   animate = input(false);
   motionDisabled = input(false);
+  fastForwardInput = input(false, { alias: 'fastForward' });
 
   completed = output<void>();
   dismissed = output<void>();
@@ -94,13 +96,19 @@ export class ExpressiveTextComponent {
   );
 
   protected readonly revealedChars = signal(0);
-  protected readonly isComplete = signal(false);
+  readonly isComplete = signal(false);
 
   private timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.destroyRef.onDestroy(() => {
       this.clearTimer();
+    });
+
+    effect(() => {
+      if (this.fastForwardInput() && !this.isComplete()) {
+        this.fastForward();
+      }
     });
 
     effect(() => {
@@ -157,7 +165,7 @@ export class ExpressiveTextComponent {
     return visible;
   });
 
-  protected handleClick(event: MouseEvent): void {
+  handleClick(event: MouseEvent): void {
     event.stopPropagation();
     if (!this.isComplete()) {
       this.fastForward();

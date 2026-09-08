@@ -76,7 +76,7 @@ export class TableReactionService {
       const variants =
         loser === PlayerType.OPPONENT
           ? commander.dialogue.specialClash
-          : ['The little card had one job.', 'A Two changes everything.', 'That Ace found its exception.'];
+          : ['The little card had *one job*.', 'A Two changes *everything*.', 'That Ace found its exception.'];
       return this.pick(0.28, loser, 'special_clash', variants, authored, 'surprised');
     }
 
@@ -93,7 +93,7 @@ export class TableReactionService {
     const variants =
       loser === PlayerType.OPPONENT
         ? commander.dialogue.narrowClash
-        : ['Too close.', 'One rank was enough.', 'A narrow edge.'];
+        : ['*Too* close.', 'One rank was *enough*.', 'A narrow edge.'];
     return this.pick(0.14, loser, 'narrow_clash', variants, authored, 'surprised');
   }
 
@@ -117,8 +117,8 @@ export class TableReactionService {
         variants =
           context.originalBeatenCard.rank === Rank.TWO &&
           context.reinforcementCard.rank === Rank.ACE
-            ? ['The cavalry arrived.', 'An Ace, right on time.', 'That Two lives to fight again.']
-            : ['A timely rescue.', 'That card was worth saving.', 'Reinforcement held.'];
+            ? ['The cavalry arrived!', 'An Ace, *right on time*.', 'That Two lives to fight again.']
+            : ['A timely rescue.', 'That card was *worth* saving.', 'Reinforcement held.'];
       }
       return this.pick(
         rescuedSpecialCard ? 0.24 : 0.12,
@@ -140,7 +140,7 @@ export class TableReactionService {
     const variants =
       speaker === PlayerType.OPPONENT
         ? commander.dialogue.failedRescue
-        : ['That reinforcement cost dearly.', 'Two cards gone for nothing.', 'A costly gamble.'];
+        : ['That reinforcement cost *dearly*.', 'Two cards gone for *nothing*.', 'A *costly* gamble.'];
     return this.pick(0.2, speaker, 'failed_rescue', variants, authored, 'angry');
   }
 
@@ -195,31 +195,31 @@ export class TableReactionService {
     } else {
       if (decisiveRampage) {
         variants = [
-          'One champion did all of that.',
-          'That card carved through the line.',
+          '*One* champion did all of that.',
+          'That card carved *through* the line.',
           'A devastating champion.'
         ];
       } else if (deepBattle) {
-        variants = ['That Battle went deep.', 'Too far down to turn back.', 'A long way to fall.'];
+        variants = ['That Battle went *deep*.', 'Too far down to turn back.', 'A long way to fall.'];
       } else if (lostAce && lostTwo) {
         variants = [
-          'That was catastrophic.',
-          'The Ace and the assassin. Gone.',
-          'That table took everything.'
+          'That was [shout]catastrophic[/shout].',
+          'The Ace and the assassin. *Gone.*',
+          'That table took *everything*.'
         ];
       } else if (lostTwo) {
         variants = [
-          'There goes the assassin.',
-          'That two was worth more than it looked.',
-          'That one hurt.'
+          'There goes the assassin...',
+          'That two was worth *more* than it looked.',
+          '[whisper]That one hurt...[/whisper]'
         ];
       } else if (lostAce) {
-        variants = ['Not the Ace…', 'That Ace never came home.', 'A very expensive Battle.'];
+        variants = ['[whisper]Not the Ace…[/whisper]', 'That Ace never came home.', 'A *very* expensive Battle.'];
       } else {
         variants = [
-          'That was catastrophic.',
-          'A very expensive Battle.',
-          'You had no idea what you just won.'
+          'That was [shout]catastrophic[/shout].',
+          'A *very* expensive Battle.',
+          'You had *no idea* what you just won.'
         ];
       }
     }

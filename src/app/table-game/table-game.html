@@ -28,9 +28,11 @@
       [thinking]="opponentThinking()"
       [quip]="opponentQuip()"
       [commanderId]="controller.opponentCommanderIdentity().commanderId"
+      [fastForward]="controller.reactionFastForwarded()"
       [defeatPopping]="controller.deckDefeatPopOwner() === player.OPPONENT"
       [motionDisabled]="!settings.autoPlayAnimations()"
       (deckPoked)="pokeOpponentDeck()"
+      (quipCompleted)="controller.setReactionCompleted()"
       (quipDismissed)="dismissQuip()"
     />
 
@@ -471,12 +473,15 @@
       [deckInteractive]="controller.canDraw()"
       [deckHand]="settings.deckHand()"
       [quip]="playerQuip()"
+      [commanderId]="'vance'"
+      [fastForward]="controller.reactionFastForwarded()"
       [defeatPopping]="controller.deckDefeatPopOwner() === player.PLAYER"
       [motionDisabled]="!settings.autoPlayAnimations()"
       [reserves]="playerReserves()"
       [totalWarDifferential]="playerTotalWarDiff()"
       (identityActivated)="openProfileDialog()"
       (deckActivated)="draw()"
+      (quipCompleted)="controller.setReactionCompleted()"
       (quipDismissed)="dismissQuip()"
     />
   </app-card-table>

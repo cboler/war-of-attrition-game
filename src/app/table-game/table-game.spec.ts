@@ -244,7 +244,7 @@ describe('TableGame presentation', () => {
     expect(gameState.currentOpponentDeck.toArray().map(card => card.id)).toEqual(opponentCards);
     expect(events.some(event => event.type === 'quip_spoken')).toBeFalse();
 
-    tick(3500);
+    tick(controller.calculateReactionDuration(controller.tableReaction()!));
     fixture.detectChanges();
     expect(controller.tableReaction()).toBeNull();
   }));
