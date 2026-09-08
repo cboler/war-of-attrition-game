@@ -643,15 +643,17 @@ describe('AchievementService', () => {
       'profile.centurion': 'CgkIz5juh94JEAIQAw',
     };
     const ids = ACHIEVEMENTS.map((achievement) => achievement.id);
-    expect(ids.length).toBe(37);
-    expect(new Set(ids).size).toBe(37);
-    expect(ACHIEVEMENTS.filter((a) => !a.hidden).length).toBe(32);
+    expect(ids.length).toBe(39);
+    expect(new Set(ids).size).toBe(39);
+    expect(ACHIEVEMENTS.filter((a) => !a.hidden).length).toBe(34);
     expect(ACHIEVEMENTS.filter((a) => a.classification === 'anomaly').length).toBe(5);
     expect(ids).toContain('war.battle_assassin');
     expect(ids).toContain('war.crippled');
     expect(ids).toContain('war.neverending_stalemate');
     expect(ids).toContain('war.wrong_tool_for_job');
     expect(ids).toContain('war.twin_assassins');
+    expect(ids).toContain('war.deuce_ex_machina');
+    expect(ids).toContain('war.snatched_from_jaws_of_victory');
     expect(Object.keys(PLAY_ACHIEVEMENT_MAPPINGS).length).toBe(27);
     expect(
       Object.fromEntries(
@@ -670,12 +672,14 @@ describe('AchievementService', () => {
     expect(PLAY_ACHIEVEMENT_MAPPINGS['war.first_win']?.playGamesId).toBe('CgkIz5juh94JEAIQEg');
     expect(ids).not.toContain('war.iron_defense');
     const visible = ACHIEVEMENTS.filter((a) => !a.hidden);
-    expect(visible.length).toBe(32);
+    expect(visible.length).toBe(34);
     expect(visible.filter((a) => a.classification === 'milestone').length).toBe(9);
-    expect(visible.filter((a) => a.classification === 'distinction').length).toBe(14);
+    expect(visible.filter((a) => a.classification === 'distinction').length).toBe(16);
     expect(visible.filter((a) => a.classification === 'prestige').length).toBe(9);
     expect(ACHIEVEMENTS.find((a) => a.id === 'war.twin_assassins')?.classification).toBe('prestige');
     expect(ACHIEVEMENTS.find((a) => a.id === 'war.wrong_tool_for_job')?.classification).toBe('distinction');
+    expect(ACHIEVEMENTS.find((a) => a.id === 'war.deuce_ex_machina')?.classification).toBe('distinction');
+    expect(ACHIEVEMENTS.find((a) => a.id === 'war.snatched_from_jaws_of_victory')?.classification).toBe('distinction');
     expect(ACHIEVEMENTS.find((achievement) => achievement.id === 'war.marathon')?.description)
       .toContain('42 turns');
   });
@@ -1253,6 +1257,149 @@ describe('AchievementService', () => {
         playerReinforcementsSent: 0,
       });
       expect(service.isUnlocked('war.perfect_victory')).toBeTrue();
+    });
+  });
+
+  describe('Deuce Ex Machina Achievement', () => {
+    const cardAceOpponent: Card = { id: 'ace-opp', suit: Suit.SPADES, rank: Rank.ACE, value: 14, isRed: false };
+    const cardTwoPlayer: Card = { id: 'two-ply', suit: Suit.HEARTS, rank: Rank.TWO, value: 2, isRed: true };
+    const cardEightPlayer: Card = { id: 'eight-ply', suit: Suit.CLUBS, rank: Rank.EIGHT, value: 8, isRed: true };
+
+    it('unlocks when player reveals a 2 as reinforcement against an opponent Ace and defeats it', () => {
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 3,
+        challenger: PlayerType.PLAYER,
+        reinforcementCard: cardTwoPlayer,
+        originalWinnerCard: cardAceOpponent,
+        originalBeatenCard: cardEightPlayer,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        challengerWon: true,
+        escalatedToBattle: false,
+        message: 'Card rescued. Both cards survive.',
+        savedTwo: false,
+      });
+
+      expect(service.isUnlocked('war.deuce_ex_machina')).toBeTrue();
+      // Coexists with existing assassin achievement
+      expect(service.isUnlocked('war.assassin')).toBeTrue();
+    });
+
+    it('does not unlock when a 2 defeats an Ace in an ordinary clash outside reinforcement', () => {
+      eventBus.emit({
+        type: 'clash_resolved',
+        turnNumber: 1,
+        playerCard: cardTwoPlayer,
+        opponentCard: cardAceOpponent,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        specialRule: true,
+        message: '2 beats Ace.',
+      });
+
+      expect(service.isUnlocked('war.assassin')).toBeTrue();
+      expect(service.isUnlocked('war.deuce_ex_machina')).toBeFalse();
+    });
+
+    it('does not unlock when the opponent reveals the reinforcement 2 against the player Ace', () => {
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 5,
+        challenger: PlayerType.OPPONENT,
+        reinforcementCard: cardTwoPlayer,
+        originalWinnerCard: cardAceOpponent,
+        originalBeatenCard: cardEightPlayer,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        challengerWon: true,
+        escalatedToBattle: false,
+        message: 'Opponent rescues their card.',
+        savedTwo: false,
+      });
+
+      expect(service.isUnlocked('war.deuce_ex_machina')).toBeFalse();
+    });
+  });
+
+  describe('Snatched from the Jaws of Victory Achievement', () => {
+    const cardAcePlayer: Card = { id: 'ace-p', suit: Suit.HEARTS, rank: Rank.ACE, value: 14, isRed: true };
+    const cardKingPlayer: Card = { id: 'king-p', suit: Suit.HEARTS, rank: Rank.KING, value: 13, isRed: true };
+    const cardTwoOpponent: Card = { id: 'two-o', suit: Suit.SPADES, rank: Rank.TWO, value: 2, isRed: false };
+    const cardKingOpponent: Card = { id: 'king-o', suit: Suit.SPADES, rank: Rank.KING, value: 13, isRed: false };
+    const cardTenOpponent: Card = { id: 'ten-o', suit: Suit.SPADES, rank: Rank.TEN, value: 10, isRed: false };
+
+    it('unlocks when opponent reinforces with a 2 to assassinate player winning Ace and reverses outcome', () => {
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 7,
+        challenger: PlayerType.OPPONENT,
+        reinforcementCard: cardTwoOpponent,
+        originalWinnerCard: cardAcePlayer,
+        originalBeatenCard: cardTenOpponent,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        challengerWon: true,
+        escalatedToBattle: false,
+        message: 'Opponent rescues their card.',
+        savedTwo: false,
+      });
+
+      expect(service.isUnlocked('war.snatched_from_jaws_of_victory')).toBeTrue();
+    });
+
+    it('does not unlock if player was not winning with an Ace before reinforcement', () => {
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 7,
+        challenger: PlayerType.OPPONENT,
+        reinforcementCard: cardTwoOpponent,
+        originalWinnerCard: cardKingPlayer, // King instead of Ace
+        originalBeatenCard: cardTenOpponent,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        challengerWon: true,
+        escalatedToBattle: false,
+        message: 'Opponent rescues their card.',
+        savedTwo: false,
+      });
+
+      expect(service.isUnlocked('war.snatched_from_jaws_of_victory')).toBeFalse();
+    });
+
+    it('does not unlock if opponent reinforcement is not a 2', () => {
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 7,
+        challenger: PlayerType.OPPONENT,
+        reinforcementCard: cardKingOpponent, // Not a 2
+        originalWinnerCard: cardAcePlayer,
+        originalBeatenCard: cardTenOpponent,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        challengerWon: true,
+        escalatedToBattle: false,
+        message: 'Opponent rescues their card.',
+        savedTwo: false,
+      });
+
+      expect(service.isUnlocked('war.snatched_from_jaws_of_victory')).toBeFalse();
+    });
+
+    it('does not unlock if Ace vs 2 event occurs outside reinforcement', () => {
+      // Ordinary clash where opponent 2 defeats player Ace
+      eventBus.emit({
+        type: 'clash_resolved',
+        turnNumber: 2,
+        playerCard: cardAcePlayer,
+        opponentCard: cardTwoOpponent,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        specialRule: true,
+        message: '2 beats Ace.',
+      });
+
+      expect(service.isUnlocked('war.snatched_from_jaws_of_victory')).toBeFalse();
     });
   });
 });

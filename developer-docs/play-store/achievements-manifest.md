@@ -1,6 +1,6 @@
 # Google Play Games Achievements Manifest
 
-This is the release manifest for the 27 achievements currently mapped to Google Play Games. The application has 32 canonical visible achievements (and 5 hidden anomalies, 37 total); internal IDs are permanent and remain the source of truth, while Google Play Games IDs are an external synchronization mapping.
+This is the release manifest for the 27 achievements currently mapped to Google Play Games. The application has 34 canonical visible achievements (and 5 hidden anomalies, 39 total); internal IDs are permanent and remain the source of truth, while Google Play Games IDs are an external synchronization mapping.
 
 Veteran and Centurion are the only incremental achievements. `profile.campaigner` remains a standard achievement under its new War Tested display name.
 
@@ -43,8 +43,10 @@ Veteran and Centurion are the only incremental achievements. `profile.campaigner
 | `war.neverending_stalemate` | Neverending Stalemate | Reach three consecutive authoritative tied comparisons. | Distinction |
 | `war.wrong_tool_for_job` | Wrong Tool for the Job | Send a 2 as reinforcement and lose the Challenge to a 3, 4, or 5. | Distinction |
 | `war.twin_assassins` | Twin Assassins | In one War, have each of your two 2s defeat a different enemy Ace. | Prestige |
+| `war.deuce_ex_machina` | Deuce Ex Machina | Draw a 2 as reinforcement to defeat an opposing Ace. | Distinction |
+| `war.snatched_from_jaws_of_victory` | Snatched from the Jaws of Victory | Have your winning Ace assassinated by an opponent's reinforcement 2. | Distinction |
 
-These five visible achievements unlock and persist locally. Their Google Play Games IDs will be mapped back into `PLAY_ACHIEVEMENT_MAPPINGS` upon Play Console bulk upload reconciliation. (Astronomical anomalies are omitted from the Play Store catalogue and manifest).
+These seven visible achievements unlock and persist locally. Their Google Play Games IDs will be mapped back into `PLAY_ACHIEVEMENT_MAPPINGS` upon Play Console bulk upload reconciliation. (Astronomical anomalies are omitted from the Play Store catalogue and manifest).
 
 ## Synchronization contract
 

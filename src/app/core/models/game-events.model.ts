@@ -208,7 +208,8 @@ export type TableReactionCategory =
   | 'result'
   | 'concession'
   | 'desperate_rescue'
-  | 'contextual';
+  | 'contextual'
+  | 'two_lost';
 
 
 export interface QuipSpokenEvent extends BaseGameEvent {

@@ -257,6 +257,24 @@ export class AchievementService {
             this.recordTwoOverAce(humanCard, opponentCard, event.turnNumber);
           }
         }
+        // DEUCE EX MACHINA: Player reveals a 2 as reinforcement against an opponent Ace and defeats it
+        if (
+          event.challenger === PlayerType.PLAYER &&
+          event.challengerWon &&
+          event.reinforcementCard.rank === Rank.TWO &&
+          event.originalWinnerCard.rank === Rank.ACE
+        ) {
+          this.unlock('war.deuce_ex_machina', event.turnNumber);
+        }
+        // SNATCHED FROM THE JAWS OF VICTORY: Player was winning with Ace, opponent reinforces with 2 and defeats it
+        if (
+          event.challenger === PlayerType.OPPONENT &&
+          event.challengerWon &&
+          event.reinforcementCard.rank === Rank.TWO &&
+          event.originalWinnerCard.rank === Rank.ACE
+        ) {
+          this.unlock('war.snatched_from_jaws_of_victory', event.turnNumber);
+        }
         // WRONG TOOL FOR THE JOB: human player sends a 2 as reinforcement during Challenge and loses outright to 3, 4, or 5
         if (
           event.challenger === PlayerType.PLAYER &&

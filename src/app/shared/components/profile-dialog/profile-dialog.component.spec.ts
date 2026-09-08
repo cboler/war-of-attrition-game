@@ -413,11 +413,11 @@ describe('ProfileDialogComponent', () => {
     expect(fogPill?.textContent).toContain('Boneyard sealed until War end');
   });
 
-  it('maintains visible denominator of 32 and renders categorized sections', () => {
-    expect(component.totalAchievements()).toBe(32);
-    expect(component.allVisibleAchievements.length).toBe(32);
+  it('maintains visible denominator of 34 and renders categorized sections', () => {
+    expect(component.totalAchievements()).toBe(34);
+    expect(component.allVisibleAchievements.length).toBe(34);
     expect(component.milestones.length).toBe(9);
-    expect(component.distinctions.length).toBe(14);
+    expect(component.distinctions.length).toBe(16);
     expect(component.prestige.length).toBe(9);
 
     component.activeTab.set('achievements');
@@ -429,15 +429,15 @@ describe('ProfileDialogComponent', () => {
     expect(root.querySelector('#section-prestige')).toBeTruthy();
     // No anomalies unlocked initially -> section is hidden
     expect(root.querySelector('.anomalies-section')).toBeFalsy();
-    expect(root.querySelector('.summary-count')?.textContent).toContain('of 32');
+    expect(root.querySelector('.summary-count')?.textContent).toContain('of 34');
   });
 
-  it('renders Anomalies Observed section only when an anomaly is unlocked without inflating 32 denominator', () => {
+  it('renders Anomalies Observed section only when an anomaly is unlocked without inflating 34 denominator', () => {
     authService.unlockAchievement('war.perfect_victory');
     fixture.detectChanges();
 
     expect(component.unlockedAnomalies().length).toBe(1);
-    expect(component.totalAchievements()).toBe(32);
+    expect(component.totalAchievements()).toBe(34);
     // Unlocked visible achievements count remains 0 because perfect_victory is an anomaly
     expect(component.unlockedCount()).toBe(0);
 
@@ -449,7 +449,7 @@ describe('ProfileDialogComponent', () => {
     expect(anomalySection).toBeTruthy();
     expect(anomalySection?.textContent).toContain('Not a Scratch');
     expect(anomalySection?.textContent).toContain('OBSERVED');
-    // Still displays "0 of 32"
-    expect(root.querySelector('.summary-count')?.textContent).toContain('0 of 32');
+    // Still displays "0 of 34"
+    expect(root.querySelector('.summary-count')?.textContent).toContain('0 of 34');
   });
 });

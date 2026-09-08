@@ -133,6 +133,13 @@ export class TableReactionService {
     const costly = rescuedSpecialCard || this.isValuable(context.reinforcementCard);
     if (!costly) return null;
 
+    const lostTwo =
+      context.reinforcementCard.rank === Rank.TWO ||
+      context.originalBeatenCard.rank === Rank.TWO;
+    if (speaker === PlayerType.OPPONENT && lostTwo) {
+      return this.forTwoLost(commander);
+    }
+
     const authored =
       speaker === PlayerType.OPPONENT
         ? this.getAuthoredLine(commander.id, 'failed_rescue')
@@ -142,6 +149,29 @@ export class TableReactionService {
         ? commander.dialogue.failedRescue
         : ['That reinforcement cost *dearly*.', 'Two cards gone for *nothing*.', 'A *costly* gamble.'];
     return this.pick(0.2, speaker, 'failed_rescue', variants, authored, 'angry');
+  }
+
+  forTwoLost(commanderInput?: OpponentCommander | OpponentCommanderId): TableReaction | null {
+    const commander = this.resolveCommander(commanderInput);
+    const authored = this.getAuthoredLine(commander.id, 'battle_two_lost');
+    const variants =
+      commander.dialogue.twoLost ??
+      commander.dialogue.battleLoss.twoLost ?? [
+        'The assassin was lost.',
+        'Our specialist card is spent.',
+      ];
+    return this.pick(1, PlayerType.OPPONENT, 'two_lost', variants, authored, 'angry');
+  }
+
+  forCardLoss(
+    loser: PlayerType,
+    cards: readonly Card[],
+    commanderInput?: OpponentCommander | OpponentCommanderId,
+  ): TableReaction | null {
+    if (loser !== PlayerType.OPPONENT) return null;
+    const lostTwo = cards.some((card) => card.rank === Rank.TWO);
+    if (!lostTwo) return null;
+    return this.forTwoLost(commanderInput);
   }
 
   forBattleLoss(
@@ -183,8 +213,8 @@ export class TableReactionService {
         variants = bDialogue.aceAndTwoLost;
       } else if (lostAce && bDialogue.aceLost && bDialogue.aceLost.length > 0) {
         variants = bDialogue.aceLost;
-      } else if (lostTwo && bDialogue.twoLost && bDialogue.twoLost.length > 0) {
-        variants = bDialogue.twoLost;
+      } else if (lostTwo && (commander.dialogue.twoLost ?? bDialogue.twoLost) && (commander.dialogue.twoLost ?? bDialogue.twoLost).length > 0) {
+        variants = commander.dialogue.twoLost ?? bDialogue.twoLost;
       } else if (deepBattle && bDialogue.deepBattle && bDialogue.deepBattle.length > 0) {
         variants = bDialogue.deepBattle;
       } else if (largeLoss && bDialogue.largeLoss && bDialogue.largeLoss.length > 0) {
@@ -227,8 +257,13 @@ export class TableReactionService {
     // Replay and procedural Battle chatter stays exceptional. During the
     // mandatory story traversal, each eligible authored tactical line is
     // guaranteed on its first matching event.
-    const chance = largeLoss || decisiveRampage || deepBattle ? 0.22 : 0.16;
-    if (!this.isGuaranteedScriptedLine(authored) && this.random() >= chance) return null;
+    const chance =
+      loser === PlayerType.OPPONENT && lostTwo && !lostAce
+        ? 1.0
+        : largeLoss || decisiveRampage || deepBattle
+          ? 0.22
+          : 0.16;
+    if (!this.isGuaranteedScriptedLine(authored) && chance < 1 && this.random() >= chance) return null;
 
     if (authored) this.usedDialogueIds.add(authored.id);
     const message = authored?.text ?? variants[Math.floor(this.random() * variants.length)];
@@ -422,7 +457,7 @@ export class TableReactionService {
     authoredOverride: AuthoredDialogueRecord | null = null,
     expression: CommanderExpression = 'calm',
   ): TableReaction | null {
-    if (!this.isGuaranteedScriptedLine(authoredOverride) && this.random() >= chance) return null;
+    if (!this.isGuaranteedScriptedLine(authoredOverride) && chance < 1 && this.random() >= chance) return null;
     if (authoredOverride) this.usedDialogueIds.add(authoredOverride.id);
     const message =
       authoredOverride?.text ?? variants[Math.floor(this.random() * variants.length)];

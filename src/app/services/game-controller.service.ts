@@ -1007,7 +1007,10 @@ export class GameControllerService {
         winner: PlayerType.PLAYER,
         message: concession.message,
       });
-      const concessionReaction = this.reactions.forConcession(this.opponentCommander().id);
+      const isTwoLost = this.presentedTurn()?.opponentCard?.rank === Rank.TWO;
+      const concessionReaction = isTwoLost
+        ? this.reactions.forTwoLost(this.opponentCommander().id)
+        : this.reactions.forConcession(this.opponentCommander().id);
       if (concessionReaction) {
         this.speakReaction(concessionReaction);
       }
@@ -1426,6 +1429,16 @@ export class GameControllerService {
       });
     }
     if (loser && result.cardsLost.length > 0) {
+      if (!this.reaction()) {
+        const cardLossReaction = this.reactions.forCardLoss(
+          loser,
+          result.cardsLost,
+          this.opponentCommander(),
+        );
+        if (cardLossReaction) {
+          this.speakReaction(cardLossReaction);
+        }
+      }
       this.revealedCasualtyIds.set(result.cardsLost.map((card) => card.id));
       this.announce(
         casualtyProgress(result.cardsLost.length, result.cardsLost.length),

@@ -203,6 +203,22 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     category: 'signature',
     classification: 'distinction'
   },
+  {
+    id: 'war.deuce_ex_machina',
+    name: 'Deuce Ex Machina',
+    description: 'Draw a 2 as reinforcement to defeat an opposing Ace.',
+    icon: 'flare',
+    category: 'signature',
+    classification: 'distinction'
+  },
+  {
+    id: 'war.snatched_from_jaws_of_victory',
+    name: 'Snatched from the Jaws of Victory',
+    description: 'Have your winning Ace assassinated by an opponent\'s reinforcement 2.',
+    icon: 'heart_broken',
+    category: 'signature',
+    classification: 'distinction'
+  },
 
   // --- PRESTIGE ---
   {

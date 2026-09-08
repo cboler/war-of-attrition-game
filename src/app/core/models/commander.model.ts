@@ -58,6 +58,8 @@ export interface OpponentCommanderDialogue {
   readonly desperateRescue?: readonly string[];
   /** Bounded, public-information-only escalation when the player pokes the face-down deck. */
   readonly deckPoke: readonly string[];
+  /** Reactions spoken whenever the commander loses a 2 (specialist/assassin card). */
+  readonly twoLost?: readonly string[];
 }
 
 export interface CommanderSpeechCadence {
@@ -171,6 +173,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'The cellar inventory does not improve under tapping.',
         'Kindly remove your hand from my stock.',
         'Touch that deck again and I shall record you as spoilage.'
+      ],
+      twoLost: [
+        'A two wasted on a common skirmish. Displeasing.',
+        'The ledger reflects a grievous misallocation.',
+        'A deuce surrendered is an entire reserve squandered.',
+        'Without the two, the ledger bleeds on every page.'
       ]
     }
   },
@@ -240,6 +248,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'Careful. Curiosity has dreadful odds.',
         'Again? Splendid nerve, questionable judgment.',
         'One more poke and we shall call it a wager.'
+      ],
+      twoLost: [
+        'Down goes the wild card.',
+        'Lost the specialist.',
+        'There goes my favorite long shot.',
+        'The little card had one job and folded early.'
       ]
     }
   },
@@ -309,6 +323,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'Repeated contact remains statistically unhelpful.',
         'Third disturbance of a controlled sample.',
         'Stop. You are contaminating the procedure.'
+      ],
+      twoLost: [
+        'The assassin is cataloged in the Boneyard.',
+        'Specialist removed from calculations.',
+        'The solitary counter to the Ace is eliminated.',
+        'Ace threat ceiling increases. Recalculating.'
       ]
     }
   },
@@ -378,6 +398,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'Tap again and the cave will remember.',
         'The deck has no eyes. It is watching anyway.',
         'Enough. Even prophecy requires an undisturbed shelf.'
+      ],
+      twoLost: [
+        'A loss, but our bulk remains intact.',
+        'The specialist is gone; the army fights on.',
+        'The small tooth that could pierce the crown is broken.',
+        'A quiet needle buried in the boneyard.'
       ]
     }
   },
@@ -448,6 +474,12 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'Touch the reserve and tomorrow acquires a flank.',
         'Again? Now the road narrows, amico.',
         'Remove your hand before this becomes an encirclement.'
+      ],
+      twoLost: [
+        'The assassin fell. Realign the flank.',
+        'Lost our forward scout.',
+        'Our sharpest weapon lost to a common clash!',
+        'That two was our answer to high command. Hold the line!'
       ]
     }
   }
