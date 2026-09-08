@@ -6,7 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { CampaignProgressionService } from '../../../core/services/campaign-progression.service';
 import { CampaignModifierId, CampaignModeId } from '../../../core/models/progression.model';
 import { getScriptedChapterModifiers } from '../../../core/models/campaign-chapter.model';
-import { CommanderIdentity } from '../../../core/models/commander-identity.model';
+import { CommanderIdentity, getCommanderIdentity } from '../../../core/models/commander-identity.model';
+import { COMMANDER_IDS, OpponentCommanderId } from '../../../core/models/commander.model';
 import { NarrativeTransitionRecord } from '../../../core/models/narrative.model';
 import { NarrativeResolverService } from '../../../narrative/narrative-resolver.service';
 
@@ -22,9 +23,12 @@ export interface CampaignOrderOption {
   readonly modifiers: readonly CampaignModifierId[];
 }
 
-type CampaignModifierOption = Omit<CampaignOrderOption, 'id'> & {
+export interface CustomRuleOption {
   readonly id: CampaignModifierId;
-};
+  readonly title: string;
+  readonly description: string;
+  readonly ruleSummary: string;
+}
 
 export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
   {
@@ -73,7 +77,26 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
   }
 ];
 
-const MODIFIER_OPTIONS = CAMPAIGN_ORDER_OPTIONS.slice(1) as readonly CampaignModifierOption[];
+export const CUSTOM_CAMPAIGN_RULES: readonly CustomRuleOption[] = [
+  {
+    id: 'limited_reserves',
+    title: 'Limited Reserves',
+    description: 'Restricts reinforcement availability across the Three-War Campaign.',
+    ruleSummary: 'You begin with exactly 5 reinforcement reserves for the entire Three-War Campaign. Used reserves do not return between Wars.'
+  },
+  {
+    id: 'fog_of_war',
+    title: 'Fog of War',
+    description: 'Conceals information that would normally be inspectable during a War.',
+    ruleSummary: 'Casualties, the Boneyard, and Hall of Valor records remain sealed while fighting continues.'
+  },
+  {
+    id: 'total_war',
+    title: 'Campaign Differential',
+    description: "Each War's signed card margin contributes to the final Campaign result.",
+    ruleSummary: 'Individual War results remain truthful, but cumulative signed card margin decides the final Campaign outcome.'
+  }
+];
 
 @Component({
   selector: 'app-campaign-orders-dialog',
@@ -87,16 +110,26 @@ export class CampaignOrdersDialogComponent {
   private readonly narrativeResolver = inject(NarrativeResolverService, { optional: true });
   private readonly dialogRef = inject(MatDialogRef<CampaignOrdersDialogComponent>);
 
-  readonly commanderIdentity = computed<CommanderIdentity>(() =>
-    this.progression.currentCommanderIdentity()
-  );
-
   readonly isReplay = computed<boolean>(() =>
     this.progression.isAllChaptersCompleted()
   );
 
+  readonly availableCommanders = COMMANDER_IDS;
+  readonly selectedCommanderId = signal<OpponentCommanderId>(
+    this.progression.currentCommanderId()
+  );
+  readonly showCommanderPicker = signal<boolean>(false);
+
+  readonly commanderIdentity = computed<CommanderIdentity>(() => {
+    if (this.isReplay()) {
+      return getCommanderIdentity(this.selectedCommanderId());
+    }
+    return this.progression.currentCommanderIdentity();
+  });
+
   readonly options = CAMPAIGN_ORDER_OPTIONS;
-  readonly modifierOptions = MODIFIER_OPTIONS;
+  readonly customRules = CUSTOM_CAMPAIGN_RULES;
+  readonly modifierOptions = CUSTOM_CAMPAIGN_RULES;
 
   readonly selectedMode = signal<CampaignModeId>(this.progression.activeCampaignMode());
   readonly selectedModifiers = signal<readonly CampaignModifierId[]>(
@@ -122,24 +155,47 @@ export class CampaignOrdersDialogComponent {
 
   toggleModifier(modifier: CampaignModifierId): void {
     if (!this.isReplay()) return;
-    const selected = new Set(this.selectedModifiers());
-    if (selected.has(modifier)) {
-      selected.delete(modifier);
+    const current = this.selectedModifiers();
+    if (current.includes(modifier)) {
+      this.selectedModifiers.set(current.filter(m => m !== modifier));
     } else {
-      selected.add(modifier);
+      const order: CampaignModifierId[] = ['limited_reserves', 'fog_of_war', 'total_war'];
+      const next = new Set([...current, modifier]);
+      this.selectedModifiers.set(order.filter(m => next.has(m)));
     }
-    this.selectedModifiers.set(
-      this.modifierOptions
-        .map(option => option.id)
-        .filter(candidate => selected.has(candidate))
-    );
+  }
+
+  selectCommander(id: OpponentCommanderId): void {
+    this.selectedCommanderId.set(id);
+    this.showCommanderPicker.set(false);
+  }
+
+  toggleCommanderPicker(): void {
+    this.showCommanderPicker.update(v => !v);
+  }
+
+  cycleCommander(): void {
+    const all = this.availableCommanders;
+    const currentIdx = all.indexOf(this.selectedCommanderId());
+    const nextIdx = (currentIdx + 1) % all.length;
+    this.selectedCommanderId.set(all[nextIdx]);
+  }
+
+  getCommanderInfo(id: OpponentCommanderId): CommanderIdentity {
+    return getCommanderIdentity(id);
   }
 
   confirmOrders(): void {
-    const success = this.progression.selectCampaignOrders(
-      this.selectedMode(),
-      this.isReplay() ? this.selectedModifiers() : this.scriptedModifiers()
-    );
+    const success = this.isReplay()
+      ? this.progression.selectCampaignOrders(
+          this.selectedMode(),
+          this.selectedModifiers(),
+          this.selectedCommanderId()
+        )
+      : this.progression.selectCampaignOrders(
+          this.selectedMode(),
+          this.scriptedModifiers()
+        );
     if (success) {
       this.dialogRef.close({
         mode: this.selectedMode(),
@@ -148,3 +204,4 @@ export class CampaignOrdersDialogComponent {
     }
   }
 }
+

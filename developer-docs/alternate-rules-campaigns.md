@@ -4,14 +4,19 @@ Status: Implemented. The first story traversal is a mandatory four-Chapter seque
 
 ## 1. Campaign structure
 
-Every Campaign contains three Wars. The Chapter identity and the active mechanical modifiers are separate concepts:
+Every Campaign contains three Wars. The authored Story Campaign and Custom Campaigns serve distinct purposes:
+
+- **Campaign**: Authored progression with predetermined rules, scripted commander schedules, and narrative progression across Chapters I–IV.
+- **Custom Campaign**: Player-selected combination of available rules and independent opponent selection over Classic play, unlocked after completing Chapter IV.
+
+The Chapter identity and active mechanical modifiers are separate concepts:
 
 - `mode` identifies the authored story Chapter and routes its commander schedule and narrative.
 - `modifiers` identifies the rules currently applied by gameplay.
-- Story Chapters prescribe their modifier stack and do not allow configuration.
-- Custom Campaigns use the neutral `standard` narrative identity and allow each modifier to be toggled independently.
+- Story Chapters prescribe their predetermined modifier stack and do not allow player modification.
+- Custom Campaigns use the neutral `standard` narrative identity and allow each mechanical rule to be toggled independently, with independent opponent selection.
 
-This separation prevents a custom rules choice from reopening finished story beats.
+This separation ensures custom rule combinations never interfere with the authored story progression.
 
 ## 2. Mandatory first traversal
 
@@ -30,15 +35,17 @@ Narrative dialogue authored for the current Chapter is guaranteed the first time
 
 ## 3. Custom Campaigns
 
-After Chapter IV, Campaign Orders becomes a rules configurator over Classic play. The player may independently enable or disable:
+After Chapter IV, Field Command Briefing functions as a manual game rules configuration interface rather than a mission or chapter preset selector. The player sets the rules before cards are dealt:
 
-- Limited Reserves
-- Fog of War
-- Total War
+- **Opposing Force**: Independent from rules. The player can view and change the opposing commander from the roster of 5 permanent commanders.
+- **Rules of Engagement**: The player may independently enable or disable:
+  - **Limited Reserves**: Restricts reinforcement availability across the Three-War Campaign (5 reserve pool).
+  - **Fog of War**: Conceals information that would normally be inspectable during a War (seals Boneyard, casualty details, and Hall of Valor records).
+  - **Campaign Differential** (`total_war`): Each War's signed card margin contributes to the final Campaign result.
 
-Any combination is valid, including no modifiers or all three. The selected stack is immutable once War 1 begins. A completed custom Campaign carries its selected stack into the next briefing as the default, where it can be changed before play.
+Any combination is valid, including no modifiers (pure Classic rules), any single modifier, any pair, or all three. Options are independent rules of engagement—not progressive chapters—and do not imply chronological order or prerequisite rules.
 
-Custom Campaigns use three distinct randomized commanders selected from the permanent roster. They use evergreen and replay-safe dialogue only; modifiers affect mechanics and presentation, not narrative progression.
+A concise configuration summary is displayed before confirming with "Issue Orders & Engage". The selected stack is immutable once War 1 begins. A completed custom Campaign carries its selected stack into the next briefing as the default, where it can be adjusted before play.
 
 ## 4. Modifier mechanics
 
@@ -102,11 +109,11 @@ Mechanics must consult `modifiers`, not infer rules from `mode`. Chapter and nar
 
 ## 7. Presentation surfaces
 
-- Campaign Orders shows one mandatory locked order during the story and three independent checkbox-style modifiers afterward.
+- Campaign Orders / Field Command Briefing shows one mandatory locked story order during the authored campaign, and a full rules configurator (opposing force selector, three independent rules-of-engagement toggles, and configuration summary) in Custom Campaigns.
 - The Profile dialog reports the active rule stack rather than treating Chapter identity as the only rule.
 - Limited Reserves shows its remaining pool on the player seat.
-- Total War shows running Campaign differential.
-- Fog changes access at the Boneyard, Chronicle, and Hall of Valor instead of adding a redundant seat badge.
+- Campaign Differential (Total War) shows running Campaign differential.
+- Fog of War changes access at the Boneyard, Chronicle, and Hall of Valor instead of adding a redundant seat badge.
 
 ## 8. Telemetry
 

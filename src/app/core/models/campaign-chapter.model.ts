@@ -122,15 +122,20 @@ export function chapterPrerequisitesThrough(mode: CampaignModeId): readonly Camp
 
 /**
  * Generates a randomized 3-War schedule of 3 distinct commanders chosen from all 5 permanent commanders.
- * Used exclusively for post-story replay (after all four canonical chapters have been completed).
+ * Used exclusively for post-story custom Campaigns (after all four canonical chapters have been completed).
+ * If a starting commander is provided, it is guaranteed as War 1's opponent.
  */
 export function generateReplayCommanderSchedule(
-  randomFn: () => number = Math.random
+  randomFn: () => number = Math.random,
+  startingCommanderId?: OpponentCommanderId
 ): CampaignCommanderSchedule {
-  const pool = [...COMMANDER_IDS];
+  const pool = COMMANDER_IDS.filter(id => id !== startingCommanderId);
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(randomFn() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  if (startingCommanderId) {
+    return [startingCommanderId, pool[0], pool[1]] as unknown as CampaignCommanderSchedule;
   }
   return [pool[0], pool[1], pool[2]] as unknown as CampaignCommanderSchedule;
 }

@@ -2,6 +2,7 @@ import {
   CAMPAIGN_CHAPTER_ORDER,
   CAMPAIGN_CHAPTERS,
   chapterPrerequisitesThrough,
+  generateReplayCommanderSchedule,
   getAuthoredCommanderId,
   getAuthoredCommanderSchedule,
   getCampaignChapter,
@@ -136,6 +137,23 @@ describe('CampaignChapterModel', () => {
         'fog_of_war',
         'total_war'
       ]);
+    });
+  });
+
+  describe('generateReplayCommanderSchedule', () => {
+    it('generates 3 distinct commanders without starting commander', () => {
+      const schedule = generateReplayCommanderSchedule(() => 0.5);
+      expect(schedule.length).toBe(3);
+      expect(new Set(schedule).size).toBe(3);
+    });
+
+    it('guarantees the specified starting commander at index 0 and 3 distinct commanders', () => {
+      const schedule = generateReplayCommanderSchedule(() => 0.5, 'attritionist');
+      expect(schedule[0]).toBe('attritionist');
+      expect(schedule.length).toBe(3);
+      expect(new Set(schedule).size).toBe(3);
+      expect(schedule[1]).not.toBe('attritionist');
+      expect(schedule[2]).not.toBe('attritionist');
     });
   });
 });

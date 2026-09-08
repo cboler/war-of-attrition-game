@@ -217,7 +217,7 @@ describe('TableReactionService', () => {
           wars: [],
         },
       }));
-      expect(progression.selectCampaignOrders('standard')).toBeTrue();
+      expect(progression.selectCampaignOrders('standard', [], 'quartermaster')).toBeTrue();
 
       const specialClash = {
         playerCard: card(Rank.TWO),

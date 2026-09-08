@@ -3,15 +3,14 @@
     <div class="header-content">
       <span class="eyebrow">CAMPAIGN ORDERS &middot; RULES OF ENGAGEMENT</span>
       <h2 id="campaign-orders-title">Field Command Briefing</h2>
-      <div class="commander-briefing" aria-label="Campaign opposing commander">
-        <span class="briefing-label">OPPOSING FORCE:</span>
-        <strong class="commander-name">{{ commanderIdentity().name }}</strong>
-        <span class="commander-title">({{ commanderIdentity().title }})</span>
-        <span class="commander-faction">&middot; {{ commanderIdentity().faction }}</span>
-        @if (isReplay()) {
-          <span class="replay-cue">&middot; Custom Campaign: opposition randomized</span>
-        }
-      </div>
+      @if (!isReplay()) {
+        <div class="commander-briefing" aria-label="Campaign opposing commander">
+          <span class="briefing-label">OPPOSING FORCE:</span>
+          <strong class="commander-name">{{ commanderIdentity().name }}</strong>
+          <span class="commander-title">({{ commanderIdentity().title }})</span>
+          <span class="commander-faction">&middot; {{ commanderIdentity().faction }}</span>
+        </div>
+      }
     </div>
   </header>
 
@@ -66,41 +65,147 @@
         </div>
       </article>
     } @else {
-      <p class="dialog-intro">
-        The Chronicle is complete. Configure any combination of modifiers for this custom three-War Campaign.
-      </p>
-      <div class="base-rules-note">
-        <mat-icon aria-hidden="true">verified</mat-icon>
-        <span><strong>Classic rules</strong> always form the base. All modifiers are optional.</span>
-      </div>
-      <div class="orders-grid" aria-label="Optional Campaign modifiers">
-        @for (option of modifierOptions; track option.id) {
+      <!-- Opposing Force Configuration -->
+      <section class="config-section opposing-force-section" aria-labelledby="opposing-force-heading">
+        <div class="section-title-row">
+          <h3 id="opposing-force-heading" class="config-section-title">Opposing Force</h3>
           <button
             type="button"
-            class="order-card modifier-toggle"
-            [class.selected]="isModifierEnabled(option.id)"
-            role="checkbox"
-            [attr.aria-checked]="isModifierEnabled(option.id)"
-            (click)="toggleModifier(option.id)">
-            <div class="card-check-indicator" aria-hidden="true">
-              <mat-icon>{{ isModifierEnabled(option.id) ? 'check' : 'add' }}</mat-icon>
-            </div>
-            <div class="card-body">
-              <div class="card-title-row">
-                <strong class="card-title">{{ option.title }}</strong>
-                <span class="card-status-badge" [class.enabled]="isModifierEnabled(option.id)">
-                  {{ isModifierEnabled(option.id) ? 'Enabled' : 'Optional' }}
-                </span>
-              </div>
-              <p class="card-desc">{{ option.description }}</p>
-              <div class="rule-box">
-                <mat-icon class="rule-icon" aria-hidden="true">tune</mat-icon>
-                <span class="rule-text">{{ option.ruleSummary }}</span>
-              </div>
-            </div>
+            class="change-opponent-btn"
+            (click)="toggleCommanderPicker()"
+            [attr.aria-expanded]="showCommanderPicker()"
+            aria-controls="commander-picker-tray"
+            aria-label="Change Opponent Commander">
+            <mat-icon aria-hidden="true">swap_horiz</mat-icon>
+            <span>Change Opponent</span>
           </button>
+        </div>
+
+        <div class="selected-commander-card">
+          <div class="commander-main-info">
+            <div class="commander-identity-line">
+              <strong class="commander-name">{{ commanderIdentity().name }}</strong>
+              <span class="commander-title">({{ commanderIdentity().title }})</span>
+            </div>
+            <span class="commander-faction">{{ commanderIdentity().faction }}</span>
+            <p class="commander-summary">{{ commanderIdentity().publicSummary }}</p>
+          </div>
+        </div>
+
+        @if (showCommanderPicker()) {
+          <div id="commander-picker-tray" class="commander-picker-tray" role="listbox" aria-label="Available commanders">
+            @for (cmdId of availableCommanders; track cmdId) {
+              @let cmd = getCommanderInfo(cmdId);
+              <button
+                type="button"
+                role="option"
+                class="commander-option-chip"
+                [class.selected]="selectedCommanderId() === cmdId"
+                [attr.aria-selected]="selectedCommanderId() === cmdId"
+                (click)="selectCommander(cmdId)">
+                <div class="option-text">
+                  <span class="option-name">{{ cmd.name }}</span>
+                  <span class="option-title">({{ cmd.title }}) &middot; {{ cmd.faction }}</span>
+                </div>
+                @if (selectedCommanderId() === cmdId) {
+                  <mat-icon class="selected-check" aria-hidden="true">check</mat-icon>
+                }
+              </button>
+            }
+          </div>
         }
-      </div>
+      </section>
+
+      <!-- Rules of Engagement Configuration -->
+      <section class="config-section rules-engagement-section" aria-labelledby="rules-engagement-heading">
+        <div class="section-title-row">
+          <h3 id="rules-engagement-heading" class="config-section-title">Rules of Engagement</h3>
+          <span class="section-note">Classic rules base &middot; Toggles optional</span>
+        </div>
+
+        <div class="orders-grid" role="group" aria-label="Optional Campaign modifiers">
+          @for (option of modifierOptions; track option.id) {
+            <button
+              type="button"
+              class="order-card modifier-toggle"
+              [class.selected]="isModifierEnabled(option.id)"
+              role="checkbox"
+              [attr.aria-checked]="isModifierEnabled(option.id)"
+              (click)="toggleModifier(option.id)"
+              [id]="'modifier-toggle-' + option.id">
+              <div class="card-check-indicator" aria-hidden="true">
+                <mat-icon>{{ isModifierEnabled(option.id) ? 'check' : 'add' }}</mat-icon>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <strong class="card-title">{{ option.title }}</strong>
+                  <span class="card-status-badge" [class.enabled]="isModifierEnabled(option.id)">
+                    {{ isModifierEnabled(option.id) ? 'Enabled' : 'Optional' }}
+                  </span>
+                </div>
+                <p class="card-desc">{{ option.description }}</p>
+                <div class="rule-box">
+                  <mat-icon class="rule-icon" aria-hidden="true">tune</mat-icon>
+                  <span class="rule-text">{{ option.ruleSummary }}</span>
+                </div>
+              </div>
+            </button>
+          }
+        </div>
+      </section>
+
+      <!-- Configuration Summary -->
+      <section class="config-section summary-section" aria-label="Resulting Configuration Summary">
+        <div class="configuration-summary">
+          <div class="summary-header">
+            <mat-icon aria-hidden="true">receipt_long</mat-icon>
+            <span class="summary-title">Configuration Summary</span>
+          </div>
+          <div class="summary-chips">
+            <span class="summary-chip base">
+              <mat-icon aria-hidden="true">verified</mat-icon>
+              Classic Rules Base
+            </span>
+            <span class="summary-chip opponent">
+              <mat-icon aria-hidden="true">person</mat-icon>
+              Opposing: {{ commanderIdentity().name }}
+            </span>
+            @if (isModifierEnabled('limited_reserves')) {
+              <span class="summary-chip active">
+                <mat-icon aria-hidden="true">shield</mat-icon>
+                Limited Reserves (5 Pool)
+              </span>
+            } @else {
+              <span class="summary-chip subtle">
+                <mat-icon aria-hidden="true">all_inclusive</mat-icon>
+                Full Reserves
+              </span>
+            }
+            @if (isModifierEnabled('fog_of_war')) {
+              <span class="summary-chip active">
+                <mat-icon aria-hidden="true">visibility_off</mat-icon>
+                Fog of War Active
+              </span>
+            } @else {
+              <span class="summary-chip subtle">
+                <mat-icon aria-hidden="true">visibility</mat-icon>
+                Open Casualty Inspection
+              </span>
+            }
+            @if (isModifierEnabled('total_war')) {
+              <span class="summary-chip active">
+                <mat-icon aria-hidden="true">calculate</mat-icon>
+                Campaign Differential Scoring
+              </span>
+            } @else {
+              <span class="summary-chip subtle">
+                <mat-icon aria-hidden="true">emoji_events</mat-icon>
+                Standard War-Series Scoring
+              </span>
+            }
+          </div>
+        </div>
+      </section>
     }
   </mat-dialog-content>
 
@@ -116,3 +221,4 @@
     </button>
   </mat-dialog-actions>
 </div>
+

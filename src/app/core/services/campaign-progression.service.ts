@@ -2,10 +2,11 @@ import { computed, inject, Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { AuthService } from './auth.service';
 import { CARD_BACKING_OPTIONS } from '../models/settings.model';
-import { getCommander } from '../models/commander.model';
+import { getCommander, isCommanderId, OpponentCommanderId } from '../models/commander.model';
 import { getCommanderIdentity } from '../models/commander-identity.model';
 import {
   CAMPAIGN_CHAPTER_ORDER,
+  CampaignCommanderSchedule,
   CampaignModifierId,
   CampaignWarIndex,
   generateReplayCommanderSchedule,
@@ -167,7 +168,8 @@ export class CampaignProgressionService {
    */
   selectCampaignOrders(
     mode: CampaignModeId,
-    customModifiers?: readonly CampaignModifierId[]
+    customModifiers?: readonly CampaignModifierId[],
+    customScheduleOrCommander?: CampaignCommanderSchedule | OpponentCommanderId
   ): boolean {
     const current = this.currentCampaign();
     const isReplay = this.isAllChaptersCompleted();
@@ -191,9 +193,16 @@ export class CampaignProgressionService {
           }
         : undefined;
 
-    const commanderSchedule = isReplay
-      ? generateReplayCommanderSchedule(this.randomSource)
-      : getAuthoredCommanderSchedule(selectedMode);
+    let commanderSchedule: CampaignCommanderSchedule;
+    if (!isReplay) {
+      commanderSchedule = getAuthoredCommanderSchedule(selectedMode);
+    } else if (typeof customScheduleOrCommander === 'string') {
+      commanderSchedule = generateReplayCommanderSchedule(this.randomSource, customScheduleOrCommander);
+    } else if (customScheduleOrCommander) {
+      commanderSchedule = customScheduleOrCommander;
+    } else {
+      commanderSchedule = generateReplayCommanderSchedule(this.randomSource);
+    }
 
     this.authService.updateActiveProfileProgression(previous => ({
       ...previous,

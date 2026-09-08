@@ -107,6 +107,21 @@ describe('CampaignOrdersDialogComponent', () => {
     expect(toggles.length).toBe(3);
     expect(component.selectedModifiers()).toEqual([]);
 
+    // Check titles: Limited Reserves, Fog of War, Campaign Differential
+    const titles = Array.from(fixture.nativeElement.querySelectorAll('.card-title') as NodeListOf<HTMLElement>)
+      .map(el => el.textContent?.trim());
+    expect(titles).toContain('Limited Reserves');
+    expect(titles).toContain('Fog of War');
+    expect(titles).toContain('Campaign Differential');
+
+    // Ensure descriptions do not contain chapter chronology phrases like "remains active"
+    const descriptions = Array.from(fixture.nativeElement.querySelectorAll('.card-desc') as NodeListOf<HTMLElement>)
+      .map(el => el.textContent?.trim() ?? '');
+    descriptions.forEach(desc => {
+      expect(desc.toLowerCase()).not.toContain('remains active');
+      expect(desc.toLowerCase()).not.toContain('chapter');
+    });
+
     (toggles[0] as HTMLButtonElement).click();
     (toggles[1] as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -117,10 +132,65 @@ describe('CampaignOrdersDialogComponent', () => {
     expect((toggles[2] as HTMLButtonElement).getAttribute('aria-checked')).toBe('false');
   });
 
-  it('starts a randomized custom Campaign with the selected modifier combination', () => {
+  it('allows independent selection of Campaign Differential alone', () => {
+    enterCustomCampaign();
+    createComponent();
+
+    // Toggle only Campaign Differential (total_war)
+    component.toggleModifier('total_war');
+    fixture.detectChanges();
+
+    expect(component.selectedModifiers()).toEqual(['total_war']);
+    expect(component.isModifierEnabled('limited_reserves')).toBeFalse();
+    expect(component.isModifierEnabled('fog_of_war')).toBeFalse();
+    expect(component.isModifierEnabled('total_war')).toBeTrue();
+
+    const summaryEl = fixture.nativeElement.querySelector('.configuration-summary');
+    expect(summaryEl?.textContent).toContain('Campaign Differential Scoring');
+    expect(summaryEl?.textContent).toContain('Full Reserves');
+    expect(summaryEl?.textContent).toContain('Open Casualty Inspection');
+  });
+
+  it('allows viewing and changing the opposing commander independently from rules', () => {
+    enterCustomCampaign();
+    createComponent();
+
+    const opposingSection = fixture.nativeElement.querySelector('.opposing-force-section');
+    expect(opposingSection).toBeTruthy();
+    expect(opposingSection.textContent).toContain('Opposing Force');
+
+    const changeBtn = fixture.nativeElement.querySelector('.change-opponent-btn') as HTMLButtonElement;
+    expect(changeBtn).toBeTruthy();
+
+    // Initially closed picker
+    expect(fixture.nativeElement.querySelector('.commander-picker-tray')).toBeNull();
+
+    // Open commander picker
+    changeBtn.click();
+    fixture.detectChanges();
+
+    const tray = fixture.nativeElement.querySelector('.commander-picker-tray');
+    expect(tray).toBeTruthy();
+    const options = fixture.nativeElement.querySelectorAll('.commander-option-chip') as NodeListOf<HTMLButtonElement>;
+    expect(options.length).toBe(5);
+
+    // Select Sir Edmund Gloucester (gambler)
+    component.selectCommander('gambler');
+    fixture.detectChanges();
+
+    expect(component.selectedCommanderId()).toBe('gambler');
+    expect(component.commanderIdentity().name).toBe('Sir Edmund Gloucester');
+    expect(fixture.nativeElement.querySelector('.configuration-summary')?.textContent).toContain(
+      'Sir Edmund Gloucester'
+    );
+  });
+
+  it('starts a custom Campaign with player-chosen commander and modifiers', () => {
     enterCustomCampaign();
     progressionService.setRandomSource(() => 0);
     createComponent();
+
+    component.selectCommander('gambler');
     component.toggleModifier('limited_reserves');
     component.toggleModifier('total_war');
 
@@ -134,6 +204,7 @@ describe('CampaignOrdersDialogComponent', () => {
     expect(progressionService.isLimitedReserves()).toBeTrue();
     expect(progressionService.isFogOfWar()).toBeFalse();
     expect(progressionService.isTotalWar()).toBeTrue();
+    expect(progressionService.currentCommanderId()).toBe('gambler');
     expect(new Set(progressionService.currentCampaign().commanderSchedule).size).toBe(3);
     expect(dialogRefSpy.close).toHaveBeenCalledWith({
       mode: 'standard',
