@@ -492,9 +492,10 @@ describe('CampaignProgressionService', () => {
       expect(service.isCardBackingUnlocked('classic-red')).toBeFalse();
       expect(service.isCardBackingUnlocked('elegant-green')).toBeFalse();
       expect(service.isCardBackingUnlocked('royal-purple')).toBeFalse();
+      expect(service.isCardBackingUnlocked('cheese-wheel')).toBeFalse();
     });
 
-    it('purchases, unlocks, and selects card backings with new token costs (red: 2, blue: 2, purple: 4)', () => {
+    it('purchases, unlocks, and selects card backings with new token costs (red: 2, blue: 2, purple: 4, cheese-wheel: 10)', () => {
       // Award 2 tokens through campaign victory
       service.recordResolvedWar(war('t-w1', GameOutcome.PLAYER_WIN, 5, 0));
       service.recordResolvedWar(war('t-w2', GameOutcome.PLAYER_WIN, 5, 0));
@@ -514,22 +515,27 @@ describe('CampaignProgressionService', () => {
       expect(blueFail.status).toBe('insufficient_tokens');
       expect(blueFail.tokenCost).toBe(2);
 
-      // Award 4 more tokens (2 campaigns of 2 tokens each)
-      for (let c = 1; c <= 2; c++) {
+      // Cheese wheel costs 10 tokens: insufficient tokens
+      const cheeseFail = service.purchaseCardBacking('cheese-wheel');
+      expect(cheeseFail.status).toBe('insufficient_tokens');
+      expect(cheeseFail.tokenCost).toBe(10);
+
+      // Award 10 tokens (5 campaigns of 2 tokens each)
+      for (let c = 1; c <= 5; c++) {
         service.selectCampaignOrders('limited_reserves');
         for (let w = 1; w <= 3; w++) {
           service.recordResolvedWar(war(`t-camp${c}-w${w}`, GameOutcome.PLAYER_WIN, 5, 0));
         }
       }
-      expect(service.tokenBalance()).toBe(4);
+      expect(service.tokenBalance()).toBe(10);
 
-      // Purple costs 4 tokens: balance becomes 0
-      const purpleResult = service.purchaseCardBacking('royal-purple');
-      expect(purpleResult.status).toBe('unlocked');
-      expect(purpleResult.tokenCost).toBe(4);
+      // Cheese wheel costs 10 tokens: balance becomes 0, unlocked and selected
+      const cheeseResult = service.purchaseCardBacking('cheese-wheel');
+      expect(cheeseResult.status).toBe('unlocked');
+      expect(cheeseResult.tokenCost).toBe(10);
       expect(service.tokenBalance()).toBe(0);
-      expect(service.selectedCardBackingId()).toBe('royal-purple');
-      expect(service.isCardBackingUnlocked('royal-purple')).toBeTrue();
+      expect(service.selectedCardBackingId()).toBe('cheese-wheel');
+      expect(service.isCardBackingUnlocked('cheese-wheel')).toBeTrue();
     });
   });
 

@@ -203,5 +203,13 @@ export const CARD_BACKING_OPTIONS: CardBackingOption[] = [
     tokenCost: 4,
     pattern: 'linear-gradient(90deg, #6a1b9a 50%, #7b1fa2 50%); background-size: 4px 4px',
     preview: 'background: linear-gradient(90deg, #6a1b9a 50%, #7b1fa2 50%); background-size: 4px 4px;'
+  },
+  {
+    id: 'cheese-wheel',
+    name: 'Cheese Wheel',
+    description: 'Artisan aged cheese wheel with rich golden rind and cut wedge',
+    tokenCost: 10,
+    pattern: 'url("assets/card-backs/cheese-wheel.svg") center / cover no-repeat',
+    preview: 'background: url("assets/card-backs/cheese-wheel.svg") center / cover no-repeat;'
   }
 ];
