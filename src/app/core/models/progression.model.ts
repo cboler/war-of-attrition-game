@@ -25,7 +25,7 @@ export const CAMPAIGN_PROGRESSION_SCHEMA_VERSION = 3;
 export const WARS_PER_CAMPAIGN = 3;
 export const MAX_CAMPAIGN_HISTORY = 20;
 export const MAX_PROCESSED_WAR_IDS = 256;
-export const DEFAULT_CARD_BACKING_ID = 'classic-blue';
+export const DEFAULT_CARD_BACKING_ID = 'minimalist-gray';
 export const LIMITED_RESERVES_INITIAL_COUNT = 5;
 
 export type DeckColor = 'red' | 'black' | 'unknown';
@@ -265,13 +265,14 @@ export function normalizeCampaignProgression(
   const recentCampaigns = normalizeCampaignHistory(value['recentCampaigns']).slice(-MAX_CAMPAIGN_HISTORY);
   const storedUnlocks = normalizeUnlocks(value['unlockedCosmetics']);
   const legacySelection = normalizeCosmeticId(legacySelectedCardBackingId) || DEFAULT_CARD_BACKING_ID;
-  const unlocks = ensureBackingEntitlements(storedUnlocks, legacySelection, now);
+  const resolvedLegacySelection = legacySelection === 'classic-blue' ? DEFAULT_CARD_BACKING_ID : legacySelection;
+  const unlocks = ensureBackingEntitlements(storedUnlocks, resolvedLegacySelection, now);
   const storedSelected = isRecord(value['selectedCosmetics'])
     ? normalizeCosmeticId(value['selectedCosmetics']['cardBackingId'])
     : '';
   const selected = unlocks.some(unlock =>
     unlock.cosmeticType === 'card_back' && unlock.cosmeticId === storedSelected
-  ) ? storedSelected : legacySelection;
+  ) ? storedSelected : DEFAULT_CARD_BACKING_ID;
 
   // Legacy campaigns with already started wars are treated as orders confirmed.
   // Fresh/unstarted campaigns default to ordersSelected: false to trigger the briefing.
@@ -550,7 +551,14 @@ function ensureBackingEntitlements(
   legacySelection: string,
   now: string
 ): CosmeticUnlock[] {
-  const unlocks = [...storedUnlocks];
+  // Strip former default or legacy_selected unlocks for backings that are no longer the default
+  const unlocks = storedUnlocks.filter(unlock =>
+    !(
+      unlock.cosmeticType === 'card_back' &&
+      (unlock.reason === 'default' || unlock.reason === 'legacy_selected') &&
+      unlock.cosmeticId !== DEFAULT_CARD_BACKING_ID
+    )
+  );
   if (!unlocks.some(unlock => unlock.cosmeticType === 'card_back' && unlock.cosmeticId === DEFAULT_CARD_BACKING_ID)) {
     unlocks.unshift({
       cosmeticId: DEFAULT_CARD_BACKING_ID,
@@ -559,11 +567,12 @@ function ensureBackingEntitlements(
       unlockedAt: now
     });
   }
-  if (!unlocks.some(unlock => unlock.cosmeticType === 'card_back' && unlock.cosmeticId === legacySelection)) {
+  const resolvedLegacy = legacySelection === 'classic-blue' ? DEFAULT_CARD_BACKING_ID : legacySelection;
+  if (!unlocks.some(unlock => unlock.cosmeticType === 'card_back' && unlock.cosmeticId === resolvedLegacy)) {
     unlocks.push({
-      cosmeticId: legacySelection,
+      cosmeticId: resolvedLegacy,
       cosmeticType: 'card_back',
-      reason: legacySelection === DEFAULT_CARD_BACKING_ID ? 'default' : 'legacy_selected',
+      reason: resolvedLegacy === DEFAULT_CARD_BACKING_ID ? 'default' : 'legacy_selected',
       unlockedAt: now
     });
   }

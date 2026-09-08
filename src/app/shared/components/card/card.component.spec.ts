@@ -289,13 +289,12 @@ describe('CardComponent', () => {
     });
 
     it('should update card backing pattern when settings change', () => {
-      settingsService.setCardBacking('classic-blue');
       fixture.componentRef.setInput('faceDown', true);
       fixture.detectChanges();
 
       const initialPattern = component['cardBackingPattern']();
       expect(initialPattern).toContain('linear-gradient');
-      expect(initialPattern).toContain('#1565c0');
+      expect(initialPattern).toContain('#616161');
 
       progression.unlockCardBacking('classic-red', 'achievement');
       settingsService.setCardBacking('classic-red');
@@ -304,7 +303,7 @@ describe('CardComponent', () => {
       const updatedPattern = component['cardBackingPattern']();
       expect(updatedPattern).toContain('linear-gradient');
       expect(updatedPattern).toContain('#c62828');
-      expect(updatedPattern).not.toContain('#1565c0');
+      expect(updatedPattern).not.toContain('#616161');
 
       const cardBack = fixture.nativeElement.querySelector('.card-back');
       expect(cardBack.style.background.includes('rgb(198, 40, 40)') || cardBack.getAttribute('style').includes('#c62828')).toBe(true);

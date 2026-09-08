@@ -155,7 +155,7 @@ export const DEFAULT_STATISTICS: GameStatistics = {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   deckHand: 'right',
-  selectedCardBacking: 'classic-blue',
+  selectedCardBacking: 'minimalist-gray',
   animationSpeed: 'normal',
   soundEnabled: true,
   tutorialEnabled: true,
@@ -165,10 +165,18 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export const CARD_BACKING_OPTIONS: CardBackingOption[] = [
   {
+    id: 'minimalist-gray',
+    name: 'Minimalist Gray',
+    description: 'Clean, modern gray design for minimal distraction',
+    tokenCost: 0,
+    pattern: 'linear-gradient(135deg, #616161 0%, #757575 100%)',
+    preview: 'background: linear-gradient(135deg, #616161 0%, #757575 100%);'
+  },
+  {
     id: 'classic-blue',
     name: 'Classic Blue',
     description: 'Traditional blue card backing with diamond pattern',
-    tokenCost: 0,
+    tokenCost: 2,
     pattern: 'linear-gradient(45deg, #1565c0 25%, #1976d2 25%, #1976d2 50%, #1565c0 50%, #1565c0 75%, #1976d2 75%); background-size: 8px 8px',
     preview: 'background: linear-gradient(45deg, #1565c0 25%, #1976d2 25%, #1976d2 50%, #1565c0 50%, #1565c0 75%, #1976d2 75%); background-size: 8px 8px;'
   },
@@ -176,7 +184,7 @@ export const CARD_BACKING_OPTIONS: CardBackingOption[] = [
     id: 'classic-red',
     name: 'Classic Red',
     description: 'Traditional red card backing with diamond pattern',
-    tokenCost: 1,
+    tokenCost: 2,
     pattern: 'linear-gradient(45deg, #c62828 25%, #d32f2f 25%, #d32f2f 50%, #c62828 50%, #c62828 75%, #d32f2f 75%); background-size: 8px 8px',
     preview: 'background: linear-gradient(45deg, #c62828 25%, #d32f2f 25%, #d32f2f 50%, #c62828 50%, #c62828 75%, #d32f2f 75%); background-size: 8px 8px;'
   },
@@ -192,16 +200,8 @@ export const CARD_BACKING_OPTIONS: CardBackingOption[] = [
     id: 'royal-purple',
     name: 'Royal Purple',
     description: 'Majestic purple design with ornate patterns',
-    tokenCost: 3,
+    tokenCost: 4,
     pattern: 'linear-gradient(90deg, #6a1b9a 50%, #7b1fa2 50%); background-size: 4px 4px',
     preview: 'background: linear-gradient(90deg, #6a1b9a 50%, #7b1fa2 50%); background-size: 4px 4px;'
-  },
-  {
-    id: 'minimalist-gray',
-    name: 'Minimalist Gray',
-    description: 'Clean, modern gray design for minimal distraction',
-    tokenCost: 2,
-    pattern: 'linear-gradient(135deg, #616161 0%, #757575 100%)',
-    preview: 'background: linear-gradient(135deg, #616161 0%, #757575 100%);'
   }
 ];

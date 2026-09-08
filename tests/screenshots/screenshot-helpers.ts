@@ -21,7 +21,7 @@ export async function setupPageEnvironment(page: Page): Promise<void> {
         'war-of-attrition-settings',
         JSON.stringify({
           deckHand: 'right',
-          selectedCardBacking: 'classic-blue',
+          selectedCardBacking: 'minimalist-gray',
           animationSpeed: 'normal',
           soundEnabled: false,
           tutorialEnabled: false,

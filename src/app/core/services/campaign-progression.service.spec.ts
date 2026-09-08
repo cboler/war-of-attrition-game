@@ -485,18 +485,51 @@ describe('CampaignProgressionService', () => {
   });
 
   describe('Cosmetic Entitlements and Wallet', () => {
-    it('purchases, unlocks, and selects card backings with tokens', () => {
-      // Award tokens through campaign victory
+    it('starts with minimalist-gray unlocked by default', () => {
+      expect(service.isCardBackingUnlocked('minimalist-gray')).toBeTrue();
+      expect(service.selectedCardBackingId()).toBe('minimalist-gray');
+      expect(service.isCardBackingUnlocked('classic-blue')).toBeFalse();
+      expect(service.isCardBackingUnlocked('classic-red')).toBeFalse();
+      expect(service.isCardBackingUnlocked('elegant-green')).toBeFalse();
+      expect(service.isCardBackingUnlocked('royal-purple')).toBeFalse();
+    });
+
+    it('purchases, unlocks, and selects card backings with new token costs (red: 2, blue: 2, purple: 4)', () => {
+      // Award 2 tokens through campaign victory
       service.recordResolvedWar(war('t-w1', GameOutcome.PLAYER_WIN, 5, 0));
       service.recordResolvedWar(war('t-w2', GameOutcome.PLAYER_WIN, 5, 0));
       service.recordResolvedWar(war('t-w3', GameOutcome.PLAYER_WIN, 5, 0));
       expect(service.tokenBalance()).toBe(2);
 
-      const result = service.purchaseCardBacking('classic-red');
-      expect(result.status).toBe('unlocked');
-      expect(service.tokenBalance()).toBe(1);
+      // Red costs 2 tokens: balance becomes 0
+      const redResult = service.purchaseCardBacking('classic-red');
+      expect(redResult.status).toBe('unlocked');
+      expect(redResult.tokenCost).toBe(2);
+      expect(service.tokenBalance()).toBe(0);
       expect(service.selectedCardBackingId()).toBe('classic-red');
       expect(service.isCardBackingUnlocked('classic-red')).toBeTrue();
+
+      // Classic blue costs 2 tokens: insufficient tokens
+      const blueFail = service.purchaseCardBacking('classic-blue');
+      expect(blueFail.status).toBe('insufficient_tokens');
+      expect(blueFail.tokenCost).toBe(2);
+
+      // Award 4 more tokens (2 campaigns of 2 tokens each)
+      for (let c = 1; c <= 2; c++) {
+        service.selectCampaignOrders('limited_reserves');
+        for (let w = 1; w <= 3; w++) {
+          service.recordResolvedWar(war(`t-camp${c}-w${w}`, GameOutcome.PLAYER_WIN, 5, 0));
+        }
+      }
+      expect(service.tokenBalance()).toBe(4);
+
+      // Purple costs 4 tokens: balance becomes 0
+      const purpleResult = service.purchaseCardBacking('royal-purple');
+      expect(purpleResult.status).toBe('unlocked');
+      expect(purpleResult.tokenCost).toBe(4);
+      expect(service.tokenBalance()).toBe(0);
+      expect(service.selectedCardBackingId()).toBe('royal-purple');
+      expect(service.isCardBackingUnlocked('royal-purple')).toBeTrue();
     });
   });
 
