@@ -150,7 +150,7 @@ describe('TableReactionService', () => {
       'quartermaster'
     );
 
-    expect(reaction?.message).toBe('Layer upon layer. Even a rind knows when thickness has become stubbornness.');
+    expect(reaction?.message).toBe('Layer upon layer. Even a rind knows when thickness has become *stubbornness*.');
   });
 
   it('advances through a bounded opponent-deck poke sequence without card context', () => {
@@ -230,7 +230,7 @@ describe('TableReactionService', () => {
 
       randomValues = [0.1];
       expect(service.forClash(specialClash, 'quartermaster')?.message).toBe(
-        'A card without pedigree fells an Ace. Barbaric. Lawful. I dislike it twice.',
+        'A card without pedigree fells an Ace. *Barbaric.* **Lawful.** I dislike it twice.',
       );
     });
 
@@ -279,7 +279,7 @@ describe('TableReactionService', () => {
       expect(intro?.category).toBe('introduction');
       expect(intro?.authored).toBeTrue();
       expect(intro?.expression).toBe('calm');
-      expect(intro?.message).toBe('At Mont-Rouge, monsieur, we placed two ancient traditions at one table. Only one of them arrived with the dignity to remain seated.');
+      expect(intro?.message).toBe('At Mont-Rouge, monsieur, we placed two ancient traditions at one table. Only *one* of them arrived with the dignity to remain seated.');
 
       const result = service.forResult('quartermaster', GameOutcome.OPPONENT_WIN);
       expect(result?.speaker).toBe(PlayerType.OPPONENT);
@@ -294,7 +294,7 @@ describe('TableReactionService', () => {
       const context = service.forContext('quartermaster');
       expect(context?.speaker).toBe(PlayerType.OPPONENT);
       expect(context?.category).toBe('introduction');
-      expect(context?.message).toBe('The French Witness Wheel opened as promised. The Swiss wheel opened eyes it was never asked to possess. Matthias then closed the Accord.');
+      expect(context?.message).toBe('The French Witness Wheel opened as promised. The Swiss wheel opened *eyes* it was never asked to possess. Matthias then closed the Accord.');
     });
 
     it('provides concession and desperate rescue reaction hooks', () => {
@@ -314,14 +314,14 @@ describe('TableReactionService', () => {
       const contextual = service.forContextual('quartermaster');
       expect(contextual?.speaker).toBe(PlayerType.OPPONENT);
       expect(contextual?.category).toBe('contextual');
-      expect(contextual?.message).toBe('I had his word. Whatever else the Swiss preserve, they did not preserve that.');
+      expect(contextual?.message).toBe('I had his word. Whatever else the Swiss preserve, they did *not* preserve that.');
     });
 
 
     it('prevents immediate duplicate dialogue within a single war', () => {
       service.clearUsedDialogue();
       const first = service.forIntroduction('attritionist');
-      expect(first?.message).toBe('The blind wheel opened seven eyes. Four men closed eight.');
+      expect(first?.message).toBe('[whisper]The blind wheel opened seven eyes...[/whisper] Four men closed eight.');
 
       // Second request in same war deduplicates used IDs
       const second = service.forIntroduction('attritionist');

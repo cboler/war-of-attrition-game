@@ -120,7 +120,7 @@
                 }
 
                 <div class="node-body">
-                  <p class="node-text">{{ entryText(entry) }}</p>
+                  <p class="node-text"><app-expressive-text [text]="entryText(entry)" [animate]="false" /></p>
 
                   @if (showEntryCards(entry) && entry.cards) {
                     <div class="casualties-strip" aria-label="Revealed casualty cards">

@@ -217,8 +217,8 @@ const RULE_DEMOS: Readonly<Record<RuleDemoKind, RuleDemoDefinition>> = {
     ]
   },
   reinforcement: {
-    title: 'Tactical Reinforcements',
-    summary: 'A reinforcement replaces the beaten card for the new comparison; values never add.',
+    title: 'Challenges',
+    summary: 'A Challenge commits one reinforcement to replace the beaten card for a new comparison; values never add.',
     frames: [
       {
         cue: 'Card beaten',

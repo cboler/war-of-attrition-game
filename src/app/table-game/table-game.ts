@@ -202,6 +202,10 @@ export class TableGame implements OnInit, OnDestroy {
     this.controller.pokeOpponentDeck();
   }
 
+  protected dismissQuip(): void {
+    this.controller.dismissReaction();
+  }
+
   protected chooseChallenge(accept: boolean): void {
     this.controller.handleChallenge(accept);
   }

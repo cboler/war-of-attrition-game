@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { CardComponent } from '../card/card.component';
 import { CommanderExpression } from '../../../core/models/commander-art.model';
+import { ExpressiveTextComponent } from '../expressive-text/expressive-text.component';
 
 @Component({
   selector: 'app-player-seat',
-  imports: [CommonModule, MatIconModule, CardComponent],
+  imports: [CommonModule, MatIconModule, CardComponent, ExpressiveTextComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -108,7 +109,14 @@ import { CommanderExpression } from '../../../core/models/commander-art.model';
       }
 
       @if (quip()) {
-        <p class="quip" role="status">{{ quip() }}</p>
+        <p class="quip" role="region" aria-label="Spoken dialogue">
+          <app-expressive-text
+            [text]="quip()"
+            [commanderId]="commanderId()"
+            [animate]="true"
+            [motionDisabled]="motionDisabled()"
+            (dismissed)="quipDismissed.emit()" />
+        </p>
       }
 
       <button
@@ -172,6 +180,7 @@ export class PlayerSeatComponent {
   deckPokeable = input(false);
   thinking = input(false);
   quip = input<string | null>(null);
+  commanderId = input<string | null>(null);
   deckHand = input<'right' | 'left'>('right');
   defeatPopping = input(false);
   motionDisabled = input(false);
@@ -183,6 +192,7 @@ export class PlayerSeatComponent {
   deckActivated = output<void>();
   deckPoked = output<void>();
   identityActivated = output<void>();
+  quipDismissed = output<void>();
 
   protected activateDeck(): void {
     if (this.deckInteractive()) {

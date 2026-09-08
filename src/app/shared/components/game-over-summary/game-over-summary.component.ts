@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { ExpressiveTextComponent } from '../expressive-text/expressive-text.component';
 import type { CurrentGameSummary } from '../../../services/game-controller.service';
 
 @Component({
   selector: 'app-game-over-summary',
-  imports: [MatIconModule],
+  imports: [MatIconModule, ExpressiveTextComponent],
   templateUrl: './game-over-summary.component.html',
   styleUrl: './game-over-summary.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

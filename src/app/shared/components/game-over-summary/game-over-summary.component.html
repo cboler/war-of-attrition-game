@@ -49,7 +49,7 @@
       @if (summary()?.resolutionLine; as res) {
         <blockquote class="resolution-quote">
           <span class="quote-speaker">{{ summary()?.commanderIdentity?.name }}:</span>
-          “{{ res.text }}”
+          “<app-expressive-text [text]="res.text" [animate]="false" />”
         </blockquote>
       }
     </div>

@@ -26,6 +26,7 @@ import { GamePhase } from '../../../core/models/game-state.model';
 import { StoryBookEntry, StoryBookService } from '../../../services/story-book.service';
 import { CardComponent } from '../card/card.component';
 import { RuleDemoComponent, RuleDemoKind } from '../rule-demo/rule-demo.component';
+import { ExpressiveTextComponent } from '../expressive-text/expressive-text.component';
 
 import { OpponentCommanderId } from '../../../core/models/commander.model';
 import { CommanderIdentity, getCommanderIdentity } from '../../../core/models/commander-identity.model';
@@ -69,9 +70,9 @@ const RULE_ENTRIES: readonly RuleEntry[] = [
   {
     id: 'reinforcement',
     icon: 'shield',
-    title: '4. Tactical Reinforcements',
+    title: '4. Challenges',
     description:
-      'After losing an ordinary clash, a commander may draw one reinforcement. It replaces—not adds to—the beaten card for the new comparison. A win rescues both owned cards, a loss eliminates both, and a tie begins a Battle.'
+      'After losing an ordinary clash, a commander may Challenge the result by drawing one reinforcement. The reinforcement replaces—not adds to—the beaten card for a new comparison. A win rescues both owned cards, a loss eliminates both, and a tie begins a Battle.'
   },
   {
     id: 'boneyard',
@@ -91,7 +92,7 @@ const RULE_ENTRIES: readonly RuleEntry[] = [
 
 @Component({
   selector: 'app-story-book-drawer',
-  imports: [MatIconModule, CardComponent, RuleDemoComponent],
+  imports: [MatIconModule, CardComponent, RuleDemoComponent, ExpressiveTextComponent],
   templateUrl: './story-book-drawer.component.html',
   styleUrl: './story-book-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

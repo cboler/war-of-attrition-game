@@ -130,7 +130,7 @@ describe('Chapter I Narrative Flow Integration', () => {
     // War 3 intro line
     const bastienIntro = reactionService.forIntroduction(war3Commander.commanderId);
     expect(bastienIntro).toBeTruthy();
-    expect(bastienIntro?.message).toBe('The blind wheel opened seven eyes. Four men closed eight.');
+    expect(bastienIntro?.message).toBe('[whisper]The blind wheel opened seven eyes...[/whisper] Four men closed eight.');
 
     // Progressive dossier after War 2: Matthias has 2 entries (Overview + Mont-Rouge), Bastien has 1 entry (Overview)
     const matthiasDossier2 = narrative.dossierFor('analyst');

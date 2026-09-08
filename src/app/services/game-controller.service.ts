@@ -1565,6 +1565,14 @@ export class GameControllerService {
     return true;
   }
 
+  dismissReaction(): void {
+    if (this.reactionTimeout) {
+      clearTimeout(this.reactionTimeout);
+      this.reactionTimeout = null;
+    }
+    this.reaction.set(null);
+  }
+
 
   private emitSettlementAttribution(result: TurnResult): void {
     if (!result.settlementAttribution) return;

@@ -27,9 +27,11 @@
       [cardsAtRisk]="controller.opponentCardsAtRisk()"
       [thinking]="opponentThinking()"
       [quip]="opponentQuip()"
+      [commanderId]="controller.opponentCommanderIdentity().commanderId"
       [defeatPopping]="controller.deckDefeatPopOwner() === player.OPPONENT"
       [motionDisabled]="!settings.autoPlayAnimations()"
       (deckPoked)="pokeOpponentDeck()"
+      (quipDismissed)="dismissQuip()"
     />
 
     <div
@@ -271,8 +273,8 @@
                 class="decision-callout player-callout"
                 role="note"
               >
-                <strong>Send reinforcement?</strong>
-                <span>A new card replaces this beaten card for the next comparison.</span>
+                <strong>Challenge the result?</strong>
+                <span>Send one reinforcement to replace this beaten card for the next comparison.</span>
               </div>
             }
           </div>
@@ -475,6 +477,7 @@
       [totalWarDifferential]="playerTotalWarDiff()"
       (identityActivated)="openProfileDialog()"
       (deckActivated)="draw()"
+      (quipDismissed)="dismissQuip()"
     />
   </app-card-table>
 

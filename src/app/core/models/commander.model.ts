@@ -60,6 +60,11 @@ export interface OpponentCommanderDialogue {
   readonly deckPoke: readonly string[];
 }
 
+export interface CommanderSpeechCadence {
+  readonly charDelayMs: number;
+  readonly punctuationDelayMs: number;
+}
+
 export interface OpponentCommander {
   readonly id: OpponentCommanderId;
   readonly name: string;
@@ -67,6 +72,27 @@ export interface OpponentCommander {
   readonly description: string;
   readonly strategy: OpponentCommanderStrategy;
   readonly dialogue: OpponentCommanderDialogue;
+  readonly cadence?: CommanderSpeechCadence;
+}
+
+export const DEFAULT_SPEECH_CADENCE: CommanderSpeechCadence = {
+  charDelayMs: 35,
+  punctuationDelayMs: 240
+};
+
+export const COMMANDER_CADENCES: Record<OpponentCommanderId, CommanderSpeechCadence> = {
+  quartermaster: { charDelayMs: 40, punctuationDelayMs: 300 }, // Marcel: Theatrical French cadence, deliberate pauses
+  analyst: { charDelayMs: 24, punctuationDelayMs: 180 },       // Matthias: Crisp Swiss precision, staccato
+  attritionist: { charDelayMs: 55, punctuationDelayMs: 340 },  // Bastien: Slow, heavy, mystic stoicism
+  gambler: { charDelayMs: 28, punctuationDelayMs: 200 },       // Gaston: Brisk, volatile flair
+  'cornered-general': { charDelayMs: 32, punctuationDelayMs: 220 } // Vance: Urgent, tense
+};
+
+export function getCommanderCadence(id?: string | null): CommanderSpeechCadence {
+  if (id && id in COMMANDER_CADENCES) {
+    return COMMANDER_CADENCES[id as OpponentCommanderId];
+  }
+  return DEFAULT_SPEECH_CADENCE;
 }
 
 export const COMMANDER_IDS: readonly OpponentCommanderId[] = [
