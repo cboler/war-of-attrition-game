@@ -5,6 +5,7 @@ import { GameEventBusService } from './game-event-bus.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { PlatformGameStatsService } from '../core/services/platform-game-stats.service';
 import { AuthService } from '../core/services/auth.service';
+import { AchievementService } from './achievement.service';
 import {
   ComparisonResult,
   DeckColor,
@@ -21,6 +22,7 @@ describe('GameStatsProjectionService', () => {
   let mockProgression: any;
   let mockPlatformGameStats: any;
   let mockAuth: any;
+  let mockAchievementService: any;
 
   const activeProfileSignal = signal({ id: 'profile-1', name: 'Commander 1' });
   const ordersSelectedSignal = signal(true);
@@ -61,13 +63,18 @@ describe('GameStatsProjectionService', () => {
       activeProfile: activeProfileSignal
     };
 
+    mockAchievementService = {
+      getAnomaliesObservedThisWar: jasmine.createSpy('getAnomaliesObservedThisWar').and.returnValue(0)
+    };
+
     TestBed.configureTestingModule({
       providers: [
         GameStatsProjectionService,
         GameEventBusService,
         { provide: CampaignProgressionService, useValue: mockProgression },
         { provide: PlatformGameStatsService, useValue: mockPlatformGameStats },
-        { provide: AuthService, useValue: mockAuth }
+        { provide: AuthService, useValue: mockAuth },
+        { provide: AchievementService, useValue: mockAchievementService }
       ]
     });
 
@@ -357,7 +364,32 @@ describe('GameStatsProjectionService', () => {
       expect(payload.comeback_deficit).toBe(4);
       expect(payload.battles).toBe(2);
       expect(payload.war_margin).toBe(15);
+      expect(payload.anomalies_observed).toBe(0);
       expect(payload.stats_schema_version).toBe(1);
+    });
+
+    it('propagates non-zero anomalies_observed from AchievementService', () => {
+      mockAchievementService.getAnomaliesObservedThisWar.and.returnValue(2);
+
+      service.beginWar('war-with-anomalies');
+      eventBus.emit({ type: 'turn_started', turnNumber: 1 });
+
+      eventBus.emit({
+        type: 'game_resolved',
+        turnNumber: 15,
+        outcome: GameOutcome.PLAYER_WIN,
+        turns: 15,
+        playerCardsRemaining: 26,
+        opponentCardsRemaining: 0,
+        maxDeficitExperienced: 0,
+        isComeback: false,
+        battlesCount: 1,
+        playerReinforcementsSent: 0
+      });
+
+      expect(mockPlatformGameStats.recordWarCompleted).toHaveBeenCalledTimes(1);
+      const [, payload] = mockPlatformGameStats.recordWarCompleted.calls.mostRecent().args;
+      expect(payload.anomalies_observed).toBe(2);
     });
 
     it('does not emit a second time on duplicate game_resolved events', () => {

@@ -77,7 +77,11 @@ Current event names:
 - `battle_started`, `battle_layer_added`, `battle_target_selected`, `battle_continues`, `battle_resolved`
 - `card_eliminated`, `cards_returned`, `cards_sent_to_boneyard`, `settlement_resolved`
 - `reaction_spoken`
-- `achievement_unlocked`, `campaign_resolved`, `cosmetic_unlocked`
+- `achievement_unlocked`, `achievement_observed`, `campaign_resolved`, `cosmetic_unlocked`
+
+`achievement_unlocked` carries `achievement_id` and `achievement_classification` (`milestone`, `distinction`, `prestige`, or `anomaly`).
+`achievement_observed` is emitted each time a prestige or anomaly achievement occurs (as well as `war.wrong_tool_for_job`), recording repeatable rare gameplay occurrences.
+`war_resolved` carries `anomalies_observed` (integer `0..5`), recording the count of distinct astronomical anomalies observed during that completed War.
 
 The mapper intentionally ignores presentation-complete events and all free-text dialogue. It retains only enumerated reaction categories. Reinforcement events expose the original beaten card, Battle events use the authoritative public selection DTO, and `settlement_resolved` plus public casualty events provide source/decisive-card causality without serializing hidden Battle layers or unrevealed casualty identities.
 

@@ -18,6 +18,7 @@ import { ProfileDialogService } from './shared/components/profile-dialog/profile
 import { GameTelemetryService } from './services/game-telemetry.service';
 import { GameStatsProjectionService } from './services/game-stats-projection.service';
 import { AnalyticsConsentPromptService } from './services/analytics-consent-prompt.service';
+import { AchievementService } from './services/achievement.service';
 
 @Component({
   selector: 'app-root',
@@ -46,6 +47,8 @@ export class App implements OnInit, OnDestroy {
   private readonly gameStatsProjection = inject(GameStatsProjectionService);
   // The post-War consent invitation also observes the non-replaying game bus.
   private readonly analyticsConsentPrompt = inject(AnalyticsConsentPromptService);
+  // Achievement evaluation also observes the non-replaying game bus eagerly.
+  private readonly achievementService = inject(AchievementService);
 
   protected readonly title = signal('ATTRITION');
   protected readonly activeProfile = this.authService.activeProfile;

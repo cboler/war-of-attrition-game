@@ -14,6 +14,7 @@ import {
   TelemetryTransport
 } from './telemetry-transport.service';
 import { TelemetryConsentService } from './telemetry-consent.service';
+import { AchievementService } from './achievement.service';
 
 class CapturingTransport implements TelemetryTransport {
   readonly records: TelemetryRecord[] = [];
@@ -41,6 +42,12 @@ describe('GameTelemetryService', () => {
         TelemetryConsentService,
         GameTelemetryService,
         { provide: GAME_TELEMETRY_TRANSPORT, useValue: transport },
+        {
+          provide: AchievementService,
+          useValue: {
+            getAnomaliesObservedThisWar: jasmine.createSpy('getAnomaliesObservedThisWar').and.returnValue(0)
+          }
+        },
         {
           provide: GAME_TELEMETRY_CONFIG,
           useValue: {
@@ -344,6 +351,60 @@ describe('GameTelemetryService', () => {
     expect(campaignRecord?.parameters['war_1_commander_id']).toBe('quartermaster');
     expect(campaignRecord?.parameters['war_2_commander_id']).toBe('analyst');
     expect(campaignRecord?.parameters['war_3_commander_id']).toBe('attritionist');
+  });
+
+  it('includes achievement_classification on achievement_unlocked', () => {
+    service.beginWar({ warId: 'ach-war', playerDeckColor: DeckColor.RED });
+    eventBus.emit({
+      type: 'achievement_unlocked',
+      achievementId: 'war.assassin',
+      name: 'Assassin',
+      description: 'Defeat an Ace with a 2.',
+      icon: 'flare',
+      classification: 'distinction',
+      turnNumber: 3
+    });
+
+    const achRecord = transport.records.find(r => r.name === 'achievement_unlocked');
+    expect(achRecord).toBeTruthy();
+    expect(achRecord?.parameters['achievement_id']).toBe('war.assassin');
+    expect(achRecord?.parameters['achievement_classification']).toBe('distinction');
+  });
+
+  it('emits achievement_observed for repeatable rare events', () => {
+    service.beginWar({ warId: 'obs-war', playerDeckColor: DeckColor.RED });
+    eventBus.emit({
+      type: 'achievement_observed',
+      achievementId: 'war.wrong_tool_for_job',
+      classification: 'distinction',
+      turnNumber: 4
+    });
+
+    const obsRecord = transport.records.find(r => r.name === 'achievement_observed');
+    expect(obsRecord).toBeTruthy();
+    expect(obsRecord?.parameters['achievement_id']).toBe('war.wrong_tool_for_job');
+    expect(obsRecord?.parameters['achievement_classification']).toBe('distinction');
+  });
+
+  it('attaches anomalies_observed to war_resolved', () => {
+    service.beginWar({ warId: 'anomaly-war', playerDeckColor: DeckColor.RED });
+    eventBus.emit({
+      type: 'game_resolved',
+      turnNumber: 12,
+      outcome: GameOutcome.PLAYER_WIN,
+      turns: 12,
+      playerCardsRemaining: 20,
+      opponentCardsRemaining: 0,
+      maxDeficitExperienced: 0,
+      isComeback: false,
+      battlesCount: 1,
+      playerReinforcementsSent: 0,
+      anomaliesObserved: 2
+    });
+
+    const resolvedRecord = transport.records.find(r => r.name === 'war_resolved');
+    expect(resolvedRecord).toBeTruthy();
+    expect(resolvedRecord?.parameters['anomalies_observed']).toBe(2);
   });
 });
 

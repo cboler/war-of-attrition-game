@@ -386,20 +386,99 @@
           </div>
         }
 
-        <div class="achievements-grid">
-          @for (achievement of allAchievements; track achievement.id) {
-            <article class="achievement-item" [class.unlocked]="isAchievementUnlocked(achievement.id)">
-              <div class="ach-icon-wrapper">
-                <mat-icon aria-hidden="true">{{ isAchievementUnlocked(achievement.id) ? achievement.icon : 'lock' }}</mat-icon>
+        <div class="achievements-sections">
+          <section class="achievements-section" aria-labelledby="section-milestones">
+            <div class="section-heading">
+              <h3 id="section-milestones" class="section-subtitle">Milestones</h3>
+              <p>Career landmarks and foundational campaign achievements.</p>
+            </div>
+            <div class="achievements-grid">
+              @for (achievement of milestones; track achievement.id) {
+                <article class="achievement-item" [class.unlocked]="isAchievementUnlocked(achievement.id)">
+                  <div class="ach-icon-wrapper">
+                    <mat-icon aria-hidden="true">{{ isAchievementUnlocked(achievement.id) ? achievement.icon : 'lock' }}</mat-icon>
+                  </div>
+                  <div class="ach-info">
+                    <div class="ach-header">
+                      <strong>{{ achievement.name }}</strong>
+                      <span class="ach-status">{{ isAchievementUnlocked(achievement.id) ? 'UNLOCKED' : 'LOCKED' }}</span>
+                    </div>
+                    <p>{{ achievement.description }}</p>
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+
+          <section class="achievements-section" aria-labelledby="section-distinctions">
+            <div class="section-heading">
+              <h3 id="section-distinctions" class="section-subtitle">Distinctions</h3>
+              <p>Memorable occurrences and noteworthy tactical outcomes across repeated play.</p>
+            </div>
+            <div class="achievements-grid">
+              @for (achievement of distinctions; track achievement.id) {
+                <article class="achievement-item" [class.unlocked]="isAchievementUnlocked(achievement.id)">
+                  <div class="ach-icon-wrapper">
+                    <mat-icon aria-hidden="true">{{ isAchievementUnlocked(achievement.id) ? achievement.icon : 'lock' }}</mat-icon>
+                  </div>
+                  <div class="ach-info">
+                    <div class="ach-header">
+                      <strong>{{ achievement.name }}</strong>
+                      <span class="ach-status">{{ isAchievementUnlocked(achievement.id) ? 'UNLOCKED' : 'LOCKED' }}</span>
+                    </div>
+                    <p>{{ achievement.description }}</p>
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+
+          <section class="achievements-section" aria-labelledby="section-prestige">
+            <div class="section-heading">
+              <h3 id="section-prestige" class="section-subtitle">Prestige</h3>
+              <p>Exceptional tactical mastery and rare war-defining achievements.</p>
+            </div>
+            <div class="achievements-grid">
+              @for (achievement of prestige; track achievement.id) {
+                <article class="achievement-item" [class.unlocked]="isAchievementUnlocked(achievement.id)">
+                  <div class="ach-icon-wrapper">
+                    <mat-icon aria-hidden="true">{{ isAchievementUnlocked(achievement.id) ? achievement.icon : 'lock' }}</mat-icon>
+                  </div>
+                  <div class="ach-info">
+                    <div class="ach-header">
+                      <strong>{{ achievement.name }}</strong>
+                      <span class="ach-status">{{ isAchievementUnlocked(achievement.id) ? 'UNLOCKED' : 'LOCKED' }}</span>
+                    </div>
+                    <p>{{ achievement.description }}</p>
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+
+          @if (unlockedAnomalies().length > 0) {
+            <section class="achievements-section anomalies-section" aria-labelledby="section-anomalies">
+              <div class="section-heading">
+                <h3 id="section-anomalies" class="section-subtitle anomaly-title">Anomalies Observed</h3>
+                <p>Astronomically rare events confirmed during combat operations.</p>
               </div>
-              <div class="ach-info">
-                <div class="ach-header">
-                  <strong>{{ achievement.name }}</strong>
-                  <span class="ach-status">{{ isAchievementUnlocked(achievement.id) ? 'UNLOCKED' : 'LOCKED' }}</span>
-                </div>
-                <p>{{ achievement.description }}</p>
+              <div class="achievements-grid">
+                @for (achievement of unlockedAnomalies(); track achievement.id) {
+                  <article class="achievement-item unlocked anomaly-item">
+                    <div class="ach-icon-wrapper anomaly-icon">
+                      <mat-icon aria-hidden="true">{{ achievement.icon }}</mat-icon>
+                    </div>
+                    <div class="ach-info">
+                      <div class="ach-header">
+                        <strong>{{ achievement.name }}</strong>
+                        <span class="ach-status anomaly-status">OBSERVED</span>
+                      </div>
+                      <p>{{ achievement.description }}</p>
+                    </div>
+                  </article>
+                }
               </div>
-            </article>
+            </section>
           }
         </div>
       </div>

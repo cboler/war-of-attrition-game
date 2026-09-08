@@ -18,7 +18,7 @@ Google currently allows 50 stats; published stats cannot be deleted. V1 uses ten
 
 ### Event boundary and property budget
 
-`war_completed` is emitted once from `GameResolvedEvent` after a genuinely resolved War. The event contains 18 required properties and one conditional property: **19 declared properties total**. No `battle_completed`, `reinforcement_completed`, or `two_ace_resolved` Google events are needed in v1. Their authoritative domain equivalents feed three small in-memory accumulators instead. This is a deliberate simplification of the candidate four-event design, not a separate event per stat.
+`war_completed` is emitted once from `GameResolvedEvent` after a genuinely resolved War. The event contains 19 required properties and one conditional property: **20 declared properties total**. No `battle_completed`, `reinforcement_completed`, or `two_ace_resolved` Google events are needed in v1. Their authoritative domain equivalents feed three small in-memory accumulators instead. This is a deliberate simplification of the candidate four-event design, not a separate event per stat.
 
 The Console declaration limit is 20 events and 20 properties per event, stricter than the runtime API's 25-property allowance. Use the declaration limit. All proposed keys meet its naming rules; types below are the literal Google CSV types. [Console schema limits](https://developer.android.com/games/pgs/integrate-gamestats#csv-file-guidelines-for-events), [runtime limits](https://developer.android.com/games/pgs/gamestats#events-request-body).
 
@@ -53,6 +53,7 @@ Source abbreviations used in the table:
 | `war_completed` | `successful_reinforcements` | `INT64` | Human reinforcement comparisons won outright. A tied comparison counts zero regardless of subsequent Battle/attrition outcome. | Count Events `challenge_resolved` with `challenger=PLAYER` and `comparison=PLAYER_WINS`. | Yes | Integer `0..reinforcements_sent`. | Successful Reinforcements; measures the immediate rescue decision consistently. |
 | `war_completed` | `aces_felled_by_twos` | `INT64` | Opponent Aces directly beaten by a human Two in clash, reinforcement, or selected Battle-champion comparison. | Public comparison events and authoritative selected-card DTO; mapping in section 7. | Yes | Integer `0..2` (two opponent-owned Aces). | Attrition's defining exception. Excludes player Aces lost and collateral Aces in a Battle's other casualties. |
 | `war_completed` | `war_margin` | `INT64` | Signed survivor margin: player win → player remaining cards; opponent win → negative opponent remaining cards; tie → zero. | Progression: `calculateWarMargin`, using `GameResolvedEvent` remaining counts/outcome. | Yes | Integer `-26..26`; sign agrees with outcome. | Future commander difficulty analysis beyond W/L/T, without another visible stat. |
+| `war_completed` | `anomalies_observed` | `INT64` | Distinct count of astronomical anomalies observed in this War. | Achievements: `AchievementService.getAnomaliesObservedThisWar()`. | Yes | Integer `0..5`. | Track rare astronomical anomaly occurrences across completed Wars. |
 
 `war_margin` deliberately matches durable Campaign margins and GA4's terminal `attrition_differential`. It is **not** necessarily player remaining minus opponent remaining: an attrition loser can retain undealt cards. Do not copy the table summary's differently computed `warDifferential`.
 
@@ -60,7 +61,7 @@ The adapter also retains the existing random `warId` as a **local transport corr
 
 ## 3. Final v1 Game Stat list
 
-Every row uses `war_completed`. `MAX` receives each War's value, never a previously accumulated career maximum. `SUM` receives each War's increment, never a lifetime total. The player-facing meaning column is also the exact proposed default-English stat description. All properties selected for aggregation are numeric; set Console `Unit=UNITLESS`, with the human unit below explained in the description. Set `Good value direction=INCREASING` for all ten: greater is a career record, not a claim of greater skill.
+Every row uses `war_completed`. `MAX` receives each War's value, never a previously accumulated career maximum. `SUM` receives each War's increment, never a lifetime total. The player-facing meaning column is also the exact proposed default-English stat description. All properties selected for aggregation are numeric; set Console `Unit=UNITLESS`, with the human unit below explained in the description. Set `Good value direction=INCREASING` for all eleven: greater is a career record, not a claim of greater skill.
 
 | Display name | Internal/config name | Source event | Aggregation/property | Filter | Human unit | Competitive | Player-facing meaning / default description | Permanent-slot reason |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -74,6 +75,7 @@ Every row uses `war_completed`. `MAX` receives each War's value, never a previou
 | Reinforcements Sent | `reinforcements_sent` | `war_completed` | `SUM(reinforcements_sent)` | None | Cards | No | Reinforcement cards you committed in completed Wars. | Player action frequency and rescue-success denominator. |
 | Successful Reinforcements | `successful_reinforcements` | `war_completed` | `SUM(successful_reinforcements)` | None | Rescues | No | Your reinforcements that won their comparison outright in completed Wars. Ties are excluded. | Measures how often an uncertain intervention immediately worked. |
 | Aces Felled by Twos | `aces_felled_by_twos` | `war_completed` | `SUM(aces_felled_by_twos)` | None | Aces | No | Opponent Aces directly defeated by your Twos in completed Wars. | Distinctive rule-driven incidents worth accumulating. |
+| Astronomical Anomalies Observed | `astronomical_anomalies_observed` | `war_completed` | `SUM(anomalies_observed)` | None | Anomalies | No | Astronomically rare events confirmed during completed Wars. | Distinctive rare event tracking across player career. |
 
 **No original candidate is rejected or replaced.** The names are retained with exact semantics above. Battles Won, Campaigns Won, Tokens Earned, Achievements Unlocked, and physical-card biography stats remain excluded/deferred; unused capacity is not a reason to add them. Zero MAX inputs are valid completed-War facts, not synthetic initialization events. Before any eligible War, Google may have no value; do not manufacture a War to display zero.
 

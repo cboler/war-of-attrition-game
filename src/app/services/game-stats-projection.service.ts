@@ -3,6 +3,7 @@ import { GameEventBusService } from './game-event-bus.service';
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { PlatformGameStatsService } from '../core/services/platform-game-stats.service';
 import { AuthService } from '../core/services/auth.service';
+import { AchievementService } from './achievement.service';
 import {
   GameEvent,
   TurnStartedEvent,
@@ -50,6 +51,7 @@ export class GameStatsProjectionService {
   private readonly campaignProgression = inject(CampaignProgressionService);
   private readonly platformGameStats = inject(PlatformGameStatsService);
   private readonly authService = inject(AuthService);
+  private readonly achievementService = inject(AchievementService);
 
   private currentWarId: string | null = null;
   private frozenContext: FrozenWarContext | null = null;
@@ -283,7 +285,8 @@ export class GameStatsProjectionService {
       reinforcements_sent: event.playerReinforcementsSent,
       successful_reinforcements: this.successfulReinforcements,
       aces_felled_by_twos: this.acesFelledByTwos,
-      war_margin: warMargin
+      war_margin: warMargin,
+      anomalies_observed: this.achievementService.getAnomaliesObservedThisWar()
     };
 
     const validation = validateWarCompletedPayload(candidate);

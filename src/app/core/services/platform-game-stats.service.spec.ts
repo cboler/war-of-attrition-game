@@ -26,7 +26,8 @@ describe('PlatformGameStatsService', () => {
     reinforcements_sent: 2,
     successful_reinforcements: 1,
     aces_felled_by_twos: 0,
-    war_margin: 8
+    war_margin: 8,
+    anomalies_observed: 0
   };
 
   beforeEach(() => {

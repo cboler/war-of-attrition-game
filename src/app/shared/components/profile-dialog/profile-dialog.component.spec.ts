@@ -412,4 +412,44 @@ describe('ProfileDialogComponent', () => {
     expect(fogPill).toBeTruthy();
     expect(fogPill?.textContent).toContain('Boneyard sealed until War end');
   });
+
+  it('maintains visible denominator of 32 and renders categorized sections', () => {
+    expect(component.totalAchievements()).toBe(32);
+    expect(component.allVisibleAchievements.length).toBe(32);
+    expect(component.milestones.length).toBe(9);
+    expect(component.distinctions.length).toBe(14);
+    expect(component.prestige.length).toBe(9);
+
+    component.activeTab.set('achievements');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('#section-milestones')).toBeTruthy();
+    expect(root.querySelector('#section-distinctions')).toBeTruthy();
+    expect(root.querySelector('#section-prestige')).toBeTruthy();
+    // No anomalies unlocked initially -> section is hidden
+    expect(root.querySelector('.anomalies-section')).toBeFalsy();
+    expect(root.querySelector('.summary-count')?.textContent).toContain('of 32');
+  });
+
+  it('renders Anomalies Observed section only when an anomaly is unlocked without inflating 32 denominator', () => {
+    authService.unlockAchievement('war.perfect_victory');
+    fixture.detectChanges();
+
+    expect(component.unlockedAnomalies().length).toBe(1);
+    expect(component.totalAchievements()).toBe(32);
+    // Unlocked visible achievements count remains 0 because perfect_victory is an anomaly
+    expect(component.unlockedCount()).toBe(0);
+
+    component.activeTab.set('achievements');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const anomalySection = root.querySelector('.anomalies-section');
+    expect(anomalySection).toBeTruthy();
+    expect(anomalySection?.textContent).toContain('Not a Scratch');
+    expect(anomalySection?.textContent).toContain('OBSERVED');
+    // Still displays "0 of 32"
+    expect(root.querySelector('.summary-count')?.textContent).toContain('0 of 32');
+  });
 });

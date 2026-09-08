@@ -905,6 +905,33 @@ mat-divider {
   }
 }
 
+.achievements-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.achievements-section {
+  display: flex;
+  flex-direction: column;
+
+  .section-heading {
+    margin-bottom: 8px;
+
+    p {
+      margin: 2px 0 0;
+      color: rgba(247, 240, 225, 0.65);
+      font-size: 0.74rem;
+    }
+  }
+
+  &.anomalies-section {
+    .anomaly-title {
+      color: #90caf9;
+    }
+  }
+}
+
 .achievements-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -977,6 +1004,21 @@ mat-divider {
 
     .ach-header .ach-status {
       color: #79d799;
+    }
+  }
+
+  &.anomaly-item {
+    background: rgba(13, 27, 42, 0.88);
+    border-color: rgba(144, 202, 249, 0.35);
+
+    .ach-icon-wrapper.anomaly-icon {
+      background: rgba(144, 202, 249, 0.18);
+      color: #90caf9;
+    }
+
+    .ach-header .ach-status.anomaly-status {
+      color: #90caf9;
+      letter-spacing: 0.12em;
     }
   }
 }

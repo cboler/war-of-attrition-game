@@ -9,3 +9,4 @@ longest_war,war_completed,turns,MAX,Longest War,Most turns in one completed War.
 reinforcements_sent,war_completed,reinforcements_sent,SUM,Reinforcements Sent,Reinforcement cards you committed in completed Wars.,,,,false,,,reinforcements_sent.png,INCREASING,UNITLESS
 successful_reinforcements,war_completed,successful_reinforcements,SUM,Successful Reinforcements,Your reinforcements that won their comparison outright in completed Wars. Ties are excluded.,,,,false,,,successful_reinforcements.png,INCREASING,UNITLESS
 aces_felled_by_twos,war_completed,aces_felled_by_twos,SUM,Aces Felled by Twos,Opponent Aces directly defeated by your Twos in completed Wars.,,,,false,,,aces_felled_by_twos.png,INCREASING,UNITLESS
+astronomical_anomalies_observed,war_completed,anomalies_observed,SUM,Astronomical Anomalies Observed,Astronomically rare events confirmed during completed Wars.,,,,false,,,astronomical_anomalies_observed.png,INCREASING,UNITLESS

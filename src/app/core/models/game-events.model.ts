@@ -1,5 +1,6 @@
 import { Card } from './card.model';
 import { OpponentCommanderId } from './commander.model';
+import { AchievementClassification } from './achievement.model';
 import {
   BattleSelectionOutcome,
   ComparisonResult,
@@ -9,6 +10,8 @@ import {
   PlayerType,
   SettlementAttribution,
 } from './game-state.model';
+
+export type { AchievementClassification };
 
 export type GameEventType =
   | 'war_started'
@@ -31,6 +34,7 @@ export type GameEventType =
   | 'settlement_resolved'
   | 'quip_spoken'
   | 'achievement_unlocked'
+  | 'achievement_observed'
   | 'valor_citation_awarded'
   | 'game_resolved'
   | 'game_abandoned';
@@ -190,6 +194,8 @@ export interface CardsSentToBoneyardEvent extends BaseGameEvent {
 export interface SettlementResolvedEvent extends BaseGameEvent {
   readonly type: 'settlement_resolved';
   readonly attribution: SettlementAttribution;
+  readonly playerCardsRemaining?: number;
+  readonly opponentCardsRemaining?: number;
 }
 
 export type TableReactionCategory =
@@ -218,6 +224,13 @@ export interface AchievementUnlockedEvent extends BaseGameEvent {
   readonly name: string;
   readonly description: string;
   readonly icon: string;
+  readonly classification?: AchievementClassification;
+}
+
+export interface AchievementObservedEvent extends BaseGameEvent {
+  readonly type: 'achievement_observed';
+  readonly achievementId: string;
+  readonly classification: AchievementClassification;
 }
 
 export type ValorCitationType = 'juggernaut';
@@ -244,6 +257,7 @@ export interface GameResolvedEvent extends BaseGameEvent {
   readonly playerReinforcementsSent: number;
   readonly playerDeckColor?: DeckColor;
   readonly survivingPlayerCardIds?: readonly string[];
+  readonly anomaliesObserved?: number;
 }
 
 export type ExplicitAbandonmentDecision =
@@ -305,6 +319,7 @@ export type GameEvent =
   | SettlementResolvedEvent
   | QuipSpokenEvent
   | AchievementUnlockedEvent
+  | AchievementObservedEvent
   | ValorCitationAwardedEvent
   | GameResolvedEvent
   | GameAbandonedEvent;

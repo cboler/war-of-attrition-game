@@ -17,6 +17,7 @@ import {
 import { CampaignProgressionService } from '../core/services/campaign-progression.service';
 import { GameEventBusService } from './game-event-bus.service';
 import { mapGameEventToTelemetry, mapProgressionEventToTelemetry } from './game-telemetry.mapper';
+import { AchievementService } from './achievement.service';
 import {
   GAME_TELEMETRY_CONFIG,
   GAME_TELEMETRY_TRANSPORT,
@@ -43,6 +44,7 @@ export interface BeginWarTelemetryInput {
 export class GameTelemetryService {
   private readonly eventBus = inject(GameEventBusService);
   private readonly progressionService = inject(CampaignProgressionService);
+  private readonly achievementService = inject(AchievementService);
   private readonly transport: TelemetryTransport = inject(GAME_TELEMETRY_TRANSPORT);
   private readonly config = inject(GAME_TELEMETRY_CONFIG);
   private readonly destroyRef = inject(DestroyRef);
@@ -128,7 +130,10 @@ export class GameTelemetryService {
       }
       return;
     }
-    const record = mapGameEventToTelemetry(event, {
+    const eventToMap = event.type === 'game_resolved' && event.anomaliesObserved === undefined
+      ? { ...event, anomaliesObserved: this.achievementService.getAnomaliesObservedThisWar() }
+      : event;
+    const record = mapGameEventToTelemetry(eventToMap, {
       ...context,
       ...this.versionFields(),
       eventSeq: this.nextSequence()

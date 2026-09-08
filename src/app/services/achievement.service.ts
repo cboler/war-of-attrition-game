@@ -1,6 +1,7 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import { ACHIEVEMENTS, AchievementDefinition } from '../core/models/achievement.model';
+import { ACHIEVEMENTS, AchievementDefinition, AchievementClassification } from '../core/models/achievement.model';
 import {
+  ComparisonResult,
   DeckColor,
   GameOutcome,
   PlayerType,
@@ -63,6 +64,10 @@ export class AchievementService {
   private readonly publicBoneyardCards = new Map<string, Card>();
   private readonly casualtiesByDecisiveCard = new Map<string, Set<string>>();
   private readonly juggernautsThisWar = new Set<string>();
+  private readonly anomaliesObservedThisWar = new Set<string>();
+  private lastStandardQualifiedThisWar = false;
+  private readonly twinAssassinsPairs = new Set<string>();
+  private readonly observedDepthsInCurrentBattle = new Set<number>();
   private progressProfileId: string | null = null;
 
   constructor() {
@@ -76,6 +81,10 @@ export class AchievementService {
           this.casualtiesByDecisiveCard.clear();
           this.juggernautsThisWar.clear();
           this.consecutiveTieComparisons = 0;
+          this.anomaliesObservedThisWar.clear();
+          this.lastStandardQualifiedThisWar = false;
+          this.twinAssassinsPairs.clear();
+          this.observedDepthsInCurrentBattle.clear();
         }
         // Rehydrate for same-profile statistic resets as well as profile
         // switches. Setting identical signal values is inert, while a reset
@@ -96,6 +105,35 @@ export class AchievementService {
   isUnlocked(id: string): boolean {
     const unlocked = this.authService.activeProfile().statistics.unlockedAchievements || [];
     return unlocked.includes(id);
+  }
+
+  getAnomaliesObservedThisWar(): number {
+    return Math.min(5, this.anomaliesObservedThisWar.size);
+  }
+
+  observe(id: string, turnNumber = 0): void {
+    const def = ACHIEVEMENTS.find((a) => a.id === id);
+    if (!def) return;
+
+    if (def.classification === 'anomaly') {
+      this.anomaliesObservedThisWar.add(def.id);
+    }
+
+    const shouldRepeatObserve =
+      def.classification === 'prestige' ||
+      def.classification === 'anomaly' ||
+      def.id === 'war.wrong_tool_for_job';
+
+    if (shouldRepeatObserve) {
+      this.eventBus.emit({
+        type: 'achievement_observed',
+        turnNumber,
+        achievementId: def.id,
+        classification: def.classification,
+      });
+    }
+
+    this.unlock(id, turnNumber);
   }
 
   unlock(id: string, turnNumber = 0): boolean {
@@ -125,6 +163,7 @@ export class AchievementService {
       name: def.name,
       description: def.description,
       icon: def.icon,
+      classification: def.classification,
     });
 
     return true;
@@ -146,6 +185,10 @@ export class AchievementService {
         this.battlePresentationActive = false;
         this.deferredBattleToasts.length = 0;
         this.consecutiveTieComparisons = 0;
+        this.anomaliesObservedThisWar.clear();
+        this.lastStandardQualifiedThisWar = false;
+        this.twinAssassinsPairs.clear();
+        this.observedDepthsInCurrentBattle.clear();
         break;
 
       case 'clash_resolved':
@@ -153,6 +196,9 @@ export class AchievementService {
         // ASSASSIN: Defeat an Ace with a 2
         if (event.specialRule && event.winner === PlayerType.PLAYER) {
           this.unlock('war.assassin', event.turnNumber);
+          if (event.playerCard.rank === Rank.TWO && event.opponentCard.rank === Rank.ACE) {
+            this.recordTwoOverAce(event.playerCard.id, event.opponentCard.id, event.turnNumber);
+          }
         }
         break;
 
@@ -167,6 +213,13 @@ export class AchievementService {
       case 'settlement_resolved':
         this.evaluateJuggernaut(event.attribution, event.turnNumber);
         this.evaluateCrippled(event.attribution, event.turnNumber);
+        if (
+          event.playerCardsRemaining === 1 &&
+          event.opponentCardsRemaining !== undefined &&
+          event.opponentCardsRemaining >= 15
+        ) {
+          this.lastStandardQualifiedThisWar = true;
+        }
         break;
 
       case 'challenge_resolved':
@@ -194,6 +247,24 @@ export class AchievementService {
               event.reinforcementCard.rank === Rank.ACE))
         ) {
           this.unlock('war.assassin', event.turnNumber);
+          const humanCard = event.challenger === PlayerType.PLAYER
+            ? event.reinforcementCard
+            : event.originalWinnerCard;
+          const opponentCard = event.challenger === PlayerType.PLAYER
+            ? event.originalWinnerCard
+            : event.reinforcementCard;
+          if (humanCard.rank === Rank.TWO && opponentCard.rank === Rank.ACE) {
+            this.recordTwoOverAce(humanCard.id, opponentCard.id, event.turnNumber);
+          }
+        }
+        // WRONG TOOL FOR THE JOB: 2 sent as reinforcement, loses outright to 3, 4, or 5
+        if (
+          event.challenger === PlayerType.PLAYER &&
+          event.reinforcementCard.rank === Rank.TWO &&
+          [Rank.THREE, Rank.FOUR, Rank.FIVE].includes(event.originalWinnerCard.rank) &&
+          event.comparison === ComparisonResult.OPPONENT_WINS
+        ) {
+          this.observe('war.wrong_tool_for_job', event.turnNumber);
         }
         break;
 
@@ -202,14 +273,22 @@ export class AchievementService {
         this.battlePresentationActive = true;
         if (event.type === 'battle_started') {
           this.unlock('war.first_battle', event.turnNumber);
+          this.observedDepthsInCurrentBattle.clear();
         }
-        // DOWN THE RABBIT HOLE: Reach Battle 3 (stable ID retains "layer")
-        if (event.layerRound >= 3) {
+        // DOWN THE RABBIT HOLE: Reach Battle 3
+        if (event.layerRound >= 3 && !this.observedDepthsInCurrentBattle.has(3)) {
+          this.observedDepthsInCurrentBattle.add(3);
           this.unlock('war.battle_layer_3', event.turnNumber);
         }
-        // HOW DEEP DOES THIS GO?: Reach Battle 4 (stable ID retains "layer")
-        if (event.layerRound >= 4) {
-          this.unlock('war.battle_layer_4', event.turnNumber);
+        // HOW DEEP DOES THIS GO?: Reach Battle 4
+        if (event.layerRound >= 4 && !this.observedDepthsInCurrentBattle.has(4)) {
+          this.observedDepthsInCurrentBattle.add(4);
+          this.observe('war.battle_layer_4', event.turnNumber);
+        }
+        // THE ABYSS ANSWERS: Reach Battle 6
+        if (event.layerRound >= 6 && !this.observedDepthsInCurrentBattle.has(6)) {
+          this.observedDepthsInCurrentBattle.add(6);
+          this.observe('war.battle_layer_6', event.turnNumber);
         }
         break;
 
@@ -220,22 +299,32 @@ export class AchievementService {
           event.selection.winner === PlayerType.PLAYER
         ) {
           this.unlock('war.assassin', event.turnNumber);
-          this.unlock('war.battle_assassin', event.turnNumber);
+          this.observe('war.battle_assassin', event.turnNumber);
+          if (
+            event.selection.playerCard.rank === Rank.TWO &&
+            event.selection.opponentCard.rank === Rank.ACE
+          ) {
+            this.recordTwoOverAce(
+              event.selection.playerCard.id,
+              event.selection.opponentCard.id,
+              event.turnNumber
+            );
+          }
         }
         break;
 
       case 'battle_resolved': {
         const outcome = event.outcome;
         this.updateBattleStreaks(outcome.winner, event.turnNumber);
-        // MASSACRE: Defeat at least 10 opponent cards in one Battle
         if (outcome.winner === PlayerType.PLAYER) {
           this.unlock('war.first_battle_win', event.turnNumber);
         }
         if (outcome.winner === PlayerType.PLAYER && outcome.battleDepth >= 3) {
-          this.unlock('war.deep_battle_win', event.turnNumber);
+          this.observe('war.deep_battle_win', event.turnNumber);
         }
-        if (outcome.winner === PlayerType.PLAYER && outcome.casualties.length >= 10) {
-          this.unlock('war.massacre', event.turnNumber);
+        // MASSACRE: Defeat at least 14 opponent cards in one Battle (retuned from 10)
+        if (outcome.winner === PlayerType.PLAYER && outcome.casualties.length >= 14) {
+          this.observe('war.massacre', event.turnNumber);
         }
         // ROYAL DISASTER: Lose both an Ace and a 2 in the same Battle
         if (
@@ -245,12 +334,18 @@ export class AchievementService {
         ) {
           this.unlock('war.royal_disaster', event.turnNumber);
         }
-        // Depth check on resolution as well
-        if (outcome.battleDepth >= 3) {
+        // Depth checks on resolution as well
+        if (outcome.battleDepth >= 3 && !this.observedDepthsInCurrentBattle.has(3)) {
+          this.observedDepthsInCurrentBattle.add(3);
           this.unlock('war.battle_layer_3', event.turnNumber);
         }
-        if (outcome.battleDepth >= 4) {
-          this.unlock('war.battle_layer_4', event.turnNumber);
+        if (outcome.battleDepth >= 4 && !this.observedDepthsInCurrentBattle.has(4)) {
+          this.observedDepthsInCurrentBattle.add(4);
+          this.observe('war.battle_layer_4', event.turnNumber);
+        }
+        if (outcome.battleDepth >= 6 && !this.observedDepthsInCurrentBattle.has(6)) {
+          this.observedDepthsInCurrentBattle.add(6);
+          this.observe('war.battle_layer_6', event.turnNumber);
         }
         break;
       }
@@ -271,15 +366,27 @@ export class AchievementService {
           this.unlock('war.first_win', event.turns);
           // PYRRHIC VICTORY: Win with exactly 1 card remaining
           if (event.playerCardsRemaining === 1) {
-            this.unlock('war.pyrrhic_victory', event.turns);
+            this.observe('war.pyrrhic_victory', event.turns);
           }
-          // UNTOUCHABLE: Win with at least 20 cards remaining
-          if (event.playerCardsRemaining >= 20) {
-            this.unlock('war.untouchable', event.turns);
+          // UNTOUCHABLE: Win with at least 18 cards remaining (retuned from 20)
+          if (event.playerCardsRemaining >= 18) {
+            this.observe('war.untouchable', event.turns);
           }
           // NEVER TELL ME THE ODDS: Win after trailing by at least 15 cards
           if (event.maxDeficitExperienced >= SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD) {
-            this.unlock('war.comeback_15', event.turns);
+            this.observe('war.comeback_15', event.turns);
+          }
+          // NOT A SCRATCH: Win a War without losing a single card (26 cards remaining)
+          if (event.playerCardsRemaining === 26) {
+            this.observe('war.perfect_victory', event.turns);
+          }
+          // THE LAST STANDARD: 1 card vs >= 15 settled state followed by win
+          if (this.lastStandardQualifiedThisWar) {
+            this.observe('war.last_standard', event.turns);
+          }
+          // AGAINST ARITHMETIC: Win after trailing by at least 20 cards
+          if (event.maxDeficitExperienced >= 20) {
+            this.observe('war.comeback_20', event.turns);
           }
           if (event.playerReinforcementsSent === 0) {
             this.unlock('war.no_reinforcements_win', event.turns);
@@ -289,7 +396,11 @@ export class AchievementService {
         }
 
         if (event.turns >= 42) {
-          this.unlock('war.marathon', event.turns);
+          this.observe('war.marathon', event.turns);
+        }
+
+        if (event.turns === 51) {
+          this.observe('war.turn_51', event.turns);
         }
 
         if (event.battlesCount >= 5) {
@@ -454,5 +565,24 @@ export class AchievementService {
       this.latestUnlock.set(null);
       this.showNextToast();
     }, 4500);
+  }
+
+  private recordTwoOverAce(playerTwoId: string, opponentAceId: string, turnNumber: number): void {
+    this.twinAssassinsPairs.add(`${playerTwoId}:${opponentAceId}`);
+    if (this.hasTwinAssassinsPairing()) {
+      this.observe('war.twin_assassins', turnNumber);
+    }
+  }
+
+  private hasTwinAssassinsPairing(): boolean {
+    const pairs = Array.from(this.twinAssassinsPairs).map((p) => p.split(':'));
+    for (let i = 0; i < pairs.length; i++) {
+      for (let j = i + 1; j < pairs.length; j++) {
+        if (pairs[i][0] !== pairs[j][0] && pairs[i][1] !== pairs[j][1]) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

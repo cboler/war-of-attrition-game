@@ -36,7 +36,7 @@ export const VALID_WAR_OUTCOMES = ['player_win', 'opponent_win', 'tie'] as const
 export type GameStatsOutcome = typeof VALID_WAR_OUTCOMES[number];
 
 /**
- * Authoritative 19 declared properties for the Google Play Games
+ * Authoritative 20 declared properties for the Google Play Games
  * repetitive stats event: war_completed.
  */
 export interface WarCompletedStatsPayload {
@@ -59,6 +59,7 @@ export interface WarCompletedStatsPayload {
   readonly successful_reinforcements: number;
   readonly aces_felled_by_twos: number;
   readonly war_margin: number;
+  readonly anomalies_observed: number;
 }
 
 export const WAR_COMPLETED_PROPERTY_KEYS = [
@@ -80,7 +81,8 @@ export const WAR_COMPLETED_PROPERTY_KEYS = [
   'reinforcements_sent',
   'successful_reinforcements',
   'aces_felled_by_twos',
-  'war_margin'
+  'war_margin',
+  'anomalies_observed'
 ] as const;
 
 export type ValidationResult<T> =
@@ -275,6 +277,12 @@ export function validateWarCompletedPayload(
     return { valid: false, error: `war_margin must be 0 for tie, got ${warMargin}` };
   }
 
+  // 21. anomalies_observed: 0..5
+  const anomaliesObserved = obj['anomalies_observed'];
+  if (!isSafeInt(anomaliesObserved) || anomaliesObserved < 0 || anomaliesObserved > 5) {
+    return { valid: false, error: `anomalies_observed must be integer 0..5, got ${anomaliesObserved}` };
+  }
+
   return {
     valid: true,
     data: {
@@ -296,7 +304,8 @@ export function validateWarCompletedPayload(
       reinforcements_sent: reinforcementsSent,
       successful_reinforcements: successfulReinforcements,
       aces_felled_by_twos: acesFelled,
-      war_margin: warMargin
+      war_margin: warMargin,
+      anomalies_observed: anomaliesObserved
     }
   };
 }

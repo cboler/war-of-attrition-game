@@ -117,12 +117,21 @@ export class ProfileDialogComponent implements OnDestroy {
   readonly profile = this.authService.activeProfile;
   readonly stats = this.authService.userStats;
   readonly allAchievements = ACHIEVEMENTS;
+  readonly allVisibleAchievements = ACHIEVEMENTS.filter(a => a.classification !== 'anomaly');
+  readonly milestones = ACHIEVEMENTS.filter(a => a.classification === 'milestone');
+  readonly distinctions = ACHIEVEMENTS.filter(a => a.classification === 'distinction');
+  readonly prestige = ACHIEVEMENTS.filter(a => a.classification === 'prestige');
+  readonly unlockedAnomalies = computed(() =>
+    ACHIEVEMENTS.filter(a => a.classification === 'anomaly' && this.isAchievementUnlocked(a.id))
+  );
   readonly activeTab = signal<ProfileTab>('stats');
   readonly settingsStatus = signal('');
   readonly appVersion = environment.appVersion;
 
-  readonly unlockedCount = computed(() => this.stats().unlockedAchievements?.length || 0);
-  readonly totalAchievements = computed(() => ACHIEVEMENTS.length);
+  readonly unlockedCount = computed(
+    () => this.allVisibleAchievements.filter(a => this.isAchievementUnlocked(a.id)).length
+  );
+  readonly totalAchievements = computed(() => this.allVisibleAchievements.length);
   readonly unlockedPercentage = computed(() =>
     Math.round((this.unlockedCount() / Math.max(1, this.totalAchievements())) * 100)
   );

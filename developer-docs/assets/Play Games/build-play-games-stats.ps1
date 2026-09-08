@@ -1,6 +1,6 @@
 # Run from any directory. Icons already use the names in RepetitiveStatsConfig.csv.
 # Resizes source icons to upload-ready 512x512 PNGs (<= 1 MB) in a disposable generated/ directory.
-# Packages RepetitiveStatsConfig.csv and the ten 512x512 icons at the ZIP root.
+# Packages RepetitiveStatsConfig.csv and the eleven 512x512 icons at the ZIP root.
 # PlayerGameEvent.csv stays separate and is NOT included in the ZIP.
 # Alternate artwork in alternates/ and source PNGs are preserved untouched.
 [CmdletBinding()]
@@ -39,7 +39,8 @@ $expectedIcons = @(
     'longest_war.png',
     'reinforcements_sent.png',
     'successful_reinforcements.png',
-    'aces_felled_by_twos.png'
+    'aces_felled_by_twos.png',
+    'astronomical_anomalies_observed.png'
 )
 
 # Verify expected icon filenames are unique
@@ -183,7 +184,7 @@ foreach ($iconName in $expectedIcons) {
     Write-Host "  $iconName`: 512x512, $sizeKb KB ($($destItem.Length) bytes)"
 }
 
-# Validate generated directory contents (must be exactly RepetitiveStatsConfig.csv + 10 icons)
+# Validate generated directory contents (must be exactly RepetitiveStatsConfig.csv + 11 icons)
 $expectedGeneratedFiles = @('RepetitiveStatsConfig.csv') + $expectedIcons
 $actualGeneratedItems = @(Get-ChildItem -LiteralPath $generatedDir)
 $actualGeneratedNames = @($actualGeneratedItems | ForEach-Object { $_.Name })
@@ -206,8 +207,8 @@ try {
     $archive = [System.IO.Compression.ZipFile]::OpenRead($temporaryZip)
     try {
         $entries = @($archive.Entries)
-        if ($entries.Count -ne 11) {
-            throw "ZIP archive must contain exactly 11 entries, found $($entries.Count)."
+        if ($entries.Count -ne 12) {
+            throw "ZIP archive must contain exactly 12 entries, found $($entries.Count)."
         }
 
         $entryNames = @($entries | ForEach-Object { $_.FullName })

@@ -1641,6 +1641,8 @@ export class GameControllerService {
       type: 'settlement_resolved',
       turnNumber: this.turnsPlayed,
       attribution: result.settlementAttribution,
+      playerCardsRemaining: this.gameState.playerCardCount(),
+      opponentCardsRemaining: this.gameState.opponentCardCount(),
     });
   }
 

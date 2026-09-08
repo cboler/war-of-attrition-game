@@ -18,7 +18,7 @@ Veteran and Centurion are the only incremental achievements. `profile.campaigner
 | `war.battle_layer_4` | How Deep Does This Go? | Reach Battle 4. The stable internal ID intentionally retains `layer`. | Standard | `CgkIz5juh94JEAIQCA` |
 | `war.deep_battle_win` | Into the Breach | Win a Battle at depth 3 or greater. | Standard | `CgkIz5juh94JEAIQAA` |
 | `war.royal_disaster` | Royal Disaster | Lose an Ace and a 2 in the same Battle. | Standard | `CgkIz5juh94JEAIQCQ` |
-| `war.massacre` | Massacre | Defeat at least 10 opponent cards in one Battle. | Standard | `CgkIz5juh94JEAIQFA` |
+| `war.massacre` | Massacre | Defeat at least 14 opponent cards in one Battle. | Standard | `CgkIz5juh94JEAIQFA` |
 | `war.juggernaut` | Juggernaut | Have one Ace, King, Queen, or Jack personally defeat at least 3 enemy cards in a single War. | Standard | `CgkIz5juh94JEAIQGA` |
 | `war.expert_strategist` | Expert Strategist | Win 5 resolved Battles consecutively. | Standard | `CgkIz5juh94JEAIQGg` |
 | `war.poor_strategy` | Poor Strategy | Lose 5 resolved Battles consecutively. | Standard | `CgkIz5juh94JEAIQGw` |
@@ -27,7 +27,7 @@ Veteran and Centurion are the only incremental achievements. `profile.campaigner
 | `war.no_reinforcements_win` | No Reinforcements Needed | Win without sending a reinforcement. | Standard | `CgkIz5juh94JEAIQFQ` |
 | `war.five_battles_game` | War of Attrition | Resolve a game containing at least 5 distinct Battles. | Standard | `CgkIz5juh94JEAIQBw` |
 | `war.pyrrhic_victory` | Pyrrhic Victory | Win with exactly 1 card remaining. | Standard | `CgkIz5juh94JEAIQBA` |
-| `war.untouchable` | Untouchable | Win with at least 20 cards remaining. | Standard | `CgkIz5juh94JEAIQCg` |
+| `war.untouchable` | Untouchable | Win with at least 18 cards remaining. | Standard | `CgkIz5juh94JEAIQCg` |
 | `war.comeback_15` | Never Tell Me the Odds | Win after trailing by at least 15 cards. | Standard | `CgkIz5juh94JEAIQDg` |
 | `war.marathon` | Marathon | Resolve a game lasting at least 42 turns. | Standard | `CgkIz5juh94JEAIQDw` |
 | `profile.campaigner` | War Tested | Complete 10 resolved Wars. | Standard | `CgkIz5juh94JEAIQAQ` |
@@ -36,13 +36,15 @@ Veteran and Centurion are the only incremental achievements. `profile.campaigner
 
 ## Local-only achievements pending Play Console reconciliation
 
-| Internal ID | Local name | Condition |
-| --- | --- | --- |
-| `war.battle_assassin` | Against the Odds | Win a Battle by defeating an opposing Ace with a 2. |
-| `war.crippled` | Crippled | Lose both physical player-owned 2s as casualties in one authoritative settlement. |
-| `war.neverending_stalemate` | Neverending Stalemate | Reach three consecutive authoritative tied comparisons. |
+| Internal ID | Local name | Condition | Classification |
+| --- | --- | --- | --- |
+| `war.battle_assassin` | Against the Odds | Win a Battle by defeating an opposing Ace with a 2. | Prestige |
+| `war.crippled` | Crippled | Lose both physical player-owned 2s as casualties in one authoritative settlement. | Distinction |
+| `war.neverending_stalemate` | Neverending Stalemate | Reach three consecutive authoritative tied comparisons. | Distinction |
+| `war.wrong_tool_for_job` | Wrong Tool for the Job | Send a 2 as reinforcement and lose the Challenge to a 3, 4, or 5. | Distinction |
+| `war.twin_assassins` | Twin Assassins | In one War, have each of your two 2s defeat a different enemy Ace. | Prestige |
 
-These achievements unlock and persist locally. No placeholder Play Games IDs are fabricated during Sprint 2 closure.
+These five visible achievements unlock and persist locally. Their Google Play Games IDs will be mapped back into `PLAY_ACHIEVEMENT_MAPPINGS` upon Play Console bulk upload reconciliation. (Astronomical anomalies are omitted from the Play Store catalogue and manifest).
 
 ## Synchronization contract
 

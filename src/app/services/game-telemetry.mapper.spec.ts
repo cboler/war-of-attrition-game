@@ -510,5 +510,57 @@ describe('game telemetry mapper', () => {
       expect(warResolved?.parameters['player_reinforcements']).toBe(3);
       expect(Object.keys(warResolved?.parameters ?? {}).length).toBeLessThanOrEqual(25);
     });
+
+    it('maps achievement_unlocked with achievement_classification', () => {
+      const ach = mapGameEventToTelemetry({
+        type: 'achievement_unlocked',
+        turnNumber: 5,
+        achievementId: 'war.assassin',
+        name: 'Assassin',
+        description: 'Defeat an Ace with a 2.',
+        icon: 'flare',
+        classification: 'distinction'
+      }, envelope);
+
+      expect(ach?.name).toBe('achievement_unlocked');
+      expect(ach?.parameters['achievement_id']).toBe('war.assassin');
+      expect(ach?.parameters['achievement_classification']).toBe('distinction');
+      expect(Object.keys(ach?.parameters ?? {}).length).toBeLessThanOrEqual(25);
+    });
+
+    it('maps achievement_observed with achievement_id and achievement_classification', () => {
+      const obs = mapGameEventToTelemetry({
+        type: 'achievement_observed',
+        turnNumber: 7,
+        achievementId: 'war.wrong_tool_for_job',
+        classification: 'distinction'
+      }, envelope);
+
+      expect(obs?.name).toBe('achievement_observed');
+      expect(obs?.parameters['achievement_id']).toBe('war.wrong_tool_for_job');
+      expect(obs?.parameters['achievement_classification']).toBe('distinction');
+      expect(Object.keys(obs?.parameters ?? {}).length).toBeLessThanOrEqual(25);
+    });
+
+    it('maps war_resolved with anomalies_observed within 25 parameter budget', () => {
+      const warResolved = mapGameEventToTelemetry({
+        type: 'game_resolved',
+        turnNumber: 25,
+        outcome: GameOutcome.PLAYER_WIN,
+        turns: 25,
+        playerCardsRemaining: 26,
+        opponentCardsRemaining: 0,
+        maxDeficitExperienced: 0,
+        isComeback: false,
+        battlesCount: 1,
+        playerReinforcementsSent: 0,
+        playerDeckColor: DeckColor.RED,
+        anomaliesObserved: 1
+      }, envelope);
+
+      expect(warResolved?.name).toBe('war_resolved');
+      expect(warResolved?.parameters['anomalies_observed']).toBe(1);
+      expect(Object.keys(warResolved?.parameters ?? {}).length).toBeLessThanOrEqual(25);
+    });
   });
 });

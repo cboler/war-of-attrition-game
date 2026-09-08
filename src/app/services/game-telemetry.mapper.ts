@@ -189,7 +189,15 @@ export function mapGameEventToTelemetry(
     case 'achievement_unlocked':
       return record('achievement_unlocked', {
         ...common,
-        achievement_id: event.achievementId
+        achievement_id: event.achievementId,
+        ...(event.classification ? { achievement_classification: event.classification } : {})
+      });
+
+    case 'achievement_observed':
+      return record('achievement_observed', {
+        ...common,
+        achievement_id: event.achievementId,
+        achievement_classification: event.classification
       });
 
     case 'game_resolved':
@@ -209,7 +217,8 @@ export function mapGameEventToTelemetry(
         comeback: event.isComeback ? 1 : 0,
         battles: event.battlesCount,
         player_reinforcements: event.playerReinforcementsSent,
-        player_deck_color: event.playerDeckColor ?? envelope.playerDeckColor
+        player_deck_color: event.playerDeckColor ?? envelope.playerDeckColor,
+        anomalies_observed: event.anomaliesObserved ?? 0
       });
 
     case 'game_abandoned': {

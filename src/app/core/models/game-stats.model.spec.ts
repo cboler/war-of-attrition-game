@@ -25,7 +25,8 @@ describe('validateWarCompletedPayload', () => {
     reinforcements_sent: 3,
     successful_reinforcements: 2,
     aces_felled_by_twos: 1,
-    war_margin: 12
+    war_margin: 12,
+    anomalies_observed: 0
   };
 
   it('validates a correct standard player win payload', () => {
@@ -242,6 +243,14 @@ describe('validateWarCompletedPayload', () => {
     expect(validateWarCompletedPayload({ ...validStandardWin, aces_felled_by_twos: 0 }).valid).toBeTrue();
     expect(validateWarCompletedPayload({ ...validStandardWin, aces_felled_by_twos: 2 }).valid).toBeTrue();
     expect(validateWarCompletedPayload({ ...validStandardWin, aces_felled_by_twos: 3 }).valid).toBeFalse();
+  });
+
+  it('enforces anomalies_observed range (0..5)', () => {
+    expect(validateWarCompletedPayload({ ...validStandardWin, anomalies_observed: 0 }).valid).toBeTrue();
+    expect(validateWarCompletedPayload({ ...validStandardWin, anomalies_observed: 5 }).valid).toBeTrue();
+    expect(validateWarCompletedPayload({ ...validStandardWin, anomalies_observed: -1 }).valid).toBeFalse();
+    expect(validateWarCompletedPayload({ ...validStandardWin, anomalies_observed: 6 }).valid).toBeFalse();
+    expect(validateWarCompletedPayload({ ...validStandardWin, anomalies_observed: 1.5 as any }).valid).toBeFalse();
   });
 
   it('strictly rejects unknown properties (whitelist check)', () => {

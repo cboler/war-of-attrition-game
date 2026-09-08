@@ -1,0 +1,33 @@
+Name,Description,Incremental value,Steps Needed,Initial State,Points,List Order
+First Casualty,Witness the first public card fall to the Boneyard.,0,1,REVEALED,5,1
+Baptism by Fire,Experience your first Battle.,0,1,REVEALED,5,2
+First Victory,Win your first resolved game.,0,1,REVEALED,5,3
+Hard Lesson,Complete your first resolved defeat.,0,1,REVEALED,5,4
+Rescue Mission,Rescue a beaten card with reinforcement.,0,1,REVEALED,5,5
+Hold the Field,Win your first Battle.,0,1,REVEALED,5,6
+War Tested,Complete 10 resolved Wars.,0,1,REVEALED,10,7
+Veteran,Complete 25 resolved games.,1,25,REVEALED,20,8
+Centurion,Complete 100 resolved games.,1,100,REVEALED,50,9
+Assassin,Defeat an Ace with a 2.,0,1,REVEALED,10,10
+Juggernaut,"Have one Ace, King, Queen, or Jack personally defeat at least 3 enemy cards in a single War.",0,1,REVEALED,10,11
+Expert Strategist,Win 5 resolved Battles consecutively.,0,1,REVEALED,10,12
+Poor Strategy,Lose 5 resolved Battles consecutively.,0,1,REVEALED,5,13
+Grave Intelligence,Lose both of your 2s while both enemy Aces remain at large.,0,1,REVEALED,10,14
+Crippled,Lose both of your 2s as casualties in one resolved combat event.,0,1,REVEALED,10,15
+Neverending Stalemate,Reach three consecutive true tied comparisons.,0,1,REVEALED,10,16
+The Cavalry Came,Successfully rescue a 2 by drawing an Ace as reinforcement.,0,1,REVEALED,10,17
+Down the Rabbit Hole,Reach Battle 3.,0,1,REVEALED,10,18
+Not Today,Successfully reinforce to save an original 2.,0,1,REVEALED,10,19
+Royal Disaster,Lose both an Ace and a 2 in the same Battle.,0,1,REVEALED,10,20
+No Reinforcements Needed,Win a resolved game without sending reinforcement.,0,1,REVEALED,15,21
+War of Attrition,Resolve a game containing at least 5 distinct Battles.,0,1,REVEALED,15,22
+Wrong Tool for the Job,"Send a 2 as reinforcement and lose the Challenge to a 3, 4, or 5.",0,1,REVEALED,10,23
+Against the Odds,Win a Battle by defeating an opposing Ace with a 2.,0,1,REVEALED,20,24
+Pyrrhic Victory,Win the war with exactly 1 card remaining.,0,1,REVEALED,20,25
+Massacre,Defeat at least 14 opponent cards in a single Battle.,0,1,REVEALED,20,26
+Into the Breach,Win a Battle at depth 3 or greater.,0,1,REVEALED,20,27
+How Deep Does This Go?,Reach Battle 4.,0,1,REVEALED,20,28
+Untouchable,Win the War with at least 18 cards remaining.,0,1,REVEALED,20,29
+Marathon,Resolve a game lasting at least 42 turns.,0,1,REVEALED,20,30
+Never Tell Me the Odds,Win the war after trailing by at least 15 cards.,0,1,REVEALED,25,31
+Twin Assassins,In one War, have each of your two 2s defeat a different enemy Ace.,0,1,REVEALED,30,32

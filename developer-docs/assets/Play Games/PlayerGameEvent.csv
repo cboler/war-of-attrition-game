@@ -18,3 +18,4 @@ war_completed,reinforcements_sent,INT64
 war_completed,successful_reinforcements,INT64
 war_completed,aces_felled_by_twos,INT64
 war_completed,war_margin,INT64
+war_completed,anomalies_observed,INT64

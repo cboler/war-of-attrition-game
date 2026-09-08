@@ -203,10 +203,10 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('war.battle_layer_4')).toBe(true);
   });
 
-  it('should unlock war.massacre when defeating >= 10 opponent cards in one battle', () => {
+  it('should unlock war.massacre when defeating >= 14 opponent cards in one battle', () => {
     expect(service.isUnlocked('war.massacre')).toBe(false);
 
-    const tenCards = Array.from({ length: 10 }, (_, i) => ({
+    const fourteenCards = Array.from({ length: 14 }, (_, i) => ({
       id: `c${i}`,
       suit: Suit.CLUBS,
       rank: Rank.SEVEN,
@@ -217,7 +217,7 @@ describe('AchievementService', () => {
     eventBus.emit({
       type: 'battle_resolved',
       turnNumber: 7,
-      outcome: battleOutcome(PlayerType.PLAYER, tenCards, 2),
+      outcome: battleOutcome(PlayerType.PLAYER, fourteenCards, 2),
     });
 
     expect(service.isUnlocked('war.massacre')).toBe(true);
@@ -643,11 +643,15 @@ describe('AchievementService', () => {
       'profile.centurion': 'CgkIz5juh94JEAIQAw',
     };
     const ids = ACHIEVEMENTS.map((achievement) => achievement.id);
-    expect(ids.length).toBe(30);
-    expect(new Set(ids).size).toBe(30);
+    expect(ids.length).toBe(37);
+    expect(new Set(ids).size).toBe(37);
+    expect(ACHIEVEMENTS.filter((a) => !a.hidden).length).toBe(32);
+    expect(ACHIEVEMENTS.filter((a) => a.classification === 'anomaly').length).toBe(5);
     expect(ids).toContain('war.battle_assassin');
     expect(ids).toContain('war.crippled');
     expect(ids).toContain('war.neverending_stalemate');
+    expect(ids).toContain('war.wrong_tool_for_job');
+    expect(ids).toContain('war.twin_assassins');
     expect(Object.keys(PLAY_ACHIEVEMENT_MAPPINGS).length).toBe(27);
     expect(
       Object.fromEntries(
@@ -853,5 +857,235 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('profile.campaigner')).toBeTrue();
     expect(service.isUnlocked('profile.veteran')).toBeTrue();
     expect(service.isUnlocked('profile.centurion')).toBeTrue();
+  });
+
+  describe('retuned achievements and new visible/anomaly recognition', () => {
+    it('evaluates retuned Untouchable with >= 18 remaining cards', () => {
+      eventBus.emit({
+        type: 'game_resolved',
+        turnNumber: 15,
+        outcome: GameOutcome.PLAYER_WIN,
+        turns: 15,
+        playerCardsRemaining: 17,
+        opponentCardsRemaining: 0,
+        maxDeficitExperienced: 0,
+        isComeback: false,
+        battlesCount: 1,
+        playerReinforcementsSent: 0,
+      });
+      expect(service.isUnlocked('war.untouchable')).toBeFalse();
+
+      eventBus.emit({
+        type: 'game_resolved',
+        turnNumber: 15,
+        outcome: GameOutcome.PLAYER_WIN,
+        turns: 15,
+        playerCardsRemaining: 18,
+        opponentCardsRemaining: 0,
+        maxDeficitExperienced: 0,
+        isComeback: false,
+        battlesCount: 1,
+        playerReinforcementsSent: 0,
+      });
+      expect(service.isUnlocked('war.untouchable')).toBeTrue();
+    });
+
+    it('evaluates retuned Massacre with >= 14 opponent casualties in one Battle', () => {
+      const casualties13 = Array.from({ length: 13 }, (_, i) => ({
+        id: `opp-card-${i}`,
+        suit: Suit.CLUBS,
+        rank: Rank.SEVEN,
+        value: 7,
+        isRed: false
+      }));
+      eventBus.emit({
+        type: 'battle_resolved',
+        turnNumber: 5,
+        outcome: battleOutcome(PlayerType.PLAYER, casualties13, 2),
+      });
+      expect(service.isUnlocked('war.massacre')).toBeFalse();
+
+      const casualties14 = Array.from({ length: 14 }, (_, i) => ({
+        id: `opp-card-${i}`,
+        suit: Suit.CLUBS,
+        rank: Rank.SEVEN,
+        value: 7,
+        isRed: false
+      }));
+      eventBus.emit({
+        type: 'battle_resolved',
+        turnNumber: 6,
+        outcome: battleOutcome(PlayerType.PLAYER, casualties14, 3),
+      });
+      expect(service.isUnlocked('war.massacre')).toBeTrue();
+    });
+
+    it('unlocks Wrong Tool for the Job when player reinforcement 2 loses to 3, 4, or 5', () => {
+      const pTwo = { id: 'p2-1', suit: Suit.HEARTS, rank: Rank.TWO, value: 2, isRed: true };
+      const oppFour = { id: 'o4-1', suit: Suit.CLUBS, rank: Rank.FOUR, value: 4, isRed: false };
+      const oppSix = { id: 'o6-1', suit: Suit.CLUBS, rank: Rank.SIX, value: 6, isRed: false };
+
+      // Losing to 6 does not qualify
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 2,
+        challenger: PlayerType.PLAYER,
+        originalBeatenCard: { id: 'p7', suit: Suit.HEARTS, rank: Rank.SEVEN, value: 7, isRed: true },
+        reinforcementCard: pTwo,
+        originalWinnerCard: oppSix,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        challengerWon: false,
+        escalatedToBattle: false,
+        message: 'Lost challenge',
+        savedTwo: false
+      });
+      expect(service.isUnlocked('war.wrong_tool_for_job')).toBeFalse();
+
+      // Losing to 4 qualifies
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 3,
+        challenger: PlayerType.PLAYER,
+        originalBeatenCard: { id: 'p7', suit: Suit.HEARTS, rank: Rank.SEVEN, value: 7, isRed: true },
+        reinforcementCard: pTwo,
+        originalWinnerCard: oppFour,
+        comparison: ComparisonResult.OPPONENT_WINS,
+        winner: PlayerType.OPPONENT,
+        challengerWon: false,
+        escalatedToBattle: false,
+        message: 'Lost challenge',
+        savedTwo: false
+      });
+      expect(service.isUnlocked('war.wrong_tool_for_job')).toBeTrue();
+    });
+
+    it('unlocks Twin Assassins only when two distinct player 2s defeat two distinct enemy Aces', () => {
+      const p2a = { id: 'p2-hearts', suit: Suit.HEARTS, rank: Rank.TWO, value: 2, isRed: true };
+      const p2b = { id: 'p2-diamonds', suit: Suit.DIAMONDS, rank: Rank.TWO, value: 2, isRed: true };
+      const oAa = { id: 'oa-spades', suit: Suit.SPADES, rank: Rank.ACE, value: 14, isRed: false };
+      const oAb = { id: 'oa-clubs', suit: Suit.CLUBS, rank: Rank.ACE, value: 14, isRed: false };
+
+      eventBus.emit({
+        type: 'war_started',
+        turnNumber: 1,
+        playerDeckColor: DeckColor.RED
+      });
+
+      // First pair: p2a beats oAa
+      eventBus.emit({
+        type: 'clash_resolved',
+        turnNumber: 2,
+        playerCard: p2a,
+        opponentCard: oAa,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        specialRule: true,
+        message: 'Two beats Ace'
+      });
+      expect(service.isUnlocked('war.twin_assassins')).toBeFalse();
+
+      // Same 2 beating second Ace does not unlock
+      eventBus.emit({
+        type: 'clash_resolved',
+        turnNumber: 4,
+        playerCard: p2a,
+        opponentCard: oAb,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        specialRule: true,
+        message: 'Two beats Ace again'
+      });
+      expect(service.isUnlocked('war.twin_assassins')).toBeFalse();
+
+      // Second distinct 2 beating second distinct Ace unlocks!
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 6,
+        challenger: PlayerType.PLAYER,
+        originalBeatenCard: { id: 'px', suit: Suit.HEARTS, rank: Rank.FIVE, value: 5, isRed: true },
+        reinforcementCard: p2b,
+        originalWinnerCard: oAb,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        challengerWon: true,
+        escalatedToBattle: false,
+        message: 'Second 2 beats second Ace',
+        savedTwo: false
+      });
+      expect(service.isUnlocked('war.twin_assassins')).toBeTrue();
+    });
+
+    it('recognizes and unlocks all 5 hidden anomalies', () => {
+      eventBus.emit({
+        type: 'war_started',
+        turnNumber: 1,
+        playerDeckColor: DeckColor.RED
+      });
+
+      // 1. Abyss Answers (Battle layer 6)
+      eventBus.emit({ type: 'battle_layer_added', turnNumber: 10, layerRound: 6 });
+      expect(service.isUnlocked('war.battle_layer_6')).toBeTrue();
+
+      // 2. The Last Standard (1 vs >=15, then win)
+      eventBus.emit({
+        type: 'settlement_resolved',
+        turnNumber: 12,
+        playerCardsRemaining: 1,
+        opponentCardsRemaining: 16,
+        attribution: {
+          source: 'clash',
+          winner: PlayerType.OPPONENT,
+          loser: PlayerType.PLAYER,
+          decisiveCard: cardAce,
+          casualties: [cardTwo],
+          battleDepth: 0
+        }
+      });
+      expect(service.isUnlocked('war.last_standard')).toBeFalse(); // Not yet won
+
+      // 3. Fifty-One, Comeback 20, and Last Standard on game_resolved
+      eventBus.emit({
+        type: 'game_resolved',
+        turnNumber: 51,
+        outcome: GameOutcome.PLAYER_WIN,
+        turns: 51,
+        playerCardsRemaining: 2,
+        opponentCardsRemaining: 0,
+        maxDeficitExperienced: 22,
+        isComeback: true,
+        battlesCount: 3,
+        playerReinforcementsSent: 1,
+      });
+
+      expect(service.isUnlocked('war.last_standard')).toBeTrue();
+      expect(service.isUnlocked('war.comeback_20')).toBeTrue();
+      expect(service.isUnlocked('war.turn_51')).toBeTrue();
+      expect(service.getAnomaliesObservedThisWar()).toBeGreaterThanOrEqual(4);
+    });
+
+    it('recognizes Not a Scratch anomaly when winning with 26 cards remaining', () => {
+      eventBus.emit({
+        type: 'war_started',
+        turnNumber: 1,
+        playerDeckColor: DeckColor.RED
+      });
+
+      eventBus.emit({
+        type: 'game_resolved',
+        turnNumber: 15,
+        outcome: GameOutcome.PLAYER_WIN,
+        turns: 15,
+        playerCardsRemaining: 26,
+        opponentCardsRemaining: 0,
+        maxDeficitExperienced: 0,
+        isComeback: false,
+        battlesCount: 1,
+        playerReinforcementsSent: 0,
+      });
+
+      expect(service.isUnlocked('war.perfect_victory')).toBeTrue();
+      expect(service.getAnomaliesObservedThisWar()).toBe(1);
+    });
   });
 });
