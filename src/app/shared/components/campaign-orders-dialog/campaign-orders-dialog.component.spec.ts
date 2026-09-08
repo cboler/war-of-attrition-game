@@ -205,7 +205,11 @@ describe('CampaignOrdersDialogComponent', () => {
     expect(progressionService.isFogOfWar()).toBeFalse();
     expect(progressionService.isTotalWar()).toBeTrue();
     expect(progressionService.currentCommanderId()).toBe('gambler');
-    expect(new Set(progressionService.currentCampaign().commanderSchedule).size).toBe(3);
+    expect(progressionService.currentCampaign().commanderSchedule).toEqual([
+      'gambler',
+      'gambler',
+      'gambler'
+    ]);
     expect(dialogRefSpy.close).toHaveBeenCalledWith({
       mode: 'standard',
       modifiers: ['limited_reserves', 'total_war']

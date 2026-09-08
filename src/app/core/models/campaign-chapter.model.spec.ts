@@ -2,6 +2,7 @@ import {
   CAMPAIGN_CHAPTER_ORDER,
   CAMPAIGN_CHAPTERS,
   chapterPrerequisitesThrough,
+  createCustomCommanderSchedule,
   generateReplayCommanderSchedule,
   getAuthoredCommanderId,
   getAuthoredCommanderSchedule,
@@ -136,6 +137,17 @@ describe('CampaignChapterModel', () => {
         'limited_reserves',
         'fog_of_war',
         'total_war'
+      ]);
+    });
+  });
+
+  describe('createCustomCommanderSchedule', () => {
+    it('creates a 3-war schedule repeating the chosen commander across all wars', () => {
+      expect(createCustomCommanderSchedule('analyst')).toEqual(['analyst', 'analyst', 'analyst']);
+      expect(createCustomCommanderSchedule('quartermaster')).toEqual([
+        'quartermaster',
+        'quartermaster',
+        'quartermaster',
       ]);
     });
   });

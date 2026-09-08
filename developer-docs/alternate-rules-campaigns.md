@@ -37,7 +37,7 @@ Narrative dialogue authored for the current Chapter is guaranteed the first time
 
 After Chapter IV, Field Command Briefing functions as a manual game rules configuration interface rather than a mission or chapter preset selector. The player sets the rules before cards are dealt:
 
-- **Opposing Force**: Independent from rules. The player can view and change the opposing commander from the roster of 5 permanent commanders.
+- **Opposing Force**: Independent from rules. The player can view and change the opposing commander from the roster of 5 permanent commanders. The chosen commander commands the opposing force across all three Wars of the custom Campaign.
 - **Rules of Engagement**: The player may independently enable or disable:
   - **Limited Reserves**: Restricts reinforcement availability across the Three-War Campaign (5 reserve pool).
   - **Fog of War**: Conceals information that would normally be inspectable during a War (seals Boneyard, casualty details, and Hall of Valor records).

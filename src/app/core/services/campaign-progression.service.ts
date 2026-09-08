@@ -9,6 +9,7 @@ import {
   CampaignCommanderSchedule,
   CampaignModifierId,
   CampaignWarIndex,
+  createCustomCommanderSchedule,
   generateReplayCommanderSchedule,
   getAuthoredCommanderSchedule,
   getScriptedChapterModifiers
@@ -197,7 +198,7 @@ export class CampaignProgressionService {
     if (!isReplay) {
       commanderSchedule = getAuthoredCommanderSchedule(selectedMode);
     } else if (typeof customScheduleOrCommander === 'string') {
-      commanderSchedule = generateReplayCommanderSchedule(this.randomSource, customScheduleOrCommander);
+      commanderSchedule = createCustomCommanderSchedule(customScheduleOrCommander);
     } else if (customScheduleOrCommander) {
       commanderSchedule = customScheduleOrCommander;
     } else {

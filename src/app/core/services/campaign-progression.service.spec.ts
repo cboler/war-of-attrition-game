@@ -325,14 +325,16 @@ describe('CampaignProgressionService', () => {
       expect(service.canInspectCurrentWarCasualties(false)).toBeFalse();
     });
 
-    it('sets a custom starting opponent and maintains 3 distinct commanders', () => {
+    it('sets a custom opponent and persists the chosen commander for all three Wars', () => {
       enterCustomCampaign();
       expect(service.selectCampaignOrders('standard', ['total_war'], 'attritionist')).toBeTrue();
       expect(service.activeCampaignModifiers()).toEqual(['total_war']);
       expect(service.currentCommanderId()).toBe('attritionist');
-      expect(service.currentCampaign().commanderSchedule[0]).toBe('attritionist');
-      expect(service.currentCampaign().commanderSchedule.length).toBe(3);
-      expect(new Set(service.currentCampaign().commanderSchedule).size).toBe(3);
+      expect(service.currentCampaign().commanderSchedule).toEqual([
+        'attritionist',
+        'attritionist',
+        'attritionist',
+      ]);
     });
   });
 

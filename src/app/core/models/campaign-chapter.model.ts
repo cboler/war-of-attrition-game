@@ -121,8 +121,18 @@ export function chapterPrerequisitesThrough(mode: CampaignModeId): readonly Camp
 }
 
 /**
+ * Creates a persistent 3-War schedule where the chosen opposing commander faces
+ * the player across all three Wars of the custom Campaign.
+ */
+export function createCustomCommanderSchedule(
+  commanderId: OpponentCommanderId
+): CampaignCommanderSchedule {
+  return [commanderId, commanderId, commanderId];
+}
+
+/**
  * Generates a randomized 3-War schedule of 3 distinct commanders chosen from all 5 permanent commanders.
- * Used exclusively for post-story custom Campaigns (after all four canonical chapters have been completed).
+ * Used exclusively for post-story custom Campaigns when no specific commander is selected.
  * If a starting commander is provided, it is guaranteed as War 1's opponent.
  */
 export function generateReplayCommanderSchedule(
