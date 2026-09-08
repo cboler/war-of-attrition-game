@@ -1,6 +1,6 @@
 # Google Play Games Achievements Manifest
 
-This is the release manifest for the 27 achievements currently mapped to Google Play Games. The application has 30 canonical local achievements; internal IDs are permanent and remain the source of truth, while Google Play Games IDs are an external synchronization mapping.
+This is the release manifest for the 27 achievements currently mapped to Google Play Games. The application has 32 canonical visible achievements (and 5 hidden anomalies, 37 total); internal IDs are permanent and remain the source of truth, while Google Play Games IDs are an external synchronization mapping.
 
 Veteran and Centurion are the only incremental achievements. `profile.campaigner` remains a standard achievement under its new War Tested display name.
 

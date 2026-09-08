@@ -197,7 +197,7 @@ export class AchievementService {
         if (event.specialRule && event.winner === PlayerType.PLAYER) {
           this.unlock('war.assassin', event.turnNumber);
           if (event.playerCard.rank === Rank.TWO && event.opponentCard.rank === Rank.ACE) {
-            this.recordTwoOverAce(event.playerCard.id, event.opponentCard.id, event.turnNumber);
+            this.recordTwoOverAce(event.playerCard, event.opponentCard, event.turnNumber);
           }
         }
         break;
@@ -254,15 +254,17 @@ export class AchievementService {
             ? event.originalWinnerCard
             : event.reinforcementCard;
           if (humanCard.rank === Rank.TWO && opponentCard.rank === Rank.ACE) {
-            this.recordTwoOverAce(humanCard.id, opponentCard.id, event.turnNumber);
+            this.recordTwoOverAce(humanCard, opponentCard, event.turnNumber);
           }
         }
-        // WRONG TOOL FOR THE JOB: 2 sent as reinforcement, loses outright to 3, 4, or 5
+        // WRONG TOOL FOR THE JOB: human player sends a 2 as reinforcement during Challenge and loses outright to 3, 4, or 5
         if (
           event.challenger === PlayerType.PLAYER &&
           event.reinforcementCard.rank === Rank.TWO &&
+          !event.challengerWon &&
+          !event.escalatedToBattle &&
           [Rank.THREE, Rank.FOUR, Rank.FIVE].includes(event.originalWinnerCard.rank) &&
-          event.comparison === ComparisonResult.OPPONENT_WINS
+          (event.winner === PlayerType.OPPONENT || event.comparison === ComparisonResult.OPPONENT_WINS)
         ) {
           this.observe('war.wrong_tool_for_job', event.turnNumber);
         }
@@ -305,8 +307,8 @@ export class AchievementService {
             event.selection.opponentCard.rank === Rank.ACE
           ) {
             this.recordTwoOverAce(
-              event.selection.playerCard.id,
-              event.selection.opponentCard.id,
+              event.selection.playerCard,
+              event.selection.opponentCard,
               event.turnNumber
             );
           }
@@ -567,11 +569,24 @@ export class AchievementService {
     }, 4500);
   }
 
-  private recordTwoOverAce(playerTwoId: string, opponentAceId: string, turnNumber: number): void {
-    this.twinAssassinsPairs.add(`${playerTwoId}:${opponentAceId}`);
+  private recordTwoOverAce(playerTwo: Card, opponentAce: Card, turnNumber: number): void {
+    if (!this.isPlayerOwned(playerTwo) || !this.isOpponentOwned(opponentAce)) {
+      return;
+    }
+    this.twinAssassinsPairs.add(`${playerTwo.id}:${opponentAce.id}`);
     if (this.hasTwinAssassinsPairing()) {
       this.observe('war.twin_assassins', turnNumber);
     }
+  }
+
+  private isPlayerOwned(card: Card): boolean {
+    if (!this.currentPlayerDeckColor) return true;
+    return card.isRed === (this.currentPlayerDeckColor === DeckColor.RED);
+  }
+
+  private isOpponentOwned(card: Card): boolean {
+    if (!this.currentPlayerDeckColor) return true;
+    return card.isRed !== (this.currentPlayerDeckColor === DeckColor.RED);
   }
 
   private hasTwinAssassinsPairing(): boolean {
