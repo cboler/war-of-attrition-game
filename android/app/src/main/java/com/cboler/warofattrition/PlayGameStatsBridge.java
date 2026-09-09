@@ -18,7 +18,7 @@ import java.util.Set;
 
 /**
  * Native bridge handling Play Games Services Game Stats v1 integration.
- * Validates the 19 declared properties strictly before emitting PlayerGameEvent.
+ * Validates the 20 declared properties strictly before emitting PlayerGameEvent.
  */
 public class PlayGameStatsBridge {
     private static final String TAG = "PlayGameStatsBridge";
@@ -72,6 +72,7 @@ public class PlayGameStatsBridge {
         "successful_reinforcements",
         "aces_felled_by_twos",
         "war_margin",
+        "anomalies_observed",
         "reserves_at_war_start"
     )));
 
@@ -222,6 +223,7 @@ public class PlayGameStatsBridge {
             builder.addProperty("successful_reinforcements", (long) payload.getInt("successful_reinforcements"));
             builder.addProperty("aces_felled_by_twos", (long) payload.getInt("aces_felled_by_twos"));
             builder.addProperty("war_margin", (long) payload.getInt("war_margin"));
+            builder.addProperty("anomalies_observed", (long) payload.getInt("anomalies_observed"));
 
             // Add conditional reserves_at_war_start if present
             if (payload.has("reserves_at_war_start") && !payload.isNull("reserves_at_war_start")) {
@@ -383,6 +385,12 @@ public class PlayGameStatsBridge {
             int acesFelled = p.getInt("aces_felled_by_twos");
             if (acesFelled < 0 || acesFelled > 2) {
                 return ValidationResult.invalid("aces_felled_by_twos must be 0..2");
+            }
+
+            // anomalies_observed: 0..5
+            int anomaliesObserved = p.getInt("anomalies_observed");
+            if (anomaliesObserved < 0 || anomaliesObserved > 5) {
+                return ValidationResult.invalid("anomalies_observed must be 0..5");
             }
 
             // war_margin sign checks

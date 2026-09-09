@@ -37,6 +37,7 @@ public class PlayGameStatsBridgeTest {
         validStandardWin.put("successful_reinforcements", 2);
         validStandardWin.put("aces_felled_by_twos", 1);
         validStandardWin.put("war_margin", 12);
+        validStandardWin.put("anomalies_observed", 0);
     }
 
     private JSONObject copyOf(JSONObject src) throws Exception {
@@ -239,6 +240,21 @@ public class PlayGameStatsBridgeTest {
         JSONObject af3 = copyOf(validStandardWin);
         af3.put("aces_felled_by_twos", 3);
         assertFalse(PlayGameStatsBridge.validatePayload(af3).isValid);
+    }
+
+    @Test
+    public void testAnomaliesObservedBounds() throws Exception {
+        JSONObject fiveAnomalies = copyOf(validStandardWin);
+        fiveAnomalies.put("anomalies_observed", 5);
+        assertTrue(PlayGameStatsBridge.validatePayload(fiveAnomalies).isValid);
+
+        JSONObject negativeAnomalies = copyOf(validStandardWin);
+        negativeAnomalies.put("anomalies_observed", -1);
+        assertFalse(PlayGameStatsBridge.validatePayload(negativeAnomalies).isValid);
+
+        JSONObject tooManyAnomalies = copyOf(validStandardWin);
+        tooManyAnomalies.put("anomalies_observed", 6);
+        assertFalse(PlayGameStatsBridge.validatePayload(tooManyAnomalies).isValid);
     }
 
     @Test
