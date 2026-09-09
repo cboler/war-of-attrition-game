@@ -7,19 +7,19 @@ const {
 } = require('./verify-version-match');
 
 test('normalizes supported workflow version-name forms', () => {
-  assert.equal(normalizeVersionName('v4.2.2', 'version'), '4.2.2');
+  assert.equal(normalizeVersionName('v4.2.3', 'version'), '4.2.3');
   assert.equal(normalizeVersionName('4', 'version'), '4.0.0');
   assert.throws(() => normalizeVersionName('release-next', 'version'), /semantic version/);
 });
 
 test('accepts only an Android version name matching the package version', () => {
-  assert.equal(assertVersionNameMatchesPackage('v4.2.2', '4.2.2'), '4.2.2');
+  assert.equal(assertVersionNameMatchesPackage('v4.2.3', '4.2.3'), '4.2.3');
   assert.throws(
-    () => assertVersionNameMatchesPackage('4.2.1', '4.2.2'),
+    () => assertVersionNameMatchesPackage('4.2.2', '4.2.3'),
     /does not match the authoritative web\/package version/,
   );
 });
 
-test('keeps the checked-in authoritative package version at 4.2.2', () => {
-  assert.equal(readPackageVersion(), '4.2.2');
+test('keeps the checked-in authoritative package version at 4.2.3', () => {
+  assert.equal(readPackageVersion(), '4.2.3');
 });

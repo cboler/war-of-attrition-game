@@ -2,6 +2,6 @@ export const environment = {
   production: false,
   googleClientId: "",
   ga4MeasurementId: "",
-  appVersion: "4.2.2-dev",
+  appVersion: "4.2.3-dev",
   rulesetVersion: "2026.09.1"
 };
