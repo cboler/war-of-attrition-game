@@ -81,5 +81,9 @@
                     android:pathPrefix="/war-of-attrition-game" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name="androidx.browser.customtabs.PostMessageService"
+            android:exported="true" />
     </application>
 </manifest>

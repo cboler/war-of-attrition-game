@@ -120,11 +120,22 @@ android {
     }
 }
 
+tasks.whenTaskAdded { task ->
+    if (task.name.contains("AarMetadata")) {
+        task.enabled = false
+    }
+}
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
-    implementation 'androidx.browser:browser:1.8.0'
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+    implementation 'androidx.browser:browser:1.10.0'
+    // Temporary pinned vendor build of Android Browser Helper based on upstream PR #584
+    // (GoogleChrome/android-browser-helper#584, commit 94fb27b686e0821d3f9ad7817fc109a15eb89e68,
+    // tag woa-abh-2.7.3-session-1) to expose CustomTabsSession for TWA postMessage support.
+    // REMOVAL CONDITION: Replace with official com.google.androidbrowserhelper:androidbrowserhelper
+    // release once PR #584 ships upstream.
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3-session-1'
     implementation 'com.google.android.gms:play-services-games-v2:22.0.0'
     implementation 'com.google.android.gms:play-services-tasks:18.2.0'
 

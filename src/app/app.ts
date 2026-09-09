@@ -19,6 +19,7 @@ import { GameTelemetryService } from './services/game-telemetry.service';
 import { GameStatsProjectionService } from './services/game-stats-projection.service';
 import { AnalyticsConsentPromptService } from './services/analytics-consent-prompt.service';
 import { AchievementService } from './services/achievement.service';
+import { TwaPostMessageService } from './core/services/twa-post-message.service';
 
 @Component({
   selector: 'app-root',
@@ -49,6 +50,8 @@ export class App implements OnInit, OnDestroy {
   private readonly analyticsConsentPrompt = inject(AnalyticsConsentPromptService);
   // Achievement evaluation also observes the non-replaying game bus eagerly.
   private readonly achievementService = inject(AchievementService);
+  // Native TWA postMessage adapter for Play Games and Game Stats
+  private readonly twaPostMessage = inject(TwaPostMessageService);
 
   protected readonly title = signal('ATTRITION');
   protected readonly activeProfile = this.authService.activeProfile;

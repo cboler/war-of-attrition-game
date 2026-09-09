@@ -67,24 +67,25 @@ cd android
 
 ## Native Play Games bridge status
 
-Local achievements and career stats are fully operational and canonical. Native Play synchronization, achievements UI, and Game Stats submission are deliberately protected behind a verified transport boundary until an origin-verified bidirectional Custom Tabs channel is installed.
+Local achievements and career stats are fully operational and canonical. Native Play synchronization, achievements UI, and Game Stats submission are connected via an origin-verified bidirectional Custom Tabs `postMessage` channel.
 
-During the Game Stats v1 implementation pass, dependency evaluation confirmed **Outcome B**:
-- `com.google.androidbrowserhelper:androidbrowserhelper` is retained at `2.5.0` (inspection of `2.7.3` confirmed PR #584 remains unmerged, while `2.7.3` transitively pulls `browser:1.10.0` and `core:1.17.0` requiring AGP 8.9.1+).
-- `com.google.android.gms:play-services-games-v2` is upgraded to `22.0.0` (which provides `GameStatsClient` and `PlayerGameEvent`).
-- `androidx.browser:browser:1.8.0` remains unchanged.
-- Upstream PR #584 (which proposes public Custom Tabs session access on `LauncherActivity` / `TwaLauncher`) has **never been merged into an official release of Android Browser Helper up through 2.7.3**. `TwaLauncher.mSession` remains private.
-- In accordance with the security contract, no insecure bypasses (reflection, WebView `JavascriptInterface`, unverified `window.postMessage`, or forking launcher internals) are permitted.
-- All Game Stats v1 components (`game-stats.model.ts`, `game-stats-projection.service.ts`, `platform-game-stats.service.ts`, `PlayGameStatsBridge.java`, and unit tests) are fully implemented and verified. Production runtime transport availability remains `false` until an official upstream release provides the Custom Tabs session accessor.
+### Temporary Android Browser Helper Dependency Note
+To unblock Google Play Games achievements and Game Stats bridge before Open Testing:
+- **Why the fork exists:** Android Browser Helper official releases up through 2.7.3 kept `TwaLauncher.mSession` private and lacked any callback or hook exposing `CustomTabsSession` on `LauncherActivity`, making it impossible for a clean TWA launcher to establish `requestPostMessageChannel()` without reflection or parallel service bindings.
+- **Upstream PR:** [`GoogleChrome/android-browser-helper#584`](https://github.com/GoogleChrome/android-browser-helper/pull/584) (*"Expose CustomTabsSession on TwaLauncher and LauncherActivity"*).
+- **Starting PR branch:** `dnikolaev/expose-customtabs-session` (base commit `febadb4dcdd7a66fb4d17175b67c012f245c8610`).
+- **Our fork commit & tag:** Fork repository `cboler/android-browser-helper`, commit `94fb27b686e0821d3f9ad7817fc109a15eb89e68`, immutable release tag `woa-abh-2.7.3-session-1`.
+- **Implementation details:** Implemented the August 25, 2026 Google maintainer specification by providing a protected hook `onCustomTabsSessionAvailable(@NonNull CustomTabsSession session)` on `LauncherActivity` called from `TwaLauncher.launch()`'s completion callback, alongside the public `TwaLauncher.getSession()` accessor.
+- **Checked-in vendor repository:** Published to `android/vendor/m2repository/` as `com.google.androidbrowserhelper:androidbrowserhelper:2.7.3-session-1` with full POM/transitive metadata, sources, and javadocs under Apache 2.0.
+- **Open Testing readiness workaround:** This temporary dependency unblocks bidirectional communication (`requestPostMessageChannel`) between `MainActivity` and `TwaPostMessageService` (`VerifiedTwaTransport`).
+- **Removal condition:** Migrate back to the first official Android Browser Helper release containing #584 once published to Google Maven / Maven Central.
 
-Follow-up work after adopting a released Android Browser Helper API that exposes the session:
-
-1. Request and verify the postMessage channel for `https://cboler.github.io`.
-2. Bind incoming messages to `PlayGamesBridge.handleWebMessage` and `PlayGameStatsBridge.handleWebMessage`, routing native responses back through the verified channel.
-3. Register that channel with the Angular `VerifiedTwaTransport` adapter.
-4. Validate ready, sign-in, standard unlock, absolute `setSteps`, reconnect reconciliation, achievements UI, and Game Stats `war_completed` buffer receipts on a Play-installed internal-test build.
-
-Until all four steps pass, the local profile remains authoritative and no native control claims availability.
+### PostMessage Transport & Bridge Integration
+1. Native `PostMessageService` is declared in `AndroidManifest.xml`.
+2. `MainActivity` establishes a postMessage channel for `https://cboler.github.io` once both `CustomTabsSession` and `NAVIGATION_FINISHED` arrive.
+3. Native bridge routing is managed by `TwaPostMessageManager`, which routes incoming requests to `PlayGamesBridge` and `PlayGameStatsBridge` while buffering outbound responses until the channel handshake is complete.
+4. Angular registers `VerifiedTwaTransport` via `TwaPostMessageService` upon receiving the transferred `MessagePort`.
+5. Digital Asset Links on `https://cboler.github.io/.well-known/assetlinks.json` grant `delegate_permission/common.use_as_origin`.
 
 ## 🎯 Step-by-Step Manual Owner Checklist
 
