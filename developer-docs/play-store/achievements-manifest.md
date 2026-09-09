@@ -1,6 +1,6 @@
 # Google Play Games Achievements Manifest
 
-This is the release manifest for the 27 achievements currently mapped to Google Play Games. The application has 34 canonical visible achievements (and 5 hidden anomalies, 39 total); internal IDs are permanent and remain the source of truth, while Google Play Games IDs are an external synchronization mapping.
+This is the release manifest for the 29 achievements currently mapped to Google Play Games. The application has 34 canonical visible achievements (and 5 hidden anomalies, 39 total); internal IDs are permanent and remain the source of truth, while Google Play Games IDs are an external synchronization mapping.
 
 Veteran and Centurion are the only incremental achievements. `profile.campaigner` remains a standard achievement under its new War Tested display name.
 
@@ -26,6 +26,8 @@ Veteran and Centurion are the only incremental achievements. `profile.campaigner
 | `war.cavalry_came` | The Cavalry Came | Successfully rescue a 2 by drawing an Ace as reinforcement. | Standard | `CgkIz5juh94JEAIQFw` |
 | `war.no_reinforcements_win` | No Reinforcements Needed | Win without sending a reinforcement. | Standard | `CgkIz5juh94JEAIQFQ` |
 | `war.five_battles_game` | War of Attrition | Resolve a game containing at least 5 distinct Battles. | Standard | `CgkIz5juh94JEAIQBw` |
+| `war.deuce_ex_machina` | Deuce Ex Machina | Draw a 2 as reinforcement to defeat an opposing Ace. | Standard | `CgkIz5juh94JEAIQJw` |
+| `war.snatched_from_jaws_of_victory` | Snatched from the Jaws of Victory | Have your winning Ace assassinated by an opponent's reinforcement 2. | Standard | `CgkIz5juh94JEAIQKA` |
 | `war.pyrrhic_victory` | Pyrrhic Victory | Win with exactly 1 card remaining. | Standard | `CgkIz5juh94JEAIQBA` |
 | `war.untouchable` | Untouchable | Win with at least 18 cards remaining. | Standard | `CgkIz5juh94JEAIQCg` |
 | `war.comeback_15` | Never Tell Me the Odds | Win after trailing by at least 15 cards. | Standard | `CgkIz5juh94JEAIQDg` |
@@ -43,10 +45,7 @@ Veteran and Centurion are the only incremental achievements. `profile.campaigner
 | `war.neverending_stalemate` | Neverending Stalemate | Reach three consecutive authoritative tied comparisons. | Distinction |
 | `war.wrong_tool_for_job` | Wrong Tool for the Job | Send a 2 as reinforcement and lose the Challenge to a 3, 4, or 5. | Distinction |
 | `war.twin_assassins` | Twin Assassins | In one War, have each of your two 2s defeat a different enemy Ace. | Prestige |
-| `war.deuce_ex_machina` | Deuce Ex Machina | Draw a 2 as reinforcement to defeat an opposing Ace. | Distinction |
-| `war.snatched_from_jaws_of_victory` | Snatched from the Jaws of Victory | Have your winning Ace assassinated by an opponent's reinforcement 2. | Distinction |
-
-These seven visible achievements unlock and persist locally. Their Google Play Games IDs will be mapped back into `PLAY_ACHIEVEMENT_MAPPINGS` upon Play Console bulk upload reconciliation. (Astronomical anomalies are omitted from the Play Store catalogue and manifest).
+These five visible achievements unlock and persist locally. Their Google Play Games IDs will be mapped back into `PLAY_ACHIEVEMENT_MAPPINGS` after a future Play Console reconciliation. Astronomical anomalies are omitted from the Play Store catalogue and achievement manifest; their aggregate count is represented by a Game Stat.
 
 ## Synchronization contract
 
@@ -57,6 +56,7 @@ These seven visible achievements unlock and persist locally. Their Google Play G
 
 ## Manual Play Console checks
 
-- Verify the five new standard achievements use the permanent IDs above.
+- Verify the two newly mapped standard achievements use the permanent IDs above.
+- Add the remaining five local-only visible achievements only when their Play Console scope is intentionally approved.
 - Edit the existing Marathon description to say 42 turns; do not create a second achievement.
 - Rename the existing `profile.campaigner` Play achievement to War Tested and update its description to “Complete 10 resolved Wars.” Keep its existing Play Games ID.

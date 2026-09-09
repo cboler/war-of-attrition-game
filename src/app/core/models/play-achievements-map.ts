@@ -32,6 +32,11 @@ export const PLAY_ACHIEVEMENT_MAPPINGS: Record<string, PlayAchievementMapping> =
   'war.cavalry_came': standard('war.cavalry_came', 'CgkIz5juh94JEAIQFw'),
   'war.no_reinforcements_win': standard('war.no_reinforcements_win', 'CgkIz5juh94JEAIQFQ'),
   'war.five_battles_game': standard('war.five_battles_game', 'CgkIz5juh94JEAIQBw'),
+  'war.deuce_ex_machina': standard('war.deuce_ex_machina', 'CgkIz5juh94JEAIQJw'),
+  'war.snatched_from_jaws_of_victory': standard(
+    'war.snatched_from_jaws_of_victory',
+    'CgkIz5juh94JEAIQKA',
+  ),
   'war.pyrrhic_victory': standard('war.pyrrhic_victory', 'CgkIz5juh94JEAIQBA'),
   'war.untouchable': standard('war.untouchable', 'CgkIz5juh94JEAIQCg'),
   'war.comeback_15': standard('war.comeback_15', 'CgkIz5juh94JEAIQDg'),

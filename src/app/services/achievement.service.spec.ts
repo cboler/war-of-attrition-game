@@ -612,7 +612,7 @@ describe('AchievementService', () => {
     expect(service.isUnlocked('war.marathon')).toBe(true);
   });
 
-  it('defines 30 local achievements and maps the 27 Play Games achievements', () => {
+  it('defines the canonical achievements and maps the 29 Play Games achievements', () => {
     const exactPlayIds: Readonly<Record<string, string>> = {
       'war.first_casualty': 'CgkIz5juh94JEAIQDA',
       'war.first_battle': 'CgkIz5juh94JEAIQEQ',
@@ -634,6 +634,8 @@ describe('AchievementService', () => {
       'war.cavalry_came': 'CgkIz5juh94JEAIQFw',
       'war.no_reinforcements_win': 'CgkIz5juh94JEAIQFQ',
       'war.five_battles_game': 'CgkIz5juh94JEAIQBw',
+      'war.deuce_ex_machina': 'CgkIz5juh94JEAIQJw',
+      'war.snatched_from_jaws_of_victory': 'CgkIz5juh94JEAIQKA',
       'war.pyrrhic_victory': 'CgkIz5juh94JEAIQBA',
       'war.untouchable': 'CgkIz5juh94JEAIQCg',
       'war.comeback_15': 'CgkIz5juh94JEAIQDg',
@@ -654,7 +656,7 @@ describe('AchievementService', () => {
     expect(ids).toContain('war.twin_assassins');
     expect(ids).toContain('war.deuce_ex_machina');
     expect(ids).toContain('war.snatched_from_jaws_of_victory');
-    expect(Object.keys(PLAY_ACHIEVEMENT_MAPPINGS).length).toBe(27);
+    expect(Object.keys(PLAY_ACHIEVEMENT_MAPPINGS).length).toBe(29);
     expect(
       Object.fromEntries(
         Object.entries(PLAY_ACHIEVEMENT_MAPPINGS).map(([id, mapping]) => [id, mapping.playGamesId]),

@@ -1,0 +1,2 @@
+Stat Id,Event Name,Event Property Name,Aggregation Type,Stat Display Name,Stat Description,Filter Property,Filter Operator,Filter Value,Is Competitive,Min limit,Max limit,Icon File Name,Good value direction,Unit
+astronomical_anomalies_observed,war_completed,anomalies_observed,SUM,Astronomical Anomalies Observed,Astronomically rare events confirmed during completed Wars.,,,,false,,,astronomical_anomalies_observed.png,INCREASING,UNITLESS
