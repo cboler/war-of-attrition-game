@@ -9,11 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       version_code:
-        description: 'Override Android Version Code (optional positive integer, e.g. 40205)'
+        description: 'Override Android Version Code (optional positive integer, e.g. 40206)'
         required: false
         type: string
       version_name:
-        description: 'Android Version Name (optional; must match package.json, e.g. 4.2.5)'
+        description: 'Android Version Name (optional; must match package.json, e.g. 4.2.6)'
         required: false
         type: string
 
@@ -127,15 +127,19 @@ jobs:
           PLAY_GAMES_PROJECT_ID: ${{ vars.PLAY_GAMES_PROJECT_ID || '334487063631' }}
         run: ./gradlew bundleRelease --stacktrace
 
-      - name: Upload Release AAB Artifact
+      - name: Upload Release AAB and R8 Mapping Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: app-release-aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/mapping/release/mapping.txt
           retention-days: 14
 
-      - name: Attach AAB to GitHub Release
+      - name: Attach AAB and R8 Mapping to GitHub Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: android/app/build/outputs/bundle/release/app-release.aab
+          files: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/mapping/release/mapping.txt
