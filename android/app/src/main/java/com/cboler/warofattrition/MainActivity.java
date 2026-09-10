@@ -2,6 +2,8 @@ package com.cboler.warofattrition;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,6 +21,8 @@ public class MainActivity extends LauncherActivity {
     private PlayGamesBridge playGamesBridge;
     private PlayGameStatsBridge playGameStatsBridge;
     private TwaPostMessageManager postMessageManager;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean deferNextFinishForPostMessageHandshake;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +44,21 @@ public class MainActivity extends LauncherActivity {
     protected void onCustomTabsSessionAvailable(@NonNull CustomTabsSession session) {
         Log.i(TAG, "onCustomTabsSessionAvailable hook invoked with session");
         if (postMessageManager != null) {
+            // ABH 2.7.3 finishes LauncherActivity immediately after this hook. Keep it alive until
+            // Chrome binds the PostMessageService so the callback binder is not destroyed mid-handshake.
+            deferNextFinishForPostMessageHandshake = true;
             postMessageManager.setCustomTabsSession(session);
         }
+    }
+
+    @Override
+    public void finish() {
+        if (deferNextFinishForPostMessageHandshake) {
+            deferNextFinishForPostMessageHandshake = false;
+            Log.i(TAG, "Deferring LauncherActivity finish until postMessage channel is ready");
+            return;
+        }
+        super.finish();
     }
 
     @NonNull
@@ -91,6 +108,10 @@ public class MainActivity extends LauncherActivity {
             if (postMessageManager != null) {
                 postMessageManager.onMessageChannelReady();
             }
+
+            // Chrome now owns a live binding to PostMessageService, so ABH can safely release its
+            // launcher activity without invalidating the callback during channel setup.
+            mainHandler.post(MainActivity.this::finish);
         }
 
         @Override

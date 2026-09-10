@@ -7,7 +7,7 @@ function normalizeVersionName(value, label) {
   const raw = String(value ?? '').trim().replace(/^[vV]/, '');
   if (/^[0-9]+$/.test(raw)) return `${raw}.0.0`;
   if (/^[0-9]+\.[0-9]+\.[0-9]+$/.test(raw)) return raw;
-  throw new Error(`${label} must be a semantic version such as 4.2.4.`);
+  throw new Error(`${label} must be a semantic version such as 4.2.5.`);
 }
 
 function readPackageVersion(packagePath = DEFAULT_PACKAGE_PATH) {

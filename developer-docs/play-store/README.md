@@ -76,13 +76,14 @@ To unblock Google Play Games achievements and Game Stats bridge before Open Test
 - **Starting PR branch:** `dnikolaev/expose-customtabs-session` (base commit `febadb4dcdd7a66fb4d17175b67c012f245c8610`).
 - **Our fork commit & tag:** Fork repository `cboler/android-browser-helper`, commit `94fb27b686e0821d3f9ad7817fc109a15eb89e68`, immutable release tag `woa-abh-2.7.3-session-1`.
 - **Implementation details:** Implemented the August 25, 2026 Google maintainer specification by providing a protected hook `onCustomTabsSessionAvailable(@NonNull CustomTabsSession session)` on `LauncherActivity` called from `TwaLauncher.launch()`'s completion callback, alongside the public `TwaLauncher.getSession()` accessor.
+- **Session lifetime requirement:** ABH 2.7.3 normally finishes and destroys `LauncherActivity` immediately after launching the TWA. `MainActivity` defers only that finish until Chrome reports `onMessageChannelReady`, preserving the callback binder while `PostMessageService` is bound and then releasing the launcher normally.
 - **Checked-in vendor repository:** Published to `android/vendor/m2repository/` as `com.google.androidbrowserhelper:androidbrowserhelper:2.7.3-session-1` with full POM/transitive metadata, sources, and javadocs under Apache 2.0.
 - **Open Testing readiness workaround:** This temporary dependency unblocks bidirectional communication (`requestPostMessageChannel`) between `MainActivity` and `TwaPostMessageService` (`VerifiedTwaTransport`).
 - **Removal condition:** Migrate back to the first official Android Browser Helper release containing #584 once published to Google Maven / Maven Central.
 
 ### PostMessage Transport & Bridge Integration
 1. Native `PostMessageService` is declared in `AndroidManifest.xml`.
-2. `MainActivity` establishes a postMessage channel for `https://cboler.github.io` once both `CustomTabsSession` and `NAVIGATION_FINISHED` arrive.
+2. `MainActivity` establishes a postMessage channel for `https://cboler.github.io` once both `CustomTabsSession` and `NAVIGATION_FINISHED` arrive; a rejected or exceptional channel request is contained instead of terminating the app and remains eligible for retry.
 3. Native bridge routing is managed by `TwaPostMessageManager`, which routes incoming requests to `PlayGamesBridge` and `PlayGameStatsBridge` while buffering outbound responses until the channel handshake is complete.
 4. Angular registers `VerifiedTwaTransport` via `TwaPostMessageService` upon receiving the transferred `MessagePort`.
 5. Digital Asset Links on `https://cboler.github.io/.well-known/assetlinks.json` grant `delegate_permission/common.use_as_origin`.

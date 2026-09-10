@@ -20,8 +20,8 @@
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionName": "4.2.4",
-  "appVersionCode": 40204,
+  "appVersionName": "4.2.5",
+  "appVersionCode": 40205,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://cboler.github.io/war-of-attrition-game/manifest.webmanifest",

@@ -2,7 +2,7 @@
 
 ## 1. Project State: Core and Two Creative Sprints Complete
 
-**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity. The hosted release and the currently distributed wrapper now share version identity **4.2.4**.
+**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity. The hosted release and the next Android wrapper share version identity **4.2.5**.
 
 The project is no longer in broad feature discovery. Both substantial creative sprints now have production implementations:
 
@@ -89,7 +89,7 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 - Card-backing cosmetics and token purchase/unlock flow are implemented.
 - Thirty local tiered achievements are implemented. `Against the Odds`, `Crippled`, and `Neverending Stalemate` are intentionally local-only pending final Play Games reconciliation; the existing 27 Play mappings remain unchanged.
 - Google Analytics 4 telemetry is consent-gated and denied by default until permission. Test and screenshot modes collect no analytics. Fog of War applies presentation and mapper-level information redaction while a War is active.
-- Game Stats v1 payload validation, public-event projection, web platform adapter, and native buffer wrapper are implemented and tested. Ordinary web/PWA play is a safe no-op, and the distributed TWA still reports the capability unavailable because it has no origin-verified bidirectional host channel; completing that channel is explicitly deferred to a future native/AAB pass.
+- Game Stats v1 payload validation, public-event projection, web platform adapter, and native buffer wrapper are implemented and tested. Ordinary web/PWA play is a safe no-op. The Android wrapper uses the vendored ABH session hook for an origin-verified postMessage channel; version 4.2.5 preserves the launcher callback through the asynchronous `PostMessageService` handshake and contains channel-request failures. Play-signed physical-device validation remains required.
 
 ### Platform Packaging and Tooling
 

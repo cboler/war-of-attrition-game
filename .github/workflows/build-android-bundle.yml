@@ -9,11 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       version_code:
-        description: 'Override Android Version Code (optional positive integer, e.g. 40204)'
+        description: 'Override Android Version Code (optional positive integer, e.g. 40205)'
         required: false
         type: string
       version_name:
-        description: 'Android Version Name (optional; must match package.json, e.g. 4.2.4)'
+        description: 'Android Version Name (optional; must match package.json, e.g. 4.2.5)'
         required: false
         type: string
 

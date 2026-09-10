@@ -32,8 +32,6 @@ public class TwaPostMessageManager {
     private boolean navigationFinished = false;
     private boolean channelRequested = false;
     private boolean channelReady = false;
-    private int retryCount = 0;
-    private static final int MAX_RETRIES = 1;
     private static final int MAX_PENDING_MESSAGES = 50;
     private final Queue<String> pendingOutboundResponses = new LinkedList<>();
 
@@ -81,12 +79,18 @@ public class TwaPostMessageManager {
         if (!sessionAvailable || !navigationFinished || channelRequested || postMessageSender == null) {
             return false;
         }
-        channelRequested = true;
         Uri targetOrigin = Uri.parse(TARGET_ORIGIN_STRING);
         Log.i(TAG, "Requesting postMessage channel for origin: " + targetOrigin);
-        boolean success = postMessageSender.requestPostMessageChannel(targetOrigin);
-        Log.i(TAG, "requestPostMessageChannel returned: " + success);
-        return success;
+        try {
+            boolean success = postMessageSender.requestPostMessageChannel(targetOrigin);
+            channelRequested = success;
+            Log.i(TAG, "requestPostMessageChannel returned: " + success);
+            return success;
+        } catch (RuntimeException e) {
+            channelRequested = false;
+            Log.e(TAG, "requestPostMessageChannel failed without terminating the app", e);
+            return false;
+        }
     }
 
     public synchronized void onMessageChannelReady() {

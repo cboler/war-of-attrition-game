@@ -23,6 +23,7 @@ public class TwaPostMessageManagerTest {
         Uri requestedTargetOrigin = null;
         int requestChannelCalls = 0;
         boolean requestChannelResult = true;
+        RuntimeException requestChannelException = null;
 
         @Override
         public int postMessage(String message) {
@@ -34,6 +35,9 @@ public class TwaPostMessageManagerTest {
         public boolean requestPostMessageChannel(Uri targetOrigin) {
             requestChannelCalls++;
             requestedTargetOrigin = targetOrigin;
+            if (requestChannelException != null) {
+                throw requestChannelException;
+            }
             return requestChannelResult;
         }
     }
@@ -151,6 +155,34 @@ public class TwaPostMessageManagerTest {
         // Additional navigation finished or session calls do not re-request channel
         manager.onNavigationFinished();
         manager.setPostMessageSender(sender);
+        assertEquals(1, sender.requestChannelCalls);
+    }
+
+    @Test
+    public void testRejectedChannelRequestCanRetry() {
+        sender.requestChannelResult = false;
+        manager.setPostMessageSender(sender);
+
+        assertFalse(manager.maybeRequestPostMessageChannel());
+        manager.onNavigationFinished();
+
+        assertFalse(manager.isChannelRequested());
+        assertEquals(1, sender.requestChannelCalls);
+
+        sender.requestChannelResult = true;
+        assertTrue(manager.maybeRequestPostMessageChannel());
+        assertTrue(manager.isChannelRequested());
+        assertEquals(2, sender.requestChannelCalls);
+    }
+
+    @Test
+    public void testChannelRequestExceptionDoesNotEscape() {
+        sender.requestChannelException = new SecurityException("PostMessageService bind rejected");
+        manager.setPostMessageSender(sender);
+
+        manager.onNavigationFinished();
+
+        assertFalse(manager.isChannelRequested());
         assertEquals(1, sender.requestChannelCalls);
     }
 
