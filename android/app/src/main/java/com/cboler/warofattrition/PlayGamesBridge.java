@@ -40,20 +40,34 @@ public class PlayGamesBridge {
             PlayGamesSdk.initialize(activity);
             GamesSignInClient signInClient = PlayGames.getGamesSignInClient(activity);
             signInClient.isAuthenticated().addOnCompleteListener(task -> {
-                boolean authenticated = task.isSuccessful() && task.getResult().isAuthenticated();
-                this.isInitialized = true;
-                this.isSignedIn = authenticated;
-                if (authenticated) {
-                    this.achievementsClient = PlayGames.getAchievementsClient(activity);
-                    sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
-                } else {
+                try {
+                    boolean authenticated = task.isSuccessful()
+                            && task.getResult() != null
+                            && task.getResult().isAuthenticated();
+                    this.isInitialized = true;
+                    this.isSignedIn = authenticated;
+                    if (authenticated) {
+                        try {
+                            this.achievementsClient = PlayGames.getAchievementsClient(activity);
+                        } catch (Throwable t) {
+                            Log.w(TAG, "Failed to get achievements client: " + t.getMessage(), t);
+                        }
+                        sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
+                    } else {
+                        sendToWeb("PLAY_GAMES_READY", null, null, null);
+                    }
+                } catch (Throwable t) {
+                    Log.w(TAG, "Error in isAuthenticated completion listener: " + t.getMessage(), t);
+                    this.isInitialized = false;
+                    this.isSignedIn = false;
                     sendToWeb("PLAY_GAMES_READY", null, null, null);
                 }
             });
-        } catch (Exception e) {
-            Log.w(TAG, "Play Games SDK initialization failed: " + e.getMessage());
+        } catch (Throwable t) {
+            Log.w(TAG, "Play Games SDK initialization failed: " + t.getMessage(), t);
             this.isInitialized = false;
-            sendToWeb("PLAY_GAMES_UNAVAILABLE", null, null, e.getMessage());
+            this.isSignedIn = false;
+            sendToWeb("PLAY_GAMES_UNAVAILABLE", null, null, t.getMessage());
         }
     }
 
@@ -116,17 +130,30 @@ public class PlayGamesBridge {
         try {
             GamesSignInClient signInClient = PlayGames.getGamesSignInClient(activity);
             signInClient.signIn().addOnCompleteListener(task -> {
-                if (task.isSuccessful() && task.getResult().isAuthenticated()) {
-                    this.isSignedIn = true;
-                    this.achievementsClient = PlayGames.getAchievementsClient(activity);
-                    sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
-                } else {
+                try {
+                    boolean authenticated = task.isSuccessful()
+                            && task.getResult() != null
+                            && task.getResult().isAuthenticated();
+                    if (authenticated) {
+                        this.isSignedIn = true;
+                        try {
+                            this.achievementsClient = PlayGames.getAchievementsClient(activity);
+                        } catch (Throwable t) {
+                            Log.w(TAG, "Failed to get achievements client: " + t.getMessage(), t);
+                        }
+                        sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
+                    } else {
+                        this.isSignedIn = false;
+                        sendToWeb("PLAY_GAMES_READY", null, null, null);
+                    }
+                } catch (Throwable t) {
+                    Log.w(TAG, "Error in signIn completion listener: " + t.getMessage(), t);
                     this.isSignedIn = false;
                     sendToWeb("PLAY_GAMES_READY", null, null, null);
                 }
             });
-        } catch (Exception e) {
-            Log.w(TAG, "Sign-in request failed: " + e.getMessage());
+        } catch (Throwable t) {
+            Log.w(TAG, "Sign-in request failed: " + t.getMessage(), t);
         }
     }
 
@@ -142,21 +169,29 @@ public class PlayGamesBridge {
         }
 
         if (achievementsClient == null) {
-            this.achievementsClient = PlayGames.getAchievementsClient(activity);
+            try {
+                this.achievementsClient = PlayGames.getAchievementsClient(activity);
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to get achievementsClient: " + t.getMessage(), t);
+            }
         }
 
         try {
             achievementsClient.unlockImmediate(playGamesId).addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    sendToWeb("ACHIEVEMENT_SYNCED", internalId, playGamesId, null);
-                } else {
-                    String error = task.getException() != null ? task.getException().getMessage() : "Unknown sync error";
-                    sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
+                try {
+                    if (task.isSuccessful()) {
+                        sendToWeb("ACHIEVEMENT_SYNCED", internalId, playGamesId, null);
+                    } else {
+                        String error = task.getException() != null ? task.getException().getMessage() : "Unknown sync error";
+                        sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
+                    }
+                } catch (Throwable t) {
+                    Log.w(TAG, "Error in unlockImmediate callback: " + t.getMessage(), t);
                 }
             });
-        } catch (Exception e) {
-            Log.w(TAG, "Failed to unlock achievement: " + e.getMessage());
-            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, e.getMessage());
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to unlock achievement: " + t.getMessage(), t);
+            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, t.getMessage());
         }
     }
 
@@ -171,21 +206,29 @@ public class PlayGamesBridge {
         }
 
         if (achievementsClient == null) {
-            this.achievementsClient = PlayGames.getAchievementsClient(activity);
+            try {
+                this.achievementsClient = PlayGames.getAchievementsClient(activity);
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to get achievementsClient: " + t.getMessage(), t);
+            }
         }
 
         try {
             achievementsClient.setStepsImmediate(playGamesId, steps).addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    sendToWeb("ACHIEVEMENT_SYNCED", internalId, playGamesId, null);
-                } else {
-                    String error = task.getException() != null ? task.getException().getMessage() : "Unknown set-steps error";
-                    sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
+                try {
+                    if (task.isSuccessful()) {
+                        sendToWeb("ACHIEVEMENT_SYNCED", internalId, playGamesId, null);
+                    } else {
+                        String error = task.getException() != null ? task.getException().getMessage() : "Unknown set-steps error";
+                        sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
+                    }
+                } catch (Throwable t) {
+                    Log.w(TAG, "Error in setStepsImmediate callback: " + t.getMessage(), t);
                 }
             });
-        } catch (Exception e) {
-            Log.w(TAG, "Failed to set achievement steps: " + e.getMessage());
-            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, e.getMessage());
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to set achievement steps: " + t.getMessage(), t);
+            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, t.getMessage());
         }
     }
 
@@ -195,17 +238,25 @@ public class PlayGamesBridge {
         }
 
         if (achievementsClient == null) {
-            this.achievementsClient = PlayGames.getAchievementsClient(activity);
+            try {
+                this.achievementsClient = PlayGames.getAchievementsClient(activity);
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to get achievementsClient: " + t.getMessage(), t);
+            }
         }
 
         try {
             achievementsClient.getAchievementsIntent().addOnSuccessListener(intent -> {
-                activity.startActivityForResult(intent, RC_ACHIEVEMENT_UI);
+                try {
+                    activity.startActivityForResult(intent, RC_ACHIEVEMENT_UI);
+                } catch (Throwable t) {
+                    Log.w(TAG, "Failed to launch achievements UI activity: " + t.getMessage(), t);
+                }
             }).addOnFailureListener(e -> {
                 Log.w(TAG, "Failed to retrieve achievements UI intent: " + e.getMessage());
             });
-        } catch (Exception e) {
-            Log.w(TAG, "Could not open achievements UI: " + e.getMessage());
+        } catch (Throwable t) {
+            Log.w(TAG, "Could not open achievements UI: " + t.getMessage(), t);
         }
     }
 

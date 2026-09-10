@@ -113,16 +113,29 @@ public class PlayGameStatsBridge {
             PlayGamesSdk.initialize(activity);
             GamesSignInClient signInClient = PlayGames.getGamesSignInClient(activity);
             signInClient.isAuthenticated().addOnCompleteListener(task -> {
-                boolean authenticated = task.isSuccessful() && task.getResult().isAuthenticated();
-                this.isInitialized = true;
-                this.isSignedIn = authenticated;
-                if (authenticated) {
-                    this.gameStatsClient = PlayGames.getGameStatsClient(activity);
+                try {
+                    boolean authenticated = task.isSuccessful()
+                            && task.getResult() != null
+                            && task.getResult().isAuthenticated();
+                    this.isInitialized = true;
+                    this.isSignedIn = authenticated;
+                    if (authenticated) {
+                        try {
+                            this.gameStatsClient = PlayGames.getGameStatsClient(activity);
+                        } catch (Throwable t) {
+                            Log.w(TAG, "Failed to get GameStatsClient: " + t.getMessage(), t);
+                        }
+                    }
+                    sendStateToWeb();
+                } catch (Throwable t) {
+                    Log.w(TAG, "Error in game stats isAuthenticated callback: " + t.getMessage(), t);
+                    this.isInitialized = false;
+                    this.isSignedIn = false;
+                    sendStateToWeb();
                 }
-                sendStateToWeb();
             });
-        } catch (Exception e) {
-            Log.w(TAG, "Play Games SDK initialization failed: " + e.getMessage());
+        } catch (Throwable t) {
+            Log.w(TAG, "Play Games SDK initialization failed for GameStats: " + t.getMessage(), t);
             this.isInitialized = false;
             this.isSignedIn = false;
             sendStateToWeb();
@@ -195,6 +208,13 @@ public class PlayGameStatsBridge {
         }
 
         if (!canRecord()) {
+            if (!isInitialized && activity != null) {
+                try {
+                    initialize();
+                } catch (Throwable t) {
+                    Log.w(TAG, "Lazy initialization failed: " + t.getMessage(), t);
+                }
+            }
             sendRejected(warId, "not_signed_in");
             return;
         }
@@ -245,8 +265,8 @@ public class PlayGameStatsBridge {
             }
 
             sendBuffered(warId);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to record PlayerGameEvent for war " + warId + ": " + e.getMessage());
+        } catch (Throwable t) {
+            Log.e(TAG, "Failed to record PlayerGameEvent for war " + warId + ": " + t.getMessage(), t);
             sendRejected(warId, "record_event_failed");
         }
     }

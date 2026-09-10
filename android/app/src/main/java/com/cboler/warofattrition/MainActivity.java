@@ -8,7 +8,6 @@ import androidx.annotation.Nullable;
 import androidx.browser.customtabs.CustomTabsCallback;
 import androidx.browser.customtabs.CustomTabsSession;
 import com.google.androidbrowserhelper.trusted.LauncherActivity;
-import com.google.androidbrowserhelper.trusted.QualityEnforcer;
 
 /**
  * Main Activity launching the Trusted Web Activity with Play Games Services integration
@@ -24,12 +23,17 @@ public class MainActivity extends LauncherActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        playGamesBridge = new PlayGamesBridge(this);
-        playGameStatsBridge = new PlayGameStatsBridge(this);
-        postMessageManager = new TwaPostMessageManager(playGamesBridge, playGameStatsBridge);
+        try {
+            playGamesBridge = new PlayGamesBridge(this);
+            playGameStatsBridge = new PlayGameStatsBridge(this);
+            postMessageManager = new TwaPostMessageManager(playGamesBridge, playGameStatsBridge);
 
-        playGamesBridge.initialize();
-        playGameStatsBridge.initialize();
+            // Defensively initialize Play Games achievements bridge.
+            // Game Stats initialization is deferred until explicitly requested by web or needed for telemetry.
+            playGamesBridge.initialize();
+        } catch (Throwable t) {
+            Log.e(TAG, "Non-fatal error initializing Play Games native bridges: " + t.getMessage(), t);
+        }
     }
 
     @Override
@@ -56,10 +60,10 @@ public class MainActivity extends LauncherActivity {
     }
 
     /**
-     * Subclass of QualityEnforcer to preserve ABH quality enforcement crashes
-     * while hooking navigation, relationship validation, and postMessage channel events.
+     * Resilient CustomTabsCallback implementation that hooks navigation, relationship validation,
+     * and postMessage channel events without inheriting QualityEnforcer's intentional crash path.
      */
-    private class TwaCustomTabsCallback extends QualityEnforcer {
+    private class TwaCustomTabsCallback extends CustomTabsCallback {
         @Override
         public void onNavigationEvent(int navigationEvent, @Nullable Bundle extras) {
             super.onNavigationEvent(navigationEvent, extras);
@@ -96,6 +100,12 @@ public class MainActivity extends LauncherActivity {
             if (postMessageManager != null) {
                 postMessageManager.onPostMessage(message);
             }
+        }
+
+        @Override
+        public void extraCallback(@NonNull String callbackName, @Nullable Bundle args) {
+            super.extraCallback(callbackName, args);
+            Log.w(TAG, "CustomTabs extraCallback received: " + callbackName + ", args=" + args);
         }
     }
 }

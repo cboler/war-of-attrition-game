@@ -10,7 +10,7 @@ This local Maven repository contains a temporary, immutable build of **Android B
 - **Fork Repository**: [cboler/android-browser-helper](https://github.com/cboler/android-browser-helper)
 - **Fork Branch**: `woa/customtabs-session-hook`
 - **Patched Hook Commit**: `fde4c5c0501db287e534a5ca55080b818ac04069`
-- **Published Release Commit**: `94fb27b686e0821d3f9ad7817fc109a15eb89e68`
+- **Published Release Commit**: `94fb27b1cbc91f55130a8f3cba090f98ee282791`
 - **Immutable Tag**: `woa-abh-2.7.3-session-1`
 - **Upstream Lineage**: Android Browser Helper 2.7.3 (incorporating compileSdk 36, targetSdk 31, and `androidx.browser:browser:1.10.0`)
 
