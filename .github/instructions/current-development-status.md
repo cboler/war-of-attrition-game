@@ -2,7 +2,7 @@
 
 ## 1. Project State: Core and Two Creative Sprints Complete
 
-**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity. The hosted release and the next Android wrapper share version identity **4.2.6**.
+**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity. The hosted release and the next Android wrapper share version identity **4.2.7**.
 
 The project is no longer in broad feature discovery. Both substantial creative sprints now have production implementations:
 
