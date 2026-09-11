@@ -21,6 +21,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { TableGame } from './table-game';
 import { UiTelemetryService } from '../services/ui-telemetry.service';
 import { ProfileDialogService } from '../shared/components/profile-dialog/profile-dialog.service';
+import { TutorialService } from '../services/tutorial.service';
+import { TutorialStep } from '../core/models/tutorial.model';
 
 describe('TableGame presentation', () => {
   let fixture: ComponentFixture<TableGame>;
@@ -349,6 +351,36 @@ describe('TableGame presentation', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('app-story-book-drawer')).toBeTruthy();
+  });
+
+  it('makes the real Field Manual control part of the first table orientation', () => {
+    const tutorial = TestBed.inject(TutorialService);
+    tutorial.forceStep(TutorialStep.FIRST_TURN);
+    tutorial.acknowledgePrompt();
+    tutorial.acknowledgePrompt();
+    tutorial.acknowledgePrompt();
+    fixture.detectChanges();
+
+    expect(tutorial.requiresFieldManualAction()).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.table-utility-hub').classList)
+      .toContain('tutorial-target');
+
+    const storyBtn = fixture.nativeElement.querySelector(
+      'button[aria-label="Open Field Manual"]',
+    ) as HTMLButtonElement;
+    storyBtn.click();
+    fixture.detectChanges();
+
+    expect(tutorial.manualVisitInProgress()).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.tutorial-manual-note')?.textContent)
+      .toContain('Your permanent reference');
+
+    (fixture.nativeElement.querySelector('button[aria-label="Close Field Manual"]') as HTMLButtonElement)
+      .click();
+    fixture.detectChanges();
+
+    expect(tutorial.manualVisitInProgress()).toBeFalse();
+    expect(tutorial.activePrompt()?.title).toBe('Ready for Command');
   });
 
   it('tracks one semantic Table lifecycle without gameplay-detail events', () => {

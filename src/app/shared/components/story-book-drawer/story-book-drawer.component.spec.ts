@@ -272,6 +272,8 @@ describe('StoryBookDrawerComponent', () => {
     expect(compiled.querySelector('#panel-rules')?.textContent).toContain('surviving cards return to their owner');
     expect(compiled.querySelector('#panel-rules')?.textContent).toContain('a tie begins a Battle');
     expect(compiled.querySelector('#panel-rules')?.textContent).not.toContain('captures all cards at stake');
+    expect(compiled.querySelector('.manual-privacy-note')?.textContent).toContain('Optional analytics');
+    expect(compiled.querySelector('.manual-privacy-note')?.textContent).toContain('hidden cards');
   });
 
   it('opens a deterministic Rule demo and returns focus to its launcher when closed', fakeAsync(() => {

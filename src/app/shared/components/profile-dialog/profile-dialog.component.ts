@@ -340,28 +340,14 @@ export class ProfileDialogComponent implements OnDestroy {
   onResetTutorial(): void {
     this.confirm(
       {
-        title: 'Reset tutorial guidance?',
-        message: 'Contextual gameplay tips will begin again during your next War.',
-        confirmLabel: 'Reset tutorial'
+        title: 'Replay tutorial guidance?',
+        message: 'The table orientation and contextual gameplay tips will begin again during your next War.',
+        confirmLabel: 'Replay tutorial'
       },
       () => {
         this.tutorial.resetTutorialProgress();
-        this.settingsStatus.set('Tutorial guidance has been reset.');
-      }
-    );
-  }
-
-  resetStats(): void {
-    this.confirm(
-      {
-        title: 'Reset Career Records?',
-        message: 'This permanently clears player-facing statistics, career records, and Hall of Valor service history. Campaign tokens and unlocked cosmetics are not removed.',
-        confirmLabel: 'Reset records',
-        destructive: true
-      },
-      () => {
-        this.authService.resetActiveUserStats();
-        this.settingsStatus.set('Career Records and Hall of Valor have been reset.');
+        this.settings.setTutorialEnabled(true);
+        this.settingsStatus.set('Tutorial guidance is ready to replay.');
       }
     );
   }
@@ -369,10 +355,9 @@ export class ProfileDialogComponent implements OnDestroy {
   resetSettings(): void {
     this.confirm(
       {
-        title: 'Reset preferences?',
-        message: 'Theme, controls, sound, and animation preferences will return to their defaults. Unlocked cosmetics remain yours.',
-        confirmLabel: 'Reset preferences',
-        destructive: true
+        title: 'Restore default preferences?',
+        message: 'Deck hand, card backing, tutorial guidance, sound, and animation preferences will return to their defaults. Unlocked cosmetics remain yours.',
+        confirmLabel: 'Restore defaults'
       },
       () => {
         this.settings.resetSettings();

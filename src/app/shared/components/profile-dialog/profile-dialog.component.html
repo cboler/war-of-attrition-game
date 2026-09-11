@@ -488,6 +488,83 @@
         class="settings-tab"
         role="tabpanel"
         aria-labelledby="profile-tab-settings">
+        <section class="settings-section" aria-labelledby="account-title">
+          <div class="section-heading">
+            <h3 id="account-title" class="section-subtitle">Account</h3>
+            <p>{{ profile().isGoogleAuth ? 'This profile is connected to Google.' : 'This is a local guest profile on this device.' }}</p>
+          </div>
+          <div class="account-actions">
+            @if (!profile().isGoogleAuth) {
+              <button
+                mat-flat-button
+                type="button"
+                class="google-signin-btn"
+                [disabled]="hasActiveMatch()"
+                (click)="signInGoogle()">
+                <mat-icon aria-hidden="true">login</mat-icon>
+                Sign in with Google
+              </button>
+            } @else {
+              <button
+                mat-stroked-button
+                type="button"
+                class="signout-btn"
+                [disabled]="hasActiveMatch()"
+                (click)="signOut()">
+                <mat-icon aria-hidden="true">logout</mat-icon>
+                Sign out
+              </button>
+            }
+          </div>
+          @if (hasActiveMatch()) {
+            <p class="account-war-guard" role="note">
+              Profile switching is paused during an active War so its records stay with the commander who began it. Finish the War or use Abandon War below first.
+            </p>
+          }
+        </section>
+
+        <section class="settings-section data-section" aria-labelledby="data-title">
+          <div class="section-heading">
+            <h3 id="data-title" class="section-subtitle">Data & Privacy</h3>
+            <p>Review local-data deletion and control optional anonymous analytics.</p>
+          </div>
+          <div class="analytics-consent-control">
+            <div>
+              <strong>Anonymous gameplay and app-usage analytics</strong>
+              <span>
+                {{ analyticsConsent() === 'granted' ? 'Allowed' : analyticsConsent() === 'denied' ? 'Off' : 'Not chosen' }}
+              </span>
+              <p>
+                No names, email addresses, Google IDs, story text, or hidden card information are collected. App-usage collection begins only after opt-in; gameplay collection begins with the next War. Turning analytics off stops new events immediately.
+              </p>
+            </div>
+            <div class="analytics-consent-actions" role="group" aria-label="Anonymous gameplay and app-usage analytics consent">
+              <button
+                mat-stroked-button
+                type="button"
+                class="analytics-allow-btn"
+                [attr.aria-pressed]="analyticsConsent() === 'granted'"
+                (click)="setAnalyticsConsent('granted')">
+                {{ analyticsConsent() === 'granted' ? 'Allowed' : 'Allow' }}
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                class="analytics-deny-btn"
+                [attr.aria-pressed]="analyticsConsent() === 'denied'"
+                (click)="setAnalyticsConsent('denied')">
+                {{ analyticsConsent() === 'granted' ? 'Turn off' : 'Keep off' }}
+              </button>
+            </div>
+          </div>
+          <nav class="profile-links" aria-label="Support, privacy, and account data">
+            <a mat-button mat-dialog-close routerLink="/privacy"><mat-icon aria-hidden="true">privacy_tip</mat-icon>Privacy</a>
+            <a mat-button mat-dialog-close routerLink="/support"><mat-icon aria-hidden="true">help_outline</mat-icon>Support</a>
+            <a mat-button mat-dialog-close routerLink="/delete-account"><mat-icon aria-hidden="true">delete_forever</mat-icon>Review data deletion</a>
+          </nav>
+          <p class="version-copy">War of Attrition · Version {{ appVersion }}</p>
+        </section>
+
         <section class="settings-section" aria-labelledby="preferences-title">
           <div class="section-heading">
             <h3 id="preferences-title" class="section-subtitle">Preferences · Controls</h3>
@@ -552,95 +629,21 @@
           </div>
         </section>
 
-        <section class="settings-section" aria-labelledby="account-title">
+        <section class="settings-section" aria-labelledby="guidance-title">
           <div class="section-heading">
-            <h3 id="account-title" class="section-subtitle">Account</h3>
-            <p>{{ profile().isGoogleAuth ? 'This profile is connected to Google.' : 'This is a local guest profile on this device.' }}</p>
+            <h3 id="guidance-title" class="section-subtitle">Guidance & Defaults</h3>
+            <p>Replay the tutorial or restore the preference controls above.</p>
           </div>
-          <div class="account-actions">
-            @if (!profile().isGoogleAuth) {
-              <button
-                mat-flat-button
-                type="button"
-                class="google-signin-btn"
-                [disabled]="hasActiveMatch()"
-                (click)="signInGoogle()">
-                <mat-icon aria-hidden="true">login</mat-icon>
-                Sign in with Google
-              </button>
-            } @else {
-              <button
-                mat-stroked-button
-                type="button"
-                class="signout-btn"
-                [disabled]="hasActiveMatch()"
-                (click)="signOut()">
-                <mat-icon aria-hidden="true">logout</mat-icon>
-                Sign out
-              </button>
-            }
-          </div>
-          @if (hasActiveMatch()) {
-            <p class="account-war-guard" role="note">
-              Profile switching is paused during an active War so its records stay with the commander who began it. Finish the War or use Abandon War below first.
-            </p>
-          }
-        </section>
-
-        <section class="settings-section data-section" aria-labelledby="data-title">
-          <div class="section-heading">
-            <h3 id="data-title" class="section-subtitle">Data & Privacy</h3>
-            <p>Career Records are resettable profile data. Campaign currency and historical anonymous telemetry are managed separately.</p>
-          </div>
-          <div class="analytics-consent-control">
-            <div>
-              <strong>Anonymous gameplay and app-usage analytics</strong>
-              <span>
-                {{ analyticsConsent() === 'granted' ? 'Allowed' : analyticsConsent() === 'denied' ? 'Off' : 'Not chosen' }}
-              </span>
-              <p>
-                No names, email addresses, Google IDs, story text, or hidden card information are collected. App-usage collection begins only after opt-in; gameplay collection begins with the next War. Turning analytics off stops new events immediately.
-              </p>
-            </div>
-            <div class="analytics-consent-actions" role="group" aria-label="Anonymous gameplay and app-usage analytics consent">
-              <button
-                mat-stroked-button
-                type="button"
-                class="analytics-allow-btn"
-                [attr.aria-pressed]="analyticsConsent() === 'granted'"
-                (click)="setAnalyticsConsent('granted')">
-                Allow
-              </button>
-              <button
-                mat-stroked-button
-                type="button"
-                class="analytics-deny-btn"
-                [attr.aria-pressed]="analyticsConsent() === 'denied'"
-                (click)="setAnalyticsConsent('denied')">
-                Keep off
-              </button>
-            </div>
-          </div>
-          <nav class="profile-links" aria-label="Support, privacy, and account data">
-            <a mat-button mat-dialog-close routerLink="/privacy"><mat-icon aria-hidden="true">privacy_tip</mat-icon>Privacy</a>
-            <a mat-button mat-dialog-close routerLink="/support"><mat-icon aria-hidden="true">help_outline</mat-icon>Support</a>
-            <a mat-button mat-dialog-close routerLink="/delete-account"><mat-icon aria-hidden="true">delete_forever</mat-icon>Review data deletion</a>
-          </nav>
           <div class="reset-actions">
-            <button mat-stroked-button type="button" class="reset-stats-btn" (click)="resetStats()">
-              <mat-icon aria-hidden="true">restart_alt</mat-icon>
-              Reset Career Records
+            <button mat-stroked-button type="button" class="reset-tutorial-btn" (click)="onResetTutorial()">
+              <mat-icon aria-hidden="true">school</mat-icon>
+              Replay tutorial
             </button>
             <button mat-stroked-button type="button" class="reset-settings-btn" (click)="resetSettings()">
               <mat-icon aria-hidden="true">restore</mat-icon>
-              Reset preferences
-            </button>
-            <button mat-stroked-button type="button" class="reset-tutorial-btn" (click)="onResetTutorial()">
-              <mat-icon aria-hidden="true">school</mat-icon>
-              Reset tutorial
+              Restore default preferences
             </button>
           </div>
-          <p class="version-copy">War of Attrition · Version {{ appVersion }}</p>
         </section>
 
         @if (hasActiveMatch()) {

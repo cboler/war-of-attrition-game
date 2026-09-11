@@ -51,14 +51,27 @@ describe('TutorialService', () => {
     expect(service.activePrompt()?.tourStepIndex).toBe(0);
     expect(service.activePrompt()?.hasPrev).toBeFalse();
 
-    // Step 1 -> Step 2 -> Step 3 -> Step 4
+    // Step 1 -> Step 2 -> Step 3 -> required Field Manual action
     service.acknowledgePrompt(); // to Step 2
     service.acknowledgePrompt(); // to Step 3
-    service.acknowledgePrompt(); // to Step 4
+    service.acknowledgePrompt(); // to Manual action
     expect(service.activePrompt()?.tourStepIndex).toBe(3);
+    expect(service.activePrompt()?.requiresTargetAction).toBeTrue();
     expect(resolved).toBeFalse();
 
-    // Finish Tour
+    // The generic acknowledgement path cannot bypass the required real control.
+    service.acknowledgePrompt();
+    expect(service.activePrompt()?.tourStepIndex).toBe(3);
+
+    service.fieldManualOpened();
+    expect(service.manualVisitInProgress()).toBeTrue();
+    expect(service.isTutorialActive()).toBeFalse();
+
+    service.fieldManualClosed();
+    expect(service.activePrompt()?.tourStepIndex).toBe(4);
+    expect(service.activePrompt()?.title).toContain('Ready for Command');
+
+    // Finish Tour after returning from the Field Manual.
     service.acknowledgePrompt();
     const result = await promise;
     expect(result).toBeTrue();

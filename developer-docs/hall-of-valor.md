@@ -77,7 +77,7 @@ Storage is strictly bounded:
 Hall of Valor data is attached directly to the active local `UserProfile` in `AuthService`:
 - **Independent Profiles**: Guest profiles and Google-linked profiles maintain separate Hall of Valor records. Switching profiles switches Hall records cleanly.
 - **Profile Deletion**: Clearing local profile data removes associated Hall records cleanly.
-- **Career Reset**: Executing "Reset Career Records" in the Profile Dialog permanently clears both career statistics and Hall of Valor records back to default, as communicated in the confirmation dialog.
+- **Deletion and test reset**: The consumer Profile no longer offers a partial career reset. Local data deletion clears the entire profile, and the internal clean-career test seam resets statistics, Hall of Valor, Campaign history, dossiers, achievements, tokens, and earned cosmetics together.
 - **Preference Reset**: Resetting preferences alone does **not** clear Hall of Valor records.
 
 ---

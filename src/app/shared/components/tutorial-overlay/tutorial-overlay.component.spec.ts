@@ -65,4 +65,18 @@ describe('TutorialOverlayComponent', () => {
     expect(tutorialService.isTutorialActive()).toBeFalse();
     expect(tutorialService.isTutorialEnabled()).toBeFalse();
   });
+
+  it('requires the highlighted table control on the Field Manual step', () => {
+    tutorialService.forceStep(TutorialStep.FIRST_TURN);
+    tutorialService.acknowledgePrompt();
+    tutorialService.acknowledgePrompt();
+    tutorialService.acknowledgePrompt();
+    fixture.detectChanges();
+
+    const overlay = fixture.nativeElement.querySelector('.tutorial-overlay') as HTMLElement;
+    expect(overlay.classList).toContain('awaiting-target-action');
+    expect(fixture.nativeElement.querySelector('.btn-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.target-action-hint')?.textContent)
+      .toContain('Tap the highlighted control');
+  });
 });

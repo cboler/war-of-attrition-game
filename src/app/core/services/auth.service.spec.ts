@@ -239,14 +239,44 @@ describe('AuthService', () => {
     expect(service.activeProfile().provider).toBe('guest');
   });
 
-  it('should reset active user stats', () => {
+  it('should reset every profile-scoped career surface together', () => {
     service.recordGameResult({ outcome: 'player_win', turns: 20, durationMs: 30000 });
+    service.unlockAchievement('war.assassin');
+    service.updateActiveProfileProgression(previous => ({
+      ...previous,
+      completedChapterModes: ['standard'],
+      unlockedChapterModes: ['standard', 'limited_reserves'],
+      recentCampaigns: [
+        {
+          campaignId: 'completed-campaign',
+          mode: 'standard',
+          modifiers: [],
+          wars: [],
+          wins: 3,
+          losses: 0,
+          ties: 0,
+          differential: 12,
+          outcome: 'victory',
+          tokensEarned: 2,
+          completedAt: '2026-09-10T00:00:00.000Z'
+        }
+      ],
+      tokenBalance: 4,
+      lifetimeTokensEarned: 4,
+      processedWarIds: ['old-war']
+    }));
     expect(service.userStats().gamesPlayed).toBe(1);
 
-    service.resetActiveUserStats();
+    service.resetActiveUserCareer();
     expect(service.userStats().gamesPlayed).toBe(0);
     expect(service.userStats().winRatePercentage).toBe(0);
-    expect(service.activeProfile().progression).toBeTruthy();
+    expect(service.userStats().unlockedAchievements).toEqual([]);
+    expect(service.activeProfile().progression.completedChapterModes).toEqual([]);
+    expect(service.activeProfile().progression.recentCampaigns).toEqual([]);
+    expect(service.activeProfile().progression.tokenBalance).toBe(0);
+    expect(service.activeProfile().progression.unlockedCosmetics.map(unlock => unlock.cosmeticId))
+      .toEqual(['minimalist-gray']);
+    expect(service.activeProfile().progression.processedWarIds).toEqual([]);
   });
 
   it('should atomically replace all profiles with a fresh guest for local deletion', () => {
@@ -369,7 +399,7 @@ describe('AuthService', () => {
     expect(service.hallOfValor().records['spades-K']).toBeUndefined();
   });
 
-  it('should clear Hall of Valor records when resetting active user stats', () => {
+  it('should clear Hall of Valor records when resetting the active user career', () => {
     service.updateActiveProfileHallOfValor(() => ({
       records: {
         'clubs-Q': {
@@ -388,7 +418,7 @@ describe('AuthService', () => {
 
     expect(service.hallOfValor().records['clubs-Q']).toBeDefined();
 
-    service.resetActiveUserStats();
+    service.resetActiveUserCareer();
     expect(service.hallOfValor().records).toEqual({});
   });
 });

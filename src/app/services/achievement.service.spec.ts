@@ -306,7 +306,7 @@ describe('AchievementService', () => {
     expect(service.achievementProgress().bestBattleLossStreak).toBe(5);
   });
 
-  it('rehydrates cleared achievement progress when Career Records reset on the same profile', () => {
+  it('rehydrates cleared achievement progress after an internal clean-career reset', () => {
     eventBus.emit({
       type: 'battle_resolved',
       turnNumber: 1,
@@ -320,7 +320,7 @@ describe('AchievementService', () => {
     expect(service.achievementProgress().currentBattleWinStreak).toBe(2);
     expect(authService.userStats().currentBattleWinStreak).toBe(2);
 
-    authService.resetActiveUserStats();
+    authService.resetActiveUserCareer();
     TestBed.flushEffects();
 
     expect(service.achievementProgress().currentBattleWinStreak).toBe(0);

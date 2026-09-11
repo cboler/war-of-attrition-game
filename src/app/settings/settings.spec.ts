@@ -40,8 +40,22 @@ describe('SettingsComponent', () => {
   it('should reset settings when confirmed', () => {
     spyOn(settingsService, 'resetSettings');
     component.onResetSettings();
-    expect(dialogSpy.open).toHaveBeenCalled();
+    expect(dialogSpy.open).toHaveBeenCalledWith(jasmine.any(Function), jasmine.objectContaining({
+      data: jasmine.objectContaining({ title: 'Restore Default Preferences' })
+    }));
     expect(settingsService.resetSettings).toHaveBeenCalled();
+  });
+
+  it('reenables guidance when the tutorial is prepared for replay', () => {
+    spyOn(settingsService, 'setTutorialEnabled');
+    spyOn(window, 'alert');
+
+    component.onResetTutorial();
+
+    expect(settingsService.setTutorialEnabled).toHaveBeenCalledWith(true);
+    expect(window.alert).toHaveBeenCalledWith(
+      'The tutorial is ready to replay at the start of your next match.'
+    );
   });
 
   it('does not duplicate Career Records with a Statistics tab', () => {

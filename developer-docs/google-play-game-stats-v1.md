@@ -6,7 +6,7 @@ Design baseline: checked-in commit `67f8a5b`, app `4.2.1`, gameplay telemetry sc
 
 Game Stats v1 records player-career facts from **completed Wars**, including wins, losses, and true ties. Retain all ten candidate stats using **one reusable `war_completed` event**. A War is the natural accounting boundary already used by local career statistics. Summarizing its public domain events supplies every proposed aggregation and commander filter without uploading a second detailed combat history.
 
-Lifetime means eligible play recorded after integration becomes available for the signed-in Play Games account. Do not backfill resettable local totals, guest play, Campaign history, or achievements. Restarted, abandoned, or interrupted Wars that never resolve contribute nothing to these ten stats. Local Reset Stats cannot reset Google records or trigger resubmission.
+Lifetime means eligible play recorded after integration becomes available for the signed-in Play Games account. Do not backfill local totals, guest play, Campaign history, or achievements. Restarted, abandoned, or interrupted Wars that never resolve contribute nothing to these ten stats. Full local deletion cannot reset Google records or trigger resubmission.
 
 This pass creates no implementation or Play Console artifacts. There is no leaderboard implementation, achievement bridge work, community backend, Hall of Valor redesign, commander dossier redesign, or new gameplay mechanic. No CSVs, ZIPs, icons, Play IDs, Firebase, BigQuery code, or persistent player identifiers are introduced.
 

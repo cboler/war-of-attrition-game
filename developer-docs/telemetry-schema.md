@@ -6,14 +6,14 @@ Gameplay telemetry is implemented behind `GameTelemetryService`. The service con
 
 ## Privacy and delivery behavior
 
-- Collection is a no-op unless `GA4_MEASUREMENT_ID` is a valid `G-...` value **and** the player explicitly selects `granted` in the post-War invitation or Settings privacy controls. A new or locally deleted installation is `unknown`, which is off.
+- Collection is a no-op unless `GA4_MEASUREMENT_ID` is a valid `G-...` value **and** the player explicitly selects `granted` in the first-launch invitation or Settings privacy controls. A new or locally deleted installation is `unknown`, which is off.
 - The GA script is loaded dynamically only after those conditions are true. Automatic page views, Google signals, ad storage, and ad personalization are disabled by the transport.
 - Events dropped while configuration or consent is absent are not queued or replayed.
-- The invitation is offered only after a completed War has reached its settled game-over state and no tutorial prompt is active. It requires an explicit **Share anonymous data** or **No thanks** choice. Displaying the invitation is not measured, and it cannot grant consent by rendering or dismissal.
-- A grant made during or after a War takes effect for gameplay at the next War boundary, ensuring every collected War has its canonical start record. UI events begin only with the next intentional surface transition; no pre-consent view is reconstructed. Denial/withdrawal takes effect immediately and propagates `analytics_storage: denied` to an already-loaded Google tag; all advertising consent signals remain denied.
-- No raw telemetry history is stored with resettable profile statistics or in local storage.
+- On first launch, before analytics initialization, the invitation requires an explicit **Share anonymous data** or **No thanks** choice. Displaying the invitation is not measured, and it cannot grant consent by rendering or dismissal. A stored choice prevents repeat prompting.
+- A grant takes effect for gameplay at the next War boundary, ensuring every collected War has its canonical start record. UI events begin only with the next intentional surface transition; no pre-consent view is reconstructed. Denial/withdrawal takes effect immediately and propagates `analytics_storage: denied` to an already-loaded Google tag; all advertising consent signals remain denied.
+- No raw telemetry history is stored with local career statistics or in local storage.
 - Never send names, email addresses, Google subject/profile IDs, avatar URLs, dialogue text, or hidden card identities. The mapper emits random War/Campaign IDs and public game-card identities only.
-- `Reset Stats` does not affect remote telemetry or cause old events to be resent. Full local deletion resets the saved consent choice but cannot retract events already transmitted to Google.
+- Restoring preferences or replaying the tutorial does not affect remote telemetry or cause old events to be resent. Full local deletion resets the saved consent choice but cannot retract events already transmitted to Google.
 
 ## Build configuration
 
@@ -211,7 +211,7 @@ The input is a documented, non-PII context bucket; output contains anonymous agg
 ## GA4 and BigQuery owner actions
 
 1. Confirm the intended GA4 property and web stream; the former static measurement ID was removed and is **not** assumed to be correct.
-2. Validate the implemented post-War invitation and grant/deny/withdraw Settings flow against applicable policy/legal requirements before configuring `GA4_MEASUREMENT_ID` in deployment.
+2. Validate the implemented first-launch invitation and grant/deny/withdraw Settings flow against applicable policy/legal requirements before configuring `GA4_MEASUREMENT_ID` in deployment.
 3. Configure only low-cardinality GA custom definitions such as outcome, deck color, comparison stage, special rule, and unlock reason.
 4. In GA4 Admin, link the property to the correct BigQuery project and choose the data location and daily/streaming export options. This is a console operation and requires no client credential.
 5. Validate consent behavior and event parameters in GA4 DebugView, then verify `events_YYYYMMDD` / `events_intraday_YYYYMMDD` exports and retention settings.

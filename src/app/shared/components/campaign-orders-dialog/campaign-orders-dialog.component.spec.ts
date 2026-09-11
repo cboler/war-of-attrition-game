@@ -63,6 +63,8 @@ describe('CampaignOrdersDialogComponent', () => {
     expect(root.querySelector('.scripted-order')?.textContent).toContain('The Accord');
     expect(root.querySelector('.scripted-order')?.textContent).toContain('Classic rules');
     expect(root.querySelectorAll('.modifier-toggle').length).toBe(0);
+    expect(root.querySelector('.commander-briefing')?.textContent).toContain('CAMPAIGN ASSIGNMENT');
+    expect(root.querySelector('.change-opponent-btn')).toBeNull();
   });
 
   it('displays the cumulative modifier stack for a later scripted Chapter', () => {

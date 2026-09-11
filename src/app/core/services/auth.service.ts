@@ -9,6 +9,7 @@ import { environment } from '../../../environments/environment';
 import {
   CampaignProgression,
   DEFAULT_CARD_BACKING_ID,
+  createDefaultCampaignProgression,
   normalizeCampaignProgression
 } from '../models/progression.model';
 import {
@@ -571,14 +572,16 @@ export class AuthService {
   }
 
   /**
-   * Reset active user statistics and Hall of Valor career records
+   * Internal clean-career seam for development and tests. Consumer settings do
+   * not expose this destructive operation; account deletion is the supported UI.
    */
-  resetActiveUserStats(): void {
+  resetActiveUserCareer(): void {
     const currentProfile = this.activeProfile();
     const updatedProfile: UserProfile = {
       ...currentProfile,
       statistics: { ...DEFAULT_STATISTICS },
-      hallOfValor: createDefaultHallOfValor()
+      hallOfValor: createDefaultHallOfValor(),
+      progression: createDefaultCampaignProgression()
     };
 
     const profiles = this.profilesSignal().map(p => p.id === updatedProfile.id ? updatedProfile : p);

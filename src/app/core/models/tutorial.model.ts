@@ -42,5 +42,6 @@ export interface TutorialPrompt {
   tourStepIndex?: number;
   tourTotalSteps?: number;
   hasPrev?: boolean;
+  requiresTargetAction?: boolean;
 }
 

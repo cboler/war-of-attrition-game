@@ -92,22 +92,19 @@
               </div>
               <button mat-stroked-button color="accent" (click)="onResetTutorial()" style="margin-top: 8px;">
                 <mat-icon>school</mat-icon>
-                Reset Tutorial Progress
+                Replay Tutorial
               </button>
             </div>
 
             <mat-divider></mat-divider>
 
-            <!-- Danger Zone / Reset -->
-            <div class="setting-section danger-zone-section">
-              <h3 class="danger-title">
-                <mat-icon>warning</mat-icon>
-                Reset & Defaults
-              </h3>
-              <p>Reset all configuration preferences (theme, animation speed, audio) back to factory defaults.</p>
-              <button mat-stroked-button color="warn" (click)="onResetSettings()">
+            <!-- Preference Defaults -->
+            <div class="setting-section">
+              <h3>Preference Defaults</h3>
+              <p>Restore deck hand, animation speed, sound, tutorial guidance, and card backing to their defaults.</p>
+              <button mat-stroked-button color="accent" (click)="onResetSettings()">
                 <mat-icon>restore</mat-icon>
-                Reset All Settings
+                Restore Default Preferences
               </button>
             </div>
 

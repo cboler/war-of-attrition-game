@@ -15,9 +15,20 @@
 .tutorial-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(4, 14, 11, 0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(4, 14, 11, 0.42);
   animation: backdrop-fade 240ms ease-out;
+}
+
+.tutorial-overlay.awaiting-target-action {
+  pointer-events: none;
+
+  .tutorial-backdrop {
+    pointer-events: none;
+  }
+
+  .tutorial-callout {
+    pointer-events: auto;
+  }
 }
 
 .tutorial-callout {
@@ -182,6 +193,21 @@
         outline-offset: 2px;
       }
     }
+
+    .target-action-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+      color: #ffd54f;
+      font: 700 0.76rem/1.2 system-ui, sans-serif;
+
+      mat-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+      }
+    }
   }
 
   // Tour and step positioning
@@ -196,8 +222,8 @@
   }
 
   &.tour-step-3 {
-    margin-right: auto;
-    margin-left: clamp(20px, 5vw, 60px);
+    margin-top: auto;
+    margin-bottom: clamp(20px, 5vh, 48px);
   }
 
   &.step-first_reinforcement {

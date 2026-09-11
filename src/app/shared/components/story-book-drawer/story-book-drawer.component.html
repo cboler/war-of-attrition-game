@@ -95,6 +95,16 @@
     }
   </nav>
 
+  @if (tutorialVisit()) {
+    <div class="tutorial-manual-note" role="note">
+      <mat-icon aria-hidden="true">school</mat-icon>
+      <p>
+        <strong>Your permanent reference</strong>
+        The Chronicle records this War, the Hall of Valor honors notable cards, Rules offers practice drills, and Dossiers unseal as the Campaign advances. Choose <b>Back to Table</b> when you are ready.
+      </p>
+    </div>
+  }
+
   <div class="drawer-content">
     @if (activeTab() === 'chronicle') {
       <div id="panel-chronicle" role="tabpanel" aria-labelledby="tab-chronicle">
@@ -440,6 +450,15 @@
               </span>
             </button>
           }
+          <section class="manual-privacy-note" aria-labelledby="manual-analytics-title">
+            <mat-icon aria-hidden="true">privacy_tip</mat-icon>
+            <div>
+              <strong id="manual-analytics-title">Optional analytics</strong>
+              <p>
+                Sharing anonymous gameplay and app-usage statistics helps identify confusing rules, underused Manual sections, and reliability problems. It never includes your name, email, Google identity, story text, or hidden cards, and you can turn it off at any time in Settings.
+              </p>
+            </div>
+          </section>
         }
       </div>
     } @else {

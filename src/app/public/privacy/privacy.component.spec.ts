@@ -28,5 +28,7 @@ describe('PrivacyComponent', () => {
     expect(compiled.textContent).toContain('completed-War Game Stats');
     expect(compiled.textContent).not.toContain('Leaderboards');
     expect(compiled.textContent).toContain('Hall of Valor service history');
+    expect(compiled.textContent).toContain('Campaign progression, dossiers, tokens');
+    expect(compiled.textContent).not.toContain('Reset Career Records');
   });
 });

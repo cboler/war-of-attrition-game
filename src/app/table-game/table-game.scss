@@ -175,6 +175,34 @@ app-card-table {
     left: clamp(8px, 2vw, 24px);
     right: auto;
   }
+
+  &.tutorial-target {
+    z-index: 1301;
+
+    .story-turn-btn {
+      border-color: #ffd54f;
+      background: #173f33;
+      box-shadow: 0 0 0 5px rgba(255, 213, 79, 0.2), 0 0 24px rgba(255, 213, 79, 0.7);
+      animation: tutorial-target-pulse 1.25s ease-in-out infinite;
+    }
+
+    .boneyard {
+      pointer-events: none;
+    }
+  }
+}
+
+@keyframes tutorial-target-pulse {
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 8px rgba(255, 213, 79, 0.12), 0 0 30px rgba(255, 213, 79, 0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-target .story-turn-btn {
+    animation: none;
+  }
 }
 
 .story-turn-btn {

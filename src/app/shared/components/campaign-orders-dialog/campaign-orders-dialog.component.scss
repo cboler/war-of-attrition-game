@@ -118,9 +118,10 @@
 }
 
 .dialog-content {
-  padding: 18px 24px !important;
+  padding: 18px 24px 48px !important;
   max-height: 70vh;
   overflow-y: auto;
+  scroll-padding-bottom: 48px;
 
   .dialog-intro {
     margin: 0 0 16px;
@@ -781,7 +782,8 @@
   }
 
   .dialog-content {
-    padding: 14px 18px !important;
+    padding: 14px 18px 56px !important;
+    scroll-padding-bottom: 56px;
   }
 
   .dialog-actions {

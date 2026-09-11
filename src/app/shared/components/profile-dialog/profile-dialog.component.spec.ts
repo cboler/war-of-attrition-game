@@ -102,7 +102,7 @@ describe('ProfileDialogComponent', () => {
     component.activeTab.set('settings');
     fixture.detectChanges();
     expect(root.querySelector('.account-actions')).toBeTruthy();
-    expect(root.querySelector('.reset-stats-btn')).toBeTruthy();
+    expect(root.querySelector('.reset-stats-btn')).toBeFalsy();
     expect(root.querySelector('.reset-settings-btn')).toBeTruthy();
     expect(root.querySelector('.reset-tutorial-btn')).toBeTruthy();
   });
@@ -151,33 +151,8 @@ describe('ProfileDialogComponent', () => {
     tick();
 
     expect(tutorialService.resetTutorialProgress).toHaveBeenCalled();
-    expect(component.settingsStatus()).toContain('Tutorial guidance has been reset');
-  }));
-
-  it('does not reset Career Records when confirmation is cancelled', fakeAsync(() => {
-    const resetSpy = spyOn(authService, 'resetActiveUserStats');
-    component.resetStats();
-    fixture.detectChanges();
-
-    const cancel = document.body.querySelector('mat-dialog-actions button') as HTMLButtonElement;
-    cancel.click();
-    tick();
-
-    expect(resetSpy).not.toHaveBeenCalled();
-  }));
-
-  it('resets Career Records and Hall of Valor when confirmed', fakeAsync(() => {
-    const resetSpy = spyOn(authService, 'resetActiveUserStats');
-    component.resetStats();
-    fixture.detectChanges();
-
-    const confirm = document.body.querySelector('.profile-confirm-action') as HTMLButtonElement;
-    expect(confirm).toBeTruthy();
-    confirm.click();
-    tick();
-
-    expect(resetSpy).toHaveBeenCalled();
-    expect(component.settingsStatus()).toContain('Career Records and Hall of Valor have been reset');
+    expect(settingsService.tutorialEnabled()).toBeTrue();
+    expect(component.settingsStatus()).toContain('ready to replay');
   }));
 
   it('shows Campaign progress and token-backed Requisitions', () => {
@@ -282,12 +257,29 @@ describe('ProfileDialogComponent', () => {
     expect(component.analyticsConsent()).toBe('granted');
     expect(component.settingsStatus()).toContain('next War');
     expect(allow.getAttribute('aria-pressed')).toBe('true');
+    expect(deny.textContent).toContain('Turn off');
 
     deny.click();
     fixture.detectChanges();
     expect(component.analyticsConsent()).toBe('denied');
     expect(component.settingsStatus()).toContain('off');
     expect(deny.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('puts Account and Data & Privacy before preference controls', () => {
+    component.activeTab.set('settings');
+    fixture.detectChanges();
+
+    const headings = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.settings-tab .section-subtitle')
+    ).map(heading => heading.textContent?.trim());
+    expect(headings.slice(0, 4)).toEqual([
+      'Account',
+      'Data & Privacy',
+      'Preferences · Controls',
+      'Customization · Requisitions',
+    ]);
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Reset Career Records');
   });
 
   it('guards profile switching while a War is active', () => {

@@ -85,13 +85,14 @@ export class Settings implements OnInit, OnDestroy {
 
   onResetTutorial(): void {
     this.tutorialService.resetTutorialProgress();
-    alert('Tutorial progress has been reset. You will see contextual gameplay tips on your next match.');
+    this.settingsService.setTutorialEnabled(true);
+    alert('The tutorial is ready to replay at the start of your next match.');
   }
 
   onResetSettings(): void {
     this.showConfirmDialog(
-      'Reset Settings',
-      'Are you sure you want to reset all preferences to default values? This action cannot be undone.'
+      'Restore Default Preferences',
+      'Restore deck hand, animation speed, sound, tutorial guidance, and card backing to their default values?'
     ).subscribe(result => {
       if (result) {
         this.settingsService.resetSettings();

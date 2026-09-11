@@ -274,6 +274,7 @@ export class TableGame implements OnInit, OnDestroy {
     this.manualReferenceCard.set(null);
     this.dossierTargetCommander.set(null);
     this.storyBookOpen.set(true);
+    this.tutorial.fieldManualOpened();
   }
 
   protected openCommanderDossier(commanderId?: OpponentCommanderId): void {
@@ -286,6 +287,7 @@ export class TableGame implements OnInit, OnDestroy {
     this.storyBookOpen.set(false);
     this.manualReferenceCard.set(null);
     this.dossierTargetCommander.set(null);
+    this.tutorial.fieldManualClosed();
   }
 
   protected openBoneyardReference(card: Card): void {

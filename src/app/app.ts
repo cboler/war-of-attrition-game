@@ -46,7 +46,7 @@ export class App implements OnInit, OnDestroy {
   private readonly gameTelemetry = inject(GameTelemetryService);
   // Game Stats projection also observes the non-replaying game bus eagerly.
   private readonly gameStatsProjection = inject(GameStatsProjectionService);
-  // The post-War consent invitation also observes the non-replaying game bus.
+  // The first-launch consent decision must be scheduled as the app starts.
   private readonly analyticsConsentPrompt = inject(AnalyticsConsentPromptService);
   // Achievement evaluation also observes the non-replaying game bus eagerly.
   private readonly achievementService = inject(AchievementService);

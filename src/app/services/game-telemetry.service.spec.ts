@@ -122,7 +122,7 @@ describe('GameTelemetryService', () => {
     expect(serialized).not.toContain('private-avatar');
   });
 
-  it('keeps already-contributed telemetry separate when profile statistics reset', () => {
+  it('keeps already-contributed telemetry separate from an internal clean-career reset', () => {
     service.beginWar({ warId: 'telemetry-survives-profile-reset', playerDeckColor: DeckColor.RED });
     eventBus.emit({ type: 'turn_started', turnNumber: 1 });
     const contributedRecords = transport.records.map(record => ({
@@ -131,7 +131,7 @@ describe('GameTelemetryService', () => {
     }));
 
     authService.recordGameResult({ outcome: 'player_win', turns: 8, durationMs: 1_000 });
-    authService.resetActiveUserStats();
+    authService.resetActiveUserCareer();
 
     expect(authService.userStats().gamesPlayed).toBe(0);
     expect(transport.records).toEqual(contributedRecords);

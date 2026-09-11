@@ -365,6 +365,7 @@
         class="table-utility-hub"
         [class.hub-left]="settings.deckHand() === 'left'"
         [class.hub-right]="settings.deckHand() === 'right'"
+        [class.tutorial-target]="tutorial.requiresFieldManualAction()"
         aria-label="Table records and boneyard"
       >
         <button
@@ -491,6 +492,7 @@
     <app-story-book-drawer
       [referenceCard]="manualReferenceCard()"
       [targetCommanderId]="dossierTargetCommander()"
+      [tutorialVisit]="tutorial.manualVisitInProgress()"
       (closed)="closeStoryBook()"
     />
   }

@@ -353,8 +353,11 @@ mat-divider {
   strong {
     overflow: hidden;
     font-size: 0.76rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   small {
@@ -424,10 +427,18 @@ mat-divider {
   .analytics-consent-control { grid-template-columns: 1fr; }
 }
 
-.reset-settings-btn,
-.reset-stats-btn {
-  color: #ffb4ab;
-  border-color: rgba(255, 180, 171, 0.4);
+.reset-settings-btn {
+  color: #f1cf85;
+  border-color: rgba(241, 207, 133, 0.4);
+}
+
+:host ::ng-deep .settings-tab {
+  --mat-switch-selected-handle-color: #0d221c;
+  --mat-switch-selected-track-color: #e5c175;
+  --mat-switch-selected-hover-handle-color: #0d221c;
+  --mat-switch-selected-hover-track-color: #f1cf85;
+  --mat-radio-selected-icon-color: #e5c175;
+  --mat-radio-selected-hover-icon-color: #f1cf85;
 }
 
 .requisitions-heading {

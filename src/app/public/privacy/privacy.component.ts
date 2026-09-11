@@ -29,7 +29,7 @@ import { MatDividerModule } from '@angular/material/divider';
         </mat-card-header>
 
         <mat-card-content class="legal-content">
-          <div class="last-updated">Last Updated: September 5, 2026</div>
+          <div class="last-updated">Last Updated: September 10, 2026</div>
 
           <section>
             <h3>1. Overview & Developer Identity</h3>
@@ -46,7 +46,7 @@ import { MatDividerModule } from '@angular/material/divider';
             <ul>
               <li>
                 <strong>Local Game Profile & Career Statistics:</strong> We store player display names, match history, win/loss records, 
-                challenges, battle layers reached, Campaign progress, cosmetic tokens, and unlocked achievements locally in your browser/device storage.
+                challenges, battle layers reached, Hall of Valor service history, Campaign progress, cosmetic tokens, and unlocked achievements locally in your browser/device storage.
                 Profile names, email addresses, Google account IDs, and avatar URLs are not included in analytics records.
               </li>
               <li>
@@ -96,9 +96,9 @@ import { MatDividerModule } from '@angular/material/divider';
           <section>
             <h3>5. Data Retention & Deletion</h3>
             <p>
-              Local gameplay data is retained until you reset or delete it. "Reset Career Records" clears resettable career statistics and Hall of
-              Valor service history while preserving Campaign progression, tokens, and cosmetic entitlements. The <a routerLink="/delete-account">Data Deletion Page</a> resets all
-              War of Attrition application-owned local data. Local deletion does not delete your Google Account, synchronized Google Play records,
+              Local gameplay data is retained until you delete it. The <a routerLink="/delete-account">Data Deletion Page</a> resets all
+              War of Attrition application-owned local data, including career records, Campaign progression, dossiers, tokens, and local cosmetic entitlements.
+              Local deletion does not delete your Google Account, synchronized Google Play records,
               or analytics records already transmitted to Google. Analytics consent can be withdrawn for future collection.
             </p>
           </section>

@@ -17,12 +17,17 @@ export class TutorialService {
   private readonly progress = signal<TutorialProgress>(this.loadProgress());
   private readonly activePromptSignal = signal<TutorialPrompt | null>(null);
   private readonly tourIndex = signal<number>(0);
-  private readonly TOUR_TOTAL_STEPS = 4;
+  private readonly manualVisitInProgressSignal = signal(false);
+  private readonly TOUR_TOTAL_STEPS = 5;
 
   readonly currentProgress = this.progress.asReadonly();
   readonly activePrompt = this.activePromptSignal.asReadonly();
   readonly isTutorialActive = computed(() => this.activePromptSignal() !== null);
   readonly isTutorialEnabled = computed(() => this.settingsService.tutorialEnabled());
+  readonly manualVisitInProgress = this.manualVisitInProgressSignal.asReadonly();
+  readonly requiresFieldManualAction = computed(
+    () => this.activePromptSignal()?.requiresTargetAction === true
+  );
 
   constructor() {
     effect(() => {
@@ -88,6 +93,7 @@ export class TutorialService {
   acknowledgePrompt(): void {
     const current = this.activePromptSignal();
     if (!current) return;
+    if (current.requiresTargetAction) return;
 
     if (current.step === TutorialStep.FIRST_TURN && this.tourIndex() < this.TOUR_TOTAL_STEPS - 1) {
       this.tourIndex.update(i => i + 1);
@@ -109,6 +115,27 @@ export class TutorialService {
       this.pendingResolver = null;
       resolve();
     }
+  }
+
+  /** Pause the orientation overlay while the player explores the real Field Manual. */
+  fieldManualOpened(): void {
+    const current = this.activePromptSignal();
+    if (
+      current?.step !== TutorialStep.FIRST_TURN ||
+      !current.requiresTargetAction
+    ) {
+      return;
+    }
+    this.activePromptSignal.set(null);
+    this.manualVisitInProgressSignal.set(true);
+  }
+
+  /** Resume orientation with its final command after the Manual returns to the table. */
+  fieldManualClosed(): void {
+    if (!this.manualVisitInProgressSignal()) return;
+    this.manualVisitInProgressSignal.set(false);
+    this.tourIndex.set(this.TOUR_TOTAL_STEPS - 1);
+    this.activePromptSignal.set(this.getTourPrompt(this.tourIndex()));
   }
 
   /**
@@ -150,6 +177,7 @@ export class TutorialService {
       }
     }
     this.activePromptSignal.set(null);
+    this.manualVisitInProgressSignal.set(false);
     this.settingsService.setTutorialEnabled(false);
     if (this.pendingResolver) {
       const resolve = this.pendingResolver;
@@ -165,6 +193,7 @@ export class TutorialService {
     this.progress.set({ ...DEFAULT_TUTORIAL_PROGRESS });
     this.activePromptSignal.set(null);
     this.tourIndex.set(0);
+    this.manualVisitInProgressSignal.set(false);
     if (this.pendingResolver) {
       const resolve = this.pendingResolver;
       this.pendingResolver = null;
@@ -206,11 +235,11 @@ export class TutorialService {
       case 0:
         return {
           step: TutorialStep.FIRST_TURN,
-          eyebrow: 'TABLE ORIENTATION (1/4)',
+          eyebrow: 'TABLE ORIENTATION (1/5)',
           title: 'Welcome Commander',
           message: 'Your objective is total attrition: exhaust the enemy army while defending your own troops. Here is a quick tactical briefing.',
           highlightSelector: '.playfield',
-          actionText: 'Next: Enemy Vanguard →',
+          actionText: 'Next',
           canSkip: true,
           tourStepIndex: 0,
           tourTotalSteps: this.TOUR_TOTAL_STEPS,
@@ -219,11 +248,11 @@ export class TutorialService {
       case 1:
         return {
           step: TutorialStep.FIRST_TURN,
-          eyebrow: 'TABLE ORIENTATION (2/4)',
+          eyebrow: 'TABLE ORIENTATION (2/5)',
           title: 'Enemy Vanguard',
           message: 'The opponent’s army is stationed at the top. Their remaining deck count and active stakes in frontline battles are tracked here in their command zone.',
           highlightSelector: '.seat.is-top',
-          actionText: 'Next: Your Command Deck →',
+          actionText: 'Next',
           canSkip: true,
           tourStepIndex: 1,
           tourTotalSteps: this.TOUR_TOTAL_STEPS,
@@ -232,29 +261,42 @@ export class TutorialService {
       case 2:
         return {
           step: TutorialStep.FIRST_TURN,
-          eyebrow: 'TABLE ORIENTATION (3/4)',
+          eyebrow: 'TABLE ORIENTATION (3/5)',
           title: 'Your Command Deck',
           message: 'Your command deck is stationed at the bottom. Tap your deck each round to deploy your front-line card into battle.',
           highlightSelector: '.seat.is-bottom .deck',
-          actionText: 'Next: The Boneyard →',
+          actionText: 'Next',
           canSkip: true,
           tourStepIndex: 2,
           tourTotalSteps: this.TOUR_TOTAL_STEPS,
           hasPrev: true
         };
       case 3:
-      default:
         return {
           step: TutorialStep.FIRST_TURN,
-          eyebrow: 'TABLE ORIENTATION (4/4)',
+          eyebrow: 'TABLE ORIENTATION (4/5)',
           title: 'The Boneyard & Field Manual',
-          message: 'Defeated troops and lost challenges are permanently banished to the Boneyard on the table side. Tap the Field Manual icon anytime to review full rules and the Chronicle.',
-          highlightSelector: '.table-utility-hub',
-          actionText: 'Commence Battle ⚔️',
+          message: 'Defeated troops and lost Challenges are permanently banished to the Boneyard. Now tap the highlighted Field Manual control on the table to inspect your permanent reference.',
+          highlightSelector: '.story-turn-btn',
           canSkip: true,
           tourStepIndex: 3,
           tourTotalSteps: this.TOUR_TOTAL_STEPS,
-          hasPrev: true
+          hasPrev: true,
+          requiresTargetAction: true
+        };
+      case 4:
+      default:
+        return {
+          step: TutorialStep.FIRST_TURN,
+          eyebrow: 'TABLE ORIENTATION (5/5)',
+          title: 'Ready for Command',
+          message: 'The Field Manual is always available beside the turn counter. You can return there for the Chronicle, rules, Hall of Valor, and commander dossiers.',
+          highlightSelector: '.playfield',
+          actionText: 'Commence Battle ⚔️',
+          canSkip: true,
+          tourStepIndex: 4,
+          tourTotalSteps: this.TOUR_TOTAL_STEPS,
+          hasPrev: false
         };
     }
   }

@@ -1,5 +1,10 @@
 @if (tutorialService.activePrompt(); as prompt) {
-  <div class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+  <div
+    class="tutorial-overlay"
+    [class.awaiting-target-action]="prompt.requiresTargetAction"
+    role="dialog"
+    [attr.aria-modal]="prompt.requiresTargetAction ? null : 'true'"
+    aria-labelledby="tutorial-title">
     <div class="tutorial-backdrop" (click)="onAcknowledge()"></div>
 
     <div class="tutorial-callout" [ngClass]="['step-' + prompt.step, prompt.tourStepIndex !== undefined ? 'tour-step-' + prompt.tourStepIndex : '']">
@@ -31,10 +36,17 @@
             </button>
           }
         </div>
-        <button #actionBtn type="button" class="btn-action" (click)="onAcknowledge()" aria-label="Acknowledge and continue">
-          <span>{{ prompt.actionText || 'Continue' }}</span>
-          <mat-icon class="btn-icon">arrow_forward</mat-icon>
-        </button>
+        @if (!prompt.requiresTargetAction) {
+          <button #actionBtn type="button" class="btn-action" (click)="onAcknowledge()" aria-label="Acknowledge and continue">
+            <span>{{ prompt.actionText || 'Continue' }}</span>
+            <mat-icon class="btn-icon">arrow_forward</mat-icon>
+          </button>
+        } @else {
+          <span class="target-action-hint" aria-hidden="true">
+            <mat-icon>ads_click</mat-icon>
+            Tap the highlighted control
+          </span>
+        }
       </div>
     </div>
   </div>

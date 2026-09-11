@@ -117,6 +117,7 @@ export class StoryBookDrawerComponent implements AfterViewInit, OnDestroy {
   readonly referenceCard = input<Card | null>(null);
   readonly targetCommanderId = input<OpponentCommanderId | null>(null);
   readonly initialTab = input<FieldManualTab | null>(null);
+  readonly tutorialVisit = input(false);
   readonly closed = output<void>();
 
   readonly isFogOfWarActive = computed<boolean>(() =>

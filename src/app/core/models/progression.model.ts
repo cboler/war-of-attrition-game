@@ -90,8 +90,9 @@ export interface SelectedCosmetics {
 
 /**
  * Durable, profile-scoped progression. This deliberately does not live in
- * GameStatistics: resetting career statistics must not destroy currency,
- * purchased cosmetics, or an in-progress Campaign.
+ * GameStatistics: ordinary preference changes and Campaign abandonment must not
+ * destroy currency, purchased cosmetics, or an in-progress Campaign. A full
+ * profile deletion or internal clean-career reset replaces this whole value.
  */
 export interface CampaignProgression {
   readonly schemaVersion: typeof CAMPAIGN_PROGRESSION_SCHEMA_VERSION;
