@@ -384,6 +384,13 @@
               View Google Play Achievements
             </button>
           </div>
+        } @else if (showPlayGamesSignInButton()) {
+          <div class="play-games-banner">
+            <button mat-flat-button type="button" class="play-games-btn" (click)="signInPlayGames()">
+              <mat-icon aria-hidden="true">sports_esports</mat-icon>
+              Connect Google Play Games
+            </button>
+          </div>
         }
 
         <div class="achievements-sections">

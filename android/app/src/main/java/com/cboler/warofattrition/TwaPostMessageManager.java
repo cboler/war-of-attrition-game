@@ -30,6 +30,7 @@ public class TwaPostMessageManager {
     private PostMessageSender postMessageSender;
     private boolean sessionAvailable = false;
     private boolean navigationFinished = false;
+    private boolean relationshipValidated = false;
     private boolean channelRequested = false;
     private boolean channelReady = false;
     private static final int MAX_PENDING_MESSAGES = 50;
@@ -70,32 +71,71 @@ public class TwaPostMessageManager {
         maybeRequestPostMessageChannel();
     }
 
+    public synchronized void onRelationshipValidationResult(int relation, @NonNull Uri requestedOrigin, boolean result) {
+        Log.i(TAG, "onRelationshipValidationResult received for " + requestedOrigin + " (relation=" + relation + ", result=" + result + ")");
+        if (result && isTargetOriginMatch(requestedOrigin)) {
+            this.relationshipValidated = true;
+            maybeRequestPostMessageChannel();
+        }
+    }
+
+    private boolean isTargetOriginMatch(Uri origin) {
+        if (origin == null) return true;
+        String requested = origin.toString().toLowerCase();
+        return requested.startsWith(TARGET_ORIGIN_STRING.toLowerCase());
+    }
+
+    public synchronized boolean isRelationshipValidated() {
+        return relationshipValidated;
+    }
+
     public synchronized void onNavigationFinished() {
+        Log.i(TAG, "onNavigationFinished received in TwaPostMessageManager");
         this.navigationFinished = true;
         maybeRequestPostMessageChannel();
     }
 
     public synchronized boolean maybeRequestPostMessageChannel() {
-        if (!sessionAvailable || !navigationFinished || channelRequested || postMessageSender == null) {
+        if (channelReady) {
+            Log.d(TAG, "postMessage channel already established and ready");
+            return true;
+        }
+        if (channelRequested) {
+            Log.d(TAG, "postMessage channel already requested, waiting for onMessageChannelReady callback");
+            return true;
+        }
+        if (!sessionAvailable) {
+            Log.d(TAG, "Cannot request postMessage channel: CustomTabsSession is unavailable");
             return false;
         }
+        if (!navigationFinished) {
+            Log.d(TAG, "Cannot request postMessage channel: TWA navigation has not completed");
+            return false;
+        }
+        if (postMessageSender == null) {
+            Log.w(TAG, "Cannot request postMessage channel: postMessageSender is null");
+            return false;
+        }
+
         Uri targetOrigin = Uri.parse(TARGET_ORIGIN_STRING);
-        Log.i(TAG, "Requesting postMessage channel for origin: " + targetOrigin);
+        Log.i(TAG, "Requesting postMessage channel for target origin: " + targetOrigin
+                + " (relationshipValidated=" + relationshipValidated + ")");
         try {
             boolean success = postMessageSender.requestPostMessageChannel(targetOrigin);
             channelRequested = success;
-            Log.i(TAG, "requestPostMessageChannel returned: " + success);
+            Log.i(TAG, "requestPostMessageChannel(" + targetOrigin + ") returned: " + success);
             return success;
         } catch (RuntimeException e) {
             channelRequested = false;
-            Log.e(TAG, "requestPostMessageChannel failed without terminating the app", e);
+            Log.e(TAG, "requestPostMessageChannel threw exception without terminating app: " + e.getMessage(), e);
             return false;
         }
     }
 
     public synchronized void onMessageChannelReady() {
         this.channelReady = true;
-        Log.i(TAG, "Message channel is ready. Notifying web and draining pending responses.");
+        Log.i(TAG, "onMessageChannelReady callback received: Transferred MessagePort ready in browser. Notifying web and draining "
+                + pendingOutboundResponses.size() + " pending responses.");
         sendDirect("{\"version\":\"" + PROTOCOL_VERSION + "\",\"type\":\"TWA_PORT_READY\"}");
         drainPendingResponses();
     }
@@ -109,6 +149,7 @@ public class TwaPostMessageManager {
         } else {
             if (pendingOutboundResponses.size() < MAX_PENDING_MESSAGES) {
                 pendingOutboundResponses.offer(jsonMessage);
+                Log.d(TAG, "Buffered outbound response (total=" + pendingOutboundResponses.size() + "): " + jsonMessage);
             } else {
                 Log.w(TAG, "Pending outbound response buffer full (" + MAX_PENDING_MESSAGES + "). Discarding message.");
             }
@@ -122,9 +163,9 @@ public class TwaPostMessageManager {
         }
         try {
             int result = postMessageSender.postMessage(jsonMessage);
-            Log.d(TAG, "postMessage sent. Result code: " + result);
+            Log.i(TAG, "postMessage sent to web (" + jsonMessage.length() + " chars, result=" + result + "): " + jsonMessage);
         } catch (Exception e) {
-            Log.e(TAG, "Failed to send postMessage: " + e.getMessage());
+            Log.e(TAG, "Failed to send postMessage to web: " + e.getMessage(), e);
         }
     }
 
@@ -149,6 +190,7 @@ public class TwaPostMessageManager {
             }
 
             String type = obj.optString("type", "");
+            Log.i(TAG, "onPostMessage received from web: type=" + type + ", message=" + message);
             switch (type) {
                 // Play Games Achievements
                 case "PLAY_GAMES_INIT":
@@ -156,12 +198,14 @@ public class TwaPostMessageManager {
                 case "UNLOCK_ACHIEVEMENT":
                 case "SET_ACHIEVEMENT_STEPS":
                 case "SHOW_ACHIEVEMENTS":
+                    Log.d(TAG, "Routing message to PlayGamesBridge: " + type);
                     playGamesBridge.handleWebMessage(message);
                     break;
 
                 // Play Games Game Stats
                 case "GAME_STATS_INIT":
                 case "RECORD_GAME_STATS":
+                    Log.d(TAG, "Routing message to PlayGameStatsBridge: " + type);
                     playGameStatsBridge.handleWebMessage(message);
                     break;
 
@@ -175,7 +219,7 @@ public class TwaPostMessageManager {
                     break;
             }
         } catch (Exception e) {
-            Log.e(TAG, "Failed to parse inbound postMessage JSON: " + e.getMessage());
+            Log.e(TAG, "Failed to parse inbound postMessage JSON: " + e.getMessage(), e);
         }
     }
 

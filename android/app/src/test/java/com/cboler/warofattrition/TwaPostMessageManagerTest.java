@@ -187,6 +187,38 @@ public class TwaPostMessageManagerTest {
     }
 
     @Test
+    public void testRelationshipValidationSuccessTriggersChannelRequestIfPending() {
+        // Setup session and navigation but request channel fails initially (e.g. before validation completed)
+        sender.requestChannelResult = false;
+        manager.setPostMessageSender(sender);
+        manager.onNavigationFinished();
+        assertFalse(manager.isChannelRequested());
+        assertEquals(1, sender.requestChannelCalls);
+
+        // Validation now succeeds with matching origin
+        sender.requestChannelResult = true;
+        manager.onRelationshipValidationResult(0, Uri.parse("https://cboler.github.io"), true);
+        assertTrue(manager.isChannelRequested());
+        assertEquals(2, sender.requestChannelCalls);
+    }
+
+    @Test
+    public void testRelationshipValidationFailureDoesNotRequestChannel() {
+        sender.requestChannelResult = false;
+        manager.setPostMessageSender(sender);
+        manager.onNavigationFinished();
+        assertFalse(manager.isChannelRequested());
+        assertEquals(1, sender.requestChannelCalls);
+
+        // Validation fails
+        manager.onRelationshipValidationResult(0, Uri.parse("https://cboler.github.io"), false);
+        assertFalse(manager.isChannelRequested());
+        assertEquals(1, sender.requestChannelCalls);
+    }
+
+
+
+    @Test
     public void testOutboundResponsesBufferedUntilChannelReadyThenFlushed() {
         manager.setPostMessageSender(sender);
 

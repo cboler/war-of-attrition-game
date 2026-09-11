@@ -83,10 +83,60 @@ To unblock Google Play Games achievements and Game Stats bridge before Open Test
 
 ### PostMessage Transport & Bridge Integration
 1. Native `PostMessageService` is declared in `AndroidManifest.xml`.
-2. `MainActivity` establishes a postMessage channel for `https://cboler.github.io` once both `CustomTabsSession` and `NAVIGATION_FINISHED` arrive; a rejected or exceptional channel request is contained instead of terminating the app and remains eligible for retry.
-3. Native bridge routing is managed by `TwaPostMessageManager`, which routes incoming requests to `PlayGamesBridge` and `PlayGameStatsBridge` while buffering outbound responses until the channel handshake is complete.
-4. Angular registers `VerifiedTwaTransport` via `TwaPostMessageService` upon receiving the transferred `MessagePort`.
-5. Digital Asset Links on `https://cboler.github.io/.well-known/assetlinks.json` grant `delegate_permission/common.use_as_origin`.
+2. `MainActivity` retains its Activity context during the TWA session to keep `PlayGamesBridge` and Google Play Games Services v2 clients alive and responsive to Tasks.
+3. `MainActivity` establishes a postMessage channel for `https://cboler.github.io` once `CustomTabsSession` is available and either navigation finishes or Digital Asset Links (`onRelationshipValidationResult`) verification succeeds.
+4. Native bridge routing is managed by `TwaPostMessageManager`, which routes incoming requests to `PlayGamesBridge` and `PlayGameStatsBridge` while buffering outbound responses until the channel handshake is complete.
+5. Angular registers `VerifiedTwaTransport` via `TwaPostMessageService` upon receiving the transferred `MessagePort`.
+6. Digital Asset Links on `https://cboler.github.io/.well-known/assetlinks.json` grant `delegate_permission/common.use_as_origin`.
+
+### 🔍 ADB Diagnostic Observability & Pixel Validation Procedure
+
+To monitor the live integration across all asynchronous boundaries, run:
+
+```bash
+# Clear logcat buffers
+adb logcat -c
+
+# Filter to all bridge tags
+adb logcat -s MainActivity TwaPostMessageManager PlayGamesBridge
+```
+
+#### Expected Log Sequence for Canary Validation (`war.first_casualty` / First Casualty)
+
+1. **Activity & Session Setup**:
+   ```text
+   MainActivity: onCustomTabsSessionAvailable: CustomTabsSession successfully acquired
+   MainActivity: onNavigationFinished: TWA initial navigation finished
+   ```
+2. **Channel Handshake**:
+   ```text
+   TwaPostMessageManager: Requesting postMessage channel for target origin: https://cboler.github.io
+   TwaPostMessageManager: requestPostMessageChannel(https://cboler.github.io) returned: true
+   MainActivity: onRelationshipValidationResult: relation=1, result=true
+   TwaPostMessageManager: onMessageChannelReady callback received: Transferred MessagePort ready in browser
+   ```
+3. **Web Connection & Play Games Authentication**:
+   ```text
+   TwaPostMessageManager: onPostMessage received: {"version":"v1","type":"PLAY_GAMES_INIT"}
+   PlayGamesBridge: Initializing Google Play Games SDK v2...
+   PlayGamesBridge: Play Games isAuthenticated result: true
+   PlayGamesBridge: Sending message to web: {"version":"v1","type":"PLAY_GAMES_SIGNED_IN"}
+   ```
+4. **Achievement Unlock (First Casualty Canary)**:
+   When the first card is sent to the Boneyard during gameplay:
+   ```text
+   TwaPostMessageManager: onPostMessage received: {"version":"v1","type":"UNLOCK_ACHIEVEMENT","internalAchievementId":"war.first_casualty","playGamesAchievementId":"CgkIz5juh94JEAIQDA"}
+   PlayGamesBridge: Calling AchievementsClient.unlockImmediate(CgkIz5juh94JEAIQDA) for war.first_casualty
+   PlayGamesBridge: Successfully unlocked achievement in Google Play Games: war.first_casualty (CgkIz5juh94JEAIQDA)
+   PlayGamesBridge: Sending message to web: {"version":"v1","type":"ACHIEVEMENT_SYNCED","internalAchievementId":"war.first_casualty","playGamesAchievementId":"CgkIz5juh94JEAIQDA"}
+   ```
+5. **If Failure Occurs**:
+   The logs clearly categorize the failure:
+   - `Sign-in required (statusCode=4)`
+   - `Network/transient failure (statusCode=7)`
+   - `Developer/configuration error (statusCode=10 - check package name/SHA-1 in Play Console)`
+   - `API unavailable/not connected (statusCode=17)`
+
 
 ## 🎯 Step-by-Step Manual Owner Checklist
 

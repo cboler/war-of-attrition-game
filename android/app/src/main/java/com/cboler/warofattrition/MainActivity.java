@@ -1,5 +1,6 @@
 package com.cboler.warofattrition;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,12 +22,13 @@ public class MainActivity extends LauncherActivity {
     private PlayGamesBridge playGamesBridge;
     private PlayGameStatsBridge playGameStatsBridge;
     private TwaPostMessageManager postMessageManager;
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private boolean deferNextFinishForPostMessageHandshake;
+    private boolean twaLaunched = false;
+    private boolean isHandlingInternalActivityResult = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "MainActivity onCreate");
         try {
             playGamesBridge = new PlayGamesBridge(this);
             playGameStatsBridge = new PlayGameStatsBridge(this);
@@ -34,6 +36,7 @@ public class MainActivity extends LauncherActivity {
 
             // Defensively initialize Play Games achievements bridge.
             // Game Stats initialization is deferred until explicitly requested by web or needed for telemetry.
+            Log.i(TAG, "Initializing PlayGamesBridge in onCreate");
             playGamesBridge.initialize();
         } catch (Throwable t) {
             Log.e(TAG, "Non-fatal error initializing Play Games native bridges: " + t.getMessage(), t);
@@ -41,24 +44,45 @@ public class MainActivity extends LauncherActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "MainActivity onResume (twaLaunched=" + twaLaunched + ", isHandlingInternalActivityResult=" + isHandlingInternalActivityResult + ")");
+        if (twaLaunched && !isHandlingInternalActivityResult) {
+            Log.i(TAG, "TWA session was exited by user; finishing MainActivity");
+            finish();
+        }
+    }
+
+    @Override
     protected void onCustomTabsSessionAvailable(@NonNull CustomTabsSession session) {
         Log.i(TAG, "onCustomTabsSessionAvailable hook invoked with session");
+        twaLaunched = true;
         if (postMessageManager != null) {
-            // ABH 2.7.3 finishes LauncherActivity immediately after this hook. Keep it alive until
-            // Chrome binds the PostMessageService so the callback binder is not destroyed mid-handshake.
-            deferNextFinishForPostMessageHandshake = true;
             postMessageManager.setCustomTabsSession(session);
         }
     }
 
     @Override
     public void finish() {
-        if (deferNextFinishForPostMessageHandshake) {
-            deferNextFinishForPostMessageHandshake = false;
-            Log.i(TAG, "Deferring LauncherActivity finish until postMessage channel is ready");
+        // While TWA is actively running, keep MainActivity alive in background
+        // so that Play Games Activity references and postMessage callbacks remain valid.
+        if (twaLaunched && !isHandlingInternalActivityResult && !isFinishing()) {
+            Log.d(TAG, "Deferring LauncherActivity finish: TWA is actively running");
             return;
         }
         super.finish();
+    }
+
+    public void setHandlingInternalActivityResult(boolean handling) {
+        this.isHandlingInternalActivityResult = handling;
+        Log.d(TAG, "setHandlingInternalActivityResult: " + handling);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.i(TAG, "onActivityResult (requestCode=" + requestCode + ", resultCode=" + resultCode + ")");
+        isHandlingInternalActivityResult = false;
     }
 
     @NonNull
@@ -99,19 +123,20 @@ public class MainActivity extends LauncherActivity {
             super.onRelationshipValidationResult(relation, requestedOrigin, result, extras);
             Log.i(TAG, "Relationship validation for origin " + requestedOrigin
                     + " (relation=" + relation + "): result=" + result);
+            if (postMessageManager != null) {
+                postMessageManager.onRelationshipValidationResult(relation, requestedOrigin, result);
+            }
         }
 
         @Override
         public void onMessageChannelReady(@Nullable Bundle extras) {
             super.onMessageChannelReady(extras);
-            Log.i(TAG, "onMessageChannelReady callback received");
+            Log.i(TAG, "onMessageChannelReady callback received from browser");
             if (postMessageManager != null) {
                 postMessageManager.onMessageChannelReady();
             }
-
-            // Chrome now owns a live binding to PostMessageService, so ABH can safely release its
-            // launcher activity without invalidating the callback during channel setup.
-            mainHandler.post(MainActivity.this::finish);
+            // Keep MainActivity alive in background while TWA is running.
+            // Do NOT call finish() here: PlayGamesBridge requires a non-destroyed Activity context.
         }
 
         @Override

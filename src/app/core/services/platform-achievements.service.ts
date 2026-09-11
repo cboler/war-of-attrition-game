@@ -36,8 +36,8 @@ export class PlatformAchievementsService {
   }
 
   /**
-   * Hook for a future Android Browser Helper postMessage integration. The current
-   * TWA host does not register one, so native controls and sync remain safely off.
+   * Hook for Android Browser Helper postMessage integration. A VerifiedTwaTransport
+   * is registered only after origin verification and MessagePort transfer.
    */
   connectVerifiedTransport(transport: VerifiedTwaTransport): void {
     this.unsubscribeTransport?.();
@@ -55,8 +55,8 @@ export class PlatformAchievementsService {
       this.setAchievementSteps(internalId, mapping.totalSteps ?? 0);
       return;
     }
+    this.queueUnlock(internalId);
     if (!this.canUsePlayGames()) {
-      this.queueUnlock(internalId);
       return;
     }
     this.send({
@@ -72,11 +72,11 @@ export class PlatformAchievementsService {
     const mapping = PLAY_ACHIEVEMENT_MAPPINGS[internalId];
     if (!mapping?.isIncremental || !mapping.totalSteps) return;
     const currentSteps = Math.max(0, Math.min(Math.floor(completedSteps), mapping.totalSteps));
+    this.pendingProgress.update(progress => ({
+      ...progress,
+      [internalId]: Math.max(progress[internalId] ?? 0, currentSteps)
+    }));
     if (!this.canUsePlayGames()) {
-      this.pendingProgress.update(progress => ({
-        ...progress,
-        [internalId]: Math.max(progress[internalId] ?? 0, currentSteps)
-      }));
       return;
     }
     this.send({
@@ -101,6 +101,14 @@ export class PlatformAchievementsService {
 
   reconcileUnlockedAchievements(unlockedIds: readonly string[]): void {
     unlockedIds.forEach(id => this.unlockAchievement(id));
+  }
+
+  getPendingUnlocks(): readonly string[] {
+    return this.pendingUnlocks();
+  }
+
+  getPendingProgress(): Readonly<Record<string, number>> {
+    return this.pendingProgress();
   }
 
   private canUsePlayGames(): boolean {
@@ -135,10 +143,19 @@ export class PlatformAchievementsService {
       case 'ACHIEVEMENT_SYNCED':
         if (payload.internalAchievementId) {
           this.pendingUnlocks.update(ids => ids.filter(id => id !== payload.internalAchievementId));
+          this.pendingProgress.update(progress => {
+            if (!(payload.internalAchievementId! in progress)) return progress;
+            const copy = { ...progress };
+            delete copy[payload.internalAchievementId!];
+            return copy;
+          });
         }
         break;
       case 'ACHIEVEMENT_SYNC_FAILED':
         console.warn('Achievement sync failed on Android host:', payload.error);
+        if (payload.error && payload.error.toLowerCase().includes('sign-in required')) {
+          this.isPlayGamesSignedInSignal.set(false);
+        }
         break;
     }
   }
@@ -150,12 +167,33 @@ export class PlatformAchievementsService {
   }
 
   private flushPendingSync(): void {
+    if (!this.canUsePlayGames()) return;
     const unlocks = [...this.pendingUnlocks()];
     const progress = { ...this.pendingProgress() };
-    this.pendingUnlocks.set([]);
-    this.pendingProgress.set({});
-    unlocks.forEach(id => this.unlockAchievement(id));
-    Object.entries(progress).forEach(([id, steps]) => this.setAchievementSteps(id, steps));
+    for (const id of unlocks) {
+      const mapping = PLAY_ACHIEVEMENT_MAPPINGS[id];
+      if (mapping && !mapping.isIncremental) {
+        this.send({
+          version: TWA_PROTOCOL_VERSION,
+          type: 'UNLOCK_ACHIEVEMENT',
+          internalAchievementId: id,
+          playGamesAchievementId: mapping.playGamesId
+        });
+      }
+    }
+    for (const [id, steps] of Object.entries(progress)) {
+      const mapping = PLAY_ACHIEVEMENT_MAPPINGS[id];
+      if (mapping?.isIncremental && mapping.totalSteps) {
+        this.send({
+          version: TWA_PROTOCOL_VERSION,
+          type: 'SET_ACHIEVEMENT_STEPS',
+          internalAchievementId: id,
+          playGamesAchievementId: mapping.playGamesId,
+          currentSteps: steps,
+          totalSteps: mapping.totalSteps
+        });
+      }
+    }
   }
 
   private send(payload: TwaMessagePayload): void {

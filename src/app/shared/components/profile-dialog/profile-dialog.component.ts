@@ -144,6 +144,11 @@ export class ProfileDialogComponent implements OnDestroy {
       this.platformAchievements.isPlayGamesAvailable() &&
       this.platformAchievements.isPlayGamesSignedIn()
   );
+  readonly showPlayGamesSignInButton = computed(
+    () =>
+      this.platformAchievements.isPlayGamesAvailable() &&
+      !this.platformAchievements.isPlayGamesSignedIn()
+  );
 
   readonly currentCampaignRecord = computed(() => {
     const wars = this.progression.currentCampaign().wars;
@@ -236,6 +241,10 @@ export class ProfileDialogComponent implements OnDestroy {
 
   openPlayGamesAchievements(): void {
     this.platformAchievements.showAchievementsOverlay();
+  }
+
+  signInPlayGames(): void {
+    this.platformAchievements.requestPlayGamesSignIn();
   }
 
   toggleEditName(): void {
