@@ -15,6 +15,10 @@ import {
   isCampaignModifierId
 } from './campaign-chapter.model';
 
+export {
+  getAuthoredCommanderSchedule
+} from './campaign-chapter.model';
+
 export type {
   CampaignModifierId,
   CampaignModeId,
@@ -281,21 +285,27 @@ export function normalizeCampaignProgression(
     ? rawCurrent['ordersSelected']
     : currentWars.length > 0;
 
-  const completedChapterModes = orderedModes([
-    ...normalizeModeArray(value['completedChapterModes']),
-    ...recentCampaigns.map(campaign => campaign.mode)
-  ]);
+  // Explicit completed modes are trusted if provided. For legacy profiles where
+  // the dedicated field is absent, only genuine recorded victories in recent
+  // history can establish prior Chapter completion. Never resurrect completed
+  // modes from recent history if completedChapterModes is explicitly provided (e.g. empty after a reset).
+  const explicitCompletedModes = Array.isArray(value['completedChapterModes'])
+    ? normalizeModeArray(value['completedChapterModes'])
+    : recentCampaigns.filter(campaign => campaign.outcome === 'victory').map(campaign => campaign.mode);
+  const completedChapterModes = orderedModes(explicitCompletedModes);
   const storyComplete = CAMPAIGN_CHAPTER_ORDER.every(chapter =>
     completedChapterModes.includes(chapter)
   );
   const hasStoredModifiers = Array.isArray(rawCurrent?.['modifiers']);
-  const modifiers = hasStoredModifiers
-    ? normalizeModifierArray(rawCurrent?.['modifiers'])
-    : ordersSelected || currentWars.length > 0
-      ? legacyModifiersForMode(mode)
-      : storyComplete
-        ? []
-        : getScriptedChapterModifiers(mode);
+  const modifiers = (!storyComplete && !ordersSelected && currentWars.length === 0)
+    ? [...getScriptedChapterModifiers(mode)]
+    : hasStoredModifiers
+      ? normalizeModifierArray(rawCurrent?.['modifiers'])
+      : ordersSelected || currentWars.length > 0
+        ? legacyModifiersForMode(mode)
+        : storyComplete
+          ? []
+          : [...getScriptedChapterModifiers(mode)];
 
   let limitedReserves: LimitedReservesCampaignState | undefined;
   if (modifiers.includes('limited_reserves')) {
@@ -337,7 +347,8 @@ export function normalizeCampaignProgression(
     rawCurrent?.['commanderSchedule'],
     mode,
     usesLegacyCommanderShape ? legacyCommanderId : undefined,
-    Math.min(WARS_PER_CAMPAIGN, currentWars.length + 1) as CampaignWarIndex
+    Math.min(WARS_PER_CAMPAIGN, currentWars.length + 1) as CampaignWarIndex,
+    storyComplete
   );
 
   return {
@@ -472,14 +483,17 @@ function normalizeCommanderSchedule(
   value: unknown,
   mode: CampaignModeId,
   legacyCommanderId: OpponentCommanderId | undefined,
-  currentWarIndex: CampaignWarIndex
+  currentWarIndex: CampaignWarIndex,
+  storyComplete: boolean
 ): CampaignCommanderSchedule {
   const authored = [...getAuthoredCommanderSchedule(mode)] as [
     OpponentCommanderId,
     OpponentCommanderId,
     OpponentCommanderId
   ];
-  if (Array.isArray(value) && value.length === WARS_PER_CAMPAIGN) {
+  // Custom 3-War commander schedules are strictly post-story replay features.
+  // During the first scripted traversal, every Chapter must face its authored schedule.
+  if (storyComplete && Array.isArray(value) && value.length === WARS_PER_CAMPAIGN) {
     const stored = value.filter(isCommanderId);
     if (stored.length === WARS_PER_CAMPAIGN) {
       return [stored[0], stored[1], stored[2]];

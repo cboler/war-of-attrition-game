@@ -217,4 +217,70 @@ describe('CampaignOrdersDialogComponent', () => {
       modifiers: ['limited_reserves', 'total_war']
     });
   });
+
+  describe('Lifecycle and Career Reset Invariants', () => {
+    it('restores scripted Chapter I invariants after completed story -> clean career reset', () => {
+      // 1. Construct a profile with all 4 Chapters completed and Custom Campaign state
+      enterCustomCampaign(['limited_reserves', 'total_war']);
+      authService.updateActiveProfileProgression(previous => ({
+        ...previous,
+        currentCampaign: {
+          ...previous.currentCampaign,
+          commanderSchedule: ['gambler', 'gambler', 'gambler']
+        }
+      }));
+
+      // 2. Invoke the actual clean career reset path
+      authService.resetActiveUserCareer();
+
+      // 3. Open Campaign Orders
+      createComponent();
+
+      // 4. Assert all required invariants
+      const progression = authService.activeProfile().progression;
+      expect(progression.completedChapterModes).toEqual([]);
+      expect(progression.unlockedChapterModes).toEqual(['standard']);
+      expect(component.isReplay()).toBeFalse();
+      expect(fixture.nativeElement.querySelector('.change-opponent-btn')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.opposing-force-section')).toBeNull();
+      expect(component.selectedMode()).toBe('standard');
+      expect(progressionService.currentCampaign().commanderSchedule).toEqual(
+        getAuthoredCommanderSchedule('standard')
+      );
+      expect(progressionService.activeCampaignMode()).toBe('standard');
+      expect(progressionService.activeCampaignModifiers()).toEqual([]);
+    });
+
+    it('restores scripted Chapter I invariants after completed story -> full local deletion -> fresh guest', () => {
+      // 1. Construct completed story custom campaign
+      enterCustomCampaign(['fog_of_war']);
+      authService.updateActiveProfileProgression(previous => ({
+        ...previous,
+        currentCampaign: {
+          ...previous.currentCampaign,
+          commanderSchedule: ['analyst', 'analyst', 'analyst']
+        }
+      }));
+
+      // 2. Full local deletion followed by fresh guest creation
+      authService.deleteAllLocalProfilesAndCreateFreshGuest();
+
+      // 3. Open Campaign Orders
+      createComponent();
+
+      // 4. Assert all required invariants
+      const progression = authService.activeProfile().progression;
+      expect(progression.completedChapterModes).toEqual([]);
+      expect(progression.unlockedChapterModes).toEqual(['standard']);
+      expect(component.isReplay()).toBeFalse();
+      expect(fixture.nativeElement.querySelector('.change-opponent-btn')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.opposing-force-section')).toBeNull();
+      expect(component.selectedMode()).toBe('standard');
+      expect(progressionService.currentCampaign().commanderSchedule).toEqual(
+        getAuthoredCommanderSchedule('standard')
+      );
+      expect(progressionService.activeCampaignMode()).toBe('standard');
+      expect(progressionService.activeCampaignModifiers()).toEqual([]);
+    });
+  });
 });

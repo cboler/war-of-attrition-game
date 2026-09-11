@@ -47,6 +47,7 @@ export interface OpponentCommanderDialogue {
   readonly battleLoss: {
     readonly aceLost: readonly string[];
     readonly twoLost: readonly string[];
+    readonly doubleTwoLost?: readonly string[];
     readonly aceAndTwoLost?: readonly string[];
     readonly deepBattle: readonly string[];
     readonly largeLoss: readonly string[];
@@ -60,6 +61,8 @@ export interface OpponentCommanderDialogue {
   readonly deckPoke: readonly string[];
   /** Reactions spoken whenever the commander loses a 2 (specialist/assassin card). */
   readonly twoLost?: readonly string[];
+  /** Reactions spoken whenever the commander loses both 2s in a single sequence. */
+  readonly doubleTwoLost?: readonly string[];
 }
 
 export interface CommanderSpeechCadence {
@@ -154,6 +157,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
       battleLoss: {
         aceLost: ['An expensive piece off the board.', 'That Ace was a vital asset.'],
         twoLost: ['Our specialist card is spent.', 'The assassin was lost.'],
+        doubleTwoLost: [
+          'Both specialists cataloged in the casualty ledger at once. Catastrophic.',
+          'Rank two is fully compromised. Our entire Ace-defense is broken.'
+        ],
         aceAndTwoLost: ['A devastating logistical deficit.'],
         deepBattle: ['Too many supplies expended on one deadlock.', 'The reserve was drained too far.'],
         largeLoss: ['A significant expenditure of force.', 'We must consolidate our remaining stock.'],
@@ -179,6 +186,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'The ledger reflects a grievous misallocation.',
         'A deuce surrendered is an entire reserve squandered.',
         'Without the two, the ledger bleeds on every page.'
+      ],
+      doubleTwoLost: [
+        'Both Twos in one stroke?! Our Ace-breakers are entirely wiped out.',
+        'A double loss at rank two. We have no counter for their Aces now.'
       ]
     }
   },
@@ -229,6 +240,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
       battleLoss: {
         aceLost: ['A high-stakes gamble that did not land.', 'There goes the big card.'],
         twoLost: ['Down goes the wild card.', 'Lost the specialist.'],
+        doubleTwoLost: [
+          'Lost both wildcards in that crash?! The odds just collapsed on me.',
+          'Both deuces swept off the felt. That was a bad gamble.'
+        ],
         aceAndTwoLost: ['Swept the table. Well played.'],
         deepBattle: ['Now that was a real pot.', 'A wild ride all the way down.'],
         largeLoss: ['Big pot to lose. On to the next hand.', 'High stakes, high cost.'],
@@ -254,6 +269,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'Lost the specialist.',
         'There goes my favorite long shot.',
         'The little card had one job and folded early.'
+      ],
+      doubleTwoLost: [
+        'Both deuces in the dirt?! You just stripped my whole hand of wildcards!',
+        'Double snake-eyes... and neither one rolled my way.'
       ]
     }
   },
@@ -304,6 +323,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
       battleLoss: {
         aceLost: ['The Ace casualty alters remaining probabilities.', 'Significant public data point.'],
         twoLost: ['The assassin is cataloged in the Boneyard.', 'Specialist removed from calculations.'],
+        doubleTwoLost: [
+          'Data confirms total specialist attrition: both Twos unrecoverable.',
+          'Both low-order counter-units neutralised in a single engagement.'
+        ],
         aceAndTwoLost: ['Catastrophic shift in remaining card distribution.'],
         deepBattle: ['Three recursive layers was a statistical rarity.', 'High variance engagement.'],
         largeLoss: ['The Boneyard tells the story now.', 'A major redistribution of remaining ranks.'],
@@ -329,6 +352,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'Specialist removed from calculations.',
         'The solitary counter to the Ace is eliminated.',
         'Ace threat ceiling increases. Recalculating.'
+      ],
+      doubleTwoLost: [
+        'Probability anomaly: both Twos eliminated simultaneously. Ace vulnerability at 100%.',
+        'Both specialist cards eliminated. Structural parity is broken.'
       ]
     }
   },
@@ -379,6 +406,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
       battleLoss: {
         aceLost: ['An Ace fallen, but the line remains.', 'We absorb the loss and dig in.'],
         twoLost: ['A loss, but our bulk remains intact.', 'The specialist is gone; the army fights on.'],
+        doubleTwoLost: [
+          'Both of our skirmishers fallen in that grinder. The regiment will hold regardless.',
+          'A double-specialist casualty. Bitter ground to lose, but the War continues.'
+        ],
         aceAndTwoLost: ['A severe loss, but the War continues.'],
         deepBattle: ['That engagement tested our reserves.', 'A deep exchange of attrition.'],
         largeLoss: ['A heavy casualty toll. We must preserve remaining depth.', 'The War is longer than this clash.'],
@@ -404,6 +435,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'The specialist is gone; the army fights on.',
         'The small tooth that could pierce the crown is broken.',
         'A quiet needle buried in the boneyard.'
+      ],
+      doubleTwoLost: [
+        'Both Twos cut down together? A brutal blow, but this army still stands.',
+        'You took both assassins in one sweep. We will see if your line holds without them.'
       ]
     }
   },
@@ -454,6 +489,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
       battleLoss: {
         aceLost: ['Our commander card is down. We stand firm.', 'A blow to our center.'],
         twoLost: ['The assassin fell. Realign the flank.', 'Lost our forward scout.'],
+        doubleTwoLost: [
+          'Both assassins dragged into the Boneyard?! Then we fight to the last breath!',
+          'You slaughtered both my specialists in that bloodbath!'
+        ],
         aceAndTwoLost: ['A devastating blow to our line. Stand fast!'],
         deepBattle: ['A brutal engagement across all layers.', 'The line was tested to the limit.'],
         largeLoss: ['Heavy casualties, but we do not break.', 'Hold what remains.'],
@@ -480,6 +519,10 @@ export const COMMANDERS: Record<OpponentCommanderId, OpponentCommander> = {
         'Lost our forward scout.',
         'Our sharpest weapon lost to a common clash!',
         'That two was our answer to high command. Hold the line!'
+      ],
+      doubleTwoLost: [
+        'Both our Twos butchered at once?! You leave me no choice but brute force!',
+        'They hunted down both our specialists in one strike! Forward, all of you!'
       ]
     }
   }

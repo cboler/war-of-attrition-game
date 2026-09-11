@@ -133,10 +133,12 @@ export class TableReactionService {
     const costly = rescuedSpecialCard || this.isValuable(context.reinforcementCard);
     if (!costly) return null;
 
-    const lostTwo =
-      context.reinforcementCard.rank === Rank.TWO ||
-      context.originalBeatenCard.rank === Rank.TWO;
-    if (speaker === PlayerType.OPPONENT && lostTwo) {
+    const lostTwoInitial = context.originalBeatenCard.rank === Rank.TWO;
+    const lostTwoReinforce = context.reinforcementCard.rank === Rank.TWO;
+    if (speaker === PlayerType.OPPONENT && lostTwoInitial && lostTwoReinforce) {
+      return this.forDoubleTwoLost(commander, true);
+    }
+    if (speaker === PlayerType.OPPONENT && (lostTwoInitial || lostTwoReinforce)) {
       return this.forTwoLost(commander);
     }
 
@@ -163,15 +165,37 @@ export class TableReactionService {
     return this.pick(1, PlayerType.OPPONENT, 'two_lost', variants, authored, 'angry');
   }
 
+  forDoubleTwoLost(
+    commanderInput?: OpponentCommander | OpponentCommanderId,
+    _sameOriginatingCard = false
+  ): TableReaction | null {
+    const commander = this.resolveCommander(commanderInput);
+    const authored = this.getAuthoredLine(commander.id, 'battle_two_lost');
+    const variants =
+      commander.dialogue.doubleTwoLost ??
+      commander.dialogue.battleLoss.doubleTwoLost ??
+      commander.dialogue.twoLost ??
+      commander.dialogue.battleLoss.twoLost ?? [
+        'Both specialists are gone.',
+        'Both Twos lost in a single stroke.',
+      ];
+    return this.pick(1, PlayerType.OPPONENT, 'double_two_lost', variants, authored, 'angry');
+  }
+
   forCardLoss(
     loser: PlayerType,
     cards: readonly Card[],
     commanderInput?: OpponentCommander | OpponentCommanderId,
   ): TableReaction | null {
     if (loser !== PlayerType.OPPONENT) return null;
-    const lostTwo = cards.some((card) => card.rank === Rank.TWO);
-    if (!lostTwo) return null;
-    return this.forTwoLost(commanderInput);
+    const twosCount = cards.filter((card) => card.rank === Rank.TWO).length;
+    if (twosCount >= 2) {
+      return this.forDoubleTwoLost(commanderInput, false);
+    }
+    if (twosCount === 1) {
+      return this.forTwoLost(commanderInput);
+    }
+    return null;
   }
 
   forBattleLoss(
@@ -181,7 +205,9 @@ export class TableReactionService {
     commanderInput?: OpponentCommander | OpponentCommanderId
   ): TableReaction | null {
     const lostAce = cards.some(card => card.rank === Rank.ACE);
-    const lostTwo = cards.some(card => card.rank === Rank.TWO);
+    const lostTwosCount = cards.filter(card => card.rank === Rank.TWO).length;
+    const lostDoubleTwo = lostTwosCount >= 2;
+    const lostTwo = lostTwosCount === 1;
     const largeLoss = cards.length >= 8;
     const highValueLosses = cards.filter(card => this.isValuable(card)).length;
     const decisiveRampage = !!context.decisiveCard && cards.length >= 3 && highValueLosses >= 2;
@@ -189,7 +215,7 @@ export class TableReactionService {
     const longStreak =
       Math.max(context.winnerBattleStreak ?? 0, context.loserBattleStreak ?? 0) >= 3;
 
-    if (!lostAce && !lostTwo && !largeLoss && !decisiveRampage && !deepBattle && !longStreak) {
+    if (!lostAce && !lostTwo && !lostDoubleTwo && !largeLoss && !decisiveRampage && !deepBattle && !longStreak) {
       return null;
     }
 
@@ -198,7 +224,19 @@ export class TableReactionService {
     let authored: AuthoredDialogueRecord | null = null;
 
     if (loser === PlayerType.OPPONENT) {
-      if (lostAce) {
+      const bDialogue = commander.dialogue.battleLoss;
+      if (lostDoubleTwo) {
+        authored = this.getAuthoredLine(commander.id, 'battle_double_two_lost' as any);
+        variants =
+          bDialogue.doubleTwoLost ??
+          commander.dialogue.doubleTwoLost ??
+          bDialogue.twoLost ??
+          commander.dialogue.twoLost ?? [
+            'Both specialists are gone.',
+            'Both Twos lost in a single stroke.'
+          ];
+        return this.pick(1, PlayerType.OPPONENT, 'double_two_lost', variants, authored, 'angry');
+      } else if (lostAce) {
         authored = this.getAuthoredLine(commander.id, 'battle_ace_lost');
       } else if (lostTwo) {
         authored = this.getAuthoredLine(commander.id, 'battle_two_lost');
@@ -208,7 +246,6 @@ export class TableReactionService {
         authored = this.getAuthoredLine(commander.id, 'large_battle_loss');
       }
 
-      const bDialogue = commander.dialogue.battleLoss;
       if (lostAce && lostTwo && bDialogue.aceAndTwoLost && bDialogue.aceAndTwoLost.length > 0) {
         variants = bDialogue.aceAndTwoLost;
       } else if (lostAce && bDialogue.aceLost && bDialogue.aceLost.length > 0) {
@@ -223,7 +260,14 @@ export class TableReactionService {
         variants = bDialogue.general;
       }
     } else {
-      if (decisiveRampage) {
+      if (lostDoubleTwo) {
+        variants = [
+          'Both of our assassins fell in the same engagement.',
+          'Lost both Twos at once. Our Ace counters are completely gone.',
+          'Double two casualty. That stings.'
+        ];
+        return this.pick(1, PlayerType.PLAYER, 'double_two_lost', variants, null, 'angry');
+      } else if (decisiveRampage) {
         variants = [
           '*One* champion did all of that.',
           'That card carved *through* the line.',

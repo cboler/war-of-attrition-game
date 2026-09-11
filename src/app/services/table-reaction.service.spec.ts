@@ -435,5 +435,95 @@ describe('TableReactionService', () => {
         expect(new Set(linesByCommander.values()).size).toBe(5);
       });
     });
+
+    describe('Double 2 Capture Event', () => {
+      it('triggers a double_two_lost reaction when opponent loses both 2s in a challenge', () => {
+        const reaction = service.forChallengeResolution({
+          challenger: PlayerType.OPPONENT,
+          originalBeatenCard: card(Rank.TWO),
+          reinforcementCard: card(Rank.TWO),
+          originalWinnerCard: card(Rank.KING),
+          challengerWon: false,
+        }, 'gambler');
+
+        expect(reaction).not.toBeNull();
+        expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
+        expect(reaction?.category).toBe('double_two_lost');
+        expect(reaction?.expression).toBe('angry');
+        const validGamblerDoubleLines = getCommander('gambler').dialogue.doubleTwoLost ?? [];
+        expect(validGamblerDoubleLines).toContain(reaction!.message);
+      });
+
+      it('suppresses regular two_lost when double 2 is lost in a challenge', () => {
+        const reaction = service.forChallengeResolution({
+          challenger: PlayerType.OPPONENT,
+          originalBeatenCard: card(Rank.TWO),
+          reinforcementCard: card(Rank.TWO),
+          originalWinnerCard: card(Rank.KING),
+          challengerWon: false,
+        }, 'analyst');
+
+        expect(reaction?.category).toBe('double_two_lost');
+        expect(reaction?.category).not.toBe('two_lost');
+      });
+
+      it('triggers double_two_lost on battle loss when casualties contain two 2s even with high roll', () => {
+        randomValues = [0.99]; // Normally silence for ordinary loss
+        const reaction = service.forBattleLoss(
+          PlayerType.OPPONENT,
+          [card(Rank.TWO), card(Rank.TWO), card(Rank.QUEEN)],
+          {},
+          'attritionist'
+        );
+
+        expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
+        expect(reaction?.category).toBe('double_two_lost');
+        const validAttritionistLines = [
+          ...(getCommander('attritionist').dialogue.battleLoss?.doubleTwoLost ?? []),
+          ...(getCommander('attritionist').dialogue.doubleTwoLost ?? [])
+        ];
+        expect(validAttritionistLines).toContain(reaction!.message);
+      });
+
+      it('triggers double_two_lost on card loss when opponent loses two 2s', () => {
+        const reaction = service.forCardLoss(
+          PlayerType.OPPONENT,
+          [card(Rank.TWO), card(Rank.TWO), card(Rank.FIVE)],
+          'quartermaster'
+        );
+
+        expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
+        expect(reaction?.category).toBe('double_two_lost');
+      });
+
+      it('still produces ordinary two_lost when only a single 2 is lost', () => {
+        const reaction = service.forCardLoss(
+          PlayerType.OPPONENT,
+          [card(Rank.TWO), card(Rank.FIVE)],
+          'quartermaster'
+        );
+
+        expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
+        expect(reaction?.category).toBe('two_lost');
+      });
+
+      it('provides distinct persona-specific lines for all five commanders on double 2 lost', () => {
+        const linesByCommander = new Map<string, string>();
+        for (const commanderId of COMMANDER_IDS) {
+          service.clearUsedDialogue();
+          const reaction = service.forDoubleTwoLost(commanderId, true);
+          expect(reaction?.speaker).toBe(PlayerType.OPPONENT);
+          expect(reaction?.category).toBe('double_two_lost');
+          expect(reaction?.expression).toBe('angry');
+          expect(reaction?.message).toBeTruthy();
+          linesByCommander.set(commanderId, reaction?.message ?? '');
+        }
+
+        // Each commander must produce a line
+        expect(linesByCommander.size).toBe(5);
+        // All 5 lines across the commanders must be distinct
+        expect(new Set(linesByCommander.values()).size).toBe(5);
+      });
+    });
   });
 });

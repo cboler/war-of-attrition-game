@@ -209,7 +209,23 @@ export type TableReactionCategory =
   | 'concession'
   | 'desperate_rescue'
   | 'contextual'
-  | 'two_lost';
+  | 'two_lost'
+  | 'double_two_lost';
+
+/**
+ * Three-tier taxonomy for gameplay event classification:
+ *
+ * 1. Permanent Achievements: Genuinely collectible/milestone accomplishments stored permanently
+ *    on the user profile and synchronized with Google Play Games (e.g. Assassin, Veteran, Centurion).
+ * 2. Significant Events: Notable, repeatable in-match tactical occurrences worthy of Log/Chronicle
+ *    record and specific commander acknowledgment (e.g. capturing both enemy 2s, deep battles).
+ * 3. Ambient Reactions: Common, responsive turn-level flavor that makes commanders feel attentive
+ *    and alive (e.g. narrow clashes, routine rescues, deck pokes).
+ */
+export type GameplayEventTier =
+  | 'permanent_achievement'
+  | 'significant_event'
+  | 'ambient_reaction';
 
 
 export interface QuipSpokenEvent extends BaseGameEvent {

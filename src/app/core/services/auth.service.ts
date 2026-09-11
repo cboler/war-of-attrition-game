@@ -10,6 +10,7 @@ import {
   CampaignProgression,
   DEFAULT_CARD_BACKING_ID,
   createDefaultCampaignProgression,
+  getAuthoredCommanderSchedule,
   normalizeCampaignProgression
 } from '../models/progression.model';
 import {
@@ -163,17 +164,42 @@ export class AuthService {
         if (Array.isArray(parsed)) {
           profiles = parsed
             .filter(p => p && typeof p === 'object' && typeof p.id === 'string')
-            .map(p => ({
-              ...p,
-              statistics: { ...DEFAULT_STATISTICS, ...(p.statistics || {}) },
-              progression: normalizeCampaignProgression(
-                p.progression,
-                p.progression ? DEFAULT_CARD_BACKING_ID : legacySelectedCardBacking,
-                undefined,
-                { grandfatherLegacyAccess: !p.progression }
-              ),
-              hallOfValor: normalizeHallOfValor(p.hallOfValor)
-            }));
+            .map(p => {
+              const statistics = { ...DEFAULT_STATISTICS, ...(p.statistics || {}) };
+              const hasZeroCareerPlay =
+                (statistics.gamesPlayed ?? 0) === 0 && (statistics.campaignsCompleted ?? 0) === 0;
+              const rawProgression = p.progression;
+              const sanitizedProgression =
+                hasZeroCareerPlay && rawProgression && typeof rawProgression === 'object'
+                  ? {
+                      ...rawProgression,
+                      completedChapterModes: [],
+                      currentCampaign:
+                        rawProgression.currentCampaign && typeof rawProgression.currentCampaign === 'object'
+                          ? {
+                              ...rawProgression.currentCampaign,
+                              wars: [],
+                              ordersSelected: false,
+                              mode: 'standard',
+                              modifiers: [],
+                              commanderSchedule: getAuthoredCommanderSchedule('standard')
+                            }
+                          : undefined
+                    }
+                  : rawProgression;
+
+              return {
+                ...p,
+                statistics,
+                progression: normalizeCampaignProgression(
+                  sanitizedProgression,
+                  sanitizedProgression ? DEFAULT_CARD_BACKING_ID : legacySelectedCardBacking,
+                  undefined,
+                  { grandfatherLegacyAccess: !rawProgression && !hasZeroCareerPlay }
+                ),
+                hallOfValor: normalizeHallOfValor(p.hallOfValor)
+              };
+            });
         }
       }
 

@@ -229,12 +229,15 @@ export class CampaignProgressionService {
     const current = this.currentCampaign();
     if (!current.ordersSelected && current.wars.length === 0) return false;
 
+    const isReplay = this.isAllChaptersCompleted();
     this.authService.updateActiveProfileProgression((previous) => ({
       ...previous,
       currentCampaign: {
         campaignId: createProgressionId('campaign'),
         mode: previous.currentCampaign.mode,
-        modifiers: previous.currentCampaign.modifiers,
+        modifiers: isReplay
+          ? []
+          : [...getScriptedChapterModifiers(previous.currentCampaign.mode)],
         ordersSelected: false,
         wars: [],
         commanderSchedule: getAuthoredCommanderSchedule(previous.currentCampaign.mode),

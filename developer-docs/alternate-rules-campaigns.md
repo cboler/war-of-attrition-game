@@ -31,6 +31,12 @@ Completing a Chapter, regardless of victory, defeat, or draw, advances to the ne
 
 Campaign Orders displays the next Chapter and its complete stack as locked Story Orders. The stack remains fixed for all three Wars.
 
+### Invariants & Protection
+- **Pristine and Reset Profiles**: A fresh profile, clean career reset, or full local deletion always initializes at Chapter I / `standard` with empty `completedChapterModes`, unselected orders, zero wars, and the authored Chapter I schedule (`quartermaster` → `analyst` → `attritionist`).
+- **Schedule Integrity**: Opposing commander selection is strictly locked during the scripted traversal. Even if an accidental caller passes a custom commander ID to `selectCampaignOrders`, or if legacy storage retains a 3-same-commander schedule, the service layer rejects the override and enforces `getAuthoredCommanderSchedule(mode)`.
+- **Abandonment**: Abandoning a scripted Campaign always restores the current Chapter's authored schedule and scripted modifier stack, preventing accidental retention of Custom Campaign state.
+- **Conservative Migration**: Normalization never resurrects `completedChapterModes` from `recentCampaigns` if `completedChapterModes` was explicitly cleared. Legacy saves without the explicit field count only genuine recorded victories (`outcome === 'victory'`).
+
 Narrative dialogue authored for the current Chapter is guaranteed the first time its eligible event occurs during this traversal. Once that Chapter is complete, replay and procedural chatter return to their lower probabilistic frequency.
 
 ## 3. Custom Campaigns
@@ -123,3 +129,23 @@ Gameplay telemetry schema version 2 includes both:
 - `campaign_modifiers`: `none` or the canonical modifier IDs joined with `+`.
 
 Both fields are scalar and low-cardinality. All events remain within the 25-parameter GA4 limit, and Fog redaction is driven by the modifier stack with a legacy mode fallback.
+
+## 9. Event & Achievement Tiering
+
+To maintain a clean and sustainable balance between player milestones, narrative immersion, and achievement catalog stability, gameplay events are classified across three distinct tiers:
+
+1. **Permanent Achievements** (`permanent_achievement`):
+   - Canonical, collectible milestones with permanent internal IDs and mapped Google Play Games achievements.
+   - Earned once per profile career; displayed in the Achievements tab and profile showcases.
+   - Examples: `war.comeback`, `chapter.one`, `veteran`, `centurion`.
+   - New gameplay events must **not** automatically become permanent achievements.
+
+2. **Significant Events** (`significant_event`):
+   - Unusual, memorable, and repeatable tactical feats worthy of acknowledgment in the Chronicle/StoryBook and distinct commander dialogue, but intentionally kept out of the permanent achievement catalog.
+   - Examples: `double_two_lost` (capturing both opposing 2 cards during a single challenge clash or among battle casualties), `valor_citation_awarded` (Juggernaut citations), `war.wrong_tool_for_job` (observed rarity events).
+   - Presentation: Commander-specific reaction line (with suppression of generic single-loss dialogue) and expressive Chronicle log entries.
+
+3. **Ambient Reactions** (`ambient_reaction`):
+   - Frequent or situational battlefield occurrences that bring opposing commander personalities to life without creating permanent or historical journal entries.
+   - Examples: ordinary clash quips, single-card elimination reactions, introduction lines, and general battle aftermath dialogue.
+

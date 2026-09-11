@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Card } from '../core/models/card.model';
+import { Card, Rank } from '../core/models/card.model';
 import { ComparisonResult, GameOutcome, PlayerType } from '../core/models/game-state.model';
 import { CardComparisonService, ComparisonExplanation } from '../core/services/card-comparison.service';
 import { GameEvent, GameEventBusService } from './game-event-bus.service';
@@ -132,10 +132,16 @@ export class StoryBookService {
               ? `Card rescued. ${reinfStr} defeated ${origStr}, and both of your cards survive.`
               : `Opponent rescues their card. ${reinfStr} defeated ${origStr}.`;
         } else {
+          const bothOpponentTwosLost =
+            event.challenger === PlayerType.OPPONENT &&
+            event.originalBeatenCard.rank === Rank.TWO &&
+            event.reinforcementCard.rank === Rank.TWO;
           text =
             event.challenger === PlayerType.PLAYER
               ? `${reinfStr} could not rescue the card. Both are now lost.`
-              : `Both opponent cards are now lost. ${origStr} holds.`;
+              : bothOpponentTwosLost
+                ? `Both opponent Twos eliminated in a single clash! ${origStr} cuts down their entire assassin cadre.`
+                : `Both opponent cards are now lost. ${origStr} holds.`;
         }
 
         const isSpecialRule = this.comparisonService.isSpecialAceVsTwoRule(
@@ -232,12 +238,17 @@ export class StoryBookService {
           outcome.hiddenWinnerCount > 0
             ? ` (${hiddenCardsReturn(outcome.hiddenWinnerCount)})`
             : '';
+        const doubleTwoNotice =
+          outcome.loser === PlayerType.OPPONENT &&
+          outcome.casualties.filter((c) => c.rank === Rank.TWO).length >= 2
+            ? ' Both opponent Twos claimed among the casualties!'
+            : '';
 
         this.addEntry({
           turnNumber: event.turnNumber,
           type: 'casualty',
           eyebrow: `BATTLE RESOLVED (DEPTH ${outcome.battleDepth})`,
-          text: `${casualtiesText}${hiddenReturnedText}`,
+          text: `${casualtiesText}${hiddenReturnedText}${doubleTwoNotice}`,
           cards: outcome.casualties,
           badge: outcome.winner === PlayerType.PLAYER ? 'victory' : 'defeat',
         });

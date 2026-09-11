@@ -565,6 +565,85 @@ describe('CampaignProgressionService', () => {
       expect(service.progression().recentCampaigns.length).toBe(MAX_CAMPAIGN_HISTORY);
     });
   });
+
+  describe('Scripted Traversal Defense-in-Depth & Custom Campaign Separation', () => {
+    it('strictly ignores caller-supplied commander and custom modifiers while story is incomplete', () => {
+      // Profile has completed Chapter 1 only; story is incomplete
+      authService.updateActiveProfileProgression(p => ({
+        ...p,
+        completedChapterModes: ['standard'],
+        unlockedChapterModes: ['standard', 'limited_reserves'],
+        currentCampaign: {
+          ...p.currentCampaign,
+          mode: 'limited_reserves',
+          ordersSelected: false,
+          wars: [],
+          commanderSchedule: getAuthoredCommanderSchedule('limited_reserves')
+        }
+      }));
+
+      expect(service.isAllChaptersCompleted()).toBeFalse();
+
+      // Accidental caller attempts to inject custom commander 'attritionist' and modifiers ['total_war']
+      const success = service.selectCampaignOrders('limited_reserves', ['total_war'], 'attritionist');
+      expect(success).toBeTrue();
+
+      // Defense-in-depth: must use authored schedule and scripted Chapter II modifiers
+      expect(service.currentCampaign().commanderSchedule).toEqual(
+        getAuthoredCommanderSchedule('limited_reserves')
+      );
+      expect(service.activeCampaignModifiers()).toEqual(['limited_reserves']);
+    });
+
+    it('abandoning a scripted Campaign restores authored schedule and scripted modifiers rather than custom state', () => {
+      // Mid-traversal Chapter 2: player started wars, then decides to abandon
+      authService.updateActiveProfileProgression(p => ({
+        ...p,
+        completedChapterModes: ['standard'],
+        unlockedChapterModes: ['standard', 'limited_reserves'],
+        currentCampaign: {
+          ...p.currentCampaign,
+          mode: 'limited_reserves',
+          ordersSelected: true,
+          wars: [{
+            warId: 'abandon-w1',
+            commanderId: 'cornered-general',
+            outcome: GameOutcome.OPPONENT_WIN,
+            margin: -5,
+            playerDeckColor: 'red',
+            completedAt: '2026-09-01T00:00:00Z'
+          }],
+          commanderSchedule: ['cornered-general', 'quartermaster', 'analyst'] // e.g. from state
+        }
+      }));
+
+      service.abandonActiveCampaign();
+
+      expect(service.ordersSelected()).toBeFalse();
+      expect(service.currentCampaign().wars.length).toBe(0);
+      expect(service.currentCampaign().commanderSchedule).toEqual(
+        getAuthoredCommanderSchedule('limited_reserves')
+      );
+      expect(service.activeCampaignModifiers()).toEqual(['limited_reserves']);
+    });
+
+    it('honors player-chosen single commander across all 3 Wars in post-story Custom Campaign', () => {
+      enterCustomCampaign();
+      expect(service.isAllChaptersCompleted()).toBeTrue();
+
+      // In custom replay mode, choosing 'gambler' schedules gambler across all 3 Wars
+      const success = service.selectCampaignOrders('standard', ['fog_of_war'], 'gambler');
+      expect(success).toBeTrue();
+
+      expect(service.currentCampaign().commanderSchedule).toEqual([
+        'gambler',
+        'gambler',
+        'gambler'
+      ]);
+      expect(service.activeCampaignModifiers()).toEqual(['fog_of_war']);
+      expect(service.currentCommanderId()).toBe('gambler');
+    });
+  });
 });
 
 function war(

@@ -6,6 +6,7 @@ import {
   canHumanReinforce,
   canInspectCasualties,
   createDefaultCampaignProgression,
+  getAuthoredCommanderSchedule,
   getHumanReserves,
   isFogOfWarActive,
   isFogOfWarMode,
@@ -418,6 +419,117 @@ describe('ProgressionModel and Rules', () => {
       expect(historyEntry.wars[1].commanderId).toBe('gambler');
       expect(historyEntry.wars[2].commanderId).toBe('gambler');
       expect(normalized.completedChapterModes).toContain('limited_reserves');
+    });
+
+    it('does not resurrect completedChapterModes from recent history when completedChapterModes is explicitly empty', () => {
+      // Represents a profile that underwent a career/progression reset: completedChapterModes was cleared to [],
+      // but recentCampaigns still has old records.
+      const resetProfile = {
+        schemaVersion: 2,
+        completedChapterModes: [],
+        unlockedChapterModes: ['standard'],
+        currentCampaign: {
+          campaignId: 'post-reset-active',
+          mode: 'standard',
+          ordersSelected: false,
+          commanderSchedule: ['gambler', 'gambler', 'gambler'], // stale custom schedule from previous life
+          wars: []
+        },
+        recentCampaigns: [
+          { campaignId: 'c1', mode: 'standard', outcome: 'victory', wars: [] },
+          { campaignId: 'c2', mode: 'limited_reserves', outcome: 'victory', wars: [] },
+          { campaignId: 'c3', mode: 'fog_of_war', outcome: 'victory', wars: [] },
+          { campaignId: 'c4', mode: 'total_war', outcome: 'victory', wars: [] }
+        ]
+      };
+
+      const normalized = normalizeCampaignProgression(resetProfile);
+
+      expect(normalized.completedChapterModes).toEqual([]);
+      expect(normalized.unlockedChapterModes).toEqual(['standard']);
+      // Stale custom 3-same-commander schedule MUST be overwritten with the authored schedule
+      expect(normalized.currentCampaign.commanderSchedule).toEqual(
+        getAuthoredCommanderSchedule('standard')
+      );
+      expect(normalized.currentCampaign.modifiers).toEqual([]);
+    });
+
+    it('migrates a legacy profile without completedChapterModes using only genuine victories', () => {
+      const makeWars = (win: boolean) => [
+        { warId: 'w1', outcome: win ? GameOutcome.PLAYER_WIN : GameOutcome.OPPONENT_WIN, margin: win ? 3 : -3, completedAt: '2026-08-01T00:00:00Z' },
+        { warId: 'w2', outcome: win ? GameOutcome.PLAYER_WIN : GameOutcome.OPPONENT_WIN, margin: win ? 3 : -3, completedAt: '2026-08-01T00:10:00Z' },
+        { warId: 'w3', outcome: win ? GameOutcome.PLAYER_WIN : GameOutcome.OPPONENT_WIN, margin: win ? 3 : -3, completedAt: '2026-08-01T00:20:00Z' }
+      ];
+      // Older schema without completedChapterModes array: only genuine victories count towards completed chapters
+      const legacyProfile = {
+        schemaVersion: 2,
+        currentCampaign: {
+          campaignId: 'leg-camp',
+          mode: 'limited_reserves',
+          ordersSelected: false,
+          commanderSchedule: ['gambler', 'cornered-general', 'quartermaster'],
+          wars: []
+        },
+        recentCampaigns: [
+          { campaignId: 'h1', mode: 'standard', outcome: 'victory', wars: makeWars(true) },
+          { campaignId: 'h2', mode: 'limited_reserves', outcome: 'defeat', wars: makeWars(false) },
+          { campaignId: 'h3', mode: 'fog_of_war', outcome: 'draw', wars: [
+            { warId: 'dw1', outcome: GameOutcome.PLAYER_WIN, margin: 1, completedAt: '2026-08-01T00:00:00Z' },
+            { warId: 'dw2', outcome: GameOutcome.OPPONENT_WIN, margin: -1, completedAt: '2026-08-01T00:10:00Z' },
+            { warId: 'dw3', outcome: GameOutcome.TIE, margin: 0, completedAt: '2026-08-01T00:20:00Z' }
+          ] }
+        ]
+      };
+
+      const normalized = normalizeCampaignProgression(legacyProfile);
+
+      // Only standard was a victory; limited_reserves (defeat) and fog_of_war (draw) must NOT be marked completed
+      expect(normalized.completedChapterModes).toEqual(['standard']);
+      expect(normalized.unlockedChapterModes).toEqual(['standard', 'limited_reserves', 'fog_of_war']);
+    });
+
+    it('replaces an accidental custom commander schedule with authored schedule if story is incomplete', () => {
+      const incompleteStoryProfile = {
+        schemaVersion: 3,
+        completedChapterModes: ['standard'],
+        unlockedChapterModes: ['standard', 'limited_reserves'],
+        currentCampaign: {
+          campaignId: 'ch2-active',
+          mode: 'limited_reserves',
+          ordersSelected: false,
+          commanderSchedule: ['attritionist', 'attritionist', 'attritionist'],
+          wars: []
+        }
+      };
+
+      const normalized = normalizeCampaignProgression(incompleteStoryProfile);
+
+      expect(normalized.currentCampaign.commanderSchedule).toEqual(
+        getAuthoredCommanderSchedule('limited_reserves')
+      );
+    });
+
+    it('preserves custom single-commander schedule when story is genuinely complete', () => {
+      const genuineCompletedProfile = {
+        schemaVersion: 3,
+        completedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war'],
+        unlockedChapterModes: ['standard', 'limited_reserves', 'fog_of_war', 'total_war'],
+        currentCampaign: {
+          campaignId: 'custom-camp',
+          mode: 'standard',
+          ordersSelected: true,
+          commanderSchedule: ['gambler', 'gambler', 'gambler'],
+          wars: []
+        }
+      };
+
+      const normalized = normalizeCampaignProgression(genuineCompletedProfile);
+
+      expect(normalized.currentCampaign.commanderSchedule).toEqual([
+        'gambler',
+        'gambler',
+        'gambler'
+      ]);
     });
 
     it('is strictly idempotent: normalize(v1) -> v2 and normalize(v2) -> identical semantic v2', () => {

@@ -467,5 +467,45 @@ describe('StoryBookService', () => {
       expect(service.entries()[0].comparison).toBeUndefined();
       expect(service.entries()[1].comparison).toBeUndefined();
     });
+
+    it('adds a special note to Chronicle when opponent loses both 2s to the same player card in a challenge', () => {
+      const cardTwoHeart: Card = { id: 'c2h', suit: Suit.HEARTS, rank: Rank.TWO, value: 2, isRed: true };
+      const cardTwoSpade: Card = { id: 'c2s', suit: Suit.SPADES, rank: Rank.TWO, value: 2, isRed: false };
+      const cardKingClub: Card = { id: 'ckc', suit: Suit.CLUBS, rank: Rank.KING, value: 13, isRed: false };
+
+      eventBus.emit({
+        type: 'challenge_resolved',
+        turnNumber: 5,
+        challenger: PlayerType.OPPONENT,
+        originalBeatenCard: cardTwoHeart,
+        reinforcementCard: cardTwoSpade,
+        originalWinnerCard: cardKingClub,
+        comparison: ComparisonResult.PLAYER_WINS,
+        winner: PlayerType.PLAYER,
+        challengerWon: false,
+        escalatedToBattle: false,
+        savedTwo: false,
+        message: 'Opponent reinforcement failed!',
+      });
+
+      expect(service.entries().length).toBe(1);
+      const entry = service.entries()[0];
+      expect(entry.text).toContain('Both opponent Twos eliminated in a single clash!');
+    });
+
+    it('adds a special note to Chronicle when opponent loses both 2s in Battle casualties', () => {
+      const cardTwoHeart: Card = { id: 'c2h', suit: Suit.HEARTS, rank: Rank.TWO, value: 2, isRed: true };
+      const cardTwoSpade: Card = { id: 'c2s', suit: Suit.SPADES, rank: Rank.TWO, value: 2, isRed: false };
+
+      eventBus.emit({
+        type: 'battle_resolved',
+        turnNumber: 6,
+        outcome: battleOutcome([cardTwoHeart, cardTwoSpade, cardAce]),
+      });
+
+      expect(service.entries().length).toBe(1);
+      const entry = service.entries()[0];
+      expect(entry.text).toContain('Both opponent Twos claimed among the casualties!');
+    });
   });
 });
