@@ -383,6 +383,37 @@ describe('TableGame presentation', () => {
     expect(tutorial.activePrompt()?.title).toBe('Ready for Command');
   });
 
+  it('defers table orientation tutorial until Campaign Orders briefing dialog is closed', fakeAsync(() => {
+    dialog.closeAll();
+    flush();
+
+    const tutorial = TestBed.inject(TutorialService);
+    tutorial.resetTutorialProgress();
+    settings.setTutorialEnabled(true);
+
+    const progressionService = TestBed.inject(CampaignProgressionService);
+    expect(progressionService.ordersSelected()).toBeFalse();
+
+    const freshFixture = TestBed.createComponent(TableGame);
+    freshFixture.detectChanges();
+
+    // The briefing dialog should be open, and tutorial orientation should not have started yet
+    expect(dialog.openDialogs.length).toBe(1);
+    expect(tutorial.isTutorialActive()).toBeFalse();
+
+    // Closing the briefing dialog after confirming orders starts the tutorial orientation
+    progressionService.selectCampaignOrders('standard');
+    dialog.openDialogs[0].close();
+    flush();
+    freshFixture.detectChanges();
+
+    expect(dialog.openDialogs.length).toBe(0);
+    expect(tutorial.isTutorialActive()).toBeTrue();
+    expect(tutorial.activePrompt()?.step).toBe(TutorialStep.FIRST_TURN);
+
+    freshFixture.destroy();
+  }));
+
   it('tracks one semantic Table lifecycle without gameplay-detail events', () => {
     const uiTelemetry = TestBed.inject(UiTelemetryService);
     const open = spyOn(uiTelemetry, 'openSurface').and.callThrough();

@@ -407,8 +407,9 @@ export class GameControllerService {
     if (!this.gameState.hasGame()) {
       this.replaceGame(false);
     } else if (this.turnsPlayed === 0 && this.phase() === PresentationState.READY) {
-      this.beginWarWhenOrdersReady();
-      this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
+      if (this.beginWarWhenOrdersReady()) {
+        void this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
+      }
     }
   }
 
@@ -454,7 +455,6 @@ export class GameControllerService {
     this.phase.set(PresentationState.READY);
     this.gameMessage.set('Your deck is ready.');
     this.battlefieldMessagesSignal.set([{ id: ++this.messageCounter, text: 'Your deck is ready.' }]);
-    void this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
     this.presentedTurn.set(null);
     this.revealedCasualtyIds.set([]);
     this.movingToBoneyardIds.set([]);
@@ -515,6 +515,7 @@ export class GameControllerService {
       this.campaignProgression.campaignWarIndex() > 1
     ) {
       this.speakIntroduction();
+      void this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
     }
   }
 

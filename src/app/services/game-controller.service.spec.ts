@@ -22,6 +22,8 @@ import { StoryBookService } from './story-book.service';
 import { BattleAnimationService } from './battle-animation.service';
 import { PresentationSequencerService } from './presentation-sequencer.service';
 import { TableReactionService } from './table-reaction.service';
+import { TutorialService } from './tutorial.service';
+import { TutorialStep } from '../core/models/tutorial.model';
 
 describe('GameControllerService presentation integration', () => {
   let controller: GameControllerService;
@@ -717,6 +719,23 @@ describe('GameControllerService presentation integration', () => {
     controller.ensureGameStarted();
     expect(events.filter((event) => event.type === 'war_started').length).toBe(1);
     subscription.unsubscribe();
+  });
+
+  it('does not trigger orientation tutorial until campaign orders are confirmed', () => {
+    const tutorial = TestBed.inject(TutorialService);
+    tutorial.resetTutorialProgress();
+    settings.setTutorialEnabled(true);
+
+    // Starting a new game without orders selected should not trigger tutorial
+    expect(progression.ordersSelected()).toBeFalse();
+    controller.startNewGame();
+    expect(tutorial.isTutorialActive()).toBeFalse();
+
+    // Confirming orders and starting war begins the tutorial orientation
+    progression.selectCampaignOrders(progression.activeCampaignMode());
+    controller.ensureGameStarted();
+    expect(tutorial.isTutorialActive()).toBeTrue();
+    expect(tutorial.activePrompt()?.step).toBe(TutorialStep.FIRST_TURN);
   });
 
   it('reserves the existing full victory and defeat melodies for final War outcomes', () => {
