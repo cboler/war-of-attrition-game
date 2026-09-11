@@ -81,7 +81,7 @@ export function mapGameEventToTelemetry(
           ) && event.winner !== null ? 1 : 0
         }),
         outcome: event.comparison === ComparisonResult.TIE
-          ? event.escalatedToBattle ? 'battle' : 'tie'
+          ? 'tie'
           : event.challengerWon ? 'success' : 'failure',
         escalated_to_battle: event.escalatedToBattle ? 1 : 0
       });

@@ -318,7 +318,7 @@ describe('War context and reinforcement correctness', () => {
     expect(events.some(item => item.type === 'battle_started')).toBeTrue();
     expect(reaction).not.toHaveBeenCalled();
     const mapped = records.find(record => record.name === 'reinforcement_resolved')!;
-    expect(mapped.parameters['outcome']).toBe('battle');
+    expect(mapped.parameters['outcome']).toBe('tie');
     expect(mapped.parameters['escalated_to_battle']).toBe(1);
     expect(TestBed.inject(StoryBookService).entries().some(entry => entry.text.includes('Battle initiated!')))
       .toBeTrue();

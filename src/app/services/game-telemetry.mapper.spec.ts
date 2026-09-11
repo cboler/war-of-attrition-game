@@ -119,7 +119,7 @@ describe('game telemetry mapper', () => {
     [PlayerType.PLAYER, ComparisonResult.OPPONENT_WINS, PlayerType.OPPONENT, false, false, 'failure'],
     [PlayerType.OPPONENT, ComparisonResult.OPPONENT_WINS, PlayerType.OPPONENT, true, false, 'success'],
     [PlayerType.OPPONENT, ComparisonResult.PLAYER_WINS, PlayerType.PLAYER, false, false, 'failure'],
-    [PlayerType.PLAYER, ComparisonResult.TIE, null, false, true, 'battle'],
+    [PlayerType.PLAYER, ComparisonResult.TIE, null, false, true, 'tie'],
     [PlayerType.PLAYER, ComparisonResult.TIE, PlayerType.PLAYER, false, false, 'tie'],
     [PlayerType.PLAYER, ComparisonResult.TIE, PlayerType.OPPONENT, false, false, 'tie'],
     [PlayerType.PLAYER, ComparisonResult.TIE, null, false, false, 'tie'],

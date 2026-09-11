@@ -93,10 +93,10 @@ From gameplay schema `3`, `reinforcement_resolved` distinguishes the reinforceme
 | --- | --- | --- |
 | Challenger wins outright | `success` | `0` |
 | Challenger loses outright | `failure` | `0` |
-| Tie proceeding into Battle | `battle` | `1` |
+| Tie proceeding into Battle | `tie` | `1` |
 | Tie immediately resolved by attrition, including a true terminal tie | `tie` | `0` |
 
-`ChallengeResolvedEvent.challengerWon` means an outright comparison win, oriented to `challenger`: `PLAYER_WINS` for the human, `OPPONENT_WINS` for the opponent. `winner` remains the separate turn/attrition winner and can be non-null on a comparison tie. The domain-only `escalatedToBattle` flag comes from the resolver's `nextPhase === BATTLE`; null winner alone cannot distinguish Battle from terminal attrition. No GA4 parameter was added: the existing outcome enum and escalation flag carry this distinction, retaining the rich non-Fog record's 25-parameter budget.
+`ChallengeResolvedEvent.challengerWon` means an outright comparison win, oriented to `challenger`: `PLAYER_WINS` for the human, `OPPONENT_WINS` for the opponent. `winner` remains the separate turn/attrition winner and can be non-null on a comparison tie. The domain-only `escalatedToBattle` flag comes from the resolver's `nextPhase === BATTLE`; null winner alone cannot distinguish Battle from terminal attrition. The `outcome` parameter strictly represents the card comparison outcome (`success`, `failure`, or `tie`), normalized to `tie` across all tied comparisons rather than conflating comparison state with the subsequent Battle phase. The `escalated_to_battle` parameter independently indicates whether the tie escalated to Battle (`1`) or resolved via immediate attrition (`0`), retaining the rich non-Fog record's 25-parameter budget.
 
 Local successful-challenge counters and rescue credit now use this same direct-win meaning. Two/Ace rescue flags require an outright win; Fog still omits rank-ledger fields. Ties do not produce rescue/failure dialogue, and the Chronicle describes either Battle initiation or the authoritative attrition result. Actual card settlement is unchanged.
 
@@ -215,6 +215,7 @@ The input is a documented, non-PII context bucket; output contains anonymous agg
 3. Configure only low-cardinality GA custom definitions such as outcome, deck color, comparison stage, special rule, and unlock reason.
 4. In GA4 Admin, link the property to the correct BigQuery project and choose the data location and daily/streaming export options. This is a console operation and requires no client credential.
 5. Validate consent behavior and event parameters in GA4 DebugView, then verify `events_YYYYMMDD` / `events_intraday_YYYYMMDD` exports and retention settings.
+6. In custom GA4 Explorations (e.g., Free-form tabs analyzing dimensions such as `outcome`, `escalated_to_battle`, or `challenger`), configure a tab-level filter restricting `Event name` to the target event being analyzed (e.g., `Event name exactly matches reinforcement_resolved`, `war_resolved`, or `campaign_resolved`). Because parameters like `outcome` are event-scoped, un-filtered exploration tabs evaluate every stream event (such as `turn_started`, `battle_started`, or UI events) and report them as `(not set)`. Filtering each tab to its intended event eliminates this misleading `(not set)` noise without changing collection.
 
 Official references: [GA4 event collection](https://developers.google.com/analytics/devguides/collection/ga4/events), [collection limits](https://support.google.com/analytics/answer/9267744), [Google tag privacy controls](https://developers.google.com/tag-platform/security/guides/privacy), [consent mode concepts](https://developers.google.com/tag-platform/security/concepts/consent-mode), [PII policy](https://support.google.com/analytics/answer/6366371), [Analytics data deletion requests](https://support.google.com/analytics/answer/9940393), [BigQuery linking](https://support.google.com/analytics/answer/9823238), and [BigQuery export schema](https://support.google.com/analytics/answer/7029846).
 
