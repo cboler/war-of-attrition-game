@@ -20,6 +20,9 @@ import { PlayerType } from '../core/models/game-state.model';
 import { MatDialog } from '@angular/material/dialog';
 import { TableGame } from './table-game';
 import { UiTelemetryService } from '../services/ui-telemetry.service';
+import { TelemetryConsentService } from '../services/telemetry-consent.service';
+import { AnalyticsConsentDialogComponent } from '../shared/components/analytics-consent-dialog/analytics-consent-dialog.component';
+import { CampaignOrdersDialogComponent } from '../shared/components/campaign-orders-dialog/campaign-orders-dialog.component';
 import { ProfileDialogService } from '../shared/components/profile-dialog/profile-dialog.service';
 import { TutorialService } from '../services/tutorial.service';
 import { TutorialStep } from '../core/models/tutorial.model';
@@ -40,6 +43,7 @@ describe('TableGame presentation', () => {
       providers: [provideRouter([])],
     }).compileComponents();
     settings = TestBed.inject(SettingsService);
+    TestBed.inject(TelemetryConsentService).setAnalyticsConsent('granted');
     settings.setAutoPlayAnimations(false);
     settings.setSoundEnabled(false);
     settings.setTutorialEnabled(false);
@@ -382,6 +386,55 @@ describe('TableGame presentation', () => {
     expect(tutorial.manualVisitInProgress()).toBeFalse();
     expect(tutorial.activePrompt()?.title).toBe('Ready for Command');
   });
+
+  it('sequences Analytics Consent before Campaign Orders briefing dialog and Table Tutorial', fakeAsync(() => {
+    dialog.closeAll();
+    flush();
+
+    const consent = TestBed.inject(TelemetryConsentService);
+    consent.clearAnalyticsConsent();
+    expect(consent.analyticsConsent()).toBe('unknown');
+
+    const tutorial = TestBed.inject(TutorialService);
+    tutorial.resetTutorialProgress();
+    settings.setTutorialEnabled(true);
+
+    const progressionService = TestBed.inject(CampaignProgressionService);
+    expect(progressionService.ordersSelected()).toBeFalse();
+
+    const freshFixture = TestBed.createComponent(TableGame);
+    freshFixture.detectChanges();
+    flush();
+
+    // Step 1: Analytics Consent Dialog is open. Campaign Orders is NOT open yet.
+    expect(dialog.openDialogs.length).toBe(1);
+    expect(dialog.openDialogs[0].componentInstance instanceof AnalyticsConsentDialogComponent).toBeTrue();
+    expect(tutorial.isTutorialActive()).toBeFalse();
+
+    // Player decides analytics consent
+    dialog.openDialogs[0].close('granted');
+    flush();
+    freshFixture.detectChanges();
+
+    // Step 2: Analytics dialog closed. Campaign Orders Dialog is now open!
+    expect(consent.analyticsConsent()).toBe('granted');
+    expect(dialog.openDialogs.length).toBe(1);
+    expect(dialog.openDialogs[0].componentInstance instanceof CampaignOrdersDialogComponent).toBeTrue();
+    expect(tutorial.isTutorialActive()).toBeFalse();
+
+    // Player issues campaign orders
+    progressionService.selectCampaignOrders('standard');
+    dialog.openDialogs[0].close();
+    flush();
+    freshFixture.detectChanges();
+
+    // Step 3: All dialogs closed. War begins and Tutorial Step 1 appears cleanly!
+    expect(dialog.openDialogs.length).toBe(0);
+    expect(tutorial.isTutorialActive()).toBeTrue();
+    expect(tutorial.activePrompt()?.step).toBe(TutorialStep.FIRST_TURN);
+
+    freshFixture.destroy();
+  }));
 
   it('defers table orientation tutorial until Campaign Orders briefing dialog is closed', fakeAsync(() => {
     dialog.closeAll();

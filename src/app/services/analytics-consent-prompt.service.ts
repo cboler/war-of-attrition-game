@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, inject } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { take } from 'rxjs';
+import { Observable, map, of, take } from 'rxjs';
 import {
   AnalyticsConsentDecision,
   AnalyticsConsentDialogComponent,
@@ -25,6 +25,28 @@ export class AnalyticsConsentPromptService {
     });
   }
 
+  /**
+   * Ensures the analytics consent decision has been resolved.
+   * If consent is already determined ('granted' or 'denied'), emits immediately.
+   * If consent is 'unknown', ensures the dialog is open and emits when closed.
+   */
+  ensureConsentResolved(): Observable<AnalyticsConsentDecision | null> {
+    if (this.consent.analyticsConsent() !== 'unknown') {
+      return of(this.consent.analyticsConsent() as AnalyticsConsentDecision);
+    }
+    if (this.dialogRef) {
+      return this.dialogRef.afterClosed().pipe(
+        take(1),
+        map(decision => decision ?? null),
+      );
+    }
+    if (this.promptTimer !== null) {
+      clearTimeout(this.promptTimer);
+      this.promptTimer = null;
+    }
+    return this.openDecisionDialog();
+  }
+
   private schedulePromptAfterRender(): void {
     if (this.promptTimer !== null) return;
     this.promptTimer = setTimeout(() => {
@@ -39,21 +61,32 @@ export class AnalyticsConsentPromptService {
     }, 0);
   }
 
-  private openDecisionDialog(): void {
-    this.dialogRef = this.dialog.open(AnalyticsConsentDialogComponent, {
-      width: 'min(520px, calc(100vw - 20px))',
-      maxHeight: 'calc(100dvh - 20px)',
-      panelClass: ['themed-dialog-panel', 'analytics-consent-dialog-panel'],
-      disableClose: true,
-      closeOnNavigation: false,
-      autoFocus: 'dialog',
-      restoreFocus: true,
-      ariaModal: true,
-      ariaLabelledBy: 'analytics-consent-title',
-      ariaDescribedBy: 'analytics-consent-description',
-    });
+  private openDecisionDialog(): Observable<AnalyticsConsentDecision | null> {
+    if (this.dialogRef) {
+      return this.dialogRef.afterClosed().pipe(
+        take(1),
+        map(decision => decision ?? null),
+      );
+    }
 
-    this.dialogRef
+    const ref = this.dialog.open<AnalyticsConsentDialogComponent, unknown, AnalyticsConsentDecision>(
+      AnalyticsConsentDialogComponent,
+      {
+        width: 'min(520px, calc(100vw - 20px))',
+        maxHeight: 'calc(100dvh - 20px)',
+        panelClass: ['themed-dialog-panel', 'analytics-consent-dialog-panel'],
+        disableClose: true,
+        closeOnNavigation: false,
+        autoFocus: 'dialog',
+        restoreFocus: true,
+        ariaModal: true,
+        ariaLabelledBy: 'analytics-consent-title',
+        ariaDescribedBy: 'analytics-consent-description',
+      },
+    );
+    this.dialogRef = ref;
+
+    ref
       .afterClosed()
       .pipe(take(1))
       .subscribe(decision => {
@@ -62,5 +95,10 @@ export class AnalyticsConsentPromptService {
           this.consent.setAnalyticsConsent(decision);
         }
       });
+
+    return ref.afterClosed().pipe(
+      take(1),
+      map(decision => decision ?? null),
+    );
   }
 }

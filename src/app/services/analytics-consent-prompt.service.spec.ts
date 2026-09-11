@@ -95,4 +95,38 @@ describe('AnalyticsConsentPromptService', () => {
     expect(consent.analyticsConsent()).toBe('unknown');
     expect(localStorage.getItem('war-of-attrition-telemetry-consent')).toBeNull();
   }));
+
+  it('ensureConsentResolved returns existing decision immediately when known', fakeAsync(() => {
+    consent.setAnalyticsConsent('granted');
+    const service = TestBed.inject(AnalyticsConsentPromptService);
+    let resolved: string | null = 'not_called';
+    service.ensureConsentResolved().subscribe(res => {
+      resolved = res;
+    });
+    tick();
+
+    expect(resolved).toBe('granted');
+    expect(dialog.open).not.toHaveBeenCalled();
+  }));
+
+  it('ensureConsentResolved opens dialog immediately when unknown and completes on close', fakeAsync(() => {
+    const service = TestBed.inject(AnalyticsConsentPromptService);
+    let resolved: string | null = 'not_called';
+    service.ensureConsentResolved().subscribe(res => {
+      resolved = res;
+    });
+    // Dialog opened immediately without waiting for background tick
+    expect(dialog.open).toHaveBeenCalledOnceWith(
+      AnalyticsConsentDialogComponent,
+      jasmine.any(Object)
+    );
+    expect(resolved).toBe('not_called');
+
+    decision.next('granted');
+    decision.complete();
+    tick();
+
+    expect(resolved).toBe('granted');
+    expect(consent.analyticsConsent()).toBe('granted');
+  }));
 });

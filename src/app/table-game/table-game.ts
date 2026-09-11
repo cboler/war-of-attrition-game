@@ -1,12 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnDestroy,
   OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { PlayerType } from '../core/models/game-state.model';
@@ -16,6 +18,7 @@ import { GameStateService } from '../core/services/game-state.service';
 import { SettingsService } from '../core/services/settings.service';
 import { AchievementService } from '../services/achievement.service';
 import { TutorialService } from '../services/tutorial.service';
+import { AnalyticsConsentPromptService } from '../services/analytics-consent-prompt.service';
 import {
   GameControllerService,
   PresentationState,
@@ -70,6 +73,8 @@ export class TableGame implements OnInit, OnDestroy {
   protected readonly dialog = inject(MatDialog);
   private readonly profileDialog = inject(ProfileDialogService);
   private readonly uiTelemetry = inject(UiTelemetryService);
+  private readonly analyticsConsentPrompt = inject(AnalyticsConsentPromptService);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly state = PresentationState;
   protected readonly player = PlayerType;
   protected readonly boneyardOpen = signal(false);
@@ -160,10 +165,19 @@ export class TableGame implements OnInit, OnDestroy {
     this.uiTelemetry.openSurface({ surface: 'table' }, 'table.primary');
     this.tableSurfaceTracked = true;
 
-    this.controller.ensureGameStarted();
-    if (!this.progression.ordersSelected() && this.progression.campaignWarIndex() === 1) {
-      this.openCampaignOrdersDialog();
-    }
+    this.orchestrateOpeningFlow();
+  }
+
+  private orchestrateOpeningFlow(): void {
+    this.analyticsConsentPrompt
+      .ensureConsentResolved()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.controller.ensureGameStarted();
+        if (!this.progression.ordersSelected() && this.progression.campaignWarIndex() === 1) {
+          this.openCampaignOrdersDialog();
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -176,14 +190,15 @@ export class TableGame implements OnInit, OnDestroy {
       disableClose: true,
       autoFocus: true,
       width: '94vw',
-      maxWidth: '580px'
+      maxWidth: '580px',
     });
 
-    dialogRef.afterClosed().subscribe(() => {
-      this.controller.ensureGameStarted();
-      this.controller.speakIntroduction();
-    });
-
+    dialogRef
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.controller.ensureGameStarted();
+      });
   }
 
   protected draw(): void {

@@ -1,4 +1,6 @@
 import { Injectable, computed, inject, signal, effect } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { firstValueFrom } from 'rxjs';
 import { SettingsService } from '../core/services/settings.service';
 import {
   DEFAULT_TUTORIAL_PROGRESS,
@@ -13,6 +15,7 @@ import { APP_LOCAL_STORAGE_KEYS } from '../core/models/app-storage.model';
 })
 export class TutorialService {
   private readonly settingsService = inject(SettingsService);
+  private readonly dialog = inject(MatDialog, { optional: true });
 
   private readonly progress = signal<TutorialProgress>(this.loadProgress());
   private readonly activePromptSignal = signal<TutorialPrompt | null>(null);
@@ -57,6 +60,10 @@ export class TutorialService {
 
     if (!prompt) {
       return false;
+    }
+
+    if (this.dialog && this.dialog.openDialogs.length > 0) {
+      await firstValueFrom(this.dialog.afterAllClosed);
     }
 
     if (this.pendingResolver) {

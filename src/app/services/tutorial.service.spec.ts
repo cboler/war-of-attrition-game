@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { Subject } from 'rxjs';
 import { TutorialService } from './tutorial.service';
 import { SettingsService } from '../core/services/settings.service';
 import { TutorialStep, DEFAULT_TUTORIAL_PROGRESS } from '../core/models/tutorial.model';
@@ -165,5 +167,39 @@ describe('TutorialService', () => {
       expect(result).toBeTrue();
       expect(service.hasSeenStep(step)).toBeTrue();
     }
+  });
+
+  it('defers showing prompt if a modal dialog is open until afterAllClosed emits', async () => {
+    const afterAllClosed$ = new Subject<void>();
+    const mockDialog = {
+      openDialogs: [{} as any],
+      afterAllClosed: afterAllClosed$.asObservable(),
+    };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        TutorialService,
+        SettingsService,
+        { provide: MatDialog, useValue: mockDialog },
+      ],
+    });
+    const guardedService = TestBed.inject(TutorialService);
+    guardedService.resetTutorialProgress();
+
+    const triggerPromise = guardedService.triggerStep(TutorialStep.FIRST_TURN);
+
+    expect(guardedService.isTutorialActive()).toBeFalse();
+
+    mockDialog.openDialogs = [];
+    afterAllClosed$.next();
+    afterAllClosed$.complete();
+
+    await Promise.resolve();
+
+    expect(guardedService.isTutorialActive()).toBeTrue();
+    expect(guardedService.activePrompt()?.step).toBe(TutorialStep.FIRST_TURN);
+
+    guardedService.skipTutorial();
+    await triggerPromise;
   });
 });

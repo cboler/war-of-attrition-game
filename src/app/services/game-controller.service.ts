@@ -408,6 +408,7 @@ export class GameControllerService {
       this.replaceGame(false);
     } else if (this.turnsPlayed === 0 && this.phase() === PresentationState.READY) {
       if (this.beginWarWhenOrdersReady()) {
+        this.speakIntroduction();
         void this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
       }
     }
@@ -510,10 +511,7 @@ export class GameControllerService {
     this.pendingWarStart = didAbandon ? 'restart' : 'new';
     this.beginWarWhenOrdersReady();
 
-    if (
-      this.campaignProgression.ordersSelected() ||
-      this.campaignProgression.campaignWarIndex() > 1
-    ) {
+    if (this.pendingWarStart === null) {
       this.speakIntroduction();
       void this.tutorial.triggerStep(TutorialStep.FIRST_TURN);
     }
