@@ -385,7 +385,9 @@
 
 @media (max-width: 620px) {
   .seat { justify-content: space-between; padding-inline: 14px; }
-  .seat.deck-left { justify-content: flex-end; }
+  // Keep the bottom player seat elements grouped near the dominant thumb
+  // (flex-end aligns right for right-handed row, and left for left-handed row-reverse)
+  .seat.is-bottom { justify-content: flex-end; }
   .identity { min-width: 0; gap: 7px; padding-inline: 5px; }
   .commander-portrait-frame {
     flex-basis: 50px;

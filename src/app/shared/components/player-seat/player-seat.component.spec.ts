@@ -109,4 +109,24 @@ describe('PlayerSeatComponent', () => {
     expect(draws).toBe(1);
     expect(pokes).toBe(1);
   });
+
+  it('binds is-bottom and handedness classes correctly for dominant-thumb mobile layout', () => {
+    fixture.componentRef.setInput('position', 'bottom');
+    fixture.componentRef.setInput('deckHand', 'right');
+    fixture.detectChanges();
+
+    const seat = fixture.nativeElement.querySelector('.seat');
+    expect(seat.classList).toContain('is-bottom');
+    expect(seat.classList).not.toContain('deck-left');
+
+    fixture.componentRef.setInput('deckHand', 'left');
+    fixture.detectChanges();
+    expect(seat.classList).toContain('is-bottom');
+    expect(seat.classList).toContain('deck-left');
+
+    fixture.componentRef.setInput('position', 'top');
+    fixture.detectChanges();
+    expect(seat.classList).not.toContain('is-bottom');
+    expect(seat.classList).not.toContain('deck-left');
+  });
 });
