@@ -2,6 +2,12 @@ import { Injectable, inject, signal } from '@angular/core';
 import { PlatformAchievementsService, VerifiedTwaTransport } from './platform-achievements.service';
 import { PlatformGameStatsService } from './platform-game-stats.service';
 
+declare global {
+  interface Window {
+    __warOfAttritionTwaPort?: MessagePort | null;
+  }
+}
+
 /**
  * Service that listens for the native Android Browser Helper postMessage channel,
  * extracts the transferred MessagePort, and registers a VerifiedTwaTransport
@@ -36,6 +42,11 @@ export class TwaPostMessageService {
   constructor() {
     if (typeof window !== 'undefined') {
       window.addEventListener('message', this.windowMessageHandler);
+      const bootstrapPort = window.__warOfAttritionTwaPort;
+      if (bootstrapPort) {
+        window.__warOfAttritionTwaPort = null;
+        this.attachPort(bootstrapPort);
+      }
     }
   }
 
@@ -66,6 +77,7 @@ export class TwaPostMessageService {
       return;
     }
 
+    window.__warOfAttritionTwaPort = null;
     this.attachPort(port);
   }
 

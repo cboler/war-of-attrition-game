@@ -11,6 +11,16 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0d221c">
+  <script>
+    // Chrome transfers the TWA MessagePort in its first message, which can arrive before Angular boots.
+    window.__warOfAttritionTwaPort = null;
+    window.addEventListener('message', function (event) {
+      if (event.origin && event.origin !== window.location.origin) return;
+      if (event.ports && event.ports[0]) {
+        window.__warOfAttritionTwaPort = event.ports[0];
+      }
+    });
+  </script>
 </head>
 <body>
   <app-root></app-root>

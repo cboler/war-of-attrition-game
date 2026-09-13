@@ -24,6 +24,7 @@ describe('TwaPostMessageService', () => {
 
   afterEach(() => {
     service.destroy();
+    window.__warOfAttritionTwaPort = null;
   });
 
   it('initially has no connected port and services are not connected', () => {
@@ -88,6 +89,33 @@ describe('TwaPostMessageService', () => {
     );
 
     expect(service.isPortConnected()).toBe(true);
+  });
+
+  it('connects a port captured before Angular service construction', (done) => {
+    service.destroy();
+    const channel = new MessageChannel();
+    const receivedMessages: any[] = [];
+    window.__warOfAttritionTwaPort = channel.port1;
+
+    channel.port2.onmessage = (event) => {
+      receivedMessages.push(JSON.parse(event.data));
+      if (receivedMessages.length >= 2) {
+        expect(receivedMessages).toContain(
+          jasmine.objectContaining({ type: 'PLAY_GAMES_INIT', version: TWA_PROTOCOL_VERSION })
+        );
+        expect(receivedMessages).toContain(
+          jasmine.objectContaining({ type: 'GAME_STATS_INIT', version: TWA_PROTOCOL_VERSION })
+        );
+        channel.port1.close();
+        channel.port2.close();
+        done();
+      }
+    };
+
+    service = TestBed.runInInjectionContext(() => new TwaPostMessageService());
+
+    expect(service.isPortConnected()).toBe(true);
+    expect(window.__warOfAttritionTwaPort).toBeNull();
   });
 
   it('allows empty origin on window message (as native Custom Tabs dispatches)', () => {
