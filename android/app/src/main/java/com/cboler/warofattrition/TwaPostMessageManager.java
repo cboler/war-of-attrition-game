@@ -1,6 +1,7 @@
 package com.cboler.warofattrition;
 
 import android.net.Uri;
+import android.os.Bundle;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,7 +25,7 @@ public class TwaPostMessageManager {
 
     public interface PostMessageSender {
         int postMessage(String message);
-        boolean requestPostMessageChannel(Uri targetOrigin);
+        boolean requestPostMessageChannel(Uri sourceOrigin, Uri targetOrigin);
     }
 
     private PostMessageSender postMessageSender;
@@ -59,8 +60,8 @@ public class TwaPostMessageManager {
             }
 
             @Override
-            public boolean requestPostMessageChannel(Uri targetOrigin) {
-                return session.requestPostMessageChannel(targetOrigin);
+            public boolean requestPostMessageChannel(Uri sourceOrigin, Uri targetOrigin) {
+                return session.requestPostMessageChannel(sourceOrigin, targetOrigin, new Bundle());
             }
         });
     }
@@ -121,7 +122,7 @@ public class TwaPostMessageManager {
         Log.i(TAG, "Requesting postMessage channel for target origin: " + targetOrigin
                 + " (relationshipValidated=" + relationshipValidated + ")");
         try {
-            boolean success = postMessageSender.requestPostMessageChannel(targetOrigin);
+            boolean success = postMessageSender.requestPostMessageChannel(targetOrigin, targetOrigin);
             channelRequested = success;
             Log.i(TAG, "requestPostMessageChannel(" + targetOrigin + ") returned: " + success);
             return success;

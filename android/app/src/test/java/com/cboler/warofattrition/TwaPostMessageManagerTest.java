@@ -20,6 +20,7 @@ public class TwaPostMessageManagerTest {
 
     private static class TestPostMessageSender implements TwaPostMessageManager.PostMessageSender {
         final List<String> postedMessages = new ArrayList<>();
+        Uri requestedSourceOrigin = null;
         Uri requestedTargetOrigin = null;
         int requestChannelCalls = 0;
         boolean requestChannelResult = true;
@@ -32,8 +33,9 @@ public class TwaPostMessageManagerTest {
         }
 
         @Override
-        public boolean requestPostMessageChannel(Uri targetOrigin) {
+        public boolean requestPostMessageChannel(Uri sourceOrigin, Uri targetOrigin) {
             requestChannelCalls++;
+            requestedSourceOrigin = sourceOrigin;
             requestedTargetOrigin = targetOrigin;
             if (requestChannelException != null) {
                 throw requestChannelException;
@@ -129,6 +131,8 @@ public class TwaPostMessageManagerTest {
         assertTrue(manager.isNavigationFinished());
         assertTrue(manager.isChannelRequested());
         assertEquals(1, sender.requestChannelCalls);
+        assertEquals(Uri.parse("https://cboler.github.io"), sender.requestedSourceOrigin);
+        assertEquals(Uri.parse("https://cboler.github.io"), sender.requestedTargetOrigin);
     }
 
     @Test
