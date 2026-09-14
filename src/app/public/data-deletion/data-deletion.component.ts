@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -99,9 +100,10 @@ import {
         <mat-divider></mat-divider>
 
         <mat-card-actions class="legal-actions">
-          <button mat-raised-button color="primary" routerLink="/">
+          <!-- Full reset changes root service state; reload the document so every service restarts together. -->
+          <a mat-raised-button color="primary" class="return-to-game-link" [href]="gameRootUrl">
             <mat-icon>arrow_back</mat-icon> Return to Game
-          </button>
+          </a>
           <button mat-button routerLink="/privacy">
             <mat-icon>privacy_tip</mat-icon> Privacy Policy
           </button>
@@ -115,6 +117,7 @@ import {
   styleUrls: ['./legal-pages.scss']
 })
 export class DataDeletionComponent {
+  readonly gameRootUrl = inject(DOCUMENT).baseURI;
   private authService = inject(AuthService);
   private settingsService = inject(SettingsService);
   private tutorialService = inject(TutorialService);

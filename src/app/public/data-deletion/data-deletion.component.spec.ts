@@ -54,6 +54,17 @@ describe('DataDeletionComponent', () => {
     expect(component.deletionSuccess()).toBe(true);
   });
 
+  it('returns to the game with a full reload after resetting in-memory services', () => {
+    component.performLocalDataDeletion();
+    fixture.detectChanges();
+
+    const returnLink = fixture.nativeElement.querySelector(
+      'a.return-to-game-link',
+    ) as HTMLAnchorElement;
+    expect(returnLink).toBeTruthy();
+    expect(returnLink.href).toBe(document.baseURI);
+  });
+
   it('removes only app-owned data and never re-persists an old profile', () => {
     authService.signInWithGoogle({
       name: 'Delete Me',
