@@ -18,6 +18,7 @@ import com.google.androidbrowserhelper.trusted.LauncherActivity;
  */
 public class MainActivity extends LauncherActivity {
     private static final String TAG = "MainActivity";
+    private static final long POST_MESSAGE_BOOTSTRAP_DELAY_MS = 1000L;
 
     private PlayGamesBridge playGamesBridge;
     private PlayGameStatsBridge playGameStatsBridge;
@@ -132,9 +133,13 @@ public class MainActivity extends LauncherActivity {
         public void onMessageChannelReady(@Nullable Bundle extras) {
             super.onMessageChannelReady(extras);
             Log.i(TAG, "onMessageChannelReady callback received from browser");
-            if (postMessageManager != null) {
-                postMessageManager.onMessageChannelReady();
-            }
+            // NAVIGATION_FINISHED can precede parsing of the page's inline port listener.
+            // Replace this grace period if Custom Tabs exposes a direct page-ready callback.
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (postMessageManager != null && !isDestroyed()) {
+                    postMessageManager.onMessageChannelReady();
+                }
+            }, POST_MESSAGE_BOOTSTRAP_DELAY_MS);
             // Keep MainActivity alive in background while TWA is running.
             // Do NOT call finish() here: PlayGamesBridge requires a non-destroyed Activity context.
         }
