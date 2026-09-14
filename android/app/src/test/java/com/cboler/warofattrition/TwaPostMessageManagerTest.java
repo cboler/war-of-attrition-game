@@ -115,7 +115,7 @@ public class TwaPostMessageManagerTest {
     }
 
     @Test
-    public void testChannelNotRequestedUntilBothSessionAndNavigationAreReady_SessionFirst() {
+    public void testChannelNotRequestedUntilSessionAndNavigationSettle_SessionFirst() {
         assertFalse(manager.isSessionAvailable());
         assertFalse(manager.isNavigationFinished());
         assertFalse(manager.isChannelRequested());
@@ -129,6 +129,11 @@ public class TwaPostMessageManagerTest {
         // 2. Navigation finishes second
         manager.onNavigationFinished();
         assertTrue(manager.isNavigationFinished());
+        assertFalse(manager.isChannelRequested());
+        assertEquals(0, sender.requestChannelCalls);
+
+        // 3. The page-settle signal is the final prerequisite.
+        manager.onNavigationSettledForPostMessage();
         assertTrue(manager.isChannelRequested());
         assertEquals(1, sender.requestChannelCalls);
         assertEquals(Uri.parse("https://cboler.github.io"), sender.requestedSourceOrigin);
@@ -136,7 +141,7 @@ public class TwaPostMessageManagerTest {
     }
 
     @Test
-    public void testChannelNotRequestedUntilBothSessionAndNavigationAreReady_NavigationFirst() {
+    public void testChannelNotRequestedUntilSessionAndNavigationSettle_NavigationFirst() {
         // 1. Navigation finishes first
         manager.onNavigationFinished();
         assertTrue(manager.isNavigationFinished());
@@ -146,6 +151,11 @@ public class TwaPostMessageManagerTest {
         // 2. Session arrives second
         manager.setPostMessageSender(sender);
         assertTrue(manager.isSessionAvailable());
+        assertFalse(manager.isChannelRequested());
+        assertEquals(0, sender.requestChannelCalls);
+
+        // 3. The page-settle signal permits the one channel request.
+        manager.onNavigationSettledForPostMessage();
         assertTrue(manager.isChannelRequested());
         assertEquals(1, sender.requestChannelCalls);
     }
@@ -154,6 +164,7 @@ public class TwaPostMessageManagerTest {
     public void testNoDuplicateChannelRequestsFromSubsequentEvents() {
         manager.setPostMessageSender(sender);
         manager.onNavigationFinished();
+        manager.onNavigationSettledForPostMessage();
         assertEquals(1, sender.requestChannelCalls);
 
         // Additional navigation finished or session calls do not re-request channel
@@ -169,6 +180,8 @@ public class TwaPostMessageManagerTest {
 
         assertFalse(manager.maybeRequestPostMessageChannel());
         manager.onNavigationFinished();
+        assertEquals(0, sender.requestChannelCalls);
+        manager.onNavigationSettledForPostMessage();
 
         assertFalse(manager.isChannelRequested());
         assertEquals(1, sender.requestChannelCalls);
@@ -185,38 +198,38 @@ public class TwaPostMessageManagerTest {
         manager.setPostMessageSender(sender);
 
         manager.onNavigationFinished();
+        assertEquals(0, sender.requestChannelCalls);
+        manager.onNavigationSettledForPostMessage();
 
         assertFalse(manager.isChannelRequested());
         assertEquals(1, sender.requestChannelCalls);
     }
 
     @Test
-    public void testRelationshipValidationSuccessTriggersChannelRequestIfPending() {
-        // Setup session and navigation but request channel fails initially (e.g. before validation completed)
-        sender.requestChannelResult = false;
+    public void testRelationshipValidationDoesNotBypassNavigationSettle() {
+        // Relationship callbacks can precede page readiness and must not consume the channel request.
         manager.setPostMessageSender(sender);
         manager.onNavigationFinished();
-        assertFalse(manager.isChannelRequested());
-        assertEquals(1, sender.requestChannelCalls);
-
-        // Validation now succeeds with matching origin
-        sender.requestChannelResult = true;
         manager.onRelationshipValidationResult(0, Uri.parse("https://cboler.github.io"), true);
+        assertFalse(manager.isChannelRequested());
+        assertEquals(0, sender.requestChannelCalls);
+
+        manager.onNavigationSettledForPostMessage();
         assertTrue(manager.isChannelRequested());
-        assertEquals(2, sender.requestChannelCalls);
+        assertEquals(1, sender.requestChannelCalls);
     }
 
     @Test
-    public void testRelationshipValidationFailureDoesNotRequestChannel() {
-        sender.requestChannelResult = false;
+    public void testRelationshipValidationFailureDoesNotBypassNavigationSettle() {
         manager.setPostMessageSender(sender);
         manager.onNavigationFinished();
-        assertFalse(manager.isChannelRequested());
-        assertEquals(1, sender.requestChannelCalls);
-
-        // Validation fails
         manager.onRelationshipValidationResult(0, Uri.parse("https://cboler.github.io"), false);
         assertFalse(manager.isChannelRequested());
+        assertEquals(0, sender.requestChannelCalls);
+
+        // The browser owns final relationship enforcement when the delayed request is made.
+        manager.onNavigationSettledForPostMessage();
+        assertTrue(manager.isChannelRequested());
         assertEquals(1, sender.requestChannelCalls);
     }
 
@@ -250,6 +263,7 @@ public class TwaPostMessageManagerTest {
     public void testDirectSendWhenChannelAlreadyReady() {
         manager.setPostMessageSender(sender);
         manager.onNavigationFinished();
+        manager.onNavigationSettledForPostMessage();
         manager.onMessageChannelReady();
 
         sender.postedMessages.clear(); // Clear handshake marker

@@ -31,6 +31,7 @@ public class TwaPostMessageManager {
     private PostMessageSender postMessageSender;
     private boolean sessionAvailable = false;
     private boolean navigationFinished = false;
+    private boolean navigationSettledForPostMessage = false;
     private boolean relationshipValidated = false;
     private boolean channelRequested = false;
     private boolean channelReady = false;
@@ -93,6 +94,14 @@ public class TwaPostMessageManager {
     public synchronized void onNavigationFinished() {
         Log.i(TAG, "onNavigationFinished received in TwaPostMessageManager");
         this.navigationFinished = true;
+        this.navigationSettledForPostMessage = false;
+    }
+
+    public synchronized void onNavigationSettledForPostMessage() {
+        if (!navigationFinished) {
+            return;
+        }
+        this.navigationSettledForPostMessage = true;
         maybeRequestPostMessageChannel();
     }
 
@@ -111,6 +120,10 @@ public class TwaPostMessageManager {
         }
         if (!navigationFinished) {
             Log.d(TAG, "Cannot request postMessage channel: TWA navigation has not completed");
+            return false;
+        }
+        if (!navigationSettledForPostMessage) {
+            Log.d(TAG, "Cannot request postMessage channel: navigation settle delay has not elapsed");
             return false;
         }
         if (postMessageSender == null) {

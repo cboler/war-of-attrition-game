@@ -18,13 +18,21 @@ import com.google.androidbrowserhelper.trusted.LauncherActivity;
  */
 public class MainActivity extends LauncherActivity {
     private static final String TAG = "MainActivity";
-    private static final long POST_MESSAGE_BOOTSTRAP_DELAY_MS = 1000L;
+    // Chromium can fire NAVIGATION_FINISHED before the page can receive its one-time port transfer.
+    // Remove this bounded grace period when Custom Tabs exposes a reliable page-ready signal.
+    private static final long POST_MESSAGE_CHANNEL_REQUEST_DELAY_MS = 1000L;
 
     private PlayGamesBridge playGamesBridge;
     private PlayGameStatsBridge playGameStatsBridge;
     private TwaPostMessageManager postMessageManager;
     private boolean twaLaunched = false;
     private boolean isHandlingInternalActivityResult = false;
+    private final Handler postMessageHandler = new Handler(Looper.getMainLooper());
+    private final Runnable requestPostMessageChannel = () -> {
+        if (postMessageManager != null && !isDestroyed()) {
+            postMessageManager.onNavigationSettledForPostMessage();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,6 +122,10 @@ public class MainActivity extends LauncherActivity {
                 Log.i(TAG, "Navigation finished in TWA");
                 if (postMessageManager != null) {
                     postMessageManager.onNavigationFinished();
+                    postMessageHandler.removeCallbacks(requestPostMessageChannel);
+                    postMessageHandler.postDelayed(
+                            requestPostMessageChannel,
+                            POST_MESSAGE_CHANNEL_REQUEST_DELAY_MS);
                 }
             }
         }
@@ -133,13 +145,9 @@ public class MainActivity extends LauncherActivity {
         public void onMessageChannelReady(@Nullable Bundle extras) {
             super.onMessageChannelReady(extras);
             Log.i(TAG, "onMessageChannelReady callback received from browser");
-            // NAVIGATION_FINISHED can precede parsing of the page's inline port listener.
-            // Replace this grace period if Custom Tabs exposes a direct page-ready callback.
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                if (postMessageManager != null && !isDestroyed()) {
-                    postMessageManager.onMessageChannelReady();
-                }
-            }, POST_MESSAGE_BOOTSTRAP_DELAY_MS);
+            if (postMessageManager != null) {
+                postMessageManager.onMessageChannelReady();
+            }
             // Keep MainActivity alive in background while TWA is running.
             // Do NOT call finish() here: PlayGamesBridge requires a non-destroyed Activity context.
         }
@@ -158,5 +166,11 @@ public class MainActivity extends LauncherActivity {
             super.extraCallback(callbackName, args);
             Log.w(TAG, "CustomTabs extraCallback received: " + callbackName + ", args=" + args);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        postMessageHandler.removeCallbacks(requestPostMessageChannel);
+        super.onDestroy();
     }
 }
