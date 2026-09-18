@@ -209,3 +209,16 @@ Follow these actions in order:
 * **ACTION:** Add your Google email address to an internal tester email list. Copy the **Join on Android** opt-in URL.
 * **WHEN:** After rolling out release.
 * **HOW TO VERIFY:** Open opt-in URL on Android device, accept invite, and download the game from Google Play.
+
+---
+
+## 10. Known Issues & Backlog (Target: Next AAB Release)
+
+### Android Back Gesture / App Freeze on Loading Screen
+- **Observed Behavior**: In the Android TWA app, performing the system back gesture (swiping from the screen edge) or pressing the hardware/nav-bar Back button while at the root game screen leaves the app permanently frozen on the initial launcher splash/loading screen (`Theme.WarOfAttrition`). The app does not exit, cannot be recovered via further back actions, and requires a force-stop/restart.
+- **Root Cause**:
+  In [`MainActivity.java`](../../android/app/src/main/java/com/cboler/warofattrition/MainActivity.java), `MainActivity` defers launcher finishing via `finish()` while `twaLaunched` is true so that `PlayGamesBridge` retains a valid Activity context while the TWA is running in the foreground. When the user initiates a back action that exhausts browser history, the Custom Tab finishes, bringing `MainActivity` to the foreground in `onResume()`. `onResume()` correctly detects TWA exit (`twaLaunched && !isHandlingInternalActivityResult`) and calls `finish()`. However, `finish()` intercepts its own invocation: because `twaLaunched` is still `true`, it logs `"Deferring LauncherActivity finish: TWA is actively running"` and returns without calling `super.finish()`. Consequently, `MainActivity` is trapped in the foreground on the splash background and ignores all subsequent back events.
+- **Remediation Plan for Next AAB**:
+  1. In `MainActivity.onResume()`: Explicitly reset `twaLaunched = false;` before calling `finish()` (or call `super.finish()` directly on TWA exit).
+  2. In `MainActivity.finish()`: Ensure that an explicit exit flag or `!twaLaunched` allows `super.finish()` to execute cleanly to close the app task back to the Android launcher.
+  3. Rebuild signed AAB (`./gradlew bundleRelease`) and bump version identity across `package.json`, `android/twa-manifest.json`, and environment configs.

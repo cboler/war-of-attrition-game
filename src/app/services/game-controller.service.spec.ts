@@ -182,7 +182,7 @@ describe('GameControllerService presentation integration', () => {
     expect(battleDefeat).toHaveBeenCalledTimes(1);
   });
 
-  it('advances only the current visual beat and leaves the next beat timed', fakeAsync(() => {
+  it('skips through the presentation to the next player decision when Continue is pressed', fakeAsync(() => {
     settings.setAutoPlayAnimations(true);
     settings.setAnimationSpeed('normal');
     spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.PLAYER_WINS);
@@ -197,19 +197,51 @@ describe('GameControllerService presentation integration', () => {
 
     tick(16);
     flushMicrotasks();
-    expect(controller.presentationState()).toBe(PresentationState.CLASH_REVEAL);
+    expect(controller.presentationState()).toBe(PresentationState.READY);
+    expect(controller.canDraw()).toBeTrue();
     expect(controller.presentationStepSkipped()).toBeFalse();
-
-    // Normal speed is 1.15x: the 360 ms reveal beat lasts 414 ms.
-    tick(413);
-    expect(controller.presentationState()).toBe(PresentationState.CLASH_REVEAL);
-    tick(1);
-    flushMicrotasks();
-    expect(controller.presentationState()).toBe(
-      PresentationState.OPPONENT_CONSIDERING_CHALLENGE,
-    );
     expect(controller.battleAnimation()).toBeNull();
     expect(controller.visibleOpponentChallengeCard()).toBeNull();
+    flush();
+  }));
+
+  it('skips through to PLAYER_CHALLENGE_DECISION when Continue is pressed and player has reinforcement option', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    settings.setAnimationSpeed('normal');
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+
+    controller.playerDrawCard();
+    expect(controller.presentationState()).toBe(PresentationState.DRAWING);
+    expect(controller.presentationCanAdvance()).toBeTrue();
+    expect(controller.advancePresentation()).toBeTrue();
+
+    tick(16);
+    flushMicrotasks();
+
+    expect(controller.presentationState()).toBe(PresentationState.PLAYER_CHALLENGE_DECISION);
+    expect(controller.canChooseChallenge()).toBeTrue();
+    expect(controller.presentationCanAdvance()).toBeFalse();
+    flush();
+  }));
+
+  it('skips through to PLAYER_TARGET_SELECTION when Continue is pressed and a battle occurs', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    settings.setAnimationSpeed('normal');
+    spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.TIE);
+    spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+
+    controller.playerDrawCard();
+    expect(controller.presentationState()).toBe(PresentationState.DRAWING);
+    expect(controller.presentationCanAdvance()).toBeTrue();
+    expect(controller.advancePresentation()).toBeTrue();
+
+    tick(16);
+    flushMicrotasks();
+
+    expect(controller.presentationState()).toBe(PresentationState.PLAYER_TARGET_SELECTION);
+    expect(controller.canSelectTarget()).toBeTrue();
+    expect(controller.presentationCanAdvance()).toBeFalse();
     flush();
   }));
 
@@ -630,25 +662,24 @@ describe('GameControllerService presentation integration', () => {
     expect(gameState.playerCardCount()).toBe(0);
     expect(controller.playerDeckDisplayCount()).toBe(1);
 
-    const finishCurrentBeat = (): void => {
+    const finishCurrentBeat = (ms: number): void => {
       expect(controller.presentationCanAdvance()).toBeTrue();
-      expect(controller.advancePresentation()).toBeTrue();
-      tick(16);
+      tick(ms);
       flushMicrotasks();
     };
 
-    finishCurrentBeat(); // deal -> reveal
-    finishCurrentBeat(); // reveal -> comparison result
-    finishCurrentBeat(); // comparison -> return winner cards
-    finishCurrentBeat(); // winner return -> casualty hold
-    finishCurrentBeat(); // casualty hold -> Boneyard movement
-    finishCurrentBeat(); // Boneyard movement -> final badge pop
+    finishCurrentBeat(322); // deal -> reveal
+    finishCurrentBeat(414); // reveal -> comparison result
+    finishCurrentBeat(920); // comparison -> return winner cards
+    finishCurrentBeat(414); // winner return -> casualty hold
+    finishCurrentBeat(414); // casualty hold -> Boneyard movement
+    finishCurrentBeat(483); // Boneyard movement -> final badge pop
 
     expect(controller.presentationState()).toBe(PresentationState.DECK_DEFEAT_POP);
     expect(controller.deckDefeatPopOwner()).toBe(PlayerType.PLAYER);
     expect(controller.playerDeckDisplayCount()).toBe(1);
 
-    finishCurrentBeat();
+    finishCurrentBeat(345);
     expect(controller.presentationState()).toBe(PresentationState.GAME_OVER);
     expect(controller.deckDefeatPopOwner()).toBeNull();
     expect(controller.playerDeckDisplayCount()).toBe(0);

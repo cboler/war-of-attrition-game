@@ -18,6 +18,7 @@ export class PresentationSequencerService {
   private sequenceVersion = 0;
 
   readonly waiting = signal(false);
+  readonly fastForwarding = signal(false);
 
   begin(): number {
     this.cancel();
@@ -31,6 +32,7 @@ export class PresentationSequencerService {
     minimumAnimatedMilliseconds = 0,
   ): Promise<void> {
     if (version !== this.sequenceVersion) throw new PresentationSequenceCancelled();
+    if (this.fastForwarding()) return;
     const duration = this.shouldCollapseTiming()
       ? Math.max(0, staticHoldMilliseconds)
       : Math.max(0, minimumAnimatedMilliseconds, milliseconds * this.speedMultiplier());
@@ -66,19 +68,25 @@ export class PresentationSequencerService {
   }
 
   advance(): boolean {
-    if (!this.resume) return false;
+    if (!this.resume || this.fastForwarding()) return false;
+    this.fastForwarding.set(true);
     const resume = this.resume;
     // Claim this input immediately so a double tap cannot advance twice. Give
     // the view one frame to apply its "finish this beat" CSS before the async
     // sequence is allowed to enter the next presentation phase.
     this.resume = null;
     if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => resume(), 16);
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      this.waiting.set(false);
+      resume();
+    }, 16);
     return true;
   }
 
   cancel(): void {
     this.sequenceVersion += 1;
+    this.fastForwarding.set(false);
     this.abort?.();
     this.abort = null;
     this.resume = null;
@@ -89,6 +97,8 @@ export class PresentationSequencerService {
 
   end(version: number): void {
     if (version !== this.sequenceVersion) return;
+    this.fastForwarding.set(false);
+    this.waiting.set(false);
   }
 
   private shouldCollapseTiming(): boolean {

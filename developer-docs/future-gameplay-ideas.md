@@ -165,3 +165,19 @@ Settings now has a dedicated, confirmed **Abandon Campaign** action separate fro
 - **Alternate army themes:** Purely visual suit-army reskins after the default clash language proves readable and maintainable.
 - **Head-to-head multiplayer:** Long-term only, with strict cosmetic-only progression and fair-play integrity.
 - **Licensed partnerships:** Distant and permitted only with explicit rights; no unauthorized trademarks or trade dress.
+
+## 6. Backlog: Presentation Polish & Platform Packaging
+
+### Table Announcement Stream & Visual Hierarchy ("Busy UI" Feedback)
+- **User Feedback**: Player report that *"the UI is a little busy"*, identified specifically as the rolling battlefield log text in the central announcement area.
+- **Technical Surface**: In `table-game.html` (`.message-stack`) and `table-game.scss`, up to 4 concurrent announcements are stacked (`battlefieldMessagesSignal().slice(0, 4)`). Each item drifts upward (`translate(-50%, calc(var(--message-index) * -21px))`) with fading opacity and scaling over a 5.2s keyframe lifetime. This creates continuous multi-line movement directly above the card clash area, competing for visual focus with card values, combat math, and commander speech.
+- **Design Options for Future Exploration**:
+  - **Option A (Recommended: Single-Line Discrete Banner)**: Replace the 4-item vertical drift stack with a single active status line that cross-fades on new announcements (or holds for 2.5s and fades). The full tactical turn history is already authoritatively preserved in the Field Manual Chronicle (`StoryBookService`).
+  - **Option B (Reduced Stack & Faster Fade)**: Clamp maximum concurrent messages to 2 and reduce animation lifetime from 5.2s to 2.5s to cut visual churn.
+  - **Option C (Settings Toggle)**: Add a user preference under Settings (`Battlefield Announcements: Rolling Log | Current Only | Off`), preserving screen-reader live-region accessibility in all modes.
+  - **Option D (Chronicle Delegation)**: Silence routine visual table messages entirely and display only high-significance milestones (e.g. Ace assassinations, deep Battles), leaving routine outcomes to the Field Manual.
+
+### Android Back Gesture / App Freeze (Target: Next AAB Release)
+- **Status**: Triaged and documented in [`play-store/README.md`](./play-store/README.md#10-known-issues--backlog-target-next-aab-release).
+- **Summary**: Swiping back at the root screen of the Android TWA app causes `MainActivity` to defer its own finish indefinitely in `finish()`, locking the app on the launcher background/splash screen. Fixed in native code for the next signed AAB release by resetting `twaLaunched = false` and calling `super.finish()` on TWA session exit in `onResume()`.
+

@@ -29,22 +29,40 @@ describe('PresentationSequencerService', () => {
     expect(service.waiting()).toBeFalse();
   }));
 
-  it('advances only the current beat and never collapses later gameplay presentation', fakeAsync(() => {
+  it('fast-forwards subsequent beats in the active sequence until the sequence ends', fakeAsync(() => {
     const version = service.begin();
-    void service.pause(1000, version);
-    service.advance();
+    let firstCompleted = false;
+    void service.pause(1000, version).then(() => firstCompleted = true);
+    expect(service.waiting()).toBeTrue();
+
+    expect(service.advance()).toBeTrue();
+    expect(service.fastForwarding()).toBeTrue();
     tick(16);
     flushMicrotasks();
+    expect(firstCompleted).toBeTrue();
 
-    let completed = false;
-    void service.pause(1000, version).then(() => completed = true);
-    expect(completed).toBeFalse();
+    // Subsequent pauses in the same sequence version resolve immediately without waiting.
+    let secondCompleted = false;
+    void service.pause(1000, version).then(() => secondCompleted = true);
+    flushMicrotasks();
+    expect(secondCompleted).toBeTrue();
+    expect(service.waiting()).toBeFalse();
+
+    // Ending the sequence resets fastForwarding.
+    service.end(version);
+    expect(service.fastForwarding()).toBeFalse();
+
+    // Next sequence starts timed again.
+    const nextVersion = service.begin();
+    let nextCompleted = false;
+    void service.pause(1000, nextVersion).then(() => nextCompleted = true);
+    expect(nextCompleted).toBeFalse();
     expect(service.waiting()).toBeTrue();
 
     tick(1149);
-    expect(completed).toBeFalse();
+    expect(nextCompleted).toBeFalse();
     tick(1);
-    expect(completed).toBeTrue();
+    expect(nextCompleted).toBeTrue();
   }));
 
   it('ignores an extra advance when no visual beat is waiting', fakeAsync(() => {

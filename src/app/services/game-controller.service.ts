@@ -252,7 +252,9 @@ export class GameControllerService {
   readonly deckDefeatPopOwner = this.deckDefeatPopOwnerSignal.asReadonly();
   readonly battleAnimation = this.battleAnimationService.scene;
   readonly presentationStepSkipped = computed(
-    () => this.presentationStepSkippedPhaseSignal() === this.phase(),
+    () =>
+      this.sequencer.fastForwarding() ||
+      this.presentationStepSkippedPhaseSignal() === this.phase(),
   );
   readonly playerDeckDisplayCount = computed(() => {
     const count = this.gameState.playerCardCount();
@@ -280,7 +282,9 @@ export class GameControllerService {
   readonly canSelectTarget = computed(
     () => this.phase() === PresentationState.PLAYER_TARGET_SELECTION,
   );
-  readonly presentationCanAdvance = computed(() => this.sequencer.waiting());
+  readonly presentationCanAdvance = computed(
+    () => this.sequencer.waiting() && !this.sequencer.fastForwarding(),
+  );
   readonly playerCardsAtRisk = computed(() => this.gameState.getStake(PlayerType.PLAYER).length);
   readonly opponentCardsAtRisk = computed(
     () => this.gameState.getStake(PlayerType.OPPONENT).length,
