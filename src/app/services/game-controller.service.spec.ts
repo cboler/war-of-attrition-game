@@ -138,6 +138,55 @@ describe('GameControllerService presentation integration', () => {
     flush();
   }));
 
+  describe('Challenge decision double-submit guard', () => {
+    function reachChallengeDecision(): void {
+      settings.setAutoPlayAnimations(false);
+      spyOn(comparison, 'compareCards').and.returnValue(ComparisonResult.OPPONENT_WINS);
+      spyOn(comparison, 'isSpecialAceVsTwoRule').and.returnValue(false);
+      spyOn(opponentAI, 'shouldChallenge').and.returnValue(false);
+      controller.playerDrawCard();
+      flushMicrotasks();
+      tick(650);
+      flushMicrotasks();
+      expect(controller.canChooseChallenge()).toBeTrue();
+    }
+
+    for (const accept of [false, true]) {
+      it(`resolves a double-tapped ${accept ? 'Challenge' : 'Concede'} exactly once`, fakeAsync(() => {
+        const flowErrors = spyOn(console, 'error');
+        reachChallengeDecision();
+        const concession = spyOn(turnResolution, 'resolveChallengeConcession').and.callThrough();
+        const begin = spyOn(gameState, 'beginChallenge').and.callThrough();
+
+        controller.handleChallenge(accept);
+        expect(controller.canChooseChallenge()).toBeFalse();
+        controller.handleChallenge(accept);
+        controller.handleChallenge(!accept);
+        flush();
+
+        expect(concession.calls.count() + begin.calls.count()).toBe(1);
+        expect(flowErrors).not.toHaveBeenCalledWith('Game flow error:', jasmine.anything());
+      }));
+    }
+
+    it('offers the decision again on the next beaten card', fakeAsync(() => {
+      reachChallengeDecision();
+      controller.handleChallenge(false);
+      flush();
+      while (!controller.canDraw() && controller.advancePresentation()) flush();
+      expect(controller.canDraw()).toBeTrue();
+
+      controller.playerDrawCard();
+      flushMicrotasks();
+      tick(650);
+      flushMicrotasks();
+
+      expect(controller.presentationState()).toBe(PresentationState.PLAYER_CHALLENGE_DECISION);
+      expect(controller.canChooseChallenge()).toBeTrue();
+      flush();
+    }));
+  });
+
   it('plays a second negative cue when a player reinforcement fails', fakeAsync(() => {
     settings.setAutoPlayAnimations(false);
     const positive = spyOn(sound, 'playPositiveResolution');

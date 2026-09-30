@@ -180,6 +180,8 @@ export class GameControllerService {
   private readonly returningHomeIds = signal<readonly string[]>([]);
   private readonly withheldBoneyardIds = signal<readonly string[]>([]);
   private readonly pendingHumanTargetId = signal<string | null>(null);
+  /** Latches the first Challenge/Concede tap until the next decision is offered. */
+  private readonly challengeCommitted = signal(false);
   private readonly selectedOpponentCard = signal<Card | null>(null);
   private readonly selectedPlayerCard = signal<Card | null>(null);
   private readonly opponentPointer = signal<number | null>(null);
@@ -277,7 +279,7 @@ export class GameControllerService {
   readonly visibleBoneyardCount = computed(() => this.visibleBoneyardCards().length);
   readonly canDraw = computed(() => this.phase() === PresentationState.READY);
   readonly canChooseChallenge = computed(
-    () => this.phase() === PresentationState.PLAYER_CHALLENGE_DECISION,
+    () => this.phase() === PresentationState.PLAYER_CHALLENGE_DECISION && !this.challengeCommitted(),
   );
   readonly canSelectTarget = computed(
     () => this.phase() === PresentationState.PLAYER_TARGET_SELECTION,
@@ -466,6 +468,7 @@ export class GameControllerService {
     this.returningHomeIds.set([]);
     this.withheldBoneyardIds.set([]);
     this.pendingHumanTargetId.set(null);
+    this.challengeCommitted.set(false);
     this.selectedOpponentCard.set(null);
     this.selectedPlayerCard.set(null);
     this.opponentPointer.set(null);
@@ -625,6 +628,9 @@ export class GameControllerService {
 
   handleChallenge(acceptChallenge: boolean): void {
     if (!this.canChooseChallenge()) return;
+    // The concession skirmish awaits before the phase advances; a second tap in
+    // that window must not resolve the same decision again.
+    this.challengeCommitted.set(true);
     this.lastMeaningfulDecision = acceptChallenge ? 'challenge' : 'concede';
     void this.playPlayerChallenge(acceptChallenge);
   }
@@ -960,6 +966,7 @@ export class GameControllerService {
         return;
       }
 
+      this.challengeCommitted.set(false);
       this.phase.set(PresentationState.PLAYER_CHALLENGE_DECISION);
       this.announce('Your card is beaten. Reinforcement would replace it in the next clash.');
       this.eventBus.emit({
@@ -2044,6 +2051,7 @@ export class GameControllerService {
     this.movingToBoneyardIds.set([]);
     this.returningHomeIds.set([]);
     this.pendingHumanTargetId.set(null);
+    this.challengeCommitted.set(false);
     this.selectedOpponentCard.set(null);
     this.selectedPlayerCard.set(null);
     this.opponentPointer.set(null);
@@ -2183,6 +2191,7 @@ export class GameControllerService {
     this.reaction.set(state.reaction ?? null);
     this.turnsPlayed = state.turnsPlayed ?? 1;
     this.pendingHumanTargetId.set(state.pendingHumanTargetId ?? null);
+    this.challengeCommitted.set(false);
     if (state.commander !== undefined) {
       this.fixtureCommanderSignal.set(
         state.commander
