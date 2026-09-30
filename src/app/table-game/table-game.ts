@@ -42,6 +42,8 @@ import { BattleAnimationComponent } from '../shared/components/battle-animation/
 import { getCommanderPortrait } from '../core/models/commander-art.model';
 import { UiTelemetryService } from '../services/ui-telemetry.service';
 import { ProfileDialogService } from '../shared/components/profile-dialog/profile-dialog.service';
+import { TableBackdropComponent } from '../shared/fx/table-backdrop.component';
+import { TableFxOverlayComponent } from '../shared/fx/table-fx-overlay.component';
 
 @Component({
   selector: 'app-table-game',
@@ -55,7 +57,9 @@ import { ProfileDialogService } from '../shared/components/profile-dialog/profil
     PlayerSeatComponent,
     StoryBookDrawerComponent,
     TutorialOverlayComponent,
-    BattleAnimationComponent
+    BattleAnimationComponent,
+    TableBackdropComponent,
+    TableFxOverlayComponent,
   ],
   templateUrl: './table-game.html',
   styleUrl: './table-game.scss',

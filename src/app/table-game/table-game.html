@@ -10,6 +10,8 @@
   (click)="onTableClick($event)"
 >
   <app-card-table>
+    <app-table-backdrop table-backdrop />
+
     <app-player-seat
       table-seat-top
       [name]="controller.opponentCommanderIdentity().name"
@@ -486,6 +488,9 @@
       (quipDismissed)="dismissQuip()"
     />
   </app-card-table>
+
+  <!-- WebGL table effects: decorative, pointer-transparent, never gameplay-bearing -->
+  <app-table-fx />
 
   <!-- Field Manual Drawer -->
   @if (storyBookOpen()) {

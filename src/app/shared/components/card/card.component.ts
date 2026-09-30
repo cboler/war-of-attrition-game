@@ -12,6 +12,8 @@ import { SettingsService } from '../../../core/services/settings.service';
          [class.face-down]="faceDown()"
          [class.red-card]="isRed()"
          [class.black-card]="!isRed()"
+         [class.court-card]="isCourt()"
+         [class.ace-card]="card()?.rank === rank.ACE"
          [class.glowing]="effectiveGlow()"
          [class.glow-green]="effectiveGlow() === 'green'"
          [class.glow-red]="effectiveGlow() === 'red'"
@@ -74,6 +76,11 @@ export class CardComponent {
   private settingsService = inject(SettingsService);
 
   protected isRed = computed(() => this.card()?.isRed ?? false);
+  protected readonly rank = Rank;
+  protected isCourt = computed(() => {
+    const rank = this.card()?.rank;
+    return rank === Rank.KING || rank === Rank.QUEEN || rank === Rank.JACK;
+  });
   
   // Face-down cards must NEVER receive winner/loser or action glow (hidden-information requirement)
   protected effectiveGlow = computed(() => {

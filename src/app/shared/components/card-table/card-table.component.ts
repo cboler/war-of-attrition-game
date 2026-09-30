@@ -5,6 +5,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card-table" aria-label="Card table">
+      <div class="table-backdrop" aria-hidden="true"><ng-content select="[table-backdrop]" /></div>
       <div class="rail rail-top"><ng-content select="[table-seat-top]" /></div>
       <div class="rail rail-left"><ng-content select="[table-seat-left]" /></div>
       <div class="table-center"><ng-content select="[table-center]" /></div>
