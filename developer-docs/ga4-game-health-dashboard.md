@@ -122,15 +122,32 @@ Answers questions about player engagement with supporting lore and documentation
 
 - **Technique:** Free-form
 - **Visualization:** Table / Horizontal bar
-- **Rows:** `surface_id` (e.g. `chronicle`, `field_manual`, `rules`, `profile`, `achievements`, `settings`, `hall_of_valor`)
+- **Rows:** `surface` (e.g. `table`, `chronicle`, `field_manual`, `rules`, `profile`, `achievements`, `settings`; `hall_of_valor` is a `subsurface` of `field_manual`)
 - **Values / Metrics:** `Event count`, `Active users`, `Sessions`
 - **Tab-Level Filter:**
-  - `Event name exactly matches surface_transition`
+  - `Event name exactly matches surface_opened`
 
 ---
 
 ## 4. Maintenance & BigQuery Aggregation Path
 
-1. **Do not create high-cardinality dimensions:** Keep custom dimensions limited to low-cardinality scalars (`outcome`, `commander`, `campaign_mode`, `surface_id`). High-cardinality IDs (`war_id`, `campaign_id`) must be analyzed through BigQuery export joins.
+1. **Do not create high-cardinality dimensions:** Keep custom dimensions limited to low-cardinality scalars (`outcome`, `commander_id`, `campaign_mode`, `surface`). High-cardinality IDs (`war_id`, `campaign_id`) must be analyzed through BigQuery export joins.
 2. **BigQuery Export Schema:** Ensure GA4 streaming/daily exports are linked to the GCP BigQuery project. Normalized queries should join `war_started` (or `war_resolved`) on `war_id` to attribute intermediate turn events to their commander without exceeding GA4 client parameter limits.
 3. **Public Reporting:** All external and blog reporting must present aggregated, thresholded metrics (minimum cohort size $N \ge 30$) to preserve player privacy.
+
+## 5. Automated Snapshot Sync (blog)
+
+The public dashboard at `cboler.github.io/attrition-game-health/` no longer relies on this exploration. A bi-weekly GitHub Actions job in the blog repository (`scripts/sync-game-health.mjs`) queries the GA4 Data API for each **non-overlapping** period since the previous snapshot and stores it as `assets/data/game-health/snapshots/<period_end>.json`, alongside `history.csv` and `war-ledger.csv`.
+
+The job discovers registered dimensions through the GA4 metadata endpoint. For every section to populate, register these **event-scoped custom dimensions** (the parameter names emitted by `game-telemetry.mapper.ts` and `UiTelemetryService`):
+
+| Parameter | Used for |
+| --- | --- |
+| `commander_id` | Commander splits, abandonment by commander |
+| `outcome` | War results, reinforcement outcomes |
+| `turns`, `battles`, `largest_deficit`, `comeback`, `player_reinforcements`, `anomalies_observed` | War ledger and Google Play stat derivations |
+| `challenger`, `escalated_to_battle` | Battles & Challenges |
+| `surface` | Surface engagement (`surface_opened`) |
+| `achievement_id` | Achievement unlock counts |
+
+A missing dimension leaves its section `null` with an explanatory note in the snapshot; nothing is back-filled. The service account needs **Viewer** access on the property, and its JSON key must be stored as the blog repository secret `GA4_SERVICE_ACCOUNT_KEY`.
