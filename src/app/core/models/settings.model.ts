@@ -91,6 +91,10 @@ export interface AppSettings {
   // Game preferences
   animationSpeed: 'slow' | 'normal' | 'fast';
   soundEnabled: boolean;
+  /** Sound effect level, 0-100. */
+  soundVolume: number;
+  /** Ambience bed level, 0-100. Zero turns the bed off. */
+  ambienceVolume: number;
   tutorialEnabled: boolean;
 
   // Advanced settings
@@ -158,6 +162,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   selectedCardBacking: 'minimalist-gray',
   animationSpeed: 'normal',
   soundEnabled: true,
+  soundVolume: 80,
+  ambienceVolume: 50,
   tutorialEnabled: true,
   confirmChallenges: false,
   autoPlayAnimations: true

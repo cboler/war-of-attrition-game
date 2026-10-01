@@ -14,6 +14,8 @@ The `core` directory is the single source of truth for game business logic, stat
   - [`game-state.service.ts`](services/game-state.service.ts) - Manages player/opponent decks, discard pile, turn history, and signal state.
   - [`turn-resolution.service.ts`](services/turn-resolution.service.ts) - Resolves turn comparisons, challenge wins/losses/ties, and battle outcomes.
   - [`opponent-ai.service.ts`](services/opponent-ai.service.ts) - AI decision making for challenging turn losses.
+  - [`sound.service.ts`](services/sound.service.ts) - Table sound cues, skirmish soundtrack and ambience; owns the audio context and volume settings.
+- `audio/`: Web Audio synthesis with no samples or libraries ([`table-audio-engine.ts`](audio/table-audio-engine.ts), [`table-ambience.ts`](audio/table-ambience.ts)). Presentation only. See [`developer-docs/skirmish-and-sound.md`](../../../developer-docs/skirmish-and-sound.md).
 
 ## 🃏 Game Logic Rules
 

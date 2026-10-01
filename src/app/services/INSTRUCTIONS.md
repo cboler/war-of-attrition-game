@@ -7,6 +7,8 @@ This directory contains application-level controller services connecting domain 
 - [`game-controller.service.ts`](game-controller.service.ts) - Primary controller orchestrating deck clicks, challenge flows, opponent AI challenges, battle setups, and presentation states.
 - [`story-book.service.ts`](story-book.service.ts) - Service recording tactical match chronicle entries and combat milestones.
 - [`table-reaction.service.ts`](table-reaction.service.ts) - Service generating situational quip reactions during clashes, challenges, and battles.
+- [`battle-animation.service.ts`](battle-animation.service.ts) - Publishes the ephemeral skirmish scene (variant, duration, plan) for a decided comparison.
+- [`skirmish-plan.ts`](skirmish-plan.ts) - Pure, seeded skirmish choreography shared by the soldiers, the WebGL particles and the sound. See [`developer-docs/skirmish-and-sound.md`](../../../developer-docs/skirmish-and-sound.md).
 
 ## 🔄 Interaction Guidelines
 

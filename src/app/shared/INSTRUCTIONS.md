@@ -6,6 +6,7 @@ This directory contains reusable, presentational UI components used across the a
 
 - `components/`:
   - `card/` - [`card.component.ts`](components/card/card.component.ts): Card rendering component handling suit icons, rank text, flip animations, and glow highlights.
+  - `battle-animation/` - [`battle-animation.component.ts`](components/battle-animation/battle-animation.component.ts): Renders a skirmish plan as individual SVG soldiers driven by the Web Animations API.
 - `fx/`: Lazy-loaded three.js table effects (felt backdrop, particle director). Decoration only. It never reads hidden state or affects play. See [`developer-docs/table-effects.md`](../../../developer-docs/table-effects.md).
 
 ## 📐 Component Guidelines

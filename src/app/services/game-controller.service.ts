@@ -47,7 +47,7 @@ import {
   NarrativeTransitionRecord
 } from '../core/models/narrative.model';
 import { NarrativeResolverService } from '../narrative/narrative-resolver.service';
-import { BattleAnimationService } from './battle-animation.service';
+import { BattleAnimationService, SkirmishContext } from './battle-animation.service';
 import type { ComparisonStrengthView } from '../shared/components/comparison-strength/comparison-strength.component';
 import {
   battleTargetInstruction,
@@ -58,8 +58,8 @@ import {
 
 export const MODEST_COMEBACK_DEFICIT_THRESHOLD = 3;
 export const SIGNIFICANT_COMEBACK_DEFICIT_THRESHOLD = 15;
-export const SKIRMISH_ANIMATION_BASE_DURATION_MS = 800;
-export const SKIRMISH_ANIMATION_FAST_MIN_DURATION_MS = 720;
+/** A rank gap this wide or wider plays as a rout in the skirmish. */
+const SKIRMISH_ROUT_RANK_GAP = 9;
 const FIRST_PLAY_CONTEXTUAL_DECK_THRESHOLDS = [18, 10] as const;
 
 export enum PresentationState {
@@ -787,7 +787,10 @@ export class GameControllerService {
       // unresolved legal reinforcement decision. The comparison math above is
       // provisional; the skirmish belongs only to the disclosed final result.
       if (result.winner && !result.canChallenge && !result.opponentConsidered) {
-        await this.playComparisonSkirmish(result.winner, version);
+        await this.playComparisonSkirmish(result.winner, version, {
+          player: playerCard,
+          opponent: opponentCard,
+        });
       } else if (!result.opponentConsidered) {
         await this.sequencer.pause(430, version, 650);
       }
@@ -931,7 +934,11 @@ export class GameControllerService {
       }
 
       if (result.winner) {
-        await this.playComparisonSkirmish(result.winner, version);
+        await this.playComparisonSkirmish(
+          result.winner,
+          version,
+          turn ? { player: reinforcement, opponent: turn.opponentCard } : undefined,
+        );
       } else {
         await this.sequencer.pause(420, version, 650);
       }
@@ -1130,7 +1137,11 @@ export class GameControllerService {
     }
 
     if (challengeResult.winner) {
-      await this.playComparisonSkirmish(challengeResult.winner, version);
+      await this.playComparisonSkirmish(
+        challengeResult.winner,
+        version,
+        turn ? { player: turn.playerCard, opponent: reinforcement } : undefined,
+      );
     } else {
       await this.sequencer.pause(420, version, 650);
     }
@@ -1148,7 +1159,7 @@ export class GameControllerService {
     this.deepestBattleLayer = Math.max(this.deepestBattleLayer, existingLayers + 1);
 
     this.announce(battleAnnouncementFor(existingLayers + 1));
-    this.sound.playClash();
+    this.sound.playBattleCall(existingLayers + 1);
     await this.sequencer.pause(470, version);
 
     this.holdFinalBadgeIfDepletedBy(PlayerType.PLAYER, 3);
@@ -1263,7 +1274,10 @@ export class GameControllerService {
       });
 
       if (selection.winner) {
-        await this.playComparisonSkirmish(selection.winner, version);
+        await this.playComparisonSkirmish(selection.winner, version, {
+          player: selection.playerCard,
+          opponent: selection.opponentCard,
+        });
       } else {
         await this.sequencer.pause(500, version, 650);
       }
@@ -1396,24 +1410,54 @@ export class GameControllerService {
     await this.finishTurn(version, true);
   }
 
+  /**
+   * Stages the skirmish for a decided comparison. `cards` names the two cards
+   * that were compared when they are not the turn's original pair.
+   */
   private async playComparisonSkirmish(
     winner: PlayerType,
     version: number,
+    cards?: { readonly player: Card; readonly opponent: Card },
   ): Promise<void> {
     const scene = this.battleAnimationService.request(
       winner,
       this.gameState.currentPlayerDeckColor,
+      this.skirmishContext(cards),
     );
+    const silence =
+      scene?.motion === 'full' ? this.sound.playSkirmish(scene.plan.cues, scene.durationMs) : null;
     try {
+      // A full-motion scene owns its own length; the sequencer only has to wait it out.
       await this.sequencer.pause(
-        scene ? SKIRMISH_ANIMATION_BASE_DURATION_MS : 500,
+        500,
         version,
         scene?.motion === 'reduced' ? 280 : 650,
-        scene?.motion === 'full' ? SKIRMISH_ANIMATION_FAST_MIN_DURATION_MS : 0,
+        scene?.motion === 'full' ? scene.durationMs : 0,
       );
     } finally {
+      silence?.();
       this.battleAnimationService.clear(scene?.id);
     }
+  }
+
+  /** Reads only the two face-up cards of a comparison that is already public. */
+  private skirmishContext(cards?: {
+    readonly player: Card;
+    readonly opponent: Card;
+  }): SkirmishContext {
+    const turn = this.presentedTurn();
+    const depth = turn?.battleLayers.length ?? 0;
+    const player = cards?.player ?? turn?.playerCard;
+    const opponent = cards?.opponent ?? turn?.opponentCard;
+    if (!player || !opponent) return { depth };
+    if (this.comparison.isSpecialAceVsTwoRule(player, opponent)) {
+      return { giantKiller: true, margin: 1, depth };
+    }
+    const gap = Math.abs(player.value - opponent.value);
+    return {
+      margin: Math.max(0, Math.min(1, (gap - 1) / (SKIRMISH_ROUT_RANK_GAP - 1))),
+      depth,
+    };
   }
 
   private async playOrdinarySettlement(result: TurnResult, version: number): Promise<void> {

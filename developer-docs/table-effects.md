@@ -36,13 +36,14 @@ The overlay loop runs only while something is alive, then stops. The backdrop lo
 | `CASUALTY_REVEAL` | Red flare on Ace/2 casualties and a gilt glow on court cards |
 | `RETURN_WINNER_CARDS` | Gilt trails home to the winner's deck |
 | `SEND_LOSER_CARDS_TO_BONEYARD` | Ember trails into the Boneyard |
-| `battleAnimation()` skirmish scene | Dust at the charge, impact starburst at 43% of the CSS duration, dust where the losers fall |
+| `battleAnimation()` skirmish scene | One effect per cue in the scene's plan: dust at the charge, sparks and a ring at the clash, a spark burst on each launched soldier, dust on each fall and landing, embers at the cheer. The Two-beats-Ace scene adds stomp dust, a violet strike and a crash shockwave. See [`skirmish-and-sound.md`](skirmish-and-sound.md). |
 | `deckDefeatPopOwner()` | Burst on the depleted deck |
 | `GAME_OVER` | Victory: confetti volleys and fireworks with a gilt grade. Defeat: falling ash and a cold desaturated table. Tie: silver starburst. |
 | `achievements.latestUnlock()` | Starburst and confetti at the toast icon |
 
 Timings read the table's CSS custom properties (`--clash-duration`, `--boneyard-duration`, and so
-on), so effects follow the player's animation-speed setting automatically.
+on), so effects follow the player's animation-speed setting automatically. The skirmish is the
+exception: its cues carry their own times and the scene carries its duration.
 
 ## When effects are off
 

@@ -29,7 +29,7 @@ describe('SupportComponent', () => {
     expect(compiled.textContent).not.toContain('applies it on your next match');
   });
 
-  it('builds the hosted Support version from the authoritative 4.3.0 release identity', () => {
-    expect(productionEnvironment.appVersion).toBe('4.3.0');
+  it('builds the hosted Support version from the authoritative 4.4.0 release identity', () => {
+    expect(productionEnvironment.appVersion).toBe('4.4.0');
   });
 });

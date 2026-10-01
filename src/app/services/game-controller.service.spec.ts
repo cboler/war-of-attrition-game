@@ -1,5 +1,5 @@
 import { fakeAsync, flush, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
-import { Rank } from '../core/models/card.model';
+import { Card, CardImpl, Rank, Suit } from '../core/models/card.model';
 import {
   BattleCardsRevealedEvent,
   GameEvent,
@@ -318,6 +318,82 @@ describe('GameControllerService presentation integration', () => {
     flush();
   }));
 
+  it('sizes the skirmish from the two public cards that were compared', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    const sequencer = TestBed.inject(PresentationSequencerService);
+    const internal = controller as unknown as {
+      playComparisonSkirmish(
+        winner: PlayerType,
+        sequenceVersion: number,
+        cards?: { player: Card; opponent: Card },
+      ): Promise<void>;
+    };
+    const stage = (player: Card, opponent: Card, winner: PlayerType) => {
+      void internal.playComparisonSkirmish(winner, sequencer.begin(), { player, opponent });
+      const scene = controller.battleAnimation()!;
+      controller.advancePresentation();
+      tick(16);
+      flushMicrotasks();
+      return scene;
+    };
+
+    const narrow = stage(new CardImpl(Suit.HEARTS, Rank.NINE), new CardImpl(Suit.SPADES, Rank.EIGHT), PlayerType.PLAYER);
+    const rout = stage(new CardImpl(Suit.HEARTS, Rank.KING), new CardImpl(Suit.SPADES, Rank.THREE), PlayerType.PLAYER);
+    const giantKiller = stage(new CardImpl(Suit.HEARTS, Rank.ACE), new CardImpl(Suit.SPADES, Rank.TWO), PlayerType.OPPONENT);
+    const launched = (scene: typeof narrow) =>
+      scene.plan.units.filter((unit) => unit.side === scene.loser && unit.fate === 'launch').length;
+
+    expect(narrow.variant).toBe('standard');
+    expect(launched(rout)).toBeGreaterThan(launched(narrow));
+    expect(giantKiller.variant).toBe('giant-killer');
+    expect(giantKiller.winner).toBe(PlayerType.OPPONENT);
+    expect(giantKiller.durationMs).toBeGreaterThan(rout.durationMs);
+    expect(giantKiller.plan.units.find((unit) => unit.role === 'giant')?.side).toBe(PlayerType.PLAYER);
+    flush();
+  }));
+
+  it('scores a full-motion skirmish and silences it when the beat is skipped', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    const silence = jasmine.createSpy('silence');
+    const playSkirmish = spyOn(sound, 'playSkirmish').and.returnValue(silence);
+    const sequencer = TestBed.inject(PresentationSequencerService);
+    const internal = controller as unknown as {
+      playComparisonSkirmish(winner: PlayerType, sequenceVersion: number): Promise<void>;
+    };
+
+    void internal.playComparisonSkirmish(PlayerType.PLAYER, sequencer.begin());
+    const scene = controller.battleAnimation()!;
+
+    expect(playSkirmish).toHaveBeenCalledOnceWith(scene.plan.cues, scene.durationMs);
+    expect(silence).not.toHaveBeenCalled();
+    controller.advancePresentation();
+    tick(16);
+    flushMicrotasks();
+    expect(silence).toHaveBeenCalledTimes(1);
+    flush();
+  }));
+
+  it('holds the table for the full length of the skirmish', fakeAsync(() => {
+    settings.setAutoPlayAnimations(true);
+    settings.setAnimationSpeed('normal');
+    const sequencer = TestBed.inject(PresentationSequencerService);
+    const internal = controller as unknown as {
+      playComparisonSkirmish(winner: PlayerType, sequenceVersion: number): Promise<void>;
+    };
+
+    void internal.playComparisonSkirmish(PlayerType.OPPONENT, sequencer.begin());
+    const duration = controller.battleAnimation()!.durationMs;
+
+    expect(duration).toBe(1400);
+    tick(duration - 1);
+    flushMicrotasks();
+    expect(controller.battleAnimation()).not.toBeNull();
+    tick(1);
+    flushMicrotasks();
+    expect(controller.battleAnimation()).toBeNull();
+    flush();
+  }));
+
   it('waits for a public AI concession before summoning the player victory skirmish', fakeAsync(() => {
     settings.setAutoPlayAnimations(true);
     settings.setAnimationSpeed('normal');
@@ -351,7 +427,11 @@ describe('GameControllerService presentation integration', () => {
     // The final skirmish starts only after the public concession hold.
     tick(345);
     flushMicrotasks();
-    expect(request).toHaveBeenCalledOnceWith(PlayerType.PLAYER, DeckColor.RED);
+    expect(request).toHaveBeenCalledOnceWith(
+      PlayerType.PLAYER,
+      DeckColor.RED,
+      jasmine.objectContaining({ depth: 0 }),
+    );
     expect(controller.battleAnimation()).toEqual(jasmine.objectContaining({
       winner: PlayerType.PLAYER,
       loser: PlayerType.OPPONENT,
@@ -661,7 +741,11 @@ describe('GameControllerService presentation integration', () => {
     const chronicleReveal = storyBook.entries().find((entry) => entry.type === 'battle_reveal')!;
 
     expect(battleVictory).toHaveBeenCalledTimes(1);
-    expect(requestBattleAnimation).toHaveBeenCalledOnceWith(PlayerType.PLAYER, DeckColor.RED);
+    expect(requestBattleAnimation).toHaveBeenCalledOnceWith(
+      PlayerType.PLAYER,
+      DeckColor.RED,
+      jasmine.objectContaining({ depth: 1 }),
+    );
     expect(compare.calls.argsFor(1).map((card) => card.id)).toEqual([
       foeTarget.id,
       humanTarget.id,
@@ -719,7 +803,7 @@ describe('GameControllerService presentation integration', () => {
 
     finishCurrentBeat(322); // deal -> reveal
     finishCurrentBeat(414); // reveal -> comparison result
-    finishCurrentBeat(920); // comparison -> return winner cards
+    finishCurrentBeat(1400); // comparison skirmish -> return winner cards
     finishCurrentBeat(414); // winner return -> casualty hold
     finishCurrentBeat(414); // casualty hold -> Boneyard movement
     finishCurrentBeat(483); // Boneyard movement -> final badge pop

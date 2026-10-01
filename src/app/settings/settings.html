@@ -70,6 +70,24 @@
                 </mat-slide-toggle>
               </div>
 
+              <fieldset class="volume-setting" [disabled]="!settingsService.soundEnabled()">
+                <legend class="setting-control-label">Volume</legend>
+                <label>
+                  <span>Effects</span>
+                  <input type="range" min="0" max="100" step="5"
+                         [value]="settingsService.soundVolume()"
+                         (input)="settingsService.setSoundVolume($any($event.target).valueAsNumber)" />
+                  <output>{{ settingsService.soundVolume() }}</output>
+                </label>
+                <label>
+                  <span>Ambience</span>
+                  <input type="range" min="0" max="100" step="5"
+                         [value]="settingsService.ambienceVolume()"
+                         (input)="settingsService.setAmbienceVolume($any($event.target).valueAsNumber)" />
+                  <output>{{ settingsService.ambienceVolume() }}</output>
+                </label>
+              </fieldset>
+
               <div class="toggle-setting">
                 <mat-slide-toggle [checked]="settingsService.autoPlayAnimations()"
                                  (change)="settingsService.setAutoPlayAnimations($event.checked)">

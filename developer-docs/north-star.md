@@ -448,10 +448,11 @@ Barring newly discovered release-blocking defects, both substantial creative spr
 
 ### Sprint 2 — Clash Visualizations / Battlefield Animations (V1 Implemented)
 
-- Implemented: every decisive comparison currently summons symbolic five-unit infantry formations that charge horizontally, bonk, and resolve with a much larger losing-side knockback while physical cards remain authoritative. The frequency remains under playtest evaluation.
-- Implemented: inline SVG/CSS presentation reuses sequencing, the global animation setting, Continue/skip, and reduced-motion seams; Fast/Normal/Slow skirmish timing is approximately 0.72/0.92/1.2 seconds.
+- Implemented: every decisive comparison currently summons two ranks of infantry per side that charge, clash, and resolve soldier by soldier while physical cards remain authoritative. Losers are launched in individual arcs, and the rank gap sets how many. The frequency remains under playtest evaluation.
+- Implemented: inline SVG/CSS presentation reuses sequencing, the global animation setting, Continue/skip, and reduced-motion seams; Fast/Normal/Slow skirmish timing is approximately 1.05/1.4/1.83 seconds. Soldiers animate through the Web Animations API from a seeded plan (see `skirmish-and-sound.md`).
 - Implemented: routine comparison copy leaves the prominent transient stack but remains accessible and recorded in the Chronicle, while authored dialogue is protected from procedural replacement.
-- Deferred: number/Jack/Queen/King/Ace classes, suit identities, the Two's signature Ace-defeating sequence, and recursive spectacle escalation.
+- Implemented: the Two's signature Ace-defeating sequence (a lone hero fells a crowned giant), and synthesised sound with a Battle-depth ambience bed.
+- Deferred: number/Jack/Queen/King classes, suit identities, and recursive spectacle escalation.
 - Continue to keep silhouettes readable at phone scale and avoid copyrighted source material or an excessive asset/runtime budget.
 
 ### Then — Final-Pass Polish

@@ -2,7 +2,7 @@
 
 ## 1. Project State: Core and Two Creative Sprints Complete
 
-**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity. The hosted release and the next Android wrapper share version identity **4.3.0**.
+**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity. The hosted release and the next Android wrapper share version identity **4.4.0**.
 
 The project is no longer in broad feature discovery. Both substantial creative sprints now have production implementations:
 
@@ -109,7 +109,7 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 | Dialogue & narrative | All four chapters, transitions, progressive dossiers, deduplication, and fallback routing are active. | The private disclosure firewall remains authoritative. |
 | Campaign availability | Standard → Limited Reserves → Fog of War → Total War unlocks through chapter completion with migration and replay access. | No victory, achievement, token, or purchase gate. |
 | Field Manual | Chronicle, Hall of Valor, truthful rule demos, dossier portraits/crest switcher, evidence records, and safe links are active. | It does not become a visual-novel or persistent quest engine. |
-| Battlefield presentation | Card movement, Battle layers, sequencing, skip/speed/motion controls, and summoned-infantry scenes are active and presentation-only. | Rank/suit classes, magnitude scaling, recursive spectacle, bespoke Two-vs-Ace animation, skins, and sound remain later refinements. |
+| Battlefield presentation | Card movement, Battle layers, sequencing, skip/speed/motion controls, and per-soldier skirmish scenes are active and presentation-only. Casualties scale with the rank gap, a Two beating an Ace has its own scene, and sound and a Battle-depth ambience bed are synthesised at run time. | Rank/suit classes, recursive spectacle, and skins remain later refinements. |
 
 The private mouse/hay cause in [`narrative-canon.md`](../../developer-docs/narrative-canon.md) is writer knowledge. It must not simply appear as an early player-facing explanation.
 
@@ -177,7 +177,9 @@ Closure work adds the canonical commander portraits/crests and explicit reaction
 
 The every-comparison trigger is intentionally an experiment. Its policy remains in `GameControllerService`, separate from the reusable ephemeral animation state and renderer, so later playtesting can narrow the frequency without rebuilding the presentation.
 
-Intentionally deferred: rank-specific classes, suit-specific armies, magnitude scaling, recursive spectacle escalation, the special Two-vs-Ace assassination treatment, skins, sound, and a general animation framework.
+Release 4.4.0 rebuilds the skirmish as per-soldier choreography from one seeded plan that the soldiers, the WebGL particles and the sound all read; adds margin-scaled casualties and the Two-vs-Ace giant-killer scene; and replaces the oscillator cues with a synthesised Web Audio layer and ambience. See [`skirmish-and-sound.md`](../../developer-docs/skirmish-and-sound.md).
+
+Intentionally deferred: rank-specific classes, suit-specific armies, recursive spectacle escalation, skins, music, and a general animation framework.
 
 ---
 

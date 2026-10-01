@@ -1,68 +1,76 @@
 <div
   class="battle-animation"
   [class.reduced-motion]="scene().motion === 'reduced'"
+  [class.giant-killer]="scene().variant === 'giant-killer'"
   [class.player-victory]="scene().winner === player.PLAYER"
   [class.opponent-victory]="scene().winner === player.OPPONENT"
   aria-hidden="true"
 >
-  <div
-    class="army player-army"
-    [class.winner]="scene().winner === player.PLAYER"
-    [class.loser]="scene().loser === player.PLAYER"
-    [class.red-army]="scene().playerColor === deckColor.RED"
-    [class.steel-army]="scene().playerColor === deckColor.BLACK"
-  >
-    <div class="formation formation-facing">
-      @for (unit of units; track unit) {
-        <svg
-          class="soldier"
-          [style.--unit-index]="unit"
-          viewBox="0 0 34 42"
-          focusable="false"
-        >
-          <path class="weapon" d="M26 8v24M23 11h6M24 32h4" />
-          <path class="plume" d="M13 8c1-5 8-6 10-1-4-1-7 0-10 1Z" />
-          <path class="helmet" d="M10 10c0-5 12-5 12 0v5H10Z" />
-          <circle class="face" cx="16" cy="15" r="5" />
-          <path class="body" d="M10 20h12l3 14H7Z" />
-          <path class="shield" d="M7 21c5-3 10-2 11 0v10c-3 4-7 6-11 7Z" />
-          <path class="feet" d="M12 34v5M21 34l2 5" />
-        </svg>
-      }
-    </div>
-  </div>
+  @for (view of units(); track view.key) {
+    <span #shadow class="shadow" [style.--unit-scale]="view.unit.scale"></span>
+  }
 
-  <div class="impact" aria-hidden="true">
-    <svg viewBox="0 0 48 48" focusable="false">
-      <path d="m24 2 5 13 13-6-7 13 11 7-14 2 2 14-10-10-10 10 2-14-14-2 11-7L6 9l13 6Z" />
-      <circle cx="24" cy="24" r="6" />
-    </svg>
-  </div>
-
-  <div
-    class="army opponent-army"
-    [class.winner]="scene().winner === player.OPPONENT"
-    [class.loser]="scene().loser === player.OPPONENT"
-    [class.red-army]="scene().opponentColor === deckColor.RED"
-    [class.steel-army]="scene().opponentColor === deckColor.BLACK"
-  >
-    <div class="formation formation-facing">
-      @for (unit of units; track unit) {
-        <svg
-          class="soldier"
-          [style.--unit-index]="unit"
-          viewBox="0 0 34 42"
-          focusable="false"
-        >
-          <path class="weapon" d="M26 8v24M23 11h6M24 32h4" />
-          <path class="plume" d="M13 8c1-5 8-6 10-1-4-1-7 0-10 1Z" />
-          <path class="helmet" d="M10 10c0-5 12-5 12 0v5H10Z" />
-          <circle class="face" cx="16" cy="15" r="5" />
-          <path class="body" d="M10 20h12l3 14H7Z" />
-          <path class="shield" d="M7 21c5-3 10-2 11 0v10c-3 4-7 6-11 7Z" />
-          <path class="feet" d="M12 34v5M21 34l2 5" />
-        </svg>
-      }
+  @for (view of units(); track view.key) {
+    <div
+      #unit
+      class="unit"
+      [class]="view.classes"
+      [style.--unit-scale]="view.unit.scale"
+      [style.z-index]="view.unit.layer"
+    >
+      <svg class="soldier" viewBox="0 0 34 42" focusable="false">
+        <g class="leg leg-back"><path class="limb" d="M14 30.5v8.5h3.2" /></g>
+        <g class="leg leg-front"><path class="limb" d="M20 30.5v8.5h3.2" /></g>
+        <g class="arm">
+          @switch (view.unit.role) {
+            @case ('bearer') {
+              <path class="pole" d="M11 31V-3" />
+              <path class="flag" d="M11-2H-1l3.4 3.6L-1 5.2h12Z" />
+            }
+            @case ('giant') {
+              <path class="blade great" d="M10 25 14.6 1.5" />
+              <path class="guard" d="M7.6 19.4l7.6 2" />
+            }
+            @default {
+              <path class="blade" d="M10 25 14.4 6" />
+              <path class="guard" d="M8.8 20l5.4 1.4" />
+            }
+          }
+          <path class="limb" d="M13.5 23 10 25" />
+        </g>
+        <path class="tunic" d="M10.5 20h12l2.5 12H8Z" />
+        <path class="belt" d="M9.2 27h14.6" />
+        <circle class="face" cx="17.5" cy="13.6" r="5.4" />
+        <circle class="eye" cx="20.6" cy="14" r="0.95" />
+        <path class="helmet" d="M11.7 13.2c0-8.2 11.8-8.2 11.8 0Z" />
+        @if (view.unit.role === 'giant') {
+          <path class="crown" d="M11.6 8.4 12.6 2.6l2.6 3.2 2.3-4.4 2.3 4.4 2.6-3.2 1 5.8Z" />
+        } @else {
+          <path class="plume" d="M17.6 5.3c-4.8-4.6-10.4-1-9.4 4.2 2.2-2.5 5.4-3.8 9.4-4.2Z" />
+        }
+        <circle class="shield" cx="24" cy="26" r="5.8" />
+        @if (view.unit.role === 'giant') {
+          <text class="emblem" x="24" y="29.1" text-anchor="middle">A</text>
+        } @else {
+          <circle class="boss" cx="24" cy="26" r="1.7" />
+        }
+      </svg>
     </div>
-  </div>
+  }
+
+  @for (flash of flashes(); track flash.key) {
+    <div
+      #flash
+      class="impact"
+      [class]="flash.classes"
+      [style.--flash-x]="flash.cue.x"
+      [style.--flash-y]="flash.cue.y"
+      [style.--flash-size]="flash.cue.weight"
+    >
+      <svg viewBox="0 0 48 48" focusable="false">
+        <path d="m24 2 5 13 13-6-7 13 11 7-14 2 2 14-10-10-10 10 2-14-14-2 11-7L6 9l13 6Z" />
+        <circle cx="24" cy="24" r="6" />
+      </svg>
+    </div>
+  }
 </div>

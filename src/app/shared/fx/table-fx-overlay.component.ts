@@ -16,6 +16,11 @@ import { GameStateService } from '../../core/services/game-state.service';
 import { AchievementService } from '../../services/achievement.service';
 import { BattleAnimationScene } from '../../services/battle-animation.service';
 import { GameControllerService, PresentationState } from '../../services/game-controller.service';
+import {
+  SKIRMISH_GROUND_INSET_U,
+  SkirmishCue,
+  skirmishUnitPx,
+} from '../../services/skirmish-plan';
 import type { FxPoint, TableFxEngine } from './table-fx-engine';
 import { TableFxService } from './table-fx.service';
 
@@ -205,25 +210,86 @@ export class TableFxOverlayComponent {
     const engine = this.engine!;
     const stage = this.rectOf('app-battle-animation');
     if (!stage) return;
-    const duration = this.cssDuration('--battle-animation-duration', 920);
-    const center = { x: stage.x, y: stage.y };
-    const halfWidth = stage.width / 2;
-    const ground = stage.y + stage.height * 0.32;
-    const winner = this.armyFor(scene.winner);
+    // The plan's cues are in soldier widths from the middle of the ground line.
+    const unit = skirmishUnitPx(stage.width);
+    const ground = stage.y + stage.height / 2 - SKIRMISH_GROUND_INSET_U * unit;
+    for (const cue of scene.plan.cues) {
+      const at = { x: stage.x + cue.x * unit, y: ground + cue.y * unit };
+      const run = () => {
+        // A skipped scene takes its remaining effects with it.
+        if (this.controller.battleAnimation()?.id !== scene.id) return;
+        this.skirmishCue(cue, at, unit, scene);
+      };
+      if (cue.at <= 0) run();
+      else engine.after(cue.at * scene.durationMs, run);
+    }
+  }
 
-    engine.dust({ x: center.x - halfWidth * 0.75, y: ground }, { count: 10, spread: 70, width: 30 });
-    engine.dust({ x: center.x + halfWidth * 0.75, y: ground }, { count: 10, spread: 70, width: 30 });
-    engine.after(duration * 0.43, () => {
-      engine.flash(center, 110, '#fff0c2', 0.25);
-      engine.sparks(center, { color: winner.primary, secondary: winner.secondary, count: 70, speed: 460 });
-      engine.ring(center, { color: winner.secondary, radius: 130, duration: 0.5, thickness: 0.05 });
-      engine.shake(3);
-      this.pulseBackdropAt(center, 0.6);
-    });
-    engine.after(duration * 0.6, () => {
-      const loserSide = scene.loser === PlayerType.PLAYER ? -1 : 1;
-      engine.dust({ x: center.x + loserSide * halfWidth * 0.35, y: ground }, { count: 16, spread: 110, width: 40 });
-    });
+  private skirmishCue(cue: SkirmishCue, at: FxPoint, unit: number, scene: BattleAnimationScene): void {
+    const engine = this.engine!;
+    const winner = this.armyFor(scene.winner);
+    const weight = cue.weight;
+    // Blows drive debris toward the struck army's own side of the field.
+    const away = { x: cue.side === PlayerType.PLAYER ? -1 : 1, y: -0.45 };
+    switch (cue.kind) {
+      case 'charge':
+        engine.dust(at, { count: 12 * weight, spread: 80, width: unit * 2 });
+        break;
+      case 'clash': {
+        const chest = { x: at.x, y: at.y - unit * 0.6 };
+        // Kept small: the soldiers behind the flash are the point of the scene.
+        engine.flash(chest, 46 * weight, '#fff0c2', 0.18);
+        engine.sparks(chest, { color: winner.primary, secondary: winner.secondary, count: 48 * weight, speed: 440 });
+        engine.ring(chest, { color: winner.secondary, radius: 110 * weight, duration: 0.5, thickness: 0.05 });
+        engine.dust(at, { count: 14 * weight, spread: 130, width: unit * 1.5 });
+        engine.shake(3 * weight);
+        this.pulseBackdropAt(chest, 0.6 * weight);
+        break;
+      }
+      case 'launch':
+        engine.sparks(at, {
+          color: winner.secondary,
+          secondary: '#fff7e0',
+          direction: away,
+          count: 16 * weight,
+          speed: 300,
+          spread: 0.7,
+        });
+        engine.shake(0.9 * weight);
+        break;
+      case 'fall':
+      case 'land':
+        engine.dust(at, { count: 9 * weight, spread: 80, width: unit * 0.5 });
+        break;
+      case 'flee':
+        engine.dust(at, { count: 5, spread: 50, width: unit * 0.4 });
+        break;
+      case 'cheer':
+        engine.embers(at, { color: GILT, count: 16 * weight, width: unit * 1.6, rise: 150 });
+        break;
+      case 'stomp':
+        engine.dust(at, { count: 16 * weight, spread: 130, width: unit * 1.1 });
+        engine.shake(3 * weight);
+        this.pulseBackdropAt(at, 0.3 * weight);
+        break;
+      case 'tink':
+        engine.flash(at, 38, GIANT_KILLER, 0.22);
+        engine.sparks(at, { color: GIANT_KILLER, secondary: '#f4e7ff', count: 20, speed: 300 });
+        engine.ring(at, { color: GIANT_KILLER, radius: 72, duration: 0.45, thickness: 0.05 });
+        break;
+      case 'crash':
+        engine.flash(at, 84, '#fff0c2', 0.24);
+        engine.ring(at, { color: GIANT_KILLER, radius: 210, duration: 0.75, thickness: 0.045 });
+        engine.ring(at, { color: '#fff1cf', radius: 120, duration: 0.45, thickness: 0.08, delay: 70 });
+        engine.sparks(at, { color: GIANT_KILLER, secondary: GILT, count: 70, speed: 520 });
+        engine.dust(at, { count: 40, spread: 300, width: unit * 3 });
+        engine.shake(9);
+        this.pulseBackdropAt(at, 1.2);
+        break;
+      case 'windup':
+      case 'creak':
+        break;
+    }
   }
 
   private onDeckDefeat(owner: PlayerType): void {

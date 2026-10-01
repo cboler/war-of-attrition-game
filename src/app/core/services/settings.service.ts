@@ -23,6 +23,8 @@ export class SettingsService {
   readonly selectedCardBacking = this.progressionService.selectedCardBackingId;
   readonly animationSpeed = computed(() => this.currentSettings().animationSpeed);
   readonly soundEnabled = computed(() => this.currentSettings().soundEnabled);
+  readonly soundVolume = computed(() => this.currentSettings().soundVolume);
+  readonly ambienceVolume = computed(() => this.currentSettings().ambienceVolume);
   readonly tutorialEnabled = computed(() => this.currentSettings().tutorialEnabled ?? true);
   readonly confirmChallenges = computed(() => this.currentSettings().confirmChallenges);
   readonly autoPlayAnimations = computed(() => this.currentSettings().autoPlayAnimations);
@@ -84,6 +86,14 @@ export class SettingsService {
     this.updateSettings({ soundEnabled: enabled });
   }
 
+  setSoundVolume(volume: number): void {
+    this.updateSettings({ soundVolume: this.clampVolume(volume) });
+  }
+
+  setAmbienceVolume(volume: number): void {
+    this.updateSettings({ ambienceVolume: this.clampVolume(volume) });
+  }
+
   setTutorialEnabled(enabled: boolean): void {
     this.updateSettings({ tutorialEnabled: enabled });
   }
@@ -94,6 +104,10 @@ export class SettingsService {
 
   setAutoPlayAnimations(autoPlay: boolean): void {
     this.updateSettings({ autoPlayAnimations: autoPlay });
+  }
+
+  private clampVolume(volume: number): number {
+    return Number.isFinite(volume) ? Math.max(0, Math.min(100, Math.round(volume))) : 0;
   }
 
   // Persistence methods

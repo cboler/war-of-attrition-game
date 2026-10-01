@@ -584,6 +584,34 @@
             <mat-slide-toggle [checked]="settings.deckHand() === 'left'" (change)="settings.setDeckHand($event.checked ? 'left' : 'right')">Left-handed layout</mat-slide-toggle>
           </div>
 
+          <fieldset class="volume-setting" [disabled]="!settings.soundEnabled()">
+            <legend class="setting-control-label">Volume</legend>
+            <label>
+              <span>Effects</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                [value]="settings.soundVolume()"
+                (input)="settings.setSoundVolume($any($event.target).valueAsNumber)"
+              />
+              <output>{{ settings.soundVolume() }}</output>
+            </label>
+            <label>
+              <span>Ambience</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                [value]="settings.ambienceVolume()"
+                (input)="settings.setAmbienceVolume($any($event.target).valueAsNumber)"
+              />
+              <output>{{ settings.ambienceVolume() }}</output>
+            </label>
+          </fieldset>
+
           <fieldset class="animation-speed-setting">
             <legend class="setting-control-label">Animation speed</legend>
             <mat-radio-group [value]="settings.animationSpeed()" (change)="settings.setAnimationSpeed($event.value)">

@@ -5,6 +5,7 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -16,6 +17,7 @@ import { Card } from '../core/models/card.model';
 import { OpponentCommanderId } from '../core/models/commander.model';
 import { GameStateService } from '../core/services/game-state.service';
 import { SettingsService } from '../core/services/settings.service';
+import { SoundService } from '../core/services/sound.service';
 import { AchievementService } from '../services/achievement.service';
 import { TutorialService } from '../services/tutorial.service';
 import { AnalyticsConsentPromptService } from '../services/analytics-consent-prompt.service';
@@ -76,6 +78,7 @@ export class TableGame implements OnInit, OnDestroy {
   protected readonly progression = inject(CampaignProgressionService);
   protected readonly dialog = inject(MatDialog);
   private readonly profileDialog = inject(ProfileDialogService);
+  private readonly sound = inject(SoundService);
   private readonly uiTelemetry = inject(UiTelemetryService);
   private readonly analyticsConsentPrompt = inject(AnalyticsConsentPromptService);
   private readonly destroyRef = inject(DestroyRef);
@@ -148,6 +151,11 @@ export class TableGame implements OnInit, OnDestroy {
     return 'boneyard-heavy';
   });
 
+  constructor() {
+    // The din outside the tent follows the Battle layers on the table.
+    effect(() => this.sound.setBattleDepth(this.controller.battleLayers().length));
+  }
+
   ngOnInit(): void {
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const sceneParam = searchParams?.get('scene') || searchParams?.get('screenshot_scene');
@@ -168,6 +176,7 @@ export class TableGame implements OnInit, OnDestroy {
 
     this.uiTelemetry.openSurface({ surface: 'table' }, 'table.primary');
     this.tableSurfaceTracked = true;
+    this.sound.enterTable();
 
     this.orchestrateOpeningFlow();
   }
@@ -186,6 +195,7 @@ export class TableGame implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.tableSurfaceTracked) this.uiTelemetry.closeSurface('table.primary');
+    this.sound.leaveTable();
   }
 
   protected openCampaignOrdersDialog(): void {

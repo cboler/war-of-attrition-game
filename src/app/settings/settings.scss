@@ -136,7 +136,8 @@
   }
 }
 
-.radio-setting {
+.radio-setting,
+.volume-setting {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -166,6 +167,32 @@
   ::ng-deep .mdc-label {
     color: #f7f0e1 !important;
     font-size: 0.88rem;
+  }
+}
+
+.volume-setting {
+  label {
+    display: grid;
+    grid-template-columns: 5.4em minmax(0, 1fr) 2.2em;
+    align-items: center;
+    gap: 10px;
+    color: #f7f0e1;
+    font-size: 0.88rem;
+  }
+
+  input[type='range'] {
+    width: 100%;
+    min-height: 28px;
+    accent-color: #e4bf72;
+  }
+
+  output {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &:disabled {
+    opacity: 0.5;
   }
 }
 
