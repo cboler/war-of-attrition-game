@@ -75,7 +75,9 @@ body {
     grid-area: 2 / 2;
     align-self: end;
     justify-self: center;
-    transform: translateY(86px);
+    // Stay inside the stakes cell: the seat rail below holds the player's
+    // identity and deck, which the actions must not cover.
+    transform: translateY(6px);
   }
 
   .table-page.boneyard-left .to-boneyard {

@@ -714,6 +714,45 @@ app-card-table {
   transform: translateX(-50%);
 }
 
+/* Wide screens: the area below the player card is the seat rail (identity,
+   deck) and the thumb actions, so the bubble sits beside the card instead,
+   on the side away from the action buttons. */
+@media (min-width: 621px) {
+  .player-callout {
+    top: 50%;
+    left: auto;
+    width: 210px;
+    box-sizing: border-box;
+    transform: translateY(-50%);
+  }
+  .hand-right .player-callout {
+    right: calc(50% + clamp(84px, 11vw, 136px) / 2 + 20px);
+  }
+  .hand-left .player-callout {
+    left: calc(50% + clamp(84px, 11vw, 136px) / 2 + 20px);
+  }
+  .player-callout > span {
+    max-width: none;
+  }
+  .hand-right .player-callout::before,
+  .hand-left .player-callout::before {
+    top: 50%;
+    border: 0;
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .hand-right .player-callout::before {
+    right: -5px;
+    left: auto;
+    border-top: 1px solid rgba(235, 211, 163, 0.45);
+    border-right: 1px solid rgba(235, 211, 163, 0.45);
+  }
+  .hand-left .player-callout::before {
+    left: -5px;
+    border-bottom: 1px solid rgba(235, 211, 163, 0.45);
+    border-left: 1px solid rgba(235, 211, 163, 0.45);
+  }
+}
+
 .opponent-callout::before,
 .player-callout::before {
   content: '';
@@ -1010,6 +1049,14 @@ app-card-table {
   display: flex;
   gap: 7px;
   transition: left 220ms ease, right 220ms ease;
+}
+
+// On wide screens the bottom rail holds the player's identity and deck, so the
+// actions sit just above it (rail height matches --rail-size in card-table).
+@media (min-width: 621px) {
+  .thumb-action-region {
+    bottom: calc(clamp(92px, 15dvh, 142px) + 14px);
+  }
 }
 
 .hand-right .thumb-action-region { right: clamp(6px, 2vw, 22px); }

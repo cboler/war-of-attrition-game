@@ -54,7 +54,8 @@
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  padding: 4px 8px;
+  // Generous padding keeps the whole identity block an easy click target.
+  padding: 10px 16px;
   cursor: pointer;
   transition: background-color 150ms ease, border-color 150ms ease;
   user-select: none;
@@ -224,6 +225,13 @@
   background: transparent;
   appearance: none;
   transition: transform 180ms ease, filter 180ms ease;
+}
+
+/* Invisible padding so the deck is easy to hit with a mouse pointer. */
+.deck::before {
+  content: '';
+  position: absolute;
+  inset: -16px;
 }
 
 .deck app-card { --card-width: 100%; --card-height: 100%; position: absolute; inset: 0; display: block; }
