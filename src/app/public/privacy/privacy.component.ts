@@ -124,6 +124,9 @@ import { MatDividerModule } from '@angular/material/divider';
           <button mat-raised-button color="primary" routerLink="/">
             <mat-icon>arrow_back</mat-icon> Return to Game
           </button>
+          <button mat-button routerLink="/terms">
+            <mat-icon>gavel</mat-icon> Terms (EULA)
+          </button>
           <button mat-button routerLink="/support">
             <mat-icon>help_outline</mat-icon> Support
           </button>

@@ -107,6 +107,9 @@ import {
           <button mat-button routerLink="/privacy">
             <mat-icon>privacy_tip</mat-icon> Privacy Policy
           </button>
+          <button mat-button routerLink="/terms">
+            <mat-icon>gavel</mat-icon> Terms (EULA)
+          </button>
           <button mat-button routerLink="/support">
             <mat-icon>help_outline</mat-icon> Support
           </button>

@@ -21,7 +21,7 @@ if (fs.existsSync(indexPath)) {
 
   // Generate static index.html entry points for public compliance routes
   // so automated crawlers (e.g. Google Play) receive genuine HTTP 200 responses
-  const complianceRoutes = ['privacy', 'support', 'delete-account', 'data-deletion'];
+  const complianceRoutes = ['privacy', 'terms', 'support', 'delete-account', 'data-deletion'];
   for (const route of complianceRoutes) {
     const routeDir = path.join(destDir, route);
     if (!fs.existsSync(routeDir)) {

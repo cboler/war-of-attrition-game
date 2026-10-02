@@ -1,6 +1,7 @@
 import { routes } from './app.routes';
 import { TableGame } from './table-game/table-game';
 import { PrivacyComponent } from './public/privacy/privacy.component';
+import { TermsComponent } from './public/terms/terms.component';
 import { SupportComponent } from './public/support/support.component';
 import { DataDeletionComponent } from './public/data-deletion/data-deletion.component';
 
@@ -15,6 +16,12 @@ describe('application routes', () => {
     const privacyRoute = routes.find(route => route.path === 'privacy');
     expect(privacyRoute?.loadComponent).toBeDefined();
     expect(await privacyRoute!.loadComponent!()).toBe(PrivacyComponent);
+  });
+
+  it('loads public terms route without authentication', async () => {
+    const termsRoute = routes.find(route => route.path === 'terms');
+    expect(termsRoute?.loadComponent).toBeDefined();
+    expect(await termsRoute!.loadComponent!()).toBe(TermsComponent);
   });
 
   it('loads public support route without authentication', async () => {
