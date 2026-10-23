@@ -87,14 +87,16 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 
 - Profile-scoped Campaign progress, bounded Campaign history, career statistics, and cosmetic entitlements are persisted and normalized. Profile surfaces recent local War dispatches with truthful commander, result, and signed-margin attribution; it does not claim lifetime commander aggregates or community data.
 - Card-backing cosmetics and token purchase/unlock flow are implemented.
-- Thirty local tiered achievements are implemented. `Against the Odds`, `Crippled`, and `Neverending Stalemate` are intentionally local-only pending final Play Games reconciliation; the existing 27 Play mappings remain unchanged.
+- Thirty-four visible local tiered achievements plus five hidden astronomical anomalies are implemented. Twenty-nine are mapped to Google Play Games; `Against the Odds`, `Crippled`, `Neverending Stalemate`, `Wrong Tool for the Job`, and `Twin Assassins` are intentionally local-only pending Play Console reconciliation (see [`achievements-manifest.md`](../../developer-docs/play-store/achievements-manifest.md)).
 - Google Analytics 4 telemetry is consent-gated and denied by default until permission. Test and screenshot modes collect no analytics. Fog of War applies presentation and mapper-level information redaction while a War is active.
-- Game Stats v1 payload validation, public-event projection, web platform adapter, and native buffer wrapper are implemented and tested. Ordinary web/PWA play is a safe no-op. The Android wrapper uses the vendored ABH session hook for an origin-verified postMessage channel; version 4.2.6 also declares the ABH site-settings activity required during TWA launch. Play-signed physical-device validation remains required.
+- Game Stats v1 payload validation, public-event projection, web platform adapter, and native buffer wrapper are implemented and tested. Ordinary web/PWA play is a safe no-op. The Android wrapper uses the vendored ABH session hook for an origin-verified postMessage channel; version 4.2.6 also declares the ABH site-settings activity required during TWA launch. The channel is re-requested for every new document (reloads, web updates), unanswered requests are retried, and failed sends re-open the channel. Play-signed physical-device validation remains required; only Play-installed builds verify against the root `assetlinks.json`.
 
 ### Platform Packaging and Tooling
 
 - Android TWA wrapper targeting the current project Android configuration.
-- GitHub Pages deployment, Android bundle, secret scanning, and deterministic Playwright store-screenshot workflows.
+- GitHub Actions: unit tests gate every GitHub Pages deployment; Android unit tests and lint run on changes under `android/`; the Android bundle workflow runs native tests before bundling; plus secret scanning and deterministic Playwright store-screenshot workflows. All actions are on their Node 24 majors, and web jobs build with Node 24.
+- Android toolchain: AGP 8.13.2 and Gradle 8.14.6, with the AAR metadata compatibility check enabled.
+- Release 4.4.1 is a native-wrapper release: it fixes the back-gesture splash freeze (and the sign-in path to it), re-opens the Play Games postMessage channel after reloads, retries unanswered channel requests, and recovers from failed sends.
 - Android bundle version names are checked against the authoritative `package.json` version; a manual input or tag mismatch fails the workflow instead of producing a silently divergent wrapper identity.
 - Store screenshot matrix for phone, 7-inch tablet, and 10-inch tablet targets with production-configuration serving, deterministic real-UI fixtures, exact artifact-inventory validation, and physical-card/turn-history assertions.
 

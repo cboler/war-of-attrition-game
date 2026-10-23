@@ -29,6 +29,20 @@ Based on the Google maintainer's feedback on PR #584 (August 25, 2026):
 
 This vendor artifact must be replaced with the official release of `com.google.androidbrowserhelper:androidbrowserhelper` as soon as Google merges PR #584 and publishes the update to Maven Central / Google Maven.
 
+## Upstream Status (checked 2026-10-22)
+
+- PR #584 is **open and unmerged**. Its last activity is the maintainer's 2026-08-25 comment approving the protected `LauncherActivity` hook plus the existing `TwaLauncher.launch()` completion callback. The author had not pushed that revision.
+- Android Browser Helper **2.7.4** shipped on 2026-10-02 without the hook, so the vendored build cannot be dropped yet. 2.7.4 does bring a minSdk 24 floor (already ours), shortcut and notification changes, and inbound Intent validation in `LauncherActivity`.
+- The vendored hook is exactly the shape the maintainer asked for, so `MainActivity` will not need code changes when an official release includes it: only the dependency line in `app/build.gradle` and the `vendor/` repository change.
+
+### Ways forward
+
+1. **Offer the finished hook upstream (recommended).** Comment on #584 offering the fork commit, or open a superseding PR with the hook (credit the original author; the CLA must be signed and the commit must carry no AI co-author trailer, which is what blocked #584's CLA check before).
+2. **Rebase the fork onto 2.7.4** to pick up the upstream fixes while waiting. Low risk: the patch touches two files.
+3. **Avoid the patch entirely** by replacing `LauncherActivity` with the pattern from the official `twa-post-message` demo (bind `CustomTabsClient` directly, create the session, launch with `TrustedWebActivityIntentBuilder`). That uses only public APIs but re-implements splash, fallback, and site-settings handling, so it is a larger change than waiting.
+
+The postMessage reliability problems seen on devices are mostly Chromium-side (page-ready timing, and the Chrome 150–152 reload regression in android-browser-helper#602) and are independent of this patch. `TwaPostMessageManager` now re-requests the channel per document, retries unanswered requests, and re-opens the channel after failed sends.
+
 ## License Notice
 
 Android Browser Helper is licensed under the Apache License, Version 2.0.

@@ -1,62 +1,40 @@
-# WarOfAttritionGame
+# War of Attrition
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.1.6.
+A two-player card game played against AI commanders, built as an Angular PWA, hosted on GitHub Pages at <https://cboler.github.io/war-of-attrition-game/>, and packaged for Google Play as a Trusted Web Activity (`android/`).
 
-## Development server
+## Development
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Requires Node 22 or 24 LTS (CI uses 24).
 
 ```bash
-ng generate component component-name
+npm ci
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Open `http://localhost:4200/`. `npm start` runs `scripts/set-env.js` first, which writes the environment files from `GOOGLE_CLIENT_ID` and `GA4_MEASUREMENT_ID` when they are set.
 
-```bash
-ng generate --help
-```
+| Task | Command |
+| --- | --- |
+| Unit tests (watch) | `npm test` |
+| Unit tests (single headless run, as CI) | `npm run test:ci` |
+| Version-sync tests | `npm run test:version` |
+| Production build into `docs/` | `npm run build:prod` |
+| Play Store screenshots | `npm run screenshots:store` (see [`store-assets/screenshots/README.md`](store-assets/screenshots/README.md)) |
+| Android unit tests | `cd android && ./gradlew testDebugUnitTest` |
+| Android release bundle | `cd android && ./gradlew bundleRelease` (see [`developer-docs/play-store/README.md`](developer-docs/play-store/README.md)) |
 
-## Building
+Version numbers live in eleven files that must move together; use the `bump-version` skill in `.agents/skills/`.
 
-To build the project run:
+## CI pipelines (`.github/workflows/`)
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+| Workflow | Runs on | What it does |
+| --- | --- | --- |
+| `deploy.yml` | Push and PR to `main` | Runs version-sync and Angular unit tests, then builds production and deploys to GitHub Pages (deploy only from `main`). |
+| `android-checks.yml` | Push and PR touching `android/` | Android unit tests and release lint; no signing secrets needed. |
+| `build-android-bundle.yml` | Manual run, or a published release tagged `v<package.json version>` | Checks the version matches `package.json`, runs Android unit tests, builds the signed release AAB, and uploads it with the R8 mapping. |
+| `generate-store-screenshots.yml` | Manual run | Serves the production build and captures validated phone and tablet Play Store screenshots with Playwright. |
+| `secret-scanning.yml` | Push, PR, weekly, manual | Gitleaks scan of the full history. |
+| `copilot-setup-steps.yml` | Changes to itself, manual | Environment setup for the GitHub Copilot coding agent. |
 
 ## Attrition Game Flow
 
@@ -149,4 +127,5 @@ War of Attrition has a feature-complete core and production initial passes for *
 - **Private Narrative Canon**: [`developer-docs/narrative-canon.md`](developer-docs/narrative-canon.md) — Mont-Rouge chronology, commander dossiers, chapter disclosure, and source plan.
 - **Narrative Disclosure Matrix**: [`developer-docs/narrative-disclosure-matrix.md`](developer-docs/narrative-disclosure-matrix.md) — Authored twelve-War sequence, Reveal Ledger, progressive dossier plan, transitions, callbacks, sources, audits, and Sprint 1 handoff.
 - **Commander Voice Bible**: [`developer-docs/commander-voice-bible.md`](developer-docs/commander-voice-bible.md) — Final voice guidance and curated implementation-ready dialogue bank.
+- **Play Store Release**: [`developer-docs/play-store/README.md`](developer-docs/play-store/README.md) — Android build, Play Console setup, Play Games bridge diagnostics; [`production-access-plan.md`](developer-docs/play-store/production-access-plan.md) — closed testing to production access.
 - **Completed Sprints & Backlog**: [`developer-docs/future-gameplay-ideas.md`](developer-docs/future-gameplay-ideas.md) — implemented Narrative Sprint 1 and Clash Visualization V1 boundaries, release polish, and later candidates.
