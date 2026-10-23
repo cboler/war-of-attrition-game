@@ -1,6 +1,6 @@
 name: Build Android App Bundle (AAB)
 
-# Release tags must be v<package.json version> (for example v4.4.0); any other tag is rejected
+# Release tags must be v<package.json version> (for example v4.4.1); any other tag is rejected
 # by the version check below. Tag pushes are not a separate trigger because publishing a
 # release already fires `release`, and both would build the same bundle twice.
 on:
@@ -9,11 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       version_code:
-        description: 'Override Android Version Code (optional positive integer, e.g. 40400)'
+        description: 'Override Android Version Code (optional positive integer, e.g. 40401)'
         required: false
         type: string
       version_name:
-        description: 'Android Version Name (optional; must match package.json, e.g. 4.4.0)'
+        description: 'Android Version Name (optional; must match package.json, e.g. 4.4.1)'
         required: false
         type: string
 
