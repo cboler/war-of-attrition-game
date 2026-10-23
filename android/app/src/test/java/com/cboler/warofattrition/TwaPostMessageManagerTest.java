@@ -25,11 +25,17 @@ public class TwaPostMessageManagerTest {
         int requestChannelCalls = 0;
         boolean requestChannelResult = true;
         RuntimeException requestChannelException = null;
+        int postMessageResult = 0; // RESULT_SUCCESS
+        final List<String> failedMessages = new ArrayList<>();
 
         @Override
         public int postMessage(String message) {
+            if (postMessageResult != 0) {
+                failedMessages.add(message);
+                return postMessageResult;
+            }
             postedMessages.add(message);
-            return 0; // RESULT_SUCCESS
+            return 0;
         }
 
         @Override
@@ -101,10 +107,34 @@ public class TwaPostMessageManagerTest {
         }
     }
 
+    /** Captures scheduled work so tests decide when time passes. */
+    private static class TestScheduler implements TwaPostMessageManager.Scheduler {
+        final List<Runnable> scheduled = new ArrayList<>();
+        long lastDelayMs = -1;
+
+        @Override
+        public void schedule(Runnable task, long delayMs) {
+            scheduled.add(task);
+            lastDelayMs = delayMs;
+        }
+
+        @Override
+        public void cancel(Runnable task) {
+            scheduled.remove(task);
+        }
+
+        void runAll() {
+            List<Runnable> due = new ArrayList<>(scheduled);
+            scheduled.clear();
+            for (Runnable task : due) task.run();
+        }
+    }
+
     private TestPlayGamesBridge playGamesBridge;
     private TestPlayGameStatsBridge playGameStatsBridge;
     private TwaPostMessageManager manager;
     private TestPostMessageSender sender;
+    private TestScheduler scheduler;
 
     @Before
     public void setUp() {
@@ -112,6 +142,128 @@ public class TwaPostMessageManagerTest {
         playGameStatsBridge = new TestPlayGameStatsBridge();
         manager = new TwaPostMessageManager(playGamesBridge, playGameStatsBridge);
         sender = new TestPostMessageSender();
+        scheduler = new TestScheduler();
+        manager.setScheduler(scheduler);
+    }
+
+    private void establishChannel() {
+        manager.setPostMessageSender(sender);
+        manager.onNavigationFinished();
+        manager.onNavigationSettledForPostMessage();
+        manager.onMessageChannelReady();
+    }
+
+    @Test
+    public void testReloadReRequestsChannelForNewDocument() {
+        establishChannel();
+        assertEquals(1, sender.requestChannelCalls);
+        assertTrue(manager.isChannelReady());
+
+        // A reload gives the page a fresh document without a port.
+        manager.onNavigationFinished();
+        assertFalse(manager.isChannelReady());
+        assertFalse(manager.isChannelRequested());
+
+        // Responses produced before the new port exists are buffered, not posted to a dead port.
+        sender.postedMessages.clear();
+        playGamesBridge.simulateResponse("{\"version\":\"v1\",\"type\":\"PLAY_GAMES_SIGNED_IN\"}");
+        assertEquals(0, sender.postedMessages.size());
+        assertEquals(1, manager.getPendingResponseCount());
+
+        manager.onNavigationSettledForPostMessage();
+        assertEquals(2, sender.requestChannelCalls);
+
+        manager.onMessageChannelReady();
+        assertEquals(2, sender.postedMessages.size());
+        assertTrue(sender.postedMessages.get(0).contains("TWA_PORT_READY"));
+        assertTrue(sender.postedMessages.get(1).contains("PLAY_GAMES_SIGNED_IN"));
+    }
+
+    @Test
+    public void testWatchdogRetriesUnansweredChannelRequest() {
+        manager.setPostMessageSender(sender);
+        manager.onNavigationFinished();
+        manager.onNavigationSettledForPostMessage();
+        assertEquals(1, sender.requestChannelCalls);
+        assertEquals(1, scheduler.scheduled.size());
+        assertEquals(TwaPostMessageManager.CHANNEL_READY_TIMEOUT_MS, scheduler.lastDelayMs);
+
+        // Chrome never answered: the watchdog asks again.
+        scheduler.runAll();
+        assertEquals(2, sender.requestChannelCalls);
+        assertTrue(manager.isChannelRequested());
+
+        // Once the channel is ready the pending watchdog is cancelled.
+        manager.onMessageChannelReady();
+        assertEquals(0, scheduler.scheduled.size());
+        assertEquals(0, manager.getChannelAttempts());
+    }
+
+    @Test
+    public void testWatchdogStopsAfterAttemptBudget() {
+        manager.setPostMessageSender(sender);
+        manager.onNavigationFinished();
+        manager.onNavigationSettledForPostMessage();
+
+        for (int i = 0; i < 10; i++) {
+            scheduler.runAll();
+        }
+
+        assertEquals(TwaPostMessageManager.MAX_CHANNEL_ATTEMPTS, sender.requestChannelCalls);
+        assertFalse(manager.isChannelRequested());
+        assertEquals(0, scheduler.scheduled.size());
+    }
+
+    @Test
+    public void testReloadAfterGivingUpGetsFreshAttempts() {
+        manager.setPostMessageSender(sender);
+        manager.onNavigationFinished();
+        manager.onNavigationSettledForPostMessage();
+        for (int i = 0; i < 10; i++) {
+            scheduler.runAll();
+        }
+        assertEquals(TwaPostMessageManager.MAX_CHANNEL_ATTEMPTS, sender.requestChannelCalls);
+
+        // The next document starts with a full budget.
+        manager.onNavigationFinished();
+        manager.onNavigationSettledForPostMessage();
+        assertEquals(TwaPostMessageManager.MAX_CHANNEL_ATTEMPTS + 1, sender.requestChannelCalls);
+        assertTrue(manager.isChannelRequested());
+    }
+
+    @Test
+    public void testFailedSendReopensChannelAndKeepsMessage() {
+        establishChannel();
+        sender.postedMessages.clear();
+
+        // Chrome reports ready, but the page cannot receive (RESULT_FAILURE_MESSAGING_ERROR).
+        sender.postMessageResult = -3;
+        playGamesBridge.simulateResponse("{\"version\":\"v1\",\"type\":\"ACHIEVEMENT_SYNCED\"}");
+
+        assertFalse(manager.isChannelReady());
+        assertEquals(1, manager.getPendingResponseCount());
+        assertEquals(2, sender.requestChannelCalls);
+
+        // The re-opened channel delivers the kept message.
+        sender.postMessageResult = 0;
+        manager.onMessageChannelReady();
+        assertEquals(0, manager.getPendingResponseCount());
+        assertTrue(sender.postedMessages.get(sender.postedMessages.size() - 1).contains("ACHIEVEMENT_SYNCED"));
+    }
+
+    @Test
+    public void testReadyButDeadChannelDoesNotLoopForever() {
+        manager.setPostMessageSender(sender);
+        manager.onNavigationFinished();
+        manager.onNavigationSettledForPostMessage();
+        sender.postMessageResult = -3;
+
+        // Every "ready" callback fails to deliver; requests stop at the budget.
+        for (int i = 0; i < 10; i++) {
+            manager.onMessageChannelReady();
+        }
+
+        assertEquals(TwaPostMessageManager.MAX_CHANNEL_ATTEMPTS, sender.requestChannelCalls);
     }
 
     @Test
@@ -167,7 +319,7 @@ public class TwaPostMessageManagerTest {
         manager.onNavigationSettledForPostMessage();
         assertEquals(1, sender.requestChannelCalls);
 
-        // Additional navigation finished or session calls do not re-request channel
+        // A later navigation waits for its own settle signal before re-requesting.
         manager.onNavigationFinished();
         manager.setPostMessageSender(sender);
         assertEquals(1, sender.requestChannelCalls);

@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,6 +27,8 @@ public class MainActivity extends LauncherActivity {
     private PlayGameStatsBridge playGameStatsBridge;
     private TwaPostMessageManager postMessageManager;
     private boolean twaLaunched = false;
+    // Set once the user has left the TWA, so finish() stops deferring and the app can close.
+    private boolean exitingAfterTwa = false;
     private boolean isHandlingInternalActivityResult = false;
     private final Handler postMessageHandler = new Handler(Looper.getMainLooper());
     private final Runnable requestPostMessageChannel = () -> {
@@ -42,6 +45,20 @@ public class MainActivity extends LauncherActivity {
             playGamesBridge = new PlayGamesBridge(this);
             playGameStatsBridge = new PlayGameStatsBridge(this);
             postMessageManager = new TwaPostMessageManager(playGamesBridge, playGameStatsBridge);
+            postMessageManager.setScheduler(new TwaPostMessageManager.Scheduler() {
+                @Override
+                public void schedule(@NonNull Runnable task, long delayMs) {
+                    // postAtTime(Runnable, token, time) works on minSdk 24; the token makes cancel() exact.
+                    postMessageHandler.postAtTime(() -> {
+                        if (!isDestroyed()) task.run();
+                    }, task, SystemClock.uptimeMillis() + delayMs);
+                }
+
+                @Override
+                public void cancel(@NonNull Runnable task) {
+                    postMessageHandler.removeCallbacksAndMessages(task);
+                }
+            });
 
             // Defensively initialize Play Games achievements bridge.
             // Game Stats initialization is deferred until explicitly requested by web or needed for telemetry.
@@ -57,7 +74,11 @@ public class MainActivity extends LauncherActivity {
         super.onResume();
         Log.d(TAG, "MainActivity onResume (twaLaunched=" + twaLaunched + ", isHandlingInternalActivityResult=" + isHandlingInternalActivityResult + ")");
         if (twaLaunched && !isHandlingInternalActivityResult) {
+            // MainActivity only returns to the foreground when the browser activity above it has
+            // closed (back gesture past the first page). Without this flag finish() would defer
+            // itself and leave the user stuck on the splash background.
             Log.i(TAG, "TWA session was exited by user; finishing MainActivity");
+            exitingAfterTwa = true;
             finish();
         }
     }
@@ -75,7 +96,7 @@ public class MainActivity extends LauncherActivity {
     public void finish() {
         // While TWA is actively running, keep MainActivity alive in background
         // so that Play Games Activity references and postMessage callbacks remain valid.
-        if (twaLaunched && !isHandlingInternalActivityResult && !isFinishing()) {
+        if (twaLaunched && !exitingAfterTwa && !isHandlingInternalActivityResult && !isFinishing()) {
             Log.d(TAG, "Deferring LauncherActivity finish: TWA is actively running");
             return;
         }
@@ -170,7 +191,7 @@ public class MainActivity extends LauncherActivity {
 
     @Override
     protected void onDestroy() {
-        postMessageHandler.removeCallbacks(requestPostMessageChannel);
+        postMessageHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
 }

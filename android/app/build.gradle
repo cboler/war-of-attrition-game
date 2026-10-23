@@ -56,7 +56,7 @@ def resolvePlayGamesProjectId() {
 }
 
 android {
-    namespace 'com.cboler.warofattrition'
+    namespace = 'com.cboler.warofattrition'
     compileSdk 36
 
     defaultConfig {
@@ -95,8 +95,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled = true
+            shrinkResources = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             
             def keystoreFile = System.getenv("WAR_UPLOAD_KEYSTORE_PATH") ?: project.findProperty("WAR_UPLOAD_KEYSTORE_PATH")
@@ -117,12 +117,6 @@ android {
 
     testOptions {
         unitTests.returnDefaultValues = true
-    }
-}
-
-tasks.whenTaskAdded { task ->
-    if (task.name.contains("AarMetadata")) {
-        task.enabled = false
     }
 }
 

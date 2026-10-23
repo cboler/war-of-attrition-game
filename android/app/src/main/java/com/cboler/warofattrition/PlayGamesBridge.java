@@ -5,9 +5,11 @@ import android.util.Log;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.games.AchievementsClient;
+import com.google.android.gms.games.AuthenticationResult;
 import com.google.android.gms.games.GamesSignInClient;
 import com.google.android.gms.games.PlayGames;
 import com.google.android.gms.games.PlayGamesSdk;
+import com.google.android.gms.tasks.Task;
 import org.json.JSONObject;
 
 /**
@@ -17,6 +19,7 @@ public class PlayGamesBridge {
     private static final String TAG = "PlayGamesBridge";
     private static final String PROTOCOL_VERSION = "v1";
     private static final int RC_ACHIEVEMENT_UI = 9003;
+    private static final String SIGN_IN_REQUIRED = "Play Games sign-in required";
 
     private final Activity activity;
     private AchievementsClient achievementsClient;
@@ -105,33 +108,9 @@ public class PlayGamesBridge {
 
         try {
             Log.d(TAG, "Checking Play Games authentication status via GamesSignInClient.isAuthenticated()...");
-            GamesSignInClient signInClient = PlayGames.getGamesSignInClient(activity);
-            signInClient.isAuthenticated().addOnCompleteListener(task -> {
-                try {
-                    boolean authenticated = task.isSuccessful()
-                            && task.getResult() != null
-                            && task.getResult().isAuthenticated();
-                    this.isInitialized = true;
-                    this.isSignedIn = authenticated;
-                    Log.i(TAG, "Play Games isAuthenticated result: " + authenticated + " (task.isSuccessful=" + task.isSuccessful() + ")");
-                    if (authenticated) {
-                        try {
-                            this.achievementsClient = PlayGames.getAchievementsClient(activity);
-                        } catch (Throwable t) {
-                            Log.w(TAG, "Failed to get achievements client: " + t.getMessage(), t);
-                        }
-                        sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
-                    } else {
-                        if (!task.isSuccessful() && task.getException() != null) {
-                            Log.w(TAG, "isAuthenticated check returned failure: " + categorizeException(task.getException()), task.getException());
-                        }
-                        sendToWeb("PLAY_GAMES_READY", null, null, null);
-                    }
-                } catch (Throwable t) {
-                    Log.w(TAG, "Error in isAuthenticated completion listener: " + t.getMessage(), t);
-                    this.isSignedIn = false;
-                    sendToWeb("PLAY_GAMES_READY", null, null, null);
-                }
+            signInClient().isAuthenticated().addOnCompleteListener(task -> {
+                this.isInitialized = true;
+                reportAuthentication(task, "isAuthenticated");
             });
         } catch (Throwable t) {
             Log.w(TAG, "Failed to invoke isAuthenticated(): " + t.getMessage(), t);
@@ -173,16 +152,16 @@ public class PlayGamesBridge {
                     break;
 
                 case "UNLOCK_ACHIEVEMENT":
-                    String internalId = obj.optString("internalAchievementId", "");
-                    String playGamesId = obj.optString("playGamesAchievementId", "");
-                    unlockAchievement(internalId, playGamesId);
+                    unlockAchievement(
+                            obj.optString("internalAchievementId", ""),
+                            obj.optString("playGamesAchievementId", ""));
                     break;
 
                 case "SET_ACHIEVEMENT_STEPS":
-                    String incInternalId = obj.optString("internalAchievementId", "");
-                    String incPlayGamesId = obj.optString("playGamesAchievementId", "");
-                    int steps = obj.optInt("currentSteps", 1);
-                    setAchievementSteps(incInternalId, incPlayGamesId, steps);
+                    setAchievementSteps(
+                            obj.optString("internalAchievementId", ""),
+                            obj.optString("playGamesAchievementId", ""),
+                            obj.optInt("currentSteps", 1));
                     break;
 
                 case "SHOW_ACHIEVEMENTS":
@@ -206,37 +185,15 @@ public class PlayGamesBridge {
         }
 
         try {
-            if (activity instanceof MainActivity) {
-                ((MainActivity) activity).setHandlingInternalActivityResult(true);
-            }
-            GamesSignInClient signInClient = PlayGames.getGamesSignInClient(activity);
-            signInClient.signIn().addOnCompleteListener(task -> {
-                try {
-                    boolean authenticated = task.isSuccessful()
-                            && task.getResult() != null
-                            && task.getResult().isAuthenticated();
-                    Log.i(TAG, "Play Games signIn result: authenticated=" + authenticated + " (task.isSuccessful=" + task.isSuccessful() + ")");
-                    this.isSignedIn = authenticated;
-                    if (authenticated) {
-                        try {
-                            this.achievementsClient = PlayGames.getAchievementsClient(activity);
-                        } catch (Throwable t) {
-                            Log.w(TAG, "Failed to get achievements client: " + t.getMessage(), t);
-                        }
-                        sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
-                    } else {
-                        if (!task.isSuccessful() && task.getException() != null) {
-                            Log.w(TAG, "signIn task failed: " + categorizeException(task.getException()), task.getException());
-                        }
-                        sendToWeb("PLAY_GAMES_READY", null, null, null);
-                    }
-                } catch (Throwable t) {
-                    Log.w(TAG, "Error in signIn completion listener: " + t.getMessage(), t);
-                    this.isSignedIn = false;
-                    sendToWeb("PLAY_GAMES_READY", null, null, null);
-                }
+            setHandlingInternalActivityResult(true);
+            signInClient().signIn().addOnCompleteListener(task -> {
+                // The v2 sign-in UI does not report back through onActivityResult, so the flag
+                // is cleared here; leaving it set stops MainActivity closing when the TWA exits.
+                setHandlingInternalActivityResult(false);
+                reportAuthentication(task, "signIn");
             });
         } catch (Throwable t) {
+            setHandlingInternalActivityResult(false);
             Log.w(TAG, "Sign-in request failed: " + t.getMessage(), t);
         }
     }
@@ -246,92 +203,8 @@ public class PlayGamesBridge {
             Log.d(TAG, "Missing achievement ID for " + internalId + ", skipping native Google Play call.");
             return;
         }
-
         Log.i(TAG, "unlockAchievement requested: " + internalId + " -> " + playGamesId + " (isSignedIn=" + isSignedIn + ")");
-
-        if (!isSignedIn) {
-            Log.w(TAG, "unlockAchievement called while not signed in for: " + internalId + ". Checking isAuthenticated before failing...");
-            if (activity == null) {
-                sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "Activity is null");
-                return;
-            }
-            try {
-                GamesSignInClient signInClient = PlayGames.getGamesSignInClient(activity);
-                signInClient.isAuthenticated().addOnCompleteListener(task -> {
-                    boolean authenticated = task.isSuccessful()
-                            && task.getResult() != null
-                            && task.getResult().isAuthenticated();
-                    if (authenticated) {
-                        this.isSignedIn = true;
-                        try {
-                            this.achievementsClient = PlayGames.getAchievementsClient(activity);
-                        } catch (Throwable t) {
-                            Log.w(TAG, "Failed to get achievements client: " + t.getMessage(), t);
-                        }
-                        sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
-                        executeUnlock(internalId, playGamesId);
-                    } else {
-                        String err = "Play Games sign-in required";
-                        if (!task.isSuccessful() && task.getException() != null) {
-                            err += ": " + categorizeException(task.getException());
-                        }
-                        Log.w(TAG, "unlockAchievement failed: " + err);
-                        sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, err);
-                    }
-                });
-            } catch (Throwable t) {
-                Log.w(TAG, "Failed checking authentication during unlockAchievement: " + t.getMessage(), t);
-                sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "Play Games sign-in required");
-            }
-            return;
-        }
-
-        executeUnlock(internalId, playGamesId);
-    }
-
-    private void executeUnlock(String internalId, String playGamesId) {
-        if (activity == null) {
-            Log.w(TAG, "executeUnlock: Activity is null");
-            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "Activity is null");
-            return;
-        }
-
-        if (achievementsClient == null) {
-            try {
-                this.achievementsClient = PlayGames.getAchievementsClient(activity);
-            } catch (Throwable t) {
-                Log.w(TAG, "Failed to get achievementsClient: " + t.getMessage(), t);
-            }
-        }
-
-        if (achievementsClient == null) {
-            Log.e(TAG, "executeUnlock: achievementsClient is null despite signed-in state");
-            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "AchievementsClient unavailable");
-            return;
-        }
-
-        Log.i(TAG, "Calling AchievementsClient.unlockImmediate(" + playGamesId + ") for " + internalId);
-        try {
-            achievementsClient.unlockImmediate(playGamesId).addOnCompleteListener(task -> {
-                try {
-                    if (task.isSuccessful()) {
-                        Log.i(TAG, "Successfully unlocked achievement in Google Play Games: " + internalId + " (" + playGamesId + ")");
-                        sendToWeb("ACHIEVEMENT_SYNCED", internalId, playGamesId, null);
-                    } else {
-                        Exception ex = task.getException();
-                        String error = categorizeException(ex);
-                        Log.e(TAG, "unlockImmediate failed for " + internalId + " (" + playGamesId + "): " + error, ex);
-                        sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
-                    }
-                } catch (Throwable t) {
-                    Log.w(TAG, "Error in unlockImmediate callback: " + t.getMessage(), t);
-                }
-            });
-        } catch (Throwable t) {
-            String error = categorizeException(t);
-            Log.e(TAG, "Failed to call unlockImmediate for " + internalId + " (" + playGamesId + "): " + error, t);
-            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
-        }
+        runWhenSignedIn(internalId, playGamesId, "unlockImmediate", client -> client.unlockImmediate(playGamesId));
     }
 
     public void setAchievementSteps(String internalId, String playGamesId, int steps) {
@@ -339,92 +212,9 @@ public class PlayGamesBridge {
             Log.d(TAG, "Missing achievement ID for " + internalId + ", skipping native Google Play call.");
             return;
         }
-
         Log.i(TAG, "setAchievementSteps requested: " + internalId + " -> " + playGamesId + " (steps=" + steps + ", isSignedIn=" + isSignedIn + ")");
-
-        if (!isSignedIn) {
-            Log.w(TAG, "setAchievementSteps called while not signed in for: " + internalId + ". Checking isAuthenticated before failing...");
-            if (activity == null) {
-                sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "Activity is null");
-                return;
-            }
-            try {
-                GamesSignInClient signInClient = PlayGames.getGamesSignInClient(activity);
-                signInClient.isAuthenticated().addOnCompleteListener(task -> {
-                    boolean authenticated = task.isSuccessful()
-                            && task.getResult() != null
-                            && task.getResult().isAuthenticated();
-                    if (authenticated) {
-                        this.isSignedIn = true;
-                        try {
-                            this.achievementsClient = PlayGames.getAchievementsClient(activity);
-                        } catch (Throwable t) {
-                            Log.w(TAG, "Failed to get achievements client: " + t.getMessage(), t);
-                        }
-                        sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
-                        executeSetSteps(internalId, playGamesId, steps);
-                    } else {
-                        String err = "Play Games sign-in required";
-                        if (!task.isSuccessful() && task.getException() != null) {
-                            err += ": " + categorizeException(task.getException());
-                        }
-                        Log.w(TAG, "setAchievementSteps failed: " + err);
-                        sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, err);
-                    }
-                });
-            } catch (Throwable t) {
-                Log.w(TAG, "Failed checking authentication during setAchievementSteps: " + t.getMessage(), t);
-                sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "Play Games sign-in required");
-            }
-            return;
-        }
-
-        executeSetSteps(internalId, playGamesId, steps);
-    }
-
-    private void executeSetSteps(String internalId, String playGamesId, int steps) {
-        if (activity == null) {
-            Log.w(TAG, "executeSetSteps: Activity is null");
-            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "Activity is null");
-            return;
-        }
-
-        if (achievementsClient == null) {
-            try {
-                this.achievementsClient = PlayGames.getAchievementsClient(activity);
-            } catch (Throwable t) {
-                Log.w(TAG, "Failed to get achievementsClient: " + t.getMessage(), t);
-            }
-        }
-
-        if (achievementsClient == null) {
-            Log.e(TAG, "executeSetSteps: achievementsClient is null despite signed-in state");
-            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "AchievementsClient unavailable");
-            return;
-        }
-
-        Log.i(TAG, "Calling AchievementsClient.setStepsImmediate(" + playGamesId + ", " + steps + ") for " + internalId);
-        try {
-            achievementsClient.setStepsImmediate(playGamesId, steps).addOnCompleteListener(task -> {
-                try {
-                    if (task.isSuccessful()) {
-                        Log.i(TAG, "Successfully updated achievement steps in Google Play Games: " + internalId + " (" + playGamesId + ") -> " + steps);
-                        sendToWeb("ACHIEVEMENT_SYNCED", internalId, playGamesId, null);
-                    } else {
-                        Exception ex = task.getException();
-                        String error = categorizeException(ex);
-                        Log.e(TAG, "setStepsImmediate failed for " + internalId + " (" + playGamesId + "): " + error, ex);
-                        sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
-                    }
-                } catch (Throwable t) {
-                    Log.w(TAG, "Error in setStepsImmediate callback: " + t.getMessage(), t);
-                }
-            });
-        } catch (Throwable t) {
-            String error = categorizeException(t);
-            Log.e(TAG, "Failed to call setStepsImmediate for " + internalId + " (" + playGamesId + "): " + error, t);
-            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
-        }
+        runWhenSignedIn(internalId, playGamesId, "setStepsImmediate(" + steps + ")",
+                client -> client.setStepsImmediate(playGamesId, steps));
     }
 
     public void showAchievements() {
@@ -432,41 +222,144 @@ public class PlayGamesBridge {
             Log.w(TAG, "showAchievements called while not signed in");
             return;
         }
-
-        if (activity == null) {
-            Log.w(TAG, "showAchievements: Activity is null");
-            return;
-        }
-
-        if (achievementsClient == null) {
-            try {
-                this.achievementsClient = PlayGames.getAchievementsClient(activity);
-            } catch (Throwable t) {
-                Log.w(TAG, "Failed to get achievementsClient: " + t.getMessage(), t);
-            }
-        }
-
-        if (achievementsClient == null) {
-            Log.e(TAG, "showAchievements: achievementsClient is null");
+        AchievementsClient client = achievementsClient();
+        if (client == null) {
+            Log.e(TAG, "showAchievements: achievementsClient is unavailable");
             return;
         }
 
         Log.d(TAG, "Requesting Play Games achievements UI intent");
         try {
-            achievementsClient.getAchievementsIntent().addOnSuccessListener(intent -> {
+            client.getAchievementsIntent().addOnSuccessListener(intent -> {
                 try {
-                    if (activity instanceof MainActivity) {
-                        ((MainActivity) activity).setHandlingInternalActivityResult(true);
-                    }
+                    setHandlingInternalActivityResult(true);
                     activity.startActivityForResult(intent, RC_ACHIEVEMENT_UI);
                 } catch (Throwable t) {
+                    setHandlingInternalActivityResult(false);
                     Log.w(TAG, "Failed to launch achievements UI activity: " + t.getMessage(), t);
                 }
-            }).addOnFailureListener(e -> {
-                Log.w(TAG, "Failed to retrieve achievements UI intent: " + categorizeException(e), e);
-            });
+            }).addOnFailureListener(e ->
+                    Log.w(TAG, "Failed to retrieve achievements UI intent: " + categorizeException(e), e));
         } catch (Throwable t) {
             Log.w(TAG, "Could not open achievements UI: " + t.getMessage(), t);
+        }
+    }
+
+    /** One Play Games achievement call, given a ready client. */
+    private interface AchievementCall {
+        Task<?> run(AchievementsClient client);
+    }
+
+    /**
+     * Runs an achievement call, first re-checking authentication when the cached state says the
+     * player is signed out (automatic sign-in can finish after the web page asked).
+     */
+    private void runWhenSignedIn(String internalId, String playGamesId, String operation, AchievementCall call) {
+        if (isSignedIn) {
+            executeAchievementCall(internalId, playGamesId, operation, call);
+            return;
+        }
+        if (activity == null) {
+            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "Activity is null");
+            return;
+        }
+        Log.w(TAG, operation + " requested while not signed in for " + internalId + "; checking isAuthenticated first");
+        try {
+            signInClient().isAuthenticated().addOnCompleteListener(task -> {
+                if (isAuthenticated(task)) {
+                    onSignedIn();
+                    executeAchievementCall(internalId, playGamesId, operation, call);
+                } else {
+                    String err = SIGN_IN_REQUIRED;
+                    if (!task.isSuccessful() && task.getException() != null) {
+                        err += ": " + categorizeException(task.getException());
+                    }
+                    Log.w(TAG, operation + " failed: " + err);
+                    sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, err);
+                }
+            });
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed checking authentication before " + operation + ": " + t.getMessage(), t);
+            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, SIGN_IN_REQUIRED);
+        }
+    }
+
+    private void executeAchievementCall(String internalId, String playGamesId, String operation, AchievementCall call) {
+        AchievementsClient client = achievementsClient();
+        if (client == null) {
+            Log.e(TAG, operation + ": achievementsClient is unavailable despite signed-in state");
+            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, "AchievementsClient unavailable");
+            return;
+        }
+
+        Log.i(TAG, "Calling AchievementsClient." + operation + " for " + internalId + " (" + playGamesId + ")");
+        try {
+            call.run(client).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    Log.i(TAG, "Successfully synced achievement in Google Play Games: " + internalId + " (" + playGamesId + ") via " + operation);
+                    sendToWeb("ACHIEVEMENT_SYNCED", internalId, playGamesId, null);
+                } else {
+                    String error = categorizeException(task.getException());
+                    Log.e(TAG, operation + " failed for " + internalId + " (" + playGamesId + "): " + error, task.getException());
+                    sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
+                }
+            });
+        } catch (Throwable t) {
+            String error = categorizeException(t);
+            Log.e(TAG, "Failed to call " + operation + " for " + internalId + " (" + playGamesId + "): " + error, t);
+            sendToWeb("ACHIEVEMENT_SYNC_FAILED", internalId, playGamesId, error);
+        }
+    }
+
+    /** Sends SIGNED_IN or READY to the web for a finished isAuthenticated()/signIn() task. */
+    private void reportAuthentication(Task<AuthenticationResult> task, String source) {
+        try {
+            boolean authenticated = isAuthenticated(task);
+            Log.i(TAG, "Play Games " + source + " result: " + authenticated + " (task.isSuccessful=" + task.isSuccessful() + ")");
+            if (authenticated) {
+                onSignedIn();
+                return;
+            }
+            this.isSignedIn = false;
+            if (!task.isSuccessful() && task.getException() != null) {
+                Log.w(TAG, source + " returned failure: " + categorizeException(task.getException()), task.getException());
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Error in " + source + " completion listener: " + t.getMessage(), t);
+            this.isSignedIn = false;
+        }
+        sendToWeb("PLAY_GAMES_READY", null, null, null);
+    }
+
+    private void onSignedIn() {
+        this.isSignedIn = true;
+        achievementsClient();
+        sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
+    }
+
+    private static boolean isAuthenticated(Task<AuthenticationResult> task) {
+        return task.isSuccessful() && task.getResult() != null && task.getResult().isAuthenticated();
+    }
+
+    private GamesSignInClient signInClient() {
+        return PlayGames.getGamesSignInClient(activity);
+    }
+
+    /** Returns the cached achievements client, creating it on first use; null when unavailable. */
+    private AchievementsClient achievementsClient() {
+        if (achievementsClient == null && activity != null) {
+            try {
+                achievementsClient = PlayGames.getAchievementsClient(activity);
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to get achievements client: " + t.getMessage(), t);
+            }
+        }
+        return achievementsClient;
+    }
+
+    private void setHandlingInternalActivityResult(boolean handling) {
+        if (activity instanceof MainActivity) {
+            ((MainActivity) activity).setHandlingInternalActivityResult(handling);
         }
     }
 

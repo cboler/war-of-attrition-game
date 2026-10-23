@@ -8,17 +8,33 @@ import androidx.annotation.Nullable;
 import androidx.browser.customtabs.CustomTabsSession;
 import org.json.JSONObject;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Locale;
 
 /**
  * Manages the bidirectional TWA postMessage channel lifecycle, message routing,
  * and response buffering between the web application and native Play Games/Game Stats bridges.
+ *
+ * <p>The channel belongs to one web document. A reload or full navigation gives the page a fresh
+ * document with no port, so every NAVIGATION_FINISHED after a channel exists starts a new
+ * handshake. Chromium's channel setup is also timing-sensitive (crbug.com/41301759), so an
+ * unanswered request is retried a bounded number of times, and a failed send re-opens the channel.
  */
 public class TwaPostMessageManager {
     private static final String TAG = "TwaPostMessageManager";
     public static final String PROTOCOL_VERSION = "v1";
     public static final String TARGET_ORIGIN_STRING = "https://cboler.github.io";
+
+    /** CustomTabsService.RESULT_SUCCESS; any other postMessage result means the port is unusable. */
+    static final int POST_MESSAGE_RESULT_SUCCESS = 0;
+    /** How long to wait for onMessageChannelReady before asking again. */
+    static final long CHANNEL_READY_TIMEOUT_MS = 3000L;
+    /** Channel requests per document before giving up (local achievements keep working). */
+    static final int MAX_CHANNEL_ATTEMPTS = 4;
+    private static final int MAX_PENDING_MESSAGES = 50;
+    private static final String PORT_READY_MESSAGE =
+            "{\"version\":\"" + PROTOCOL_VERSION + "\",\"type\":\"TWA_PORT_READY\"}";
 
     private final PlayGamesBridge playGamesBridge;
     private final PlayGameStatsBridge playGameStatsBridge;
@@ -28,15 +44,23 @@ public class TwaPostMessageManager {
         boolean requestPostMessageChannel(Uri sourceOrigin, Uri targetOrigin);
     }
 
+    /** Delays work on the main thread; injected so tests can drive time explicitly. */
+    public interface Scheduler {
+        void schedule(@NonNull Runnable task, long delayMs);
+        void cancel(@NonNull Runnable task);
+    }
+
     private PostMessageSender postMessageSender;
+    private Scheduler scheduler;
     private boolean sessionAvailable = false;
     private boolean navigationFinished = false;
     private boolean navigationSettledForPostMessage = false;
     private boolean relationshipValidated = false;
     private boolean channelRequested = false;
     private boolean channelReady = false;
-    private static final int MAX_PENDING_MESSAGES = 50;
-    private final Queue<String> pendingOutboundResponses = new LinkedList<>();
+    private int channelAttempts = 0;
+    private final Deque<String> pendingOutboundResponses = new ArrayDeque<>();
+    private final Runnable channelWatchdog = this::onChannelWatchdog;
 
     public TwaPostMessageManager(
             @NonNull PlayGamesBridge playGamesBridge,
@@ -48,10 +72,13 @@ public class TwaPostMessageManager {
         this.playGameStatsBridge.setResponseCallback(this::sendResponse);
     }
 
+    public synchronized void setScheduler(@Nullable Scheduler scheduler) {
+        this.scheduler = scheduler;
+    }
+
     public synchronized void setCustomTabsSession(@Nullable CustomTabsSession session) {
         if (session == null) {
-            this.postMessageSender = null;
-            this.sessionAvailable = false;
+            setPostMessageSender(null);
             return;
         }
         setPostMessageSender(new PostMessageSender() {
@@ -70,6 +97,10 @@ public class TwaPostMessageManager {
     public synchronized void setPostMessageSender(@Nullable PostMessageSender sender) {
         this.postMessageSender = sender;
         this.sessionAvailable = (sender != null);
+        if (sender == null) {
+            resetChannel();
+            return;
+        }
         maybeRequestPostMessageChannel();
     }
 
@@ -83,15 +114,25 @@ public class TwaPostMessageManager {
 
     private boolean isTargetOriginMatch(Uri origin) {
         if (origin == null) return true;
-        String requested = origin.toString().toLowerCase();
-        return requested.startsWith(TARGET_ORIGIN_STRING.toLowerCase());
+        String requested = origin.toString().toLowerCase(Locale.ROOT);
+        return requested.startsWith(TARGET_ORIGIN_STRING.toLowerCase(Locale.ROOT));
     }
 
     public synchronized boolean isRelationshipValidated() {
         return relationshipValidated;
     }
 
+    /**
+     * A finished navigation is a new web document. Any port held by the previous document is gone,
+     * so the channel is reset and re-requested once the new page settles.
+     */
     public synchronized void onNavigationFinished() {
+        if (channelRequested || channelReady) {
+            Log.i(TAG, "New document loaded; the previous postMessage channel is stale and will be re-requested");
+        }
+        // Always reset: the attempt budget is per document, so a page that gave up earlier
+        // gets a fresh set of attempts after a reload.
+        resetChannel();
         Log.i(TAG, "onNavigationFinished received in TwaPostMessageManager");
         this.navigationFinished = true;
         this.navigationSettledForPostMessage = false;
@@ -130,14 +171,24 @@ public class TwaPostMessageManager {
             Log.w(TAG, "Cannot request postMessage channel: postMessageSender is null");
             return false;
         }
+        if (channelAttempts >= MAX_CHANNEL_ATTEMPTS) {
+            Log.w(TAG, "postMessage channel not established after " + channelAttempts
+                    + " attempts; Play Games sync is unavailable for this page (local progress is unaffected)");
+            return false;
+        }
 
         Uri targetOrigin = Uri.parse(TARGET_ORIGIN_STRING);
+        channelAttempts++;
         Log.i(TAG, "Requesting postMessage channel for target origin: " + targetOrigin
-                + " (relationshipValidated=" + relationshipValidated + ")");
+                + " (attempt " + channelAttempts + "/" + MAX_CHANNEL_ATTEMPTS
+                + ", relationshipValidated=" + relationshipValidated + ")");
         try {
             boolean success = postMessageSender.requestPostMessageChannel(targetOrigin, targetOrigin);
             channelRequested = success;
             Log.i(TAG, "requestPostMessageChannel(" + targetOrigin + ") returned: " + success);
+            if (success) {
+                scheduleWatchdog();
+            }
             return success;
         } catch (RuntimeException e) {
             channelRequested = false;
@@ -147,11 +198,26 @@ public class TwaPostMessageManager {
     }
 
     public synchronized void onMessageChannelReady() {
+        cancelWatchdog();
         this.channelReady = true;
         Log.i(TAG, "onMessageChannelReady callback received: Transferred MessagePort ready in browser. Notifying web and draining "
                 + pendingOutboundResponses.size() + " pending responses.");
-        sendDirect("{\"version\":\"" + PROTOCOL_VERSION + "\",\"type\":\"TWA_PORT_READY\"}");
-        drainPendingResponses();
+        // The attempt budget resets only once a message is delivered, so a channel that reports
+        // ready but cannot carry messages cannot loop forever.
+        if (sendDirect(PORT_READY_MESSAGE)) {
+            this.channelAttempts = 0;
+            drainPendingResponses();
+        }
+    }
+
+    /** Fires when Chrome never confirmed a request; asks again until the attempt budget is spent. */
+    synchronized void onChannelWatchdog() {
+        if (channelReady || !channelRequested) {
+            return;
+        }
+        Log.w(TAG, "onMessageChannelReady not received within " + CHANNEL_READY_TIMEOUT_MS + "ms; re-requesting channel");
+        channelRequested = false;
+        maybeRequestPostMessageChannel();
     }
 
     public synchronized void sendResponse(String jsonMessage) {
@@ -159,34 +225,84 @@ public class TwaPostMessageManager {
             return;
         }
         if (channelReady && postMessageSender != null) {
-            sendDirect(jsonMessage);
+            if (!sendDirect(jsonMessage)) {
+                bufferResponse(jsonMessage, true);
+            }
         } else {
-            if (pendingOutboundResponses.size() < MAX_PENDING_MESSAGES) {
-                pendingOutboundResponses.offer(jsonMessage);
-                Log.d(TAG, "Buffered outbound response (total=" + pendingOutboundResponses.size() + "): " + jsonMessage);
-            } else {
-                Log.w(TAG, "Pending outbound response buffer full (" + MAX_PENDING_MESSAGES + "). Discarding message.");
+            bufferResponse(jsonMessage, false);
+        }
+    }
+
+    private void bufferResponse(String jsonMessage, boolean atFront) {
+        if (pendingOutboundResponses.size() >= MAX_PENDING_MESSAGES) {
+            Log.w(TAG, "Pending outbound response buffer full (" + MAX_PENDING_MESSAGES + "). Discarding message.");
+            return;
+        }
+        if (atFront) {
+            pendingOutboundResponses.addFirst(jsonMessage);
+        } else {
+            pendingOutboundResponses.addLast(jsonMessage);
+        }
+        Log.d(TAG, "Buffered outbound response (total=" + pendingOutboundResponses.size() + "): " + jsonMessage);
+    }
+
+    /**
+     * Posts one message. A non-success result means Chrome reported the channel ready but the
+     * page cannot receive (seen on Chrome 150-152 after reloads), so the channel is re-opened.
+     */
+    private boolean sendDirect(String jsonMessage) {
+        if (postMessageSender == null) {
+            Log.w(TAG, "Cannot send postMessage: postMessageSender is null");
+            return false;
+        }
+        int result;
+        try {
+            result = postMessageSender.postMessage(jsonMessage);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to send postMessage to web: " + e.getMessage(), e);
+            result = Integer.MIN_VALUE;
+        }
+        if (result == POST_MESSAGE_RESULT_SUCCESS) {
+            Log.i(TAG, "postMessage sent to web (" + jsonMessage.length() + " chars): " + jsonMessage);
+            return true;
+        }
+        if (!channelReady) {
+            Log.w(TAG, "postMessage failed before the channel was ready (result=" + result + ")");
+            return false;
+        }
+        Log.w(TAG, "postMessage failed (result=" + result + "); re-opening the channel");
+        channelReady = false;
+        channelRequested = false;
+        maybeRequestPostMessageChannel();
+        return false;
+    }
+
+    private void drainPendingResponses() {
+        while (!pendingOutboundResponses.isEmpty() && channelReady && postMessageSender != null) {
+            String message = pendingOutboundResponses.pollFirst();
+            if (!sendDirect(message)) {
+                bufferResponse(message, true);
+                return;
             }
         }
     }
 
-    private void sendDirect(String jsonMessage) {
-        if (postMessageSender == null) {
-            Log.w(TAG, "Cannot send postMessage: postMessageSender is null");
-            return;
-        }
-        try {
-            int result = postMessageSender.postMessage(jsonMessage);
-            Log.i(TAG, "postMessage sent to web (" + jsonMessage.length() + " chars, result=" + result + "): " + jsonMessage);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to send postMessage to web: " + e.getMessage(), e);
-        }
+    private void resetChannel() {
+        cancelWatchdog();
+        channelRequested = false;
+        channelReady = false;
+        channelAttempts = 0;
     }
 
-    private synchronized void drainPendingResponses() {
-        while (!pendingOutboundResponses.isEmpty() && channelReady && postMessageSender != null) {
-            String message = pendingOutboundResponses.poll();
-            sendDirect(message);
+    private void scheduleWatchdog() {
+        if (scheduler == null) return;
+        scheduler.cancel(channelWatchdog);
+        scheduler.schedule(channelWatchdog, CHANNEL_READY_TIMEOUT_MS);
+    }
+
+    private void cancelWatchdog() {
+        if (scheduler != null) {
+            scheduler.cancel(channelWatchdog);
         }
     }
 
@@ -225,7 +341,7 @@ public class TwaPostMessageManager {
 
                 // Transport handshake marker
                 case "TWA_PORT_HANDSHAKE":
-                    sendDirect("{\"version\":\"" + PROTOCOL_VERSION + "\",\"type\":\"TWA_PORT_READY\"}");
+                    sendDirect(PORT_READY_MESSAGE);
                     break;
 
                 default:
@@ -255,5 +371,9 @@ public class TwaPostMessageManager {
 
     public synchronized int getPendingResponseCount() {
         return pendingOutboundResponses.size();
+    }
+
+    synchronized int getChannelAttempts() {
+        return channelAttempts;
     }
 }
