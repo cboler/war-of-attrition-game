@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["ng", "serve", "--port", "4204"],
       "port": 4204
+    },
+    {
+      "name": "attrition-dev-device",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["ng", "serve", "--host", "127.0.0.1", "--port", "4205"],
+      "port": 4205
     }
   ]
 }

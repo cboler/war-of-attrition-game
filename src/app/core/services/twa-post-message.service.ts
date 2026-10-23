@@ -1,10 +1,18 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { PlatformAchievementsService, VerifiedTwaTransport } from './platform-achievements.service';
 import { PlatformGameStatsService } from './platform-game-stats.service';
+import { TWA_PROTOCOL_VERSION } from '../models/twa-bridge.model';
+
+/** Object injected by an Android WebView host via `addWebMessageListener` (spike). */
+export interface AttritionNativeBridge {
+  postMessage(message: string): void;
+  onmessage: ((event: { data: unknown }) => void) | null;
+}
 
 declare global {
   interface Window {
     __warOfAttritionTwaPort?: MessagePort | null;
+    AttritionNative?: AttritionNativeBridge;
   }
 }
 
@@ -22,6 +30,7 @@ export class TwaPostMessageService {
   readonly isPortConnected = this.isPortConnectedSignal.asReadonly();
 
   private activePort: MessagePort | null = null;
+  private nativeBridge: AttritionNativeBridge | null = null;
   private readonly subscribers = new Set<(payload: unknown) => void>();
   private readonly windowMessageHandler = (event: MessageEvent) => this.handleWindowMessage(event);
 
@@ -29,6 +38,8 @@ export class TwaPostMessageService {
     send: (payload: string) => {
       if (this.activePort) {
         this.activePort.postMessage(payload);
+      } else if (this.nativeBridge) {
+        this.nativeBridge.postMessage(payload);
       }
     },
     subscribe: (handler: (payload: unknown) => void) => {
@@ -41,6 +52,11 @@ export class TwaPostMessageService {
 
   constructor() {
     if (typeof window !== 'undefined') {
+      // A WebView host injects its bridge before any page script runs.
+      if (window.AttritionNative) {
+        this.attachNativeBridge(window.AttritionNative);
+        return;
+      }
       window.addEventListener('message', this.windowMessageHandler);
       const bootstrapPort = window.__warOfAttritionTwaPort;
       if (bootstrapPort) {
@@ -58,6 +74,10 @@ export class TwaPostMessageService {
       window.removeEventListener('message', this.windowMessageHandler);
     }
     this.cleanupActivePort();
+    if (this.nativeBridge) {
+      this.nativeBridge.onmessage = null;
+      this.nativeBridge = null;
+    }
     this.subscribers.clear();
   }
 
@@ -94,6 +114,17 @@ export class TwaPostMessageService {
 
     // Register verified transport with both platform services.
     // This triggers their *_INIT messages over the verified port.
+    this.platformAchievements.connectVerifiedTransport(this.transport);
+    this.platformGameStats.connectVerifiedTransport(this.transport);
+  }
+
+  private attachNativeBridge(bridge: AttritionNativeBridge): void {
+    this.cleanupActivePort();
+    this.nativeBridge = bridge;
+    bridge.onmessage = (event) => this.handlePortMessage(event.data);
+    // The hello tells the host this document is listening; it replies TWA_PORT_READY.
+    bridge.postMessage(JSON.stringify({ version: TWA_PROTOCOL_VERSION, type: 'TWA_PORT_HANDSHAKE' }));
+    this.isPortConnectedSignal.set(true);
     this.platformAchievements.connectVerifiedTransport(this.transport);
     this.platformGameStats.connectVerifiedTransport(this.transport);
   }

@@ -241,4 +241,33 @@ describe('TwaPostMessageService', () => {
       done();
     }, 50);
   });
+
+  describe('WebView host bridge (window.AttritionNative)', () => {
+    afterEach(() => {
+      delete window.AttritionNative;
+    });
+
+    it('says hello, connects both platform services, and routes replies', () => {
+      const sent: string[] = [];
+      window.AttritionNative = {
+        postMessage: (message: string) => sent.push(message),
+        onmessage: null,
+      };
+      const bridge = window.AttritionNative;
+
+      const hosted = TestBed.runInInjectionContext(() => new TwaPostMessageService());
+
+      expect(hosted.isPortConnected()).toBe(true);
+      const types = sent.map(m => JSON.parse(m).type);
+      expect(types[0]).toBe('TWA_PORT_HANDSHAKE');
+      expect(types).toContain('PLAY_GAMES_INIT');
+      expect(types).toContain('GAME_STATS_INIT');
+
+      bridge.onmessage!({ data: JSON.stringify({ version: TWA_PROTOCOL_VERSION, type: 'PLAY_GAMES_SIGNED_IN' }) });
+      expect(achievementsService.isPlayGamesSignedIn()).toBe(true);
+
+      hosted.destroy();
+      expect(bridge.onmessage).toBeNull();
+    });
+  });
 });

@@ -31,7 +31,7 @@ In a Trusted Web Activity the screen the player sees belongs to **Chrome**, not 
 
 What is still unknown is whether Google's production-access review uses this per-package usage signal. Google does not say. Several (vendor) write-ups claim TWAs are rejected more often for exactly this reason; that claim is unverified. If the review does use it, a tester playing for twenty minutes looks like a one-second session.
 
-The only way to move that number is a different wrapper: a WebView-based app keeps the game inside the app's own activity. That trade is not free (Google sign-in is blocked inside WebViews, storage moves out of Chrome, and the TWA's full-screen verified-origin model goes away), so it is a separate decision.
+The only way to move that number is a different wrapper: a WebView-based app keeps the game inside the app's own activity. That trade is not free (Google sign-in is blocked inside WebViews, storage moves out of Chrome, and the TWA's full-screen verified-origin model goes away), so it is a separate decision. The evaluation and a working spike are in [`webview-vs-twa.md`](./webview-vs-twa.md): in the spike, Android credited the app with all of its on-screen time.
 
 What this means in practice:
 
