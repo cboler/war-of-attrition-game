@@ -6,14 +6,46 @@ on:
   pull_request:
     branches: [ main ]
 
+# Never let two deployments race; a newer push waits for the one in flight.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build-and-deploy:
+  test:
+    name: Unit tests
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: '24'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Version consistency tests
+      run: npm run test:version
+
+    - name: Angular unit tests (headless Chrome)
+      run: npm run test:ci
+
+  build-and-deploy:
+    name: Build and deploy
+    needs: test
+    runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
+
     permissions:
       contents: read
       pages: write
@@ -21,12 +53,12 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
 
     - name: Install dependencies
@@ -40,11 +72,13 @@ jobs:
 
     - name: Upload Pages artifact
       if: github.ref == 'refs/heads/main'
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v5
       with:
         path: ./docs
+        # v4+ drops dotfiles by default; keep the published site identical to earlier deploys.
+        include-hidden-files: true
 
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'
-      uses: actions/deploy-pages@v4
+      uses: actions/deploy-pages@v5
       id: deployment

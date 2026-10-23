@@ -1,11 +1,11 @@
 name: Build Android App Bundle (AAB)
 
+# Release tags must be v<package.json version> (for example v4.4.0); any other tag is rejected
+# by the version check below. Tag pushes are not a separate trigger because publishing a
+# release already fires `release`, and both would build the same bundle twice.
 on:
   release:
     types: [published]
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       version_code:
@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Determine Android Version Code and Name
         id: versioning
@@ -88,13 +88,14 @@ jobs:
           echo "version_name=$FINAL_NAME" >> $GITHUB_OUTPUT
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           # The action's default list includes the legacy 'tools' package, which Google
           # has removed from the SDK repository; sdkmanager then exits 1.
@@ -119,6 +120,10 @@ jobs:
       - name: Grant Execute Permission for Gradle
         run: chmod +x android/gradlew
 
+      - name: Run Android Unit Tests
+        working-directory: ./android
+        run: ./gradlew testReleaseUnitTest --stacktrace
+
       - name: Build Release AAB
         working-directory: ./android
         env:
@@ -132,7 +137,7 @@ jobs:
         run: ./gradlew bundleRelease --stacktrace
 
       - name: Upload Release AAB and R8 Mapping Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: app-release-aab
           path: |
@@ -142,7 +147,7 @@ jobs:
 
       - name: Attach AAB and R8 Mapping to GitHub Release
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             android/app/build/outputs/bundle/release/app-release.aab
