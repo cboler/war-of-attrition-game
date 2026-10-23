@@ -178,6 +178,6 @@ Settings now has a dedicated, confirmed **Abandon Campaign** action separate fro
   - **Option D (Chronicle Delegation)**: Silence routine visual table messages entirely and display only high-significance milestones (e.g. Ace assassinations, deep Battles), leaving routine outcomes to the Field Manual.
 
 ### Android Back Gesture / App Freeze (Target: Next AAB Release)
-- **Status**: Fixed in 4.4.1 and verified on a Pixel 9 Pro (Android 17) on 2026-10-22. Details in [`play-store/README.md`](./play-store/README.md#10-known-issues--backlog-target-next-aab-release).
-- **Summary**: Swiping back at the root screen of the Android TWA app causes `MainActivity` to defer its own finish indefinitely in `finish()`, locking the app on the launcher background/splash screen. `onResume()` now sets an `exitingAfterTwa` flag so `finish()` stops deferring, and the sign-in completion listener clears the internal-activity flag that the v2 sign-in UI never reset.
+- **Status**: Resolved. Fixed for the TWA launcher and verified on a Pixel 9 Pro on 2026-10-22, then superseded in 4.4.1 by the WebView app, which has no deferred launcher. Details in [`play-store/README.md`](./play-store/README.md#10-known-issues--backlog).
+- **Summary**: Swiping back at the root screen of the Android TWA app causes `MainActivity` to defer its own finish indefinitely in `finish()`, locking the app on the launcher background/splash screen. The WebView app's Back goes back in the page and then closes the app.
 

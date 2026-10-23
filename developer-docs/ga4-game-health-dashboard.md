@@ -8,7 +8,7 @@ Related documents: [`telemetry-schema.md`](./telemetry-schema.md), [`opponent-co
 
 ## 1. Overview & Operational Context
 
-While Google Play Game Stats v1 integration in Android/TWA still awaits Play-installed device validation ([`google-play-game-stats-v1.md`](./google-play-game-stats-v1.md)), Google Analytics 4 (GA4) telemetry is actively delivering rich, consent-gated gameplay and surface data across web, PWA, and TWA clients.
+While Google Play Game Stats v1 integration in the Android app still awaits Play-installed device validation ([`google-play-game-stats-v1.md`](./google-play-game-stats-v1.md)), Google Analytics 4 (GA4) telemetry is actively delivering rich, consent-gated gameplay and surface data across web, PWA, and TWA clients.
 
 To monitor balance, AI commander behaviors, player win rates, and UI engagement without compromising user privacy, we established the **"Attrition - Game Health"** exploration in the primary GA4 property.
 

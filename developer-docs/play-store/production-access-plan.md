@@ -23,25 +23,18 @@ Recommendation: **don't use them.**
 - The asset at risk is the developer account. A terminated account cannot simply be replaced, and the game, its package name, and the Play Games project are tied to it.
 - Free tester exchanges (subreddits and Discord groups where developers test each other's apps) give real people on real devices. They are a reasonable top-up to friends and family, as long as the questionnaire describes them honestly.
 
-## 3. Why a TWA game looks thinly used
+## 3. Why the Android app was rebuilt (4.4.1)
 
-In a Trusted Web Activity the screen the player sees belongs to **Chrome**, not to `com.cboler.warofattrition`.
+Up to 4.4.0 the Android app was a Trusted Web Activity, where the screen the player sees belongs to **Chrome**, not to `com.cboler.warofattrition`.
 
-**Measured on a Pixel 9 Pro (Android 17, Chrome 156) on 2026-10-22:** across about 14 minutes of Attrition on screen over 6 launches, Android's usage statistics credited `com.cboler.warofattrition` with **0 seconds used and 12 seconds visible**. Every gameplay second was recorded as `com.android.chrome / CustomTabActivity`. The app's own activity is in front for about a second per launch; the only other Attrition-owned screen was the Play Games sign-in hand-off (`GamesResolutionActivity`).
+**Measured on a Pixel 9 Pro (Android 17, Chrome 156) on 2026-10-22:** across about 14 minutes of the TWA on screen over 6 launches, Android's usage statistics credited `com.cboler.warofattrition` with **0 seconds used and 12 seconds visible**; every gameplay second was recorded as `com.android.chrome`. A WebView build of the same game was credited with all of its on-screen time (1:18 of ~80 seconds, and 4:11 over a longer test session).
 
-What is still unknown is whether Google's production-access review uses this per-package usage signal. Google does not say. Several (vendor) write-ups claim TWAs are rejected more often for exactly this reason; that claim is unverified. If the review does use it, a tester playing for twenty minutes looks like a one-second session.
-
-The only way to move that number is a different wrapper: a WebView-based app keeps the game inside the app's own activity. That trade is not free (Google sign-in is blocked inside WebViews, storage moves out of Chrome, and the TWA's full-screen verified-origin model goes away), so it is a separate decision. The evaluation and a working spike are in [`webview-vs-twa.md`](./webview-vs-twa.md): in the spike, Android credited the app with all of its on-screen time.
-
-What this means in practice:
-
-- Make the engagement visible in the questionnaire with your own numbers (section 5) instead of relying on Google's view of it.
-- A working Play Games sign-in gives Google first-party evidence of play tied to the package (signed-in sessions, achievement unlocks, Game Stats). Getting the bridge working on a Play-installed build is worth doing before the next application, not only for players.
+Google does not say whether its production-access review uses this per-package signal, and several (vendor) write-ups claim TWAs are rejected more often for exactly this reason. Rather than guess, 4.4.1 ships as a WebView app, so testers' play now counts toward the app wherever Google looks. Details: [`webview-vs-twa.md`](./webview-vs-twa.md).
 
 ## 4. Before starting the next 14-day window
 
-1. **Ship the next AAB** with the back-gesture freeze fix. A tester who swipes back at the first screen and gets a frozen splash screen that needs a force-stop is a quality signal and a reason to stop playing.
-2. **Check Play Games on a Play-installed build** using the log walkthrough in [`README.md`](./README.md#-adb-diagnostic-observability--pixel-validation-procedure): channel ready, signed in, `war.first_casualty` synced, reload recovery.
+1. **Ship 4.4.1** (the WebView app). Tell existing testers in the release notes that their earlier progress was stored in Chrome and starts fresh in this version.
+2. **Check Play Games on a Play-installed build** using the log walkthrough in [`README.md`](./README.md#log-walkthrough): page connected, signed in, profile shows the Play Games name, `war.first_casualty` synced.
 3. Confirm the Play Console achievement edits from [`achievements-manifest.md`](./achievements-manifest.md) are published to testers.
 4. Fill the placeholders in [`owner-values.md`](./owner-values.md) (Play App Signing SHA-1 and SHA-256, the testing opt-in link).
 5. Large screens: the activity is locked to portrait. Android 16 ignores fixed orientation on large screens, so check the layout on a tablet or foldable before reviewers do.

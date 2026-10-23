@@ -20,7 +20,7 @@ Use this factual breakdown to complete the **Data Safety** questionnaire in Goog
 ### Category: Personal Info
 
 #### Name (Optional)
-* **Collected?** Yes (when player signs in via Google Identity Services, or edits Commander name locally).
+* **Collected?** Yes (when the player signs in via Google Identity Services on the web, connects Google Play Games in the Android app, or edits the Commander name locally). In the Android app the Play Games display name and a small avatar image are shown on the local profile; they stay on the device and are never sent to the developer or analytics.
 * **Shared?** No.
 * **Processed ephemerally?** No (stored locally on device in browser/app storage).
 * **Required or optional?** Optional (Default guest player is named "Card Commander").
@@ -60,7 +60,7 @@ Use this factual breakdown to complete the **Data Safety** questionnaire in Goog
 | Question | Answer | Details |
 | :--- | :--- | :--- |
 | **Data collection & security** | Yes | Data encrypted in transit via HTTPS |
-| **Account creation** | Yes | Google Sign-in or Local Guest Account |
+| **Account creation** | Yes | Local guest profile; Google Sign-In on the web; Google Play Games identity in the Android app |
 | **Deletion request URL** | `https://cboler.github.io/war-of-attrition-game/delete-account/` | Direct URL for users to request/execute data deletion |
 | **Target Audience / Age** | Everyone (13+) | Casual strategic card game |
 | **Advertising / Ads** | **No** | The application contains no advertising SDK and does not display or request ads. |

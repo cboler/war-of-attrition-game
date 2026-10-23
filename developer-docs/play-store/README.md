@@ -67,91 +67,67 @@ cd android
 
 ---
 
-## Native Play Games bridge status
+## Android app and Play Games bridge
 
-Local achievements and career stats are fully operational and canonical. Native Play synchronization, achievements UI, and Game Stats submission are connected via an origin-verified bidirectional Custom Tabs `postMessage` channel.
+Since 4.4.1 the Android app hosts the game in an **in-app WebView** (`MainActivity`) instead of a Trusted Web Activity. It still loads the hosted PWA (`https://cboler.github.io/war-of-attrition-game/?twa=1`; the `twa` parameter is kept so GA4 landing-page filters keep working), so web deploys reach players immediately. Why the switch, and what was measured, is in [`webview-vs-twa.md`](./webview-vs-twa.md). Local achievements and career stats remain canonical and never depend on the bridge.
 
-### Temporary Android Browser Helper Dependency Note
+### What the native layer does
 
-**Upstream status (checked 2026-10-22):** PR #584 is still open and unmerged. The Google maintainer agreed the protected-hook design on 2026-08-25, but the PR author has not pushed it, and Android Browser Helper 2.7.4 (released 2026-10-02) does not include it. Keep the vendored build until an official release ships the hook. See [`android/vendor/README.md`](../../android/vendor/README.md) for the options.
+1. **Bridge.** `MainActivity` injects `window.AttritionNative` with `WebViewCompat.addWebMessageListener`, restricted to `https://cboler.github.io` (debug builds also allow a localhost dev server). `TwaPostMessageService` in the web app says hello (`TWA_PORT_HANDSHAKE`) over it on every page load and retries up to three times if no `TWA_PORT_READY` comes back. Message names keep their TWA-era spelling; they are the shared protocol.
+2. **Routing.** `NativeBridgeRouter` routes page messages to `PlayGamesBridge` (sign-in, achievements) and `PlayGameStatsBridge` (Game Stats), and buffers native replies (up to 50) whenever no page is connected: before the first hello, after a navigation, or after a renderer crash.
+3. **Identity.** Google blocks web sign-in inside WebViews, so the app hides "Sign in with Google". When Play Games signs in, `PlayGamesBridge` sends `PLAY_GAMES_PLAYER` (display name, then a 96 px PNG avatar as a data URL). `AuthService.applyPlayGamesIdentity` shows them on the local guest profile; a name the player typed themselves is never overwritten. Nothing leaves the device and no player ID is sent.
+4. **Housekeeping.** Splash screen until the first paint (max 4 s); edge-to-edge with system-bar insets; links to other sites open in a Chrome Custom Tab; `javascript:`, `file:`, `intent:` and `content:` navigations are blocked (`GameUrlPolicy`); a themed offline page with a retry button if the first load fails; the WebView is rebuilt if its renderer crashes or is reclaimed; Back goes back in the page, then closes the app.
+5. **Deep links.** `https://cboler.github.io/war-of-attrition-game/...` links open in the app (`autoVerify`, backed by `handle_all_urls` in the root `assetlinks.json`).
 
-To unblock Google Play Games achievements and Game Stats bridge before Open Testing:
-- **Why the fork exists:** Android Browser Helper official releases up through 2.7.3 kept `TwaLauncher.mSession` private and lacked any callback or hook exposing `CustomTabsSession` on `LauncherActivity`, making it impossible for a clean TWA launcher to establish `requestPostMessageChannel()` without reflection or parallel service bindings.
-- **Upstream PR:** [`GoogleChrome/android-browser-helper#584`](https://github.com/GoogleChrome/android-browser-helper/pull/584) (*"Expose CustomTabsSession on TwaLauncher and LauncherActivity"*).
-- **Starting PR branch:** `dnikolaev/expose-customtabs-session` (base commit `febadb4dcdd7a66fb4d17175b67c012f245c8610`).
-- **Our fork commit & tag:** Fork repository `cboler/android-browser-helper`, commit `94fb27b1cbc91f55130a8f3cba090f98ee282791`, immutable release tag `woa-abh-2.7.3-session-1`.
-- **Implementation details:** Implemented the August 25, 2026 Google maintainer specification by providing a protected hook `onCustomTabsSessionAvailable(@NonNull CustomTabsSession session)` on `LauncherActivity` called from `TwaLauncher.launch()`'s completion callback, alongside the public `TwaLauncher.getSession()` accessor.
-- **Session lifetime requirement:** ABH 2.7.3 normally finishes and destroys `LauncherActivity` immediately after launching the TWA. `MainActivity` defers that finish for the whole TWA session, because `PlayGamesBridge` needs a live Activity and the Custom Tabs callback binder must stay alive. When the user leaves the TWA (back past the first page), `MainActivity` resumes, sets `exitingAfterTwa`, and finishes normally.
-- **Checked-in vendor repository:** Published to `android/vendor/m2repository/` as `com.google.androidbrowserhelper:androidbrowserhelper:2.7.3-session-1` with full POM/transitive metadata, sources, and javadocs under Apache 2.0.
-- **Open Testing readiness workaround:** This temporary dependency unblocks bidirectional communication (`requestPostMessageChannel`) between `MainActivity` and `TwaPostMessageService` (`VerifiedTwaTransport`).
-- **Removal condition:** Migrate back to the first official Android Browser Helper release containing #584 once published to Google Maven / Maven Central.
-- **Not a Bubblewrap project any more:** `android/` started from Bubblewrap but now carries custom Java. Do not run `bubblewrap update` or `bubblewrap build`; they would regenerate the project and drop the bridge. Bubblewrap has no Play Games feature, so `features.playGames` in `twa-manifest.json` is ignored metadata.
+The project started from Bubblewrap but no longer has any TWA code; do not run Bubblewrap against `android/`.
 
-### PostMessage Transport & Bridge Integration
-1. Native `PostMessageService` is declared in `AndroidManifest.xml`.
-2. `MainActivity` retains its Activity context during the TWA session to keep `PlayGamesBridge` and Google Play Games Services v2 clients alive and responsive to Tasks.
-3. `MainActivity` requests a postMessage channel for `https://cboler.github.io` once `CustomTabsSession` is available, navigation has finished, and a one-second settle delay has passed (Chromium can finish navigation before the page can receive the port).
-   - **Every document gets its own channel.** A reload, a service-worker update, or any full navigation gives the page a new document with no port. Each `NAVIGATION_FINISHED` after a channel exists resets it and requests a new one after the settle delay. The web side treats a new port as a fresh connection and re-sends `PLAY_GAMES_INIT`, so queued unlocks flush again.
-   - **Unanswered requests are retried.** If `onMessageChannelReady` does not arrive within 3 seconds, the request is repeated, up to 4 attempts per document.
-   - **Failed sends re-open the channel.** If `postMessage` returns anything other than success (Chrome 150–152 returned `-3` after reloads, [android-browser-helper#602](https://github.com/GoogleChrome/android-browser-helper/issues/602)), the message is kept and the channel is re-requested within the same attempt budget.
-   - Local achievements and stats never depend on the channel; Play sync simply waits.
-4. Native bridge routing is managed by `TwaPostMessageManager`, which routes incoming requests to `PlayGamesBridge` and `PlayGameStatsBridge` while buffering outbound responses until the channel handshake is complete.
-5. Angular registers `VerifiedTwaTransport` via `TwaPostMessageService` upon receiving the transferred `MessagePort`.
-6. Digital Asset Links on `https://cboler.github.io/.well-known/assetlinks.json` grant `delegate_permission/common.use_as_origin`.
+### Testing on a phone
 
-### 🔍 ADB Diagnostic Observability & Pixel Validation Procedure
-
-To monitor the live integration across all asynchronous boundaries, run:
+Debug builds (`com.cboler.warofattrition.debug`) can load a local dev server, which lets you test web and native changes together before deploying:
 
 ```bash
-# Clear logcat buffers
-adb logcat -c
-
-# Filter to all bridge tags
-adb logcat -s MainActivity TwaPostMessageManager PlayGamesBridge
+cd android && ./gradlew assembleDebug && cd ..
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+adb reverse tcp:4205 tcp:4205
+adb shell am start -n com.cboler.warofattrition.debug/com.cboler.warofattrition.MainActivity --es url http://localhost:4205/
 ```
 
-#### Expected Log Sequence for Canary Validation (`war.first_casualty` / First Casualty)
+Serve the web app with the `attrition-dev-device` launch configuration (`ng serve --host 127.0.0.1 --port 4205`); the default dev server listens only on IPv6, which `adb reverse` cannot reach. Debug builds also enable WebView remote debugging (`chrome://inspect`). Release builds always load the hosted game and ignore the `url` extra.
 
-1. **Activity & Session Setup**:
-   ```text
-   MainActivity: onCustomTabsSessionAvailable hook invoked with session
-   MainActivity: Navigation finished in TWA
-   ```
-2. **Channel Handshake**:
-   ```text
-   TwaPostMessageManager: Requesting postMessage channel for target origin: https://cboler.github.io (attempt 1/4, ...)
-   TwaPostMessageManager: requestPostMessageChannel(https://cboler.github.io) returned: true
-   MainActivity: Relationship validation for origin https://cboler.github.io (relation=1): result=true
-   TwaPostMessageManager: onMessageChannelReady callback received: Transferred MessagePort ready in browser
-   ```
-3. **Web Connection & Play Games Authentication**:
-   ```text
-   TwaPostMessageManager: onPostMessage received: {"version":"v1","type":"PLAY_GAMES_INIT"}
-   PlayGamesBridge: Initializing Google Play Games SDK v2...
-   PlayGamesBridge: Play Games isAuthenticated result: true
-   PlayGamesBridge: Sending message to web: {"version":"v1","type":"PLAY_GAMES_SIGNED_IN"}
-   ```
-4. **Achievement Unlock (First Casualty Canary)**:
-   When the first card is sent to the Boneyard during gameplay:
-   ```text
-   TwaPostMessageManager: onPostMessage received: {"version":"v1","type":"UNLOCK_ACHIEVEMENT","internalAchievementId":"war.first_casualty","playGamesAchievementId":"CgkIz5juh94JEAIQDA"}
-   PlayGamesBridge: Calling AchievementsClient.unlockImmediate for war.first_casualty (CgkIz5juh94JEAIQDA)
-   PlayGamesBridge: Successfully synced achievement in Google Play Games: war.first_casualty (CgkIz5juh94JEAIQDA) via unlockImmediate
-   PlayGamesBridge: Sending message to web: {"version":"v1","type":"ACHIEVEMENT_SYNCED","internalAchievementId":"war.first_casualty","playGamesAchievementId":"CgkIz5juh94JEAIQDA"}
-   ```
-5. **If Failure Occurs**:
-   The logs clearly categorize the failure:
-   - `Sign-in required (statusCode=4)`
-   - `Network/transient failure (statusCode=7)`
-   - `Developer/configuration error (statusCode=10 - check package name/SHA-1 in Play Console)`
-   - `API unavailable/not connected (statusCode=17)`
-6. **Reload recovery check**: Force a reload mid-session. With the phone on USB debugging, open `chrome://inspect` on the desktop, find the TWA page, and click **Reload**; a deployed web update applying itself does the same. Expect `New document loaded; the previous postMessage channel is stale and will be re-requested`, then a fresh `onMessageChannelReady`. An unlock earned after the reload should still reach Play.
-7. **If the channel never opens**: `postMessage channel not established after 4 attempts` means Chrome refused or ignored every request. Check that the installed build came from Play (see *Which builds can verify* below) and that `use_as_origin` is in the root `assetlinks.json`.
+Play Games **sign-in** works only for a signing certificate whose SHA-1 is registered with the Play Games project: the Play App Signing key for Play installs, and optionally the local debug key for debug builds (Google Cloud → Credentials → Android OAuth client for the `.debug` package, then add it under Play Console → Play Games Services → Configuration → Credentials).
 
-#### Which builds can verify
+### Log walkthrough
 
-Only a build whose signing certificate SHA-256 is listed in the root `assetlinks.json` gets a verified origin, a full-screen TWA, and a postMessage channel. The upload key (`E6:4C:7F:…`, see `owner-values.md`) is **not** in that file, and debug builds use the `com.cboler.warofattrition.debug` package. A locally built or CI-downloaded AAB installed with `bundletool` will therefore open with a URL bar and no Play Games sync. Test Play Games only on a build installed from a Play testing track.
+```bash
+adb logcat -c
+adb logcat -s MainActivity NativeBridgeRouter PlayGamesBridge PlayGameStatsBridge
+```
+
+Expected on a Play-installed build with a signed-in tester:
+
+```text
+MainActivity: Loading https://cboler.github.io/war-of-attrition-game/?twa=1
+PlayGamesBridge: Initializing Google Play Games SDK v2...
+NativeBridgeRouter: Page connected; delivering N buffered responses
+NativeBridgeRouter: Routing to PlayGamesBridge: PLAY_GAMES_INIT
+PlayGamesBridge: Play Games isAuthenticated result: true (task.isSuccessful=true)
+PlayGamesBridge: Sending message to web: {"version":"v1","type":"PLAY_GAMES_SIGNED_IN"}
+NativeBridgeRouter: Routing to PlayGameStatsBridge: GAME_STATS_INIT
+```
+
+When the first card goes to the Boneyard:
+
+```text
+NativeBridgeRouter: Routing to PlayGamesBridge: UNLOCK_ACHIEVEMENT
+PlayGamesBridge: Calling AchievementsClient.unlockImmediate for war.first_casualty (CgkIz5juh94JEAIQDA)
+PlayGamesBridge: Successfully synced achievement in Google Play Games: war.first_casualty (CgkIz5juh94JEAIQDA) via unlockImmediate
+```
+
+Failures are categorised in the log: `Sign-in required (statusCode=4)`, `Network/transient failure (statusCode=7)`, `Developer/configuration error (statusCode=10 - check package name/SHA-1 in Play Console)`, `API unavailable/not connected (statusCode=17)`. A reload shows `Page gone; buffering native responses until the next page says hello` followed by a new `Page connected`; a renderer crash shows `WebView renderer gone (crashed=true); rebuilding`.
+
+### Verified on a device (2026-10-22)
+
+Pixel 9 Pro, Android 17, Android System WebView 155, debug build against a local server: splash and insets; bridge connects on the first hello; `PLAY_GAMES_INIT` and `GAME_STATS_INIT` round trips; the Play Games sign-in sheet opens from the profile's Connect button and a cancel is reported back cleanly; outside links open in a Custom Tab; reload reconnects; a forced renderer crash rebuilds the WebView without killing the app; the offline page; Back from the first page closes the app; Android credited the app with its foreground time (4:11 over the session). Not yet verified: a signed-in Play Games session (needs a registered signing key), and a Play-installed release.
 
 
 ## 🎯 Step-by-Step Manual Owner Checklist
@@ -198,10 +174,10 @@ Follow these actions in order:
 
 ### 6. Publish Digital Asset Links on Root Domain
 * **WHERE:** `https://cboler.github.io/.well-known/assetlinks.json`
-* **ACTION:** Deploy `assetlinks.json` containing the Play App Signing SHA-256 fingerprint to your root user repository.
+* **ACTION:** Keep `assetlinks.json` listing the Play App Signing SHA-256 fingerprint with `delegate_permission/common.handle_all_urls`. Since the WebView switch this only verifies that links to the game open in the app; the game and the Play Games bridge work without it.
 * **VALUE COMES FROM:** [`developer-docs/play-store/assetlinks-guide.md`](./assetlinks-guide.md).
-* **WHEN:** Before testing on device.
-* **HOW TO VERIFY:** Check via browser at `https://cboler.github.io/.well-known/assetlinks.json` and ensure Chrome opens the app without browser URL bar.
+* **WHEN:** Before release.
+* **HOW TO VERIFY:** `adb shell pm get-app-links com.cboler.warofattrition` on a Play-installed build shows `cboler.github.io: verified`.
 
 ### 7. Fill Out App Content (Privacy, Data Safety, Target Audience)
 * **WHERE:** Play Console → **Policy and programs** → **App content**
@@ -228,16 +204,8 @@ Follow these actions in order:
 
 ---
 
-## 10. Known Issues & Backlog (Target: Next AAB Release)
+## 10. Known Issues & Backlog
 
-### Android Back Gesture / App Freeze on Loading Screen
+### Resolved: Back gesture froze the app on the splash screen (TWA builds up to 4.4.0)
 
-> **Status (2026-10-22): fixed in 4.4.1 and verified on a Pixel 9 Pro (Android 17, Chrome 156)** with a locally signed build: Back from the first page finishes `MainActivity` and returns to the launcher. Reload recovery was verified on the same device (a DevTools reload produced a fresh set of channel attempts). `onResume()` now sets `exitingAfterTwa` before calling `finish()`, and `finish()` no longer defers once that flag is set. A second path to the same freeze was also fixed: the Play Games v2 sign-in UI never calls `onActivityResult`, so `isHandlingInternalActivityResult` stayed `true` after a manual sign-in and blocked the exit. `PlayGamesBridge` now clears it when the sign-in task completes.
-
-- **Observed Behavior**: In the Android TWA app, performing the system back gesture (swiping from the screen edge) or pressing the hardware/nav-bar Back button while at the root game screen leaves the app permanently frozen on the initial launcher splash/loading screen (`Theme.WarOfAttrition`). The app does not exit, cannot be recovered via further back actions, and requires a force-stop/restart.
-- **Root Cause**:
-  In [`MainActivity.java`](../../android/app/src/main/java/com/cboler/warofattrition/MainActivity.java), `MainActivity` defers launcher finishing via `finish()` while `twaLaunched` is true so that `PlayGamesBridge` retains a valid Activity context while the TWA is running in the foreground. When the user initiates a back action that exhausts browser history, the Custom Tab finishes, bringing `MainActivity` to the foreground in `onResume()`. `onResume()` correctly detects TWA exit (`twaLaunched && !isHandlingInternalActivityResult`) and calls `finish()`. However, `finish()` intercepts its own invocation: because `twaLaunched` is still `true`, it logs `"Deferring LauncherActivity finish: TWA is actively running"` and returns without calling `super.finish()`. Consequently, `MainActivity` is trapped in the foreground on the splash background and ignores all subsequent back events.
-- **Remediation Plan for Next AAB**:
-  1. In `MainActivity.onResume()`: Explicitly reset `twaLaunched = false;` before calling `finish()` (or call `super.finish()` directly on TWA exit).
-  2. In `MainActivity.finish()`: Ensure that an explicit exit flag or `!twaLaunched` allows `super.finish()` to execute cleanly to close the app task back to the Android launcher.
-  3. Rebuild signed AAB (`./gradlew bundleRelease`) and bump version identity across `package.json`, `android/twa-manifest.json`, and environment configs.
+The TWA launcher deferred its own `finish()` to keep the Play Games bridge alive, so Back from the first page left the app stuck on the splash background until force-stopped. A fix for the TWA launcher was verified on a Pixel 9 Pro, then made moot in 4.4.1 by the switch to a single WebView activity, where Back goes back in the page and then closes the app (also verified on device).

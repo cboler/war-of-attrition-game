@@ -2,7 +2,7 @@
 
 ## 1. Project State: Core and Two Creative Sprints Complete
 
-**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android through a Trusted Web Activity. The hosted release and the next Android wrapper share version identity **4.4.1**.
+**War of Attrition** is a feature-complete digital implementation of the physical head-to-head card game. It is an Angular Progressive Web Application packaged for Android as an in-app WebView app. The hosted release and the next Android wrapper share version identity **4.4.1**.
 
 The project is no longer in broad feature discovery. Both substantial creative sprints now have production implementations:
 
@@ -89,14 +89,14 @@ The authoritative mechanical specification remains [`war-of-attrition-requiremen
 - Card-backing cosmetics and token purchase/unlock flow are implemented.
 - Thirty-four visible local tiered achievements plus five hidden astronomical anomalies are implemented. Twenty-nine are mapped to Google Play Games; `Against the Odds`, `Crippled`, `Neverending Stalemate`, `Wrong Tool for the Job`, and `Twin Assassins` are intentionally local-only pending Play Console reconciliation (see [`achievements-manifest.md`](../../developer-docs/play-store/achievements-manifest.md)).
 - Google Analytics 4 telemetry is consent-gated and denied by default until permission. Test and screenshot modes collect no analytics. Fog of War applies presentation and mapper-level information redaction while a War is active.
-- Game Stats v1 payload validation, public-event projection, web platform adapter, and native buffer wrapper are implemented and tested. Ordinary web/PWA play is a safe no-op. The Android wrapper uses the vendored ABH session hook for an origin-verified postMessage channel; version 4.2.6 also declares the ABH site-settings activity required during TWA launch. The channel is re-requested for every new document (reloads, web updates), unanswered requests are retried, and failed sends re-open the channel. Play-signed physical-device validation remains required; only Play-installed builds verify against the root `assetlinks.json`.
+- Game Stats v1 payload validation, public-event projection, web platform adapter, and native buffer wrapper are implemented and tested. Ordinary web/PWA play is a safe no-op. The Android app connects through an origin-restricted WebView bridge (`window.AttritionNative`, routed by `NativeBridgeRouter`); each page load says hello and native replies are buffered between pages. A signed-in Play Games session on a Play-installed build remains to be validated on a device.
 
 ### Platform Packaging and Tooling
 
-- Android TWA wrapper targeting the current project Android configuration.
+- Android WebView app (`MainActivity`) loading the hosted PWA, with a Play Games bridge, splash, system-bar insets, outside links in Custom Tabs, an offline page, and renderer-crash recovery. See [`play-store/README.md`](../../developer-docs/play-store/README.md#android-app-and-play-games-bridge).
 - GitHub Actions: unit tests gate every GitHub Pages deployment; Android unit tests and lint run on changes under `android/`; the Android bundle workflow runs native tests before bundling; plus secret scanning and deterministic Playwright store-screenshot workflows. All actions are on their Node 24 majors, and web jobs build with Node 24.
 - Android toolchain: AGP 8.13.2 and Gradle 8.14.6, with the AAR metadata compatibility check enabled.
-- Release 4.4.1 is a native-wrapper release: it fixes the back-gesture splash freeze (and the sign-in path to it), re-opens the Play Games postMessage channel after reloads, retries unanswered channel requests, and recovers from failed sends.
+- Release 4.4.1 replaces the Trusted Web Activity with an in-app WebView: Android now credits play time to the app, the Play Games bridge no longer depends on Chrome's postMessage handshake or the vendored Android Browser Helper build (both removed), and Play Games supplies the profile name and avatar inside the app because Google web sign-in is blocked in WebViews. Players' TWA-era progress (stored in Chrome) does not carry over. See [`webview-vs-twa.md`](../../developer-docs/play-store/webview-vs-twa.md).
 - Android bundle version names are checked against the authoritative `package.json` version; a manual input or tag mismatch fails the workflow instead of producing a silently divergent wrapper identity.
 - Store screenshot matrix for phone, 7-inch tablet, and 10-inch tablet targets with production-configuration serving, deterministic real-UI fixtures, exact artifact-inventory validation, and physical-card/turn-history assertions.
 

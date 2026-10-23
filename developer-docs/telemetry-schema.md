@@ -221,7 +221,7 @@ Official references: [GA4 event collection](https://developers.google.com/analyt
 
 ## Relationship to Google Play Game Stats v1
 
-The Google Play Game Stats v1 integration specified in [google-play-game-stats-v1.md](google-play-game-stats-v1.md) is a separate implemented projection and platform data path. It is a safe no-op in ordinary web/PWA play, and in the TWA it submits only after a verified native channel opens and Play Games reports a signed-in player:
+The Google Play Game Stats v1 integration specified in [google-play-game-stats-v1.md](google-play-game-stats-v1.md) is a separate implemented projection and platform data path. It is a safe no-op in ordinary web/PWA play, and in the Android app it submits only after the native bridge connects and Play Games reports a signed-in player:
 
 - **Separate schemas**: GA4 is a fine-grained, consent-gated event stream for gameplay analysis (schema version `3`). PGS Game Stats v1 is a career aggregation contract centered on a single self-contained `war_completed` event emitted at War resolution.
 - **Commander inclusion**: PGS Game Stats v1 includes `commander_id` directly on every `war_completed` event within Google's 20-property Console limit. GA4 gameplay events omit `commander_id` from ordinary records to respect GA4's 25-parameter cap.

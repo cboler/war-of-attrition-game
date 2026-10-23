@@ -1,6 +1,8 @@
-# Trusted Web Activity Digital Asset Links
+# Digital Asset Links
 
-The Android package launches `https://cboler.github.io/war-of-attrition-game/`, but Digital Asset Links verification is scoped to the origin. Chrome therefore reads this exact root URL:
+**Since 4.4.1 (WebView app):** this file only verifies that `https://cboler.github.io/war-of-attrition-game/...` links open in the app (`handle_all_urls`, checked by Android for the manifest's `autoVerify` intent filter). The game and the Play Games bridge no longer depend on it. `use_as_origin` was needed only by the Trusted Web Activity's postMessage channel; it is harmless to keep.
+
+Verification is scoped to the origin, so Android reads this exact root URL:
 
 `https://cboler.github.io/.well-known/assetlinks.json`
 
@@ -30,12 +32,12 @@ Replace the fingerprint token with the Play App Signing **SHA-256** fingerprint 
 ]
 ```
 
-`handle_all_urls` makes the app a verified TWA (no URL bar). `use_as_origin` is what lets Chrome open the postMessage channel for this origin; without it the Play Games bridge never connects.
+`handle_all_urls` lets game links open in the app. (`use_as_origin` mattered only for the TWA builds up to 4.4.0.)
 
 ## Fingerprints are not interchangeable
 
 - The Play Games Services Android OAuth credential is registered with the applicable signing certificate **SHA-1** and package `com.cboler.warofattrition`.
-- TWA Digital Asset Links uses certificate **SHA-256** values in the root `assetlinks.json`.
+- Digital Asset Links uses certificate **SHA-256** values in the root `assetlinks.json`.
 - The upload-key fingerprint already recorded in `owner-values.md` is not a substitute for the Play App Signing fingerprint used on Play-installed builds.
 
 ## Verification

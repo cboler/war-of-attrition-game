@@ -1,8 +1,10 @@
 # WebView Wrapper vs Trusted Web Activity
 
-Evaluation and spike, 2026-10-22, branch `webview-spike`. Device: Pixel 9 Pro, Android 17, Chrome 156, Android System WebView 155.
+Evaluation and spike, 2026-10-22. Device: Pixel 9 Pro, Android 17, Chrome 156, Android System WebView 155.
 
-## Recommendation: go, as the next Android release after 4.4.1
+> **Decision: adopted in 4.4.1** (the first release after the evaluation; no TWA 4.4.1 was published). What shipped is described in [`README.md`](./README.md#android-app-and-play-games-bridge). The sections below are the evaluation as written.
+
+## Recommendation: go
 
 Switch the Play wrapper from a Trusted Web Activity to an in-app WebView. The spike showed the two problems that have dogged the Android build (play time not credited to the app, and an unreliable Play Games bridge) both disappear, and the game ran without visible problems in the WebView. The costs are real but bounded: Google sign-in has to be replaced on Android, testers' existing progress does not carry over, and the wrapper takes on a little more of its own housekeeping. Estimated effort is **two to three days**, plus a Play-signed device check.
 
@@ -48,18 +50,12 @@ Google Play's "webview spam" guidance targets apps that are thin wrappers drivin
 
 Registering the local debug key's SHA-1 for the `com.cboler.warofattrition.debug` package (Google Cloud → Credentials → Android OAuth client, linked in Play Console → Play Games Services → Configuration) lets debug builds sign in to Play Games. With the WebView bridge that would make the whole achievements path testable from Android Studio, without a Play release each time.
 
-## The spike on this branch
+## What shipped in 4.4.1
 
-- `android/app/src/debug/java/com/cboler/warofattrition/WebViewActivity.java` and `android/app/src/debug/AndroidManifest.xml`: debug builds get a second launcher, "Attrition WV". Release builds are unchanged.
-- `androidx.webkit:webkit:1.18.0` as a `debugImplementation` dependency.
-- `src/app/core/services/twa-post-message.service.ts`: when a host injects `window.AttritionNative`, the service says hello over it and connects both platform services; otherwise it behaves exactly as before. Covered by a new unit test.
-- `.claude/launch.json`: `attrition-dev-device` serves on `127.0.0.1:4205` (the default server listens only on IPv6, which `adb reverse` cannot reach).
-
-To run it: start `attrition-dev-device`, then
-
-```bash
-adb reverse tcp:4205 tcp:4205
-adb shell am start -n com.cboler.warofattrition.debug/com.cboler.warofattrition.WebViewActivity --es url http://localhost:4205/
-```
+- `MainActivity` is the WebView host (bridge, splash, insets, Custom Tabs for outside links, offline page, renderer-crash recovery, deep links). `GameUrlPolicy` decides where each URL opens.
+- `NativeBridgeRouter` replaced `TwaPostMessageManager`: it connects on each page's hello and buffers replies between pages.
+- `PlayGamesBridge` sends `PLAY_GAMES_PLAYER` (name, avatar) after sign-in; `AuthService.applyPlayGamesIdentity` shows it on the guest profile without overriding a typed name. The Google button is hidden in the app.
+- Removed: the TWA launcher, `PostMessageService`, the vendored Android Browser Helper build (`android/vendor/`), `twa-manifest.json`, and the asset-statements metadata.
+- Not built: profile export/import for TWA-era testers (their Chrome-stored progress does not carry over).
 
 Sources: [Google's 2021 announcement on OAuth in embedded webviews](https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html), [Access native APIs with JavaScript bridge](https://developer.android.com/develop/ui/views/layout/webapps/native-api-access-jsbridge), [Android Developers Blog on webview spam and minimum functionality](https://android-developers.googleblog.com/2020/10/developer-tips-and-guides-common-policy.html).

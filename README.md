@@ -1,6 +1,6 @@
 # War of Attrition
 
-A two-player card game played against AI commanders, built as an Angular PWA, hosted on GitHub Pages at <https://cboler.github.io/war-of-attrition-game/>, and packaged for Google Play as a Trusted Web Activity (`android/`).
+A two-player card game played against AI commanders, built as an Angular PWA, hosted on GitHub Pages at <https://cboler.github.io/war-of-attrition-game/>, and packaged for Google Play as an Android WebView app with a Play Games bridge (`android/`).
 
 ## Development
 
@@ -23,7 +23,7 @@ Open `http://localhost:4200/`. `npm start` runs `scripts/set-env.js` first, whic
 | Android unit tests | `cd android && ./gradlew testDebugUnitTest` |
 | Android release bundle | `cd android && ./gradlew bundleRelease` (see [`developer-docs/play-store/README.md`](developer-docs/play-store/README.md)) |
 
-Version numbers live in eleven files that must move together; use the `bump-version` skill in `.agents/skills/`.
+Version numbers live in ten files that must move together; use the `bump-version` skill in `.agents/skills/`.
 
 ## CI pipelines (`.github/workflows/`)
 

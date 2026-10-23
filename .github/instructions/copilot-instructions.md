@@ -2,12 +2,12 @@
 
 ## Repository Overview
 
-This repository contains the **War of Attrition** card game - a Progressive Web Application (PWA) built with Angular and Angular Material, packaged for Android via a Trusted Web Activity (TWA). The project implements a complete physical card game simulation with responsive layouts, animations, campaign progression, persistent player profiles, and deterministic store screenshot automation.
+This repository contains the **War of Attrition** card game - a Progressive Web Application (PWA) built with Angular and Angular Material, packaged for Android as an in-app WebView wrapper (`android/`, since 4.4.1; earlier builds were a Trusted Web Activity). The project implements a complete physical card game simulation with responsive layouts, animations, campaign progression, persistent player profiles, and deterministic store screenshot automation.
 
 **Key Project Details**:
 - **Language**: TypeScript (Angular 20)
 - **Framework**: Angular with Angular Material UI
-- **Type**: Progressive Web Application (PWA) + Android TWA
+- **Type**: Progressive Web Application (PWA) + Android WebView app
 - **Architecture**: Signal-based reactive state management with standalone components
 - **Deployment**: GitHub Pages (hosted from `/docs`)
 - **Current Status**: Feature-complete core; Progressive Narrative Unveiling and Clash Visualization sprints remain before final release polish. See `current-development-status.md`.
@@ -57,7 +57,7 @@ npm run screenshots:validate
 │   │   ├── current-development-status.md     # Authoritative live project status
 │   │   └── README.md                         # Documentation index & hierarchy
 │   └── workflows/                     # GitHub Actions (Deploy, AAB, Screenshots)
-├── android/                           # Android TWA / Bubblewrap wrapper
+├── android/                           # Android WebView app + Play Games bridge
 ├── docs/                              # Production build output (GitHub Pages)
 ├── developer-docs/                    # Technical & Play Store documentation
 ├── store-assets/screenshots/          # Generated Play Store screenshot packages
