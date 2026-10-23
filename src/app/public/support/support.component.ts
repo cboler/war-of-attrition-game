@@ -108,7 +108,7 @@ import { environment } from '../../../environments/environment';
             <p class="app-version-info">
               Application: <strong>War of Attrition</strong><br />
               Version: <strong>{{ appVersion }}</strong><br />
-              Target Platform: Progressive Web App / Android Trusted Web Activity<br />
+              Target Platform: Progressive Web App / Android app<br />
               Repository: <a href="https://github.com/cboler/war-of-attrition-game" target="_blank" rel="noopener">cboler/war-of-attrition-game</a>
             </p>
           </section>

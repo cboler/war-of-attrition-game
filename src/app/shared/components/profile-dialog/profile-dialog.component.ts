@@ -149,6 +149,15 @@ export class ProfileDialogComponent implements OnDestroy {
       this.platformAchievements.isPlayGamesAvailable() &&
       !this.platformAchievements.isPlayGamesSignedIn()
   );
+  /** Android app: Google web sign-in is unavailable, Play Games provides identity instead. */
+  readonly isNativeApp = this.authService.isNativeApp;
+  readonly accountLabel = computed(() => {
+    if (this.profile().isGoogleAuth) return 'Google account connected';
+    if (this.isNativeApp && this.platformAchievements.isPlayGamesSignedIn()) {
+      return 'Google Play Games connected';
+    }
+    return 'Guest commander profile';
+  });
 
   readonly currentCampaignRecord = computed(() => {
     const wars = this.progression.currentCampaign().wars;

@@ -17,6 +17,8 @@ export interface UserProfile {
   avatarUrl: string;
   provider: AuthProvider;
   isGoogleAuth: boolean;
+  /** Last Play Games name shown on this profile (Android app); lets a player's own rename win. */
+  playGamesName?: string;
   statistics: GameStatistics;
   progression: CampaignProgression;
   hallOfValor: HallOfValorState;

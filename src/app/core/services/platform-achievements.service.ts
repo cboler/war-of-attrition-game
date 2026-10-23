@@ -1,6 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { PLAY_ACHIEVEMENT_MAPPINGS } from '../models/play-achievements-map';
-import { TwaMessagePayload, TWA_PROTOCOL_VERSION } from '../models/twa-bridge.model';
+import { PlayGamesPlayer, TwaMessagePayload, TWA_PROTOCOL_VERSION } from '../models/twa-bridge.model';
 
 /** A transport may only be registered after a real, origin-verified native channel exists. */
 export interface VerifiedTwaTransport {
@@ -16,6 +16,7 @@ export class PlatformAchievementsService {
   private readonly isPlayGamesSignedInSignal = signal(false);
   private readonly pendingUnlocks = signal<readonly string[]>([]);
   private readonly pendingProgress = signal<Readonly<Record<string, number>>>({});
+  private readonly playGamesPlayerSignal = signal<PlayGamesPlayer | null>(null);
 
   private transport: VerifiedTwaTransport | null = null;
   private unsubscribeTransport: (() => void) | null = null;
@@ -27,6 +28,8 @@ export class PlatformAchievementsService {
   readonly isPlayGamesSignedIn = computed(() =>
     this.isPlayGamesAvailable() && this.isPlayGamesSignedInSignal()
   );
+  /** The signed-in Play Games player's name and avatar, when the Android app supplies them. */
+  readonly playGamesPlayer = this.playGamesPlayerSignal.asReadonly();
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -36,8 +39,8 @@ export class PlatformAchievementsService {
   }
 
   /**
-   * Hook for Android Browser Helper postMessage integration. A VerifiedTwaTransport
-   * is registered only after origin verification and MessagePort transfer.
+   * Registers the Android app's native transport. A VerifiedTwaTransport is registered only for
+   * an origin-restricted native bridge (the WebView's injected object, or a legacy TWA port).
    */
   connectVerifiedTransport(transport: VerifiedTwaTransport): void {
     this.unsubscribeTransport?.();
@@ -151,6 +154,19 @@ export class PlatformAchievementsService {
           });
         }
         break;
+      case 'PLAY_GAMES_PLAYER': {
+        const displayName = (payload.displayName ?? '').trim().slice(0, 60);
+        const avatar = payload.avatarDataUrl;
+        if (!displayName) break;
+        this.playGamesPlayerSignal.set({
+          displayName,
+          // Only small inline PNGs from the native app are accepted as avatars.
+          ...(avatar && avatar.startsWith('data:image/png;base64,') && avatar.length < 200_000
+            ? { avatarDataUrl: avatar }
+            : {}),
+        });
+        break;
+      }
       case 'ACHIEVEMENT_SYNC_FAILED':
         console.warn('Achievement sync failed on Android host:', payload.error);
         if (payload.error && payload.error.toLowerCase().includes('sign-in required')) {

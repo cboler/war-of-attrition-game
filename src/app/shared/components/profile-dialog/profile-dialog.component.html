@@ -27,9 +27,7 @@
           </button>
         </div>
         <p class="email-sub">{{ profile().email }}</p>
-        <span class="provider-pill">
-          {{ profile().isGoogleAuth ? 'Google account connected' : 'Guest commander profile' }}
-        </span>
+        <span class="provider-pill">{{ accountLabel() }}</span>
       </div>
     </div>
 
@@ -498,10 +496,21 @@
         <section class="settings-section" aria-labelledby="account-title">
           <div class="section-heading">
             <h3 id="account-title" class="section-subtitle">Account</h3>
-            <p>{{ profile().isGoogleAuth ? 'This profile is connected to Google.' : 'This is a local guest profile on this device.' }}</p>
+            @if (isNativeApp) {
+              <p>Your progress is saved on this device. Connect Google Play Games to sync achievements; your Play Games name and picture then appear on this profile.</p>
+            } @else {
+              <p>{{ profile().isGoogleAuth ? 'This profile is connected to Google.' : 'This is a local guest profile on this device.' }}</p>
+            }
           </div>
           <div class="account-actions">
-            @if (!profile().isGoogleAuth) {
+            @if (isNativeApp) {
+              @if (showPlayGamesSignInButton()) {
+                <button mat-flat-button type="button" class="google-signin-btn" (click)="signInPlayGames()">
+                  <mat-icon aria-hidden="true">sports_esports</mat-icon>
+                  Connect Google Play Games
+                </button>
+              }
+            } @else if (!profile().isGoogleAuth) {
               <button
                 mat-flat-button
                 type="button"

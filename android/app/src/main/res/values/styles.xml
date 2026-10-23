@@ -1,7 +1,13 @@
 <resources>
-    <style name="Theme.WarOfAttrition" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.WarOfAttrition" parent="Theme.MaterialComponents.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="android:statusBarColor">@color/colorPrimary</item>
-        <item name="android:navigationBarColor">@color/navigationColor</item>
+        <item name="android:windowBackground">@color/backgroundColor</item>
+    </style>
+
+    <!-- Shown while the game loads; replaced by Theme.WarOfAttrition once the first page paints. -->
+    <style name="Theme.WarOfAttrition.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/backgroundColor</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.WarOfAttrition</item>
     </style>
 </resources>

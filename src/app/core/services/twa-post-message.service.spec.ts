@@ -270,4 +270,47 @@ describe('TwaPostMessageService', () => {
       expect(bridge.onmessage).toBeNull();
     });
   });
+
+  describe('WebView hello retries', () => {
+    beforeEach(() => jasmine.clock().install());
+    afterEach(() => {
+      jasmine.clock().uninstall();
+      delete window.AttritionNative;
+    });
+
+    it('says hello again until the app answers, then stops', () => {
+      const hellos: string[] = [];
+      window.AttritionNative = {
+        postMessage: (m: string) => {
+          if (m.includes('TWA_PORT_HANDSHAKE')) hellos.push(m);
+        },
+        onmessage: null,
+      };
+      const bridge = window.AttritionNative;
+      const hosted = TestBed.runInInjectionContext(() => new TwaPostMessageService());
+      expect(hellos.length).toBe(1);
+
+      jasmine.clock().tick(1500);
+      expect(hellos.length).toBe(2);
+
+      bridge.onmessage!({ data: JSON.stringify({ version: TWA_PROTOCOL_VERSION, type: 'TWA_PORT_READY' }) });
+      jasmine.clock().tick(10_000);
+      expect(hellos.length).toBe(2);
+      hosted.destroy();
+    });
+
+    it('gives up after three retries', () => {
+      let hellos = 0;
+      window.AttritionNative = {
+        postMessage: (m: string) => {
+          if (m.includes('TWA_PORT_HANDSHAKE')) hellos++;
+        },
+        onmessage: null,
+      };
+      const hosted = TestBed.runInInjectionContext(() => new TwaPostMessageService());
+      jasmine.clock().tick(20_000);
+      expect(hellos).toBe(4);
+      hosted.destroy();
+    });
+  });
 });

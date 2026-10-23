@@ -13,6 +13,7 @@ export type TwaMessageType =
   | 'PLAY_GAMES_UNAVAILABLE'
   | 'ACHIEVEMENT_SYNCED'
   | 'ACHIEVEMENT_SYNC_FAILED'
+  | 'PLAY_GAMES_PLAYER'
   // Web -> Android (Game Stats)
   | 'GAME_STATS_INIT'
   | 'RECORD_GAME_STATS'
@@ -32,6 +33,9 @@ export interface TwaMessagePayload {
   readonly currentSteps?: number;
   readonly totalSteps?: number;
   readonly error?: string;
+  // Play Games player identity (Android app only; shown on the local profile, never sent anywhere)
+  readonly displayName?: string;
+  readonly avatarDataUrl?: string;
   // Game Stats fields
   readonly warId?: string;
   readonly payload?: WarCompletedStatsPayload;
@@ -41,4 +45,18 @@ export interface TwaMessagePayload {
 }
 
 export const TWA_PROTOCOL_VERSION = 'v1';
+
+/** Signed-in Play Games player as reported by the Android app. */
+export interface PlayGamesPlayer {
+  readonly displayName: string;
+  readonly avatarDataUrl?: string;
+}
+
+/**
+ * True inside the Android app, whose WebView injects `window.AttritionNative` before any page
+ * script runs. (The message names above keep their TWA-era spelling; they are the wire protocol.)
+ */
+export function isNativeAppHost(): boolean {
+  return typeof window !== 'undefined' && !!(window as { AttritionNative?: unknown }).AttritionNative;
+}
 

@@ -283,4 +283,44 @@ describe('PlatformAchievementsService', () => {
     });
     expect(service.getPendingProgress()['profile.veteran']).toBeUndefined();
   });
+
+  describe('Play Games player identity', () => {
+    let handler: (payload: unknown) => void;
+
+    beforeEach(() => {
+      service.connectVerifiedTransport({
+        send: () => undefined,
+        subscribe: (h) => {
+          handler = h;
+          return () => undefined;
+        },
+      });
+    });
+
+    it('exposes the player name and a native PNG avatar', () => {
+      handler(JSON.stringify({ version: TWA_PROTOCOL_VERSION, type: 'PLAY_GAMES_PLAYER', displayName: '  Chris  ' }));
+      expect(service.playGamesPlayer()).toEqual({ displayName: 'Chris' });
+
+      handler(JSON.stringify({
+        version: TWA_PROTOCOL_VERSION,
+        type: 'PLAY_GAMES_PLAYER',
+        displayName: 'Chris',
+        avatarDataUrl: 'data:image/png;base64,AAAA',
+      }));
+      expect(service.playGamesPlayer()).toEqual({ displayName: 'Chris', avatarDataUrl: 'data:image/png;base64,AAAA' });
+    });
+
+    it('ignores empty names and refuses non-PNG or remote avatars', () => {
+      handler(JSON.stringify({ version: TWA_PROTOCOL_VERSION, type: 'PLAY_GAMES_PLAYER', displayName: '' }));
+      expect(service.playGamesPlayer()).toBeNull();
+
+      handler(JSON.stringify({
+        version: TWA_PROTOCOL_VERSION,
+        type: 'PLAY_GAMES_PLAYER',
+        displayName: 'Chris',
+        avatarDataUrl: 'https://tracker.example/pixel.png',
+      }));
+      expect(service.playGamesPlayer()).toEqual({ displayName: 'Chris' });
+    });
+  });
 });

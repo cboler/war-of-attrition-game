@@ -8,14 +8,9 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/appName"
-        android:manageSpaceActivity="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.WarOfAttrition">
-
-        <meta-data
-            android:name="asset_statements"
-            android:value="@string/asset_statements" />
 
         <meta-data
             android:name="com.google.android.gms.games.APP_ID"
@@ -25,52 +20,18 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/launcherName"
-            android:theme="@style/Theme.WarOfAttrition"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.WarOfAttrition.Starting"
             android:screenOrientation="portrait"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                android:value="@string/launchUrl" />
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"
-                android:resource="@color/colorPrimary" />
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR_DARK"
-                android:resource="@color/colorPrimary" />
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR"
-                android:resource="@color/navigationColor" />
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR_DARK"
-                android:resource="@color/navigationColor" />
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.SPLASH_IMAGE_DRAWABLE"
-                android:resource="@mipmap/ic_launcher" />
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.SPLASH_SCREEN_BACKGROUND_COLOR"
-                android:resource="@color/backgroundColor" />
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.SPLASH_SCREEN_FADE_OUT_DURATION"
-                android:value="@integer/splashScreenFadeOutDuration" />
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
-                android:value="customtabs" />
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            tools:ignore="LockedOrientationActivity,DiscouragedApi">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- TWA Deep Linking Intent Filter -->
+            <!-- Links to the game open in the app (verified by handle_all_urls in assetlinks.json). -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -81,25 +42,5 @@
                     android:pathPrefix="/war-of-attrition-game" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
-            android:enabled="true"
-            android:excludeFromRecents="true"
-            android:exported="false">
-
-            <meta-data
-                android:name="android.support.customtabs.trusted.MANAGE_SPACE_URL"
-                android:value="@string/launchUrl" />
-
-            <intent-filter>
-                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-
-        <service
-            android:name="androidx.browser.customtabs.PostMessageService"
-            android:exported="true" />
     </application>
 </manifest>

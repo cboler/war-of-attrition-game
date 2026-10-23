@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.WarOfAttrition" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="android:windowBackground">@color/backgroundColor</item>
+        <!-- The game has its own dark palette; never let the system auto-darken it. -->
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

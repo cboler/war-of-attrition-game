@@ -1,18 +1,13 @@
 apply plugin: 'com.android.application'
 
-def twaManifest = [
+def appConfig = [
     applicationId: 'com.cboler.warofattrition',
-    hostName: 'cboler.github.io',
+    // The hosted game the WebView loads. ?twa=1 is kept for GA4 continuity with earlier Android builds.
     launchUrl: 'https://cboler.github.io/war-of-attrition-game/?twa=1',
-    defaultUrl: 'https://cboler.github.io/war-of-attrition-game/',
-    webManifestUrl: 'https://cboler.github.io/war-of-attrition-game/manifest.webmanifest',
     name: 'War of Attrition - Card Game',
     launcherName: 'Attrition',
     themeColor: '#0d221c',
-    navigationColor: '#0d221c',
     backgroundColor: '#0d221c',
-    enableNotifications: false,
-    splashScreenFadeOutDuration: 300,
     // Keep this in sync with the CI's semver-packed release code: 4.4.1 -> 40401.
     versionCode: 40401,
     versionName: '4.4.1'
@@ -60,24 +55,19 @@ android {
     compileSdk 36
 
     defaultConfig {
-        applicationId twaManifest.applicationId
+        applicationId appConfig.applicationId
         minSdk 24
         targetSdk 36
-        versionCode resolveVersionCode(twaManifest.versionCode)
-        versionName resolveVersionName(twaManifest.versionName)
+        versionCode resolveVersionCode(appConfig.versionCode)
+        versionName resolveVersionName(appConfig.versionName)
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        resValue "string", "appName", twaManifest.name
-        resValue "string", "launcherName", twaManifest.launcherName
-        resValue "string", "hostName", twaManifest.hostName
-        resValue "string", "launchUrl", twaManifest.launchUrl
-        resValue "string", "defaultUrl", twaManifest.defaultUrl
-        resValue "string", "webManifestUrl", twaManifest.webManifestUrl
-        resValue "color", "colorPrimary", twaManifest.themeColor
-        resValue "color", "navigationColor", twaManifest.navigationColor
-        resValue "color", "backgroundColor", twaManifest.backgroundColor
-        resValue "integer", "splashScreenFadeOutDuration", twaManifest.splashScreenFadeOutDuration.toString()
+        resValue "string", "appName", appConfig.name
+        resValue "string", "launcherName", appConfig.launcherName
+        resValue "string", "launchUrl", appConfig.launchUrl
+        resValue "color", "colorPrimary", appConfig.themeColor
+        resValue "color", "backgroundColor", appConfig.backgroundColor
         resValue "string", "game_services_project_id", resolvePlayGamesProjectId()
     }
 
@@ -110,6 +100,10 @@ android {
         }
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -122,16 +116,12 @@ android {
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
-    // SPIKE: WebView wrapper bridge, debug builds only (src/debug).
-    debugImplementation 'androidx.webkit:webkit:1.18.0'
-    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.activity:activity:1.13.0'
+    implementation 'androidx.core:core-splashscreen:1.2.0'
+    implementation 'androidx.webkit:webkit:1.18.0'
+    // Custom Tabs for links to other sites (privacy policies, support).
     implementation 'androidx.browser:browser:1.10.0'
-    // Temporary pinned vendor build of Android Browser Helper based on upstream PR #584
-    // (GoogleChrome/android-browser-helper#584, commit 94fb27b1cbc91f55130a8f3cba090f98ee282791,
-    // tag woa-abh-2.7.3-session-1) to expose CustomTabsSession for TWA postMessage support.
-    // REMOVAL CONDITION: Replace with official com.google.androidbrowserhelper:androidbrowserhelper
-    // release once PR #584 ships upstream.
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3-session-1'
+    implementation 'com.google.android.material:material:1.12.0'
     implementation 'com.google.android.gms:play-services-games-v2:22.0.0'
     implementation 'com.google.android.gms:play-services-tasks:18.2.0'
 

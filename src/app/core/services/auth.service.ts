@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, effect, inject, untracked } from '@angular/core';
 import {
   UserProfile,
   DEFAULT_GUEST_PROFILE,
@@ -19,6 +19,8 @@ import {
   normalizeHallOfValor
 } from '../models/hall-of-valor.model';
 import { APP_LOCAL_STORAGE_KEYS } from '../models/app-storage.model';
+import { PlayGamesPlayer, isNativeAppHost } from '../models/twa-bridge.model';
+import { PlatformAchievementsService } from './platform-achievements.service';
 
 @Injectable({
   providedIn: 'root'
@@ -45,11 +47,50 @@ export class AuthService {
 
   private gisInitialized = false;
   private readonly DEFAULT_CLIENT_ID = environment.googleClientId || '';
-  readonly isGoogleAuthConfigured = computed<boolean>(() => !!this.DEFAULT_CLIENT_ID);
+  /** Inside the Android app Google blocks web sign-in, so Play Games supplies identity instead. */
+  readonly isNativeApp = isNativeAppHost();
+  readonly isGoogleAuthConfigured = computed<boolean>(() => !!this.DEFAULT_CLIENT_ID && !this.isNativeApp);
+  private readonly platformAchievements = inject(PlatformAchievementsService);
 
   constructor() {
     this.initializeProfiles();
-    this.loadGisScript();
+    if (!this.isNativeApp) {
+      this.loadGisScript();
+    }
+    effect(() => {
+      const player = this.platformAchievements.playGamesPlayer();
+      if (player) {
+        untracked(() => this.applyPlayGamesIdentity(player));
+      }
+    });
+  }
+
+  /**
+   * Shows the signed-in Play Games player's name and avatar on the active guest profile. Progress
+   * stays on the same profile (unlike Google sign-in, which switches to a separate one), and the
+   * values are stored only on this device.
+   */
+  applyPlayGamesIdentity(player: PlayGamesPlayer): void {
+    const active = this.activeProfile();
+    if (active.provider !== 'guest') return;
+
+    // A name the player typed themselves always wins over Play Games.
+    const nameIsAutomatic =
+      active.name === DEFAULT_GUEST_PROFILE.name || active.name === active.playGamesName;
+    const name = nameIsAutomatic ? player.displayName : active.name;
+    const avatarIsAutomatic =
+      active.avatarUrl === DEFAULT_GUEST_PROFILE.avatarUrl || active.avatarUrl.startsWith('data:image/png');
+    const avatarUrl = player.avatarDataUrl && avatarIsAutomatic ? player.avatarDataUrl : active.avatarUrl;
+
+    if (name === active.name && avatarUrl === active.avatarUrl && active.playGamesName === player.displayName) {
+      return;
+    }
+    this.profilesSignal.update(profiles =>
+      profiles.map(p =>
+        p.id === active.id ? { ...p, name, avatarUrl, playGamesName: player.displayName } : p
+      )
+    );
+    this.persistProfiles();
   }
 
   /**

@@ -1,9 +1,16 @@
 package com.cboler.warofattrition;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.util.Base64;
 import android.util.Log;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.common.images.ImageManager;
 import com.google.android.gms.games.AchievementsClient;
 import com.google.android.gms.games.AuthenticationResult;
 import com.google.android.gms.games.GamesSignInClient;
@@ -11,6 +18,8 @@ import com.google.android.gms.games.PlayGames;
 import com.google.android.gms.games.PlayGamesSdk;
 import com.google.android.gms.tasks.Task;
 import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 
 /**
  * Encapsulates Google Play Games Services v2 integration and handles Web ↔ Native achievement commands.
@@ -20,11 +29,15 @@ public class PlayGamesBridge {
     private static final String PROTOCOL_VERSION = "v1";
     private static final int RC_ACHIEVEMENT_UI = 9003;
     private static final String SIGN_IN_REQUIRED = "Play Games sign-in required";
+    /** Avatar edge in pixels; small enough to keep the data URL around 10 KB. */
+    private static final int AVATAR_SIZE_PX = 96;
 
     private final Activity activity;
     private AchievementsClient achievementsClient;
     private boolean isInitialized = false;
     private boolean isSignedIn = false;
+    /** Last PLAY_GAMES_PLAYER message, resent to each new page that initialises. */
+    private String lastPlayerMessage;
 
     public interface BridgeResponseCallback {
         void sendResponse(String jsonMessage);
@@ -141,6 +154,7 @@ public class PlayGamesBridge {
                         initialize();
                     } else if (isSignedIn) {
                         sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
+                        sendToWebRaw(lastPlayerMessage);
                     } else {
                         // Re-check isAuthenticated in case automatic background sign-in just finished
                         checkAuthenticationAndReport();
@@ -185,15 +199,8 @@ public class PlayGamesBridge {
         }
 
         try {
-            setHandlingInternalActivityResult(true);
-            signInClient().signIn().addOnCompleteListener(task -> {
-                // The v2 sign-in UI does not report back through onActivityResult, so the flag
-                // is cleared here; leaving it set stops MainActivity closing when the TWA exits.
-                setHandlingInternalActivityResult(false);
-                reportAuthentication(task, "signIn");
-            });
+            signInClient().signIn().addOnCompleteListener(task -> reportAuthentication(task, "signIn"));
         } catch (Throwable t) {
-            setHandlingInternalActivityResult(false);
             Log.w(TAG, "Sign-in request failed: " + t.getMessage(), t);
         }
     }
@@ -232,10 +239,8 @@ public class PlayGamesBridge {
         try {
             client.getAchievementsIntent().addOnSuccessListener(intent -> {
                 try {
-                    setHandlingInternalActivityResult(true);
                     activity.startActivityForResult(intent, RC_ACHIEVEMENT_UI);
                 } catch (Throwable t) {
-                    setHandlingInternalActivityResult(false);
                     Log.w(TAG, "Failed to launch achievements UI activity: " + t.getMessage(), t);
                 }
             }).addOnFailureListener(e ->
@@ -332,9 +337,76 @@ public class PlayGamesBridge {
     }
 
     private void onSignedIn() {
+        boolean wasSignedIn = this.isSignedIn;
         this.isSignedIn = true;
         achievementsClient();
         sendToWeb("PLAY_GAMES_SIGNED_IN", null, null, null);
+        if (!wasSignedIn) {
+            sendCurrentPlayer();
+        }
+    }
+
+    /**
+     * Sends the signed-in player's Play Games name, then again with an avatar once it loads.
+     * The web app shows them on the local profile (Google sign-in cannot run inside a WebView).
+     * Nothing here leaves the device; no player ID is sent.
+     */
+    private void sendCurrentPlayer() {
+        if (activity == null) return;
+        try {
+            PlayGames.getPlayersClient(activity).getCurrentPlayer().addOnSuccessListener(player -> {
+                if (player == null) return;
+                String name = player.getDisplayName();
+                lastPlayerMessage = buildPlayerMessage(name, null);
+                sendToWebRaw(lastPlayerMessage);
+                Uri icon = player.getIconImageUri();
+                if (icon == null) return;
+                ImageManager.create(activity).loadImage((uri, drawable, isRequested) -> {
+                    String dataUrl = toPngDataUrl(drawable);
+                    if (dataUrl != null) {
+                        lastPlayerMessage = buildPlayerMessage(name, dataUrl);
+                        sendToWebRaw(lastPlayerMessage);
+                    }
+                }, icon);
+            }).addOnFailureListener(e ->
+                    Log.w(TAG, "Could not load the current Play Games player: " + categorizeException(e)));
+        } catch (Throwable t) {
+            Log.w(TAG, "Could not request the current Play Games player: " + t.getMessage(), t);
+        }
+    }
+
+    static String buildPlayerMessage(String displayName, String avatarDataUrl) {
+        try {
+            JSONObject res = new JSONObject();
+            res.put("version", PROTOCOL_VERSION);
+            res.put("type", "PLAY_GAMES_PLAYER");
+            res.put("displayName", displayName == null ? "" : displayName);
+            if (avatarDataUrl != null) res.put("avatarDataUrl", avatarDataUrl);
+            return res.toString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String toPngDataUrl(Drawable drawable) {
+        if (drawable == null) return null;
+        try {
+            Bitmap bitmap = Bitmap.createBitmap(AVATAR_SIZE_PX, AVATAR_SIZE_PX, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            if (drawable instanceof BitmapDrawable && ((BitmapDrawable) drawable).getBitmap() != null) {
+                canvas.drawBitmap(Bitmap.createScaledBitmap(
+                        ((BitmapDrawable) drawable).getBitmap(), AVATAR_SIZE_PX, AVATAR_SIZE_PX, true), 0, 0, null);
+            } else {
+                drawable.setBounds(0, 0, AVATAR_SIZE_PX, AVATAR_SIZE_PX);
+                drawable.draw(canvas);
+            }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            return "data:image/png;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
+        } catch (Throwable t) {
+            Log.w(TAG, "Could not encode Play Games avatar: " + t.getMessage());
+            return null;
+        }
     }
 
     private static boolean isAuthenticated(Task<AuthenticationResult> task) {
@@ -357,9 +429,10 @@ public class PlayGamesBridge {
         return achievementsClient;
     }
 
-    private void setHandlingInternalActivityResult(boolean handling) {
-        if (activity instanceof MainActivity) {
-            ((MainActivity) activity).setHandlingInternalActivityResult(handling);
+    /** Delivers an already-formatted protocol message to the page. */
+    void sendToWebRaw(String jsonMessage) {
+        if (jsonMessage != null && responseCallback != null) {
+            responseCallback.sendResponse(jsonMessage);
         }
     }
 

@@ -12,7 +12,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven { url = "$rootDir/vendor/m2repository" }
     }
 }
 

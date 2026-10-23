@@ -45,7 +45,7 @@ describe('AuthService', () => {
     localStorage.setItem('war-of-attrition-active-profile-id', 'legacy-user-1');
 
     // Create a new instance to test constructor initialization
-    const freshService = new AuthService();
+    const freshService = TestBed.runInInjectionContext(() => new AuthService());
 
     const stats = freshService.userStats();
     // Preserves old values
@@ -88,7 +88,7 @@ describe('AuthService', () => {
       lastLoginAt: new Date().toISOString()
     }]));
 
-    const freshService = new AuthService();
+    const freshService = TestBed.runInInjectionContext(() => new AuthService());
     const progression = freshService.activeProfile().progression;
 
     expect(progression.schemaVersion).toBe(3);
@@ -305,7 +305,7 @@ describe('AuthService', () => {
       juggernautCardIds: ['hearts-A', 'hearts-A', 'spades-K']
     });
 
-    const freshService = new AuthService();
+    const freshService = TestBed.runInInjectionContext(() => new AuthService());
     expect(freshService.userStats().currentBattleWinStreak).toBe(5);
     expect(freshService.userStats().bestBattleLossStreak).toBe(3);
     expect(freshService.userStats().juggernautOccurrences).toBe(2);
@@ -323,7 +323,7 @@ describe('AuthService', () => {
       statistics: {}
     }]));
 
-    const freshService = new AuthService();
+    const freshService = TestBed.runInInjectionContext(() => new AuthService());
     expect(freshService.hallOfValor()).toEqual({ records: {} });
   });
 
@@ -349,7 +349,7 @@ describe('AuthService', () => {
     expect(service.hallOfValor().records['diamonds-2'].aceAssassinations).toBe(2);
 
     // Verify persistence across new instance
-    const freshService = new AuthService();
+    const freshService = TestBed.runInInjectionContext(() => new AuthService());
     expect(freshService.hallOfValor().records['diamonds-2'].confirmedCasualties).toBe(5);
   });
 
@@ -420,5 +420,31 @@ describe('AuthService', () => {
 
     service.resetActiveUserCareer();
     expect(service.hallOfValor().records).toEqual({});
+  });
+
+  describe('Play Games identity (Android app)', () => {
+    it('names a default guest profile after the Play Games player and keeps its progress', () => {
+      const before = service.activeProfile();
+      service.applyPlayGamesIdentity({ displayName: 'Chris', avatarDataUrl: 'data:image/png;base64,AAAA' });
+
+      const after = service.activeProfile();
+      expect(after.id).toBe(before.id);
+      expect(after.provider).toBe('guest');
+      expect(after.name).toBe('Chris');
+      expect(after.avatarUrl).toBe('data:image/png;base64,AAAA');
+      expect(after.statistics).toEqual(before.statistics);
+      const persisted = JSON.parse(localStorage.getItem('war-of-attrition-profiles') || '[]');
+      expect(persisted[0].playGamesName).toBe('Chris');
+    });
+
+    it('follows later Play Games name changes but never overrides a name the player typed', () => {
+      service.applyPlayGamesIdentity({ displayName: 'Chris' });
+      service.applyPlayGamesIdentity({ displayName: 'Chris B' });
+      expect(service.activeProfile().name).toBe('Chris B');
+
+      service.updateProfileName('General Gouda');
+      service.applyPlayGamesIdentity({ displayName: 'Chris B' });
+      expect(service.activeProfile().name).toBe('General Gouda');
+    });
   });
 });

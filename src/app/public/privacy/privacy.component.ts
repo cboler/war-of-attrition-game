@@ -52,11 +52,13 @@ import { MatDividerModule } from '@angular/material/divider';
               <li>
                 <strong>Optional Google Sign-In:</strong> If you choose to sign in with Google, we receive basic public profile information 
                 (name, email address, and avatar image) provided by Google Identity Services. This is used solely to display your commander identity 
-                and associate your gameplay statistics with your profile.
+                and associate your gameplay statistics with your profile. Google Sign-In is offered on the web; inside the Android app, Google does not
+                allow it, and your Google Play Games display name and picture are shown on your profile instead once you connect Play Games. They are
+                stored only on your device and are never included in analytics.
               </li>
               <li>
-                <strong>Google Play Games Services:</strong> Achievements and career records always work locally. If an Android host establishes
-                a verified connection and Play Games is signed in, mapped achievement progress and completed-War Game Stats may also be submitted
+                <strong>Google Play Games Services:</strong> Achievements and career records always work locally. If the Android app's native connection
+                is available and Play Games is signed in, mapped achievement progress and completed-War Game Stats may also be submitted
                 to Google Play Games Services. When that verified connection is unavailable, browser and app play remain local and no web fallback
                 submits those records to Play Games.
               </li>
@@ -80,7 +82,7 @@ import { MatDividerModule } from '@angular/material/divider';
             <p>The application integrates with the following third-party services:</p>
             <ul>
               <li><strong>Google Identity Services:</strong> Authentication and profile display (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>).</li>
-              <li><strong>Google Play Games Services:</strong> Conditional achievement and completed-War Game Stats synchronization when a verified Android connection is available (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Play Terms</a>).</li>
+              <li><strong>Google Play Games Services:</strong> Conditional achievement and completed-War Game Stats synchronization, and display of your Play Games name and picture on your local profile, in the Android app (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Play Terms</a>).</li>
               <li><strong>Google Analytics:</strong> Consent-gated anonymized gameplay and app-usage statistics when configured. Google may process online identifiers and technical information under its terms (<a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses partner data</a>).</li>
             </ul>
           </section>

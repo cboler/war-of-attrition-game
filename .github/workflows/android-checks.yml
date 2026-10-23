@@ -1,6 +1,6 @@
 name: Android Checks
 
-# Fast native feedback without signing secrets: unit tests and lint for the TWA wrapper.
+# Fast native feedback without signing secrets: unit tests and lint for the Android app.
 on:
   push:
     branches: [ main ]

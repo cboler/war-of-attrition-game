@@ -22,7 +22,7 @@ $$\text{versionCode} = \text{MAJOR} \times 10000 + \text{MINOR} \times 100 + \te
 
 ---
 
-## 2. Synchronized Files Inventory (11 Locations)
+## 2. Synchronized Files Inventory (10 Locations)
 
 Update the version name (`X.Y.Z`) and packed version code (`XYYZZ`) across the following files:
 
@@ -32,13 +32,12 @@ Update the version name (`X.Y.Z`) and packed version code (`XYYZZ`) across the f
 | 2 | [`package-lock.json`](../../package-lock.json) | `"version"` (root & `packages[""]`) | `"4.2.3"` |
 | 3 | [`src/environments/environment.prod.ts`](../../src/environments/environment.prod.ts) | `appVersion` | `"4.2.3"` |
 | 4 | [`src/environments/environment.ts`](../../src/environments/environment.ts) | `appVersion` | `"4.2.3-dev"` |
-| 5 | [`android/app/build.gradle`](../../android/app/build.gradle) | `twaManifest.versionCode` & `versionName` | `40203`, `'4.2.3'` |
-| 6 | [`android/twa-manifest.json`](../../android/twa-manifest.json) | `appVersionCode` & `appVersionName` | `40203`, `"4.2.3"` |
-| 7 | [`.github/workflows/build-android-bundle.yml`](../../.github/workflows/build-android-bundle.yml) | Input description placeholders | `e.g. 40203`, `e.g. 4.2.3` |
-| 8 | [`scripts/verify-version-match.js`](../../scripts/verify-version-match.js) | Error message example | `...such as 4.2.3.` |
-| 9 | [`scripts/verify-version-match.spec.js`](../../scripts/verify-version-match.spec.js) | Test assertions | `assert.equal(readPackageVersion(), '4.2.3');` and test cases |
-| 10 | [`src/app/public/support/support.component.spec.ts`](../../src/app/public/support/support.component.spec.ts) | Expected production version | `expect(productionEnvironment.appVersion).toBe('4.2.3');` |
-| 11 | [`.github/instructions/current-development-status.md`](../../.github/instructions/current-development-status.md) | Project state release identity | `version identity **4.2.3**` |
+| 5 | [`android/app/build.gradle`](../../android/app/build.gradle) | `appConfig.versionCode` & `versionName` | `40203`, `'4.2.3'` |
+| 6 | [`.github/workflows/build-android-bundle.yml`](../../.github/workflows/build-android-bundle.yml) | Input description placeholders | `e.g. 40203`, `e.g. 4.2.3` |
+| 7 | [`scripts/verify-version-match.js`](../../scripts/verify-version-match.js) | Error message example | `...such as 4.2.3.` |
+| 8 | [`scripts/verify-version-match.spec.js`](../../scripts/verify-version-match.spec.js) | Test assertions | `assert.equal(readPackageVersion(), '4.2.3');` and test cases |
+| 9 | [`src/app/public/support/support.component.spec.ts`](../../src/app/public/support/support.component.spec.ts) | Expected production version | `expect(productionEnvironment.appVersion).toBe('4.2.3');` |
+| 10 | [`.github/instructions/current-development-status.md`](../../.github/instructions/current-development-status.md) | Project state release identity | `version identity **4.2.3**` |
 
 ---
 
