@@ -55,6 +55,15 @@
   background: transparent;
   color: #f7f0e1;
   cursor: pointer;
+
+  // Sized in em so the box grows with the glyph when Android scales text
+  // (system font size); a fixed px box leaves the X spilling right and down.
+  mat-icon {
+    width: 1em;
+    height: 1em;
+    font-size: 22px;
+    line-height: 1;
+  }
 }
 
 .demo-scene {
@@ -127,8 +136,27 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: radial-gradient(circle, rgba(35, 88, 60, 0.9), rgba(7, 26, 21, 0.94) 70%);
+  // Opaque so the settled cards underneath do not ghost through the banner.
+  background:
+    radial-gradient(circle at 50% 46%, rgba(64, 120, 78, 0.95), rgba(16, 42, 35, 0.99) 58%),
+    #0b1f19;
   animation: celebration-reveal 260ms ease-out both;
+}
+
+.victory-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 360px;
+  height: 360px;
+  margin: -180px 0 0 -180px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 213, 79, 0.16) 0deg 7deg, transparent 7deg 20deg);
+  mask-image: radial-gradient(circle, #000 18%, transparent 68%);
+  -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 68%);
+  animation:
+    rays-reveal 600ms ease-out both,
+    rays-turn 24s linear infinite;
 }
 
 .victory-stamp {
@@ -140,8 +168,11 @@
   transform: rotate(-3deg);
   border: 3px double #ffd54f;
   color: #ffe082;
-  background: rgba(41, 63, 37, 0.88);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.42);
+  background: rgba(41, 63, 37, 0.94);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 6px 24px rgba(0, 0, 0, 0.5),
+    0 0 36px rgba(255, 213, 79, 0.18);
   font: 800 1.15rem/1 Georgia, serif;
   letter-spacing: 0.12em;
   text-align: center;
@@ -151,29 +182,119 @@
   small { color: rgba(247, 240, 225, 0.76); font: 700 0.52rem/1.2 system-ui, sans-serif; letter-spacing: 0.11em; }
 }
 
-.streamer {
-  position: absolute;
-  top: -34px;
-  width: 8px;
-  height: 125px;
-  border-radius: 999px;
-  animation: streamer-fall 720ms cubic-bezier(0.18, 0.72, 0.32, 1) both;
-}
-
-.streamer-one { left: 14%; background: #a72f35; transform: rotate(18deg); }
-.streamer-two { left: 34%; background: #e5c175; transform: rotate(-12deg); animation-delay: 70ms; }
-.streamer-three { right: 31%; background: #8e2630; transform: rotate(14deg); animation-delay: 35ms; }
-.streamer-four { right: 12%; background: #d7aa50; transform: rotate(-20deg); animation-delay: 105ms; }
-
+// Party poppers drawn in CSS: a striped cone pivoting on its tip, mouth aimed up and inward.
 .party-popper {
   position: absolute;
-  bottom: 12px;
-  z-index: 2;
-  font-size: 1.7rem;
-  animation: popper-pop 420ms cubic-bezier(0.16, 1.35, 0.35, 1) both;
+  bottom: 8px;
+  z-index: 3;
+  width: 20px;
+  height: 36px;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+  animation: popper-recoil 520ms cubic-bezier(0.2, 1.6, 0.4, 1) 80ms both;
 
-  &.left { left: 18px; transform: rotate(-18deg); }
-  &.right { right: 18px; transform: scaleX(-1) rotate(-18deg); }
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    background: repeating-linear-gradient(-35deg, #ffd54f 0 5px, #c62828 5px 9px);
+  }
+
+  // The open mouth, which flares bright as the popper fires.
+  &::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -1px;
+    right: -1px;
+    height: 7px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, #3b170f 0 42%, #ffe082 48% 100%);
+    animation: popper-flash 520ms ease-out 120ms both;
+  }
+
+  &.left { left: 12px; --tilt: 35deg; }
+  &.right { right: 12px; --tilt: -35deg; }
+}
+
+.confetti-field {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+// Every piece starts at its popper's mouth and follows a burst-then-fall arc.
+.confetti {
+  position: absolute;
+  bottom: 36px;
+  width: 7px;
+  height: 7px;
+  opacity: 0;
+  animation: confetti-arc var(--duration) var(--delay) both;
+
+  &.left { left: 40px; }
+  &.right { right: 40px; }
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color);
+    animation: confetti-flutter var(--flutter) linear infinite;
+  }
+
+  &.strip { width: 4px; height: 11px; }
+  &.square { width: 7px; height: 7px; }
+  &.disc { width: 6px; height: 6px; }
+  &.disc::before { border-radius: 50%; }
+  &.strip::before { border-radius: 1px; }
+}
+
+@keyframes confetti-arc {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg) scale(0.4);
+    animation-timing-function: cubic-bezier(0.15, 0.7, 0.35, 1);
+  }
+  6% { opacity: 1; }
+  38% {
+    transform: translate(var(--peak-x), var(--peak-y)) rotate(calc(var(--spin) * 0.45)) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.8, 0.6);
+  }
+  82% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(var(--end-x), var(--end-y)) rotate(var(--spin)) scale(1);
+  }
+}
+
+@keyframes confetti-flutter {
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  50% { transform: rotateX(180deg) rotateY(60deg); }
+  100% { transform: rotateX(360deg) rotateY(0deg); }
+}
+
+@keyframes popper-recoil {
+  0% { opacity: 0; transform: rotate(var(--tilt)) scale(0.5); }
+  45% { opacity: 1; transform: rotate(calc(var(--tilt) * 0.7)) scale(1.12, 0.9); }
+  100% { opacity: 1; transform: rotate(var(--tilt)) scale(1); }
+}
+
+@keyframes popper-flash {
+  0% { box-shadow: 0 0 0 0 rgba(255, 236, 170, 0); }
+  25% { box-shadow: 0 0 14px 7px rgba(255, 236, 170, 0.85); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 236, 170, 0); }
+}
+
+@keyframes rays-reveal {
+  from { opacity: 0; scale: 0.6; }
+  to { opacity: 1; scale: 1; }
+}
+
+@keyframes rays-turn {
+  to { rotate: 360deg; }
 }
 
 @keyframes casualty-enters-boneyard {
@@ -193,16 +314,6 @@
 @keyframes victory-stamp {
   from { opacity: 0; transform: rotate(-7deg) scale(1.55); }
   to { opacity: 1; transform: rotate(-3deg) scale(1); }
-}
-
-@keyframes streamer-fall {
-  from { opacity: 0; translate: 0 -40px; }
-  to { opacity: 0.9; translate: 0 74px; }
-}
-
-@keyframes popper-pop {
-  from { opacity: 0; scale: 0.45; }
-  to { opacity: 1; scale: 1; }
 }
 
 .deck-readout {
@@ -537,8 +648,11 @@
   .demo-card-slot.departing-to-boneyard app-card,
   .war-celebration,
   .victory-stamp,
-  .streamer,
-  .party-popper { animation: none; }
+  .victory-rays,
+  .party-popper,
+  .party-popper::after { animation: none; }
+  .party-popper { transform: rotate(var(--tilt)); }
+  .confetti-field { display: none; }
 }
 
 .rule-demo.motion-disabled .demo-card-slot {
@@ -550,5 +664,8 @@
 .rule-demo.motion-disabled .demo-card-slot.departing-to-boneyard app-card,
 .rule-demo.motion-disabled .war-celebration,
 .rule-demo.motion-disabled .victory-stamp,
-.rule-demo.motion-disabled .streamer,
-.rule-demo.motion-disabled .party-popper { animation: none; }
+.rule-demo.motion-disabled .victory-rays,
+.rule-demo.motion-disabled .party-popper,
+.rule-demo.motion-disabled .party-popper::after { animation: none; }
+.rule-demo.motion-disabled .party-popper { transform: rotate(var(--tilt)); }
+.rule-demo.motion-disabled .confetti-field { display: none; }

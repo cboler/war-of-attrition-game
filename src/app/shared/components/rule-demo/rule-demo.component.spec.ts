@@ -132,8 +132,10 @@ describe('RuleDemoComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.victory-stamp')?.textContent).toContain('War Won');
-    expect(fixture.nativeElement.querySelectorAll('.streamer').length).toBe(4);
+    expect(fixture.nativeElement.querySelectorAll('.confetti').length).toBe(36);
     expect(fixture.nativeElement.querySelectorAll('.party-popper').length).toBe(2);
+    // The poppers are drawn in CSS; emoji glyphs rendered as empty boxes on Android.
+    expect(fixture.nativeElement.querySelector('.war-celebration')?.textContent).not.toContain('\u{1F389}');
   }));
 
   it('plays tutorial cues while sound effects are enabled', fakeAsync(() => {

@@ -27,6 +27,58 @@ export type RuleDemoKind =
 
 type DemoGlow = 'green' | 'red' | 'blue' | null;
 
+interface ConfettiPiece {
+  readonly id: number;
+  readonly side: 'left' | 'right';
+  readonly shape: 'strip' | 'square' | 'disc';
+  readonly style: Readonly<Record<string, string>>;
+}
+
+const CONFETTI_COLORS = ['#ffd54f', '#e5c175', '#c62828', '#f7f0e1', '#81d4fa', '#a72f35'];
+const CONFETTI_SHAPES: readonly ConfettiPiece['shape'][] = ['strip', 'square', 'strip', 'disc'];
+const CONFETTI_PER_POPPER = 18;
+
+/**
+ * Two popper bursts with fixed, seeded trajectories so the drill looks the same on every replay.
+ * Positions are written as CSS custom properties and animated entirely in SCSS.
+ */
+function buildWarConfetti(): readonly ConfettiPiece[] {
+  let seed = 0x5eed;
+  const next = (): number => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  const between = (min: number, max: number): number => min + next() * (max - min);
+
+  const pieces: ConfettiPiece[] = [];
+  for (const side of ['left', 'right'] as const) {
+    const direction = side === 'left' ? 1 : -1;
+    for (let index = 0; index < CONFETTI_PER_POPPER; index++) {
+      const id = pieces.length;
+      const reach = between(40, 210);
+      pieces.push({
+        id,
+        side,
+        shape: CONFETTI_SHAPES[id % CONFETTI_SHAPES.length],
+        style: {
+          '--peak-x': `${(direction * reach * 0.62).toFixed(1)}px`,
+          '--peak-y': `${(-between(105, 200)).toFixed(1)}px`,
+          '--end-x': `${(direction * reach).toFixed(1)}px`,
+          '--end-y': `${between(30, 90).toFixed(1)}px`,
+          '--spin': `${(direction * between(320, 900)).toFixed(0)}deg`,
+          '--flutter': `${between(0.38, 0.8).toFixed(2)}s`,
+          '--delay': `${(140 + between(0, 260)).toFixed(0)}ms`,
+          '--duration': `${between(1500, 2300).toFixed(0)}ms`,
+          '--color': CONFETTI_COLORS[(id * 7 + index) % CONFETTI_COLORS.length]
+        }
+      });
+    }
+  }
+  return pieces;
+}
+
+const WAR_CONFETTI = buildWarConfetti();
+
 interface RuleDemoFrame {
   readonly cue: string;
   readonly narration: string;
@@ -341,6 +393,7 @@ export class RuleDemoComponent implements AfterViewInit {
     () => this.frameIndex() === this.demo().frames.length - 1
   );
   protected readonly motionDisabled = computed(() => !this.settings.autoPlayAnimations());
+  protected readonly confetti = WAR_CONFETTI;
 
   @ViewChild('demoHeading') private demoHeading?: ElementRef<HTMLElement>;
 
