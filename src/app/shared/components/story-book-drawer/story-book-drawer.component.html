@@ -100,7 +100,7 @@
       <mat-icon aria-hidden="true">school</mat-icon>
       <p>
         <strong>Your permanent reference</strong>
-        The Chronicle records this War, the Hall of Valor honors notable cards, Rules offers practice drills, and Dossiers unseal as the Campaign advances. Choose <b>Back to Table</b> when you are ready.
+        The Chronicle logs this War, the Hall of Valor honors standout cards, Rules has practice drills, and Dossiers unlock as you play. Tap <b>Back to Table</b> when you’re ready.
       </p>
     </div>
   }
@@ -237,7 +237,7 @@
               <mat-icon class="empty-icon">visibility_off</mat-icon>
             </div>
             <p>Field Records Sealed</p>
-            <small>Hall of Valor service records are sealed during active operations under Fog of War. Records will be unsealed when this War concludes.</small>
+            <small>Sealed by Fog of War until this War ends.</small>
           </div>
         } @else {
           @if (selectedValorCard(); as detail) {
@@ -342,7 +342,7 @@
             <div class="empty-state">
               <mat-icon class="empty-icon" aria-hidden="true">military_tech</mat-icon>
               <p>The Hall of Valor is empty.</p>
-              <small>Cards that distinguish themselves in battle (slaying Aces, rescuing allies, surviving Battles, earning Juggernaut Citations) will be commemorated here.</small>
+              <small>Cards that slay Aces, rescue allies, survive Battles or earn Juggernaut Citations are honored here.</small>
             </div>
           } @else {
             <div class="valor-overview">

@@ -19,6 +19,12 @@
   flex-direction: row-reverse;
 }
 
+// Your deck is the most-tapped target on the table; keep a clear gutter between it and
+// the profile button so a slightly-off draw never opens the profile instead.
+.seat.is-bottom {
+  gap: clamp(30px, 8vw, 54px);
+}
+
 .identity {
   display: flex;
   align-items: center;

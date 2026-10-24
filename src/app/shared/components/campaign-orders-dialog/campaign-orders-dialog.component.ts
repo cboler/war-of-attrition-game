@@ -37,8 +37,8 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     chapterTitle: 'The Accord',
     title: 'Standard Campaign',
     tag: 'Chapter I · Classic Attrition',
-    description: 'Traditional War of Attrition rules across a three-War series.',
-    ruleSummary: 'Reinforcement opportunities are limited only by the cards in your physical deck.',
+    description: 'Classic rules across three Wars.',
+    ruleSummary: 'You can reinforce as long as you have cards.',
     reinforcementPolicy: 'Deck Count Only',
     modifiers: []
   },
@@ -48,8 +48,8 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     chapterTitle: 'The Closing Passes',
     title: 'Limited Reserves',
     tag: 'Chapter II · 5 Reserves',
-    description: 'A strict strategic constraint testing long-range resource management.',
-    ruleSummary: 'You begin with exactly 5 reinforcements for the entire Three-War Campaign. Used reserves do not return between Wars.',
+    description: 'Reinforcements are scarce. Spend them carefully.',
+    ruleSummary: '5 reinforcements for the whole Campaign. Spent reserves don’t come back between Wars.',
     reinforcementPolicy: '5 Reserves (Entire Campaign)',
     modifiers: ['limited_reserves']
   },
@@ -59,8 +59,8 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     chapterTitle: 'The Blind Wheel',
     title: 'Fog of War',
     tag: 'Chapter III · Imperfect Information',
-    description: 'Five reserves now operate under imperfect information. The Boneyard stays sealed until each War ends.',
-    ruleSummary: 'Limited Reserves remains active. Casualties and past clashes are also sealed from inspection while fighting continues.',
+    description: 'Five reserves, and now you fight blind: the Boneyard stays sealed until each War ends.',
+    ruleSummary: 'Limited Reserves still applies. Casualties and past clashes stay hidden until the War ends.',
     reinforcementPolicy: '5 Reserves (Entire Campaign)',
     modifiers: ['limited_reserves', 'fog_of_war']
   },
@@ -70,8 +70,8 @@ export const CAMPAIGN_ORDER_OPTIONS: readonly CampaignOrderOption[] = [
     chapterTitle: 'The War of Attrition',
     title: 'Total War',
     tag: 'Chapter IV · Cumulative Differential',
-    description: 'All three constraints converge: scarce reserves, sealed casualties, and a cumulative Campaign differential.',
-    ruleSummary: 'Limited Reserves and Fog of War remain active. Every War also contributes its signed card margin to the final Campaign result.',
+    description: 'Everything at once: scarce reserves, sealed casualties, and every card counted.',
+    ruleSummary: 'Limited Reserves and Fog of War still apply. Each War’s card margin adds to a Campaign total that decides the result.',
     reinforcementPolicy: '5 Reserves (Entire Campaign)',
     modifiers: ['limited_reserves', 'fog_of_war', 'total_war']
   }
@@ -81,20 +81,20 @@ export const CUSTOM_CAMPAIGN_RULES: readonly CustomRuleOption[] = [
   {
     id: 'limited_reserves',
     title: 'Limited Reserves',
-    description: 'Restricts reinforcement availability across the Three-War Campaign.',
-    ruleSummary: 'You begin with exactly 5 reinforcement reserves for the entire Three-War Campaign. Used reserves do not return between Wars.'
+    description: 'Caps reinforcements for the whole Campaign.',
+    ruleSummary: '5 reinforcements for the whole Campaign. Spent reserves don’t come back between Wars.'
   },
   {
     id: 'fog_of_war',
     title: 'Fog of War',
-    description: 'Conceals information that would normally be inspectable during a War.',
-    ruleSummary: 'Casualties, the Boneyard, and Hall of Valor records remain sealed while fighting continues.'
+    description: 'Hides casualties until each War ends.',
+    ruleSummary: 'The Boneyard, casualties and Hall of Valor stay sealed until the War ends.'
   },
   {
     id: 'total_war',
     title: 'Campaign Differential',
     description: "Each War's signed card margin contributes to the final Campaign result.",
-    ruleSummary: 'Individual War results remain truthful, but cumulative signed card margin decides the final Campaign outcome.'
+    ruleSummary: 'Each War keeps its own result, but the combined card margin decides the Campaign.'
   }
 ];
 

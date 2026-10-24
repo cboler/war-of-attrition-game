@@ -296,8 +296,26 @@ const RING_FRAGMENT = /* glsl */ `
   uniform float uProgress;
   uniform float uThickness;
   uniform float uMode;
+  uniform float uSeed;
   uniform vec3 uColor;
   varying vec2 vUv;
+
+  // Same Hoskins hash12 as the felt: sin()-based hashes lose precision on Mali GPUs.
+  float hash(float n) {
+    vec3 p3 = fract(vec3(n, uSeed, n) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+  }
+
+  // Smooth value noise around the circle; cells wrap so there is no seam at +/-PI.
+  float arcNoise(float turn, float cells) {
+    float x = turn * cells;
+    float i = floor(x);
+    float f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(hash(mod(i, cells)), hash(mod(i + 1.0, cells)), f);
+  }
+
   void main() {
     float r = length(vUv);
     float fade = 1.0 - uProgress;
@@ -305,8 +323,21 @@ const RING_FRAGMENT = /* glsl */ `
     if (uMode < 0.5) {
       float radius = 1.0 - pow(1.0 - uProgress, 3.0);
       float band = uThickness * (1.0 - uProgress * 0.6);
-      a = exp(-pow((r - radius) / max(band, 0.001), 2.0)) * fade;
-      a += exp(-pow((r - radius * 0.86) / max(band * 2.4, 0.001), 2.0)) * fade * 0.25;
+
+      // Break-up: from a fifth of the way out the ring splits into arcs along the noise, the gaps widen
+      // as it fades, and each arc drifts slightly in or out so it reads as shattering, not thinning.
+      float turn = atan(vUv.y, vUv.x) / 6.2831853 + 0.5;
+      float coarse = arcNoise(turn, 11.0);
+      float fine = arcNoise(turn, 37.0);
+      float shatter = smoothstep(0.2, 0.85, uProgress);
+      float drift = (coarse - 0.5) * 0.14 * shatter;
+      float pieces = 0.72 * coarse + 0.28 * fine;
+      float cut = shatter * 0.97;
+      float keep = smoothstep(cut - 0.07, cut + 0.07, pieces);
+
+      float ringR = radius + drift;
+      a = exp(-pow((r - ringR) / max(band, 0.001), 2.0)) * fade * keep;
+      a += exp(-pow((r - radius * 0.86) / max(band * 2.4, 0.001), 2.0)) * fade * 0.25 * mix(1.0, keep, 0.6);
     } else {
       a = exp(-r * r * 5.0) * fade * fade;
     }
@@ -689,6 +720,7 @@ export class TableFxEngine {
           uProgress: { value: 0 },
           uThickness: { value: 0.06 },
           uMode: { value: 0 },
+          uSeed: { value: 0 },
           uColor: { value: new Color('#ffffff') },
         },
       });
@@ -1010,6 +1042,7 @@ export class TableFxEngine {
     ring.material.uniforms['uColor'].value = colorOf(color);
     ring.material.uniforms['uThickness'].value = thickness;
     ring.material.uniforms['uMode'].value = mode;
+    ring.material.uniforms['uSeed'].value = Math.random() * 100;
     ring.material.uniforms['uProgress'].value = 0;
     this.requestOverlayLoop();
   }

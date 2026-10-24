@@ -58,28 +58,28 @@ const RULE_ENTRIES: readonly RuleEntry[] = [
     icon: 'stars',
     title: '2. Ranks & the 2-vs-Ace Rule',
     description:
-      'Ace is normally highest, followed by King through 2. One deliberate exception applies: a 2 defeats an Ace. Suits never break a tie.'
+      'Ace is highest, then King down to 2. One exception: a 2 defeats an Ace. Suits never break a tie.'
   },
   {
     id: 'battle',
     icon: 'sports_martial_arts',
     title: '3. Deadlocks & Battles',
     description:
-      'Equal ranks tie and begin a Battle. Each commander commits three new cards face-down, then each selects one opposing target blindly. Only those champions reveal. Another tie can deepen the Battle when each deck can commit three more cards.'
+      'Equal ranks begin a Battle. Each commander commits three cards face-down, then blindly picks one of the other side’s. Only those champions reveal. Another tie deepens the Battle if both decks can commit three more.'
   },
   {
     id: 'reinforcement',
     icon: 'shield',
     title: '4. Challenges',
     description:
-      'After losing an ordinary clash, a commander may Challenge the result by drawing one reinforcement. The reinforcement replaces—not adds to—the beaten card for a new comparison. A win rescues both owned cards, a loss eliminates both, and a tie begins a Battle.'
+      'After losing a clash, a commander may Challenge with one reinforcement. It replaces the beaten card; values never add. Win and both cards are rescued, lose and both are eliminated, tie and a Battle begins.'
   },
   {
     id: 'boneyard',
     icon: 'delete_forever',
     title: '5. The Boneyard',
     description:
-      'Conceded cards and Battle casualties enter the public Boneyard. They remain visible as a casualty record and stay out of play for the rest of that War.'
+      'Conceded cards and Battle casualties go to the public Boneyard, where they stay visible and out of play for the rest of the War.'
   },
   {
     id: 'war-resolution',

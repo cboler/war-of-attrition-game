@@ -270,7 +270,7 @@ describe('StoryBookDrawerComponent', () => {
     expect(ruleCards.length).toBe(6);
     ruleCards.forEach(rule => expect(rule.tagName).toBe('BUTTON'));
     expect(compiled.querySelector('#panel-rules')?.textContent).toContain('surviving cards return to their owner');
-    expect(compiled.querySelector('#panel-rules')?.textContent).toContain('a tie begins a Battle');
+    expect(compiled.querySelector('#panel-rules')?.textContent).toContain('tie and a Battle begins');
     expect(compiled.querySelector('#panel-rules')?.textContent).not.toContain('captures all cards at stake');
     expect(compiled.querySelector('.manual-privacy-note')?.textContent).toContain('Optional analytics');
     expect(compiled.querySelector('.manual-privacy-note')?.textContent).toContain('hidden cards');
@@ -559,7 +559,7 @@ describe('StoryBookDrawerComponent', () => {
       expect(compiled.querySelector('#panel-valor')).toBeTruthy();
       expect(compiled.querySelector('.fog-sealed-state')).toBeTruthy();
       expect(compiled.querySelector('#panel-valor')?.textContent).toContain('Field Records Sealed');
-      expect(compiled.querySelector('#panel-valor')?.textContent).toContain('Hall of Valor service records are sealed');
+      expect(compiled.querySelector('#panel-valor')?.textContent).toContain('Sealed by Fog of War until this War ends');
 
       // Now War concludes (GAME_OVER)
       gameState.setPhase(GamePhase.GAME_OVER);

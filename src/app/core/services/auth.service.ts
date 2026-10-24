@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, effect, inject, untracked } from '@angular/core';
+import { DestroyRef, Injectable, signal, computed, effect, inject, untracked } from '@angular/core';
 import {
   UserProfile,
   DEFAULT_GUEST_PROFILE,
@@ -51,9 +51,13 @@ export class AuthService {
   readonly isNativeApp = isNativeAppHost();
   readonly isGoogleAuthConfigured = computed<boolean>(() => !!this.DEFAULT_CLIENT_ID && !this.isNativeApp);
   private readonly platformAchievements = inject(PlatformAchievementsService);
+  private readonly destroyRef = inject(DestroyRef);
+  /** The profiles JSON this copy last read from or wrote to storage. */
+  private lastSyncedProfilesJson: string | null = null;
 
   constructor() {
     this.initializeProfiles();
+    this.followSavesFromOtherCopies();
     if (!this.isNativeApp) {
       this.loadGisScript();
     }
@@ -198,6 +202,7 @@ export class AuthService {
     try {
       const legacySelectedCardBacking = this.readLegacySelectedCardBacking();
       const savedProfilesJson = localStorage.getItem(APP_LOCAL_STORAGE_KEYS.profiles);
+      this.lastSyncedProfilesJson = savedProfilesJson;
       let profiles: UserProfile[] = [];
 
       if (savedProfilesJson) {
@@ -263,9 +268,63 @@ export class AuthService {
     }
   }
 
+  /**
+   * Every save writes the whole profile list, so a second copy of the game on this origin (another
+   * tab, or the installed web app beside a browser tab) would overwrite newer purchases and results
+   * with its stale copy. Adopt the other copy's saves as they happen, and re-read when this copy
+   * returns to the foreground in case an event was missed while it was suspended.
+   */
+  private followSavesFromOtherCopies(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const onStorage = (event: StorageEvent): void => {
+      if (
+        event.key === null ||
+        event.key === APP_LOCAL_STORAGE_KEYS.profiles ||
+        event.key === APP_LOCAL_STORAGE_KEYS.activeProfileId
+      ) {
+        this.reloadProfilesIfChangedElsewhere();
+      }
+    };
+    const onVisible = (): void => {
+      if (document.visibilityState === 'visible') this.reloadProfilesIfChangedElsewhere();
+    };
+    const onPageShow = (event: PageTransitionEvent): void => {
+      if (event.persisted) this.reloadProfilesIfChangedElsewhere();
+    };
+
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onPageShow);
+    this.destroyRef.onDestroy(() => {
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onPageShow);
+    });
+  }
+
+  /** Re-reads stored profiles when another copy of the game has saved since this copy last did. */
+  reloadProfilesIfChangedElsewhere(): void {
+    let storedProfilesJson: string | null;
+    let storedActiveId: string | null;
+    try {
+      storedProfilesJson = localStorage.getItem(APP_LOCAL_STORAGE_KEYS.profiles);
+      storedActiveId = localStorage.getItem(APP_LOCAL_STORAGE_KEYS.activeProfileId);
+    } catch {
+      return;
+    }
+    const profilesChanged = storedProfilesJson !== this.lastSyncedProfilesJson;
+    const activeChanged = storedActiveId !== null && storedActiveId !== this.activeProfileIdSignal();
+    if (profilesChanged || activeChanged) {
+      this.initializeProfiles();
+    }
+  }
+
   private persistProfiles(): void {
     try {
-      localStorage.setItem(APP_LOCAL_STORAGE_KEYS.profiles, JSON.stringify(this.profilesSignal()));
+      const profilesJson = JSON.stringify(this.profilesSignal());
+      localStorage.setItem(APP_LOCAL_STORAGE_KEYS.profiles, profilesJson);
+      this.lastSyncedProfilesJson = profilesJson;
       localStorage.setItem(APP_LOCAL_STORAGE_KEYS.activeProfileId, this.activeProfileIdSignal());
     } catch (e) {
       console.error('Failed to save user profiles to localStorage:', e);

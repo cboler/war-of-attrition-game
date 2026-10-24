@@ -295,6 +295,51 @@ describe('AuthService', () => {
     expect(JSON.stringify(persisted)).not.toContain('delete-me@example.com');
   });
 
+  describe('a second copy of the game on the same device', () => {
+    const buyCheeseWheel = (buyer: AuthService) =>
+      buyer.updateActiveProfileProgression(previous => ({
+        ...previous,
+        tokenBalance: 0,
+        unlockedCosmetics: [
+          ...previous.unlockedCosmetics,
+          {
+            cosmeticId: 'cheese-wheel',
+            cosmeticType: 'card_back',
+            reason: 'tokens',
+            unlockedAt: '2026-10-24T00:00:00.000Z',
+            tokenCost: 10
+          }
+        ],
+        selectedCosmetics: { cardBackingId: 'cheese-wheel' }
+      }));
+    const storedUnlocks = () =>
+      JSON.parse(localStorage.getItem('war-of-attrition-profiles') || '[]')[0]
+        .progression.unlockedCosmetics.map((unlock: { cosmeticId: string }) => unlock.cosmeticId);
+
+    it('adopts a purchase saved by another tab instead of overwriting it', () => {
+      const staleCopy = TestBed.runInInjectionContext(() => new AuthService());
+      buyCheeseWheel(service);
+
+      // The browser notifies every other open copy when one of them saves.
+      window.dispatchEvent(new StorageEvent('storage', { key: 'war-of-attrition-profiles' }));
+      staleCopy.updateProfileName('Renamed Elsewhere');
+
+      expect(storedUnlocks()).toContain('cheese-wheel');
+      expect(staleCopy.activeProfile().progression.selectedCosmetics.cardBackingId).toBe('cheese-wheel');
+      expect(staleCopy.activeProfile().name).toBe('Renamed Elsewhere');
+    });
+
+    it('re-reads saves when it returns to the foreground after missing the event', () => {
+      const staleCopy = TestBed.runInInjectionContext(() => new AuthService());
+      buyCheeseWheel(service);
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      staleCopy.updateProfileName('Back From Background');
+
+      expect(storedUnlocks()).toContain('cheese-wheel');
+    });
+  });
+
   it('persists Battle streak and physical Juggernaut history through the typed adapter', () => {
     service.recordAchievementProgress({
       currentBattleWinStreak: 5,

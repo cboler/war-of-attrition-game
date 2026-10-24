@@ -275,7 +275,7 @@ export class ProfileDialogComponent implements OnDestroy {
   signInGoogle(): void {
     if (this.hasActiveMatch()) {
       this.settingsStatus.set(
-        'Finish the current War or deliberately abandon it before changing profiles.'
+        'Finish or abandon the current War before switching profiles.'
       );
       return;
     }
@@ -291,7 +291,7 @@ export class ProfileDialogComponent implements OnDestroy {
   signOut(): void {
     if (this.hasActiveMatch()) {
       this.settingsStatus.set(
-        'Finish the current War or deliberately abandon it before changing profiles.'
+        'Finish or abandon the current War before switching profiles.'
       );
       return;
     }
@@ -311,7 +311,7 @@ export class ProfileDialogComponent implements OnDestroy {
       {
         title: 'Restart current War?',
         message:
-          'Restart this War? The unresolved War will be recorded as abandoned and redealt within the current Campaign. Campaign Orders and spent Limited Reserves are unchanged.',
+          'This War is recorded as abandoned and redealt in the same Campaign. Orders and spent reserves don’t change.',
         confirmLabel: 'Restart War',
         destructive: true
       },
@@ -327,7 +327,7 @@ export class ProfileDialogComponent implements OnDestroy {
       {
         title: 'Abandon current War?',
         message:
-          'Abandon this War? The unresolved War will be recorded as abandoned and will not advance Campaign progress. Campaign Orders and spent Limited Reserves remain unchanged.',
+          'This War is recorded as abandoned and doesn’t advance the Campaign. Orders and spent reserves don’t change.',
         confirmLabel: 'Abandon War',
         destructive: true
       },
@@ -343,7 +343,7 @@ export class ProfileDialogComponent implements OnDestroy {
       {
         title: 'Abandon active Campaign?',
         message:
-          'Abandon this three-War Campaign and its current War progress? The Campaign will not count as completed and grants no rewards. Career history, achievements, chapters, dossiers, cosmetics, tokens, and settings are preserved.',
+          'The Campaign ends without completing or earning rewards. Career history, achievements, chapters, dossiers, cosmetics, tokens and settings are kept.',
         confirmLabel: 'Abandon Campaign',
         destructive: true,
       },
@@ -359,7 +359,7 @@ export class ProfileDialogComponent implements OnDestroy {
     this.confirm(
       {
         title: 'Replay tutorial guidance?',
-        message: 'The table orientation and contextual gameplay tips will begin again during your next War.',
+        message: 'The table tour and gameplay tips start again in your next War.',
         confirmLabel: 'Replay tutorial'
       },
       () => {
@@ -374,7 +374,7 @@ export class ProfileDialogComponent implements OnDestroy {
     this.confirm(
       {
         title: 'Restore default preferences?',
-        message: 'Deck hand, card backing, tutorial guidance, sound, and animation preferences will return to their defaults. Unlocked cosmetics remain yours.',
+        message: 'Deck hand, card back, tutorial, sound and animation settings return to their defaults. Unlocked cosmetics stay yours.',
         confirmLabel: 'Restore defaults'
       },
       () => {

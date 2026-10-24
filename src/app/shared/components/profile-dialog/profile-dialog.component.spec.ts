@@ -187,7 +187,7 @@ describe('ProfileDialogComponent', () => {
     fixture.detectChanges();
 
     const dispatches = (fixture.nativeElement as HTMLElement).querySelector('.local-dispatches');
-    expect(dispatches?.textContent).toContain('Recent resolved Wars retained with Campaign progress on this device');
+    expect(dispatches?.textContent).toContain('Your recent Wars on this device');
     expect(dispatches?.textContent).toContain('Marcel de Brie');
     expect(dispatches?.textContent).toContain('Current Campaign · War 1 · Standard Orders');
     expect(dispatches?.textContent).toContain('Victory');
@@ -196,7 +196,7 @@ describe('ProfileDialogComponent', () => {
 
   it('does not present undefined rates or records as measured zeroes', () => {
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.career-empty-state')?.textContent).toContain('first resolved War');
+    expect(root.querySelector('.career-empty-state')?.textContent).toContain('first War since');
     expect(root.querySelector('.win-rate .stat-value')?.textContent?.trim()).toBe('—');
     expect(root.textContent).toContain('No Challenges Yet');
     expect(root.textContent).not.toContain('Max −0');
@@ -291,12 +291,12 @@ describe('ProfileDialogComponent', () => {
     component.signOut();
     expect(signInSpy).not.toHaveBeenCalled();
     expect(signOutSpy).not.toHaveBeenCalled();
-    expect(component.settingsStatus()).toContain('Finish the current War');
+    expect(component.settingsStatus()).toContain('abandon the current War');
 
     component.activeTab.set('settings');
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.account-war-guard')?.textContent).toContain('Profile switching is paused');
+    expect(root.querySelector('.account-war-guard')?.textContent).toContain('can’t be switched mid-War');
     expect((root.querySelector('.account-actions button') as HTMLButtonElement).disabled).toBeTrue();
   });
 
@@ -307,7 +307,7 @@ describe('ProfileDialogComponent', () => {
     fixture.detectChanges();
     const dialogContents = Array.from(document.body.querySelectorAll('mat-dialog-content'));
     const dialogContent = dialogContents.at(-1);
-    expect(dialogContent?.textContent).toContain('spent Limited Reserves remain unchanged');
+    expect(dialogContent?.textContent).toContain('doesn’t advance the Campaign');
 
     (document.body.querySelector('.profile-confirm-action') as HTMLButtonElement).click();
     tick();
@@ -322,7 +322,7 @@ describe('ProfileDialogComponent', () => {
     component.onRestartMatch();
     fixture.detectChanges();
     const dialogContent = document.body.querySelector('mat-dialog-content');
-    expect(dialogContent?.textContent).toContain('spent Limited Reserves are unchanged');
+    expect(dialogContent?.textContent).toContain('redealt in the same Campaign');
 
     (document.body.querySelector('.profile-confirm-action') as HTMLButtonElement).click();
     tick();
@@ -356,7 +356,7 @@ describe('ProfileDialogComponent', () => {
     component.onAbandonCampaign();
     tick();
 
-    expect(confirmation?.message).toContain('grants no rewards');
+    expect(confirmation?.message).toContain('without completing or earning rewards');
     expect(confirmation?.message).toContain('achievements');
     expect(confirmation?.confirmLabel).toBe('Abandon Campaign');
     expect(confirmation?.destructive).toBeTrue();

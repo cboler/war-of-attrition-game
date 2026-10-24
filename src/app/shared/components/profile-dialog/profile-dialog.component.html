@@ -146,7 +146,7 @@
         <section class="records-section local-dispatches" aria-labelledby="local-dispatches-title">
           <div class="records-heading">
             <h3 id="local-dispatches-title" class="section-subtitle">Local War Dispatches</h3>
-            <p>Recent resolved Wars retained with Campaign progress on this device.</p>
+            <p>Your recent Wars on this device.</p>
           </div>
           @if (recentWarDispatches().length > 0) {
             <ol class="dispatch-list">
@@ -175,7 +175,7 @@
 
         @if (!hasCareerWars()) {
           <p class="career-empty-state" role="note">
-            Career rates and records begin with your first resolved War after the most recent Career Records reset.
+            Rates and records count from your first War since the last Career Records reset.
           </p>
         }
 
@@ -395,7 +395,7 @@
           <section class="achievements-section" aria-labelledby="section-milestones">
             <div class="section-heading">
               <h3 id="section-milestones" class="section-subtitle">Milestones</h3>
-              <p>Career landmarks and foundational campaign achievements.</p>
+              <p>Career landmarks and Campaign milestones.</p>
             </div>
             <div class="achievements-grid">
               @for (achievement of milestones; track achievement.id) {
@@ -418,7 +418,7 @@
           <section class="achievements-section" aria-labelledby="section-distinctions">
             <div class="section-heading">
               <h3 id="section-distinctions" class="section-subtitle">Distinctions</h3>
-              <p>Memorable occurrences and noteworthy tactical outcomes across repeated play.</p>
+              <p>Memorable moments across many Wars.</p>
             </div>
             <div class="achievements-grid">
               @for (achievement of distinctions; track achievement.id) {
@@ -441,7 +441,7 @@
           <section class="achievements-section" aria-labelledby="section-prestige">
             <div class="section-heading">
               <h3 id="section-prestige" class="section-subtitle">Prestige</h3>
-              <p>Exceptional tactical mastery and rare war-defining achievements.</p>
+              <p>Rare, War-defining feats.</p>
             </div>
             <div class="achievements-grid">
               @for (achievement of prestige; track achievement.id) {
@@ -465,7 +465,7 @@
             <section class="achievements-section anomalies-section" aria-labelledby="section-anomalies">
               <div class="section-heading">
                 <h3 id="section-anomalies" class="section-subtitle anomaly-title">Anomalies Observed</h3>
-                <p>Astronomically rare events confirmed during combat operations.</p>
+                <p>Astronomically rare events.</p>
               </div>
               <div class="achievements-grid">
                 @for (achievement of unlockedAnomalies(); track achievement.id) {
@@ -497,7 +497,7 @@
           <div class="section-heading">
             <h3 id="account-title" class="section-subtitle">Account</h3>
             @if (isNativeApp) {
-              <p>Your progress is saved on this device. Connect Google Play Games to sync achievements; your Play Games name and picture then appear on this profile.</p>
+              <p>Progress is saved on this device. Connect Google Play Games to sync achievements and show your Play Games name and picture.</p>
             } @else {
               <p>{{ profile().isGoogleAuth ? 'This profile is connected to Google.' : 'This is a local guest profile on this device.' }}</p>
             }
@@ -534,7 +534,7 @@
           </div>
           @if (hasActiveMatch()) {
             <p class="account-war-guard" role="note">
-              Profile switching is paused during an active War so its records stay with the commander who began it. Finish the War or use Abandon War below first.
+              Profiles can’t be switched mid-War. Finish the War or use Abandon War below.
             </p>
           }
         </section>
@@ -694,7 +694,7 @@
           <section class="settings-section match-actions-section" aria-labelledby="current-war-title">
             <div class="section-heading">
               <h3 id="current-war-title" class="section-subtitle">Current War</h3>
-              <p>An unresolved War is active. These deliberate actions record an abandonment.</p>
+              <p>A War is in progress. These actions record it as abandoned.</p>
             </div>
             <div class="match-actions-grid">
               <button mat-stroked-button type="button" class="restart-match-btn" (click)="onRestartMatch()">
@@ -714,7 +714,7 @@
           <section class="settings-section match-actions-section campaign-abandon-section" aria-labelledby="active-campaign-title">
             <div class="section-heading">
               <h3 id="active-campaign-title" class="section-subtitle">Active Campaign</h3>
-              <p>Discard progress in the current three-War Campaign without affecting earned career progression.</p>
+              <p>Discard this Campaign’s progress. Career progress is kept.</p>
             </div>
             <div class="match-actions-grid">
               <button mat-stroked-button type="button" class="abandon-match-btn" (click)="onAbandonCampaign()">
