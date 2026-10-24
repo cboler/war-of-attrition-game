@@ -18,6 +18,15 @@ function tensionFor(depth: number): number {
  * on demand; this service owns the audio context, the player's volume
  * settings and the browser rules about when audio may start.
  */
+/**
+ * resume(), suspend() and close() reject when the context closes or the browser refuses, for
+ * example a resume still pending when the service is torn down. Nothing can be done about that,
+ * so settle the promise quietly instead of letting it surface as an unhandled rejection.
+ */
+function settle(transition: Promise<void> | undefined): void {
+  transition?.catch(() => undefined);
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -50,10 +59,10 @@ export class SoundService {
   private readonly onVisibility = (): void => {
     // A backgrounded tab or app must go quiet, ambience included.
     if (document.visibilityState === 'hidden') {
-      void this.audioCtx?.suspend();
+      settle(this.audioCtx?.suspend());
       return;
     }
-    if (this.audioCtx && this.canPlay()) void this.audioCtx.resume();
+    if (this.audioCtx && this.canPlay()) settle(this.audioCtx.resume());
     this.syncAmbience();
   };
 
@@ -87,7 +96,7 @@ export class SoundService {
         document.removeEventListener('visibilitychange', this.onVisibility);
       }
       this.ambience?.stop();
-      void this.audioCtx?.close();
+      settle(this.audioCtx?.close());
       this.audioCtx = null;
       this.engine = null;
       this.ambience = null;
@@ -119,7 +128,7 @@ export class SoundService {
       }
     }
     if (this.audioCtx && this.audioCtx.state === 'suspended' && document.visibilityState !== 'hidden') {
-      void this.audioCtx.resume();
+      settle(this.audioCtx.resume());
     }
     return this.audioCtx;
   }
@@ -154,7 +163,7 @@ export class SoundService {
   private applyVolumes(enabled: boolean, effects: number, ambience: number): void {
     if (!this.engine) return;
     this.engine.setMuted(!enabled);
-    if (!enabled) void this.audioCtx?.suspend();
+    if (!enabled) settle(this.audioCtx?.suspend());
     this.engine.setBusVolume('sfx', effects / 100);
     this.engine.setBusVolume('ambience', ambience / 100);
   }

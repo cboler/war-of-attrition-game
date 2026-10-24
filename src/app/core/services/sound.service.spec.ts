@@ -101,6 +101,40 @@ describe('SoundService', () => {
     expect(getAudioContext).not.toHaveBeenCalled();
   });
 
+  it('settles rejected context transitions instead of leaking unhandled rejections', async () => {
+    // A resume still pending when the context closes rejects; so can suspend() and close().
+    class RejectingAudioContext {
+      state = 'suspended';
+      resume = () => Promise.reject(new DOMException('closed before resume', 'InvalidStateError'));
+      suspend = () => Promise.reject(new DOMException('closed', 'InvalidStateError'));
+      close = () => Promise.reject(new DOMException('already closed', 'InvalidStateError'));
+    }
+    const original = window.AudioContext;
+    (window as { AudioContext: unknown }).AudioContext = RejectingAudioContext;
+    const leaked: unknown[] = [];
+    const onUnhandled = (event: PromiseRejectionEvent) => {
+      leaked.push(event.reason);
+      event.preventDefault();
+    };
+    window.addEventListener('unhandledrejection', onUnhandled);
+    try {
+      settingsService.setSoundEnabled(true);
+      TestBed.tick();
+      service.enterTable();
+      tap(); // creates the context and resumes it
+      document.dispatchEvent(new Event('visibilitychange')); // resumes again
+      settingsService.setSoundEnabled(false);
+      TestBed.tick(); // suspends
+      TestBed.resetTestingModule(); // tears the service down and closes the context
+      await new Promise(resolve => setTimeout(resolve, 20));
+
+      expect(leaked).toEqual([]);
+    } finally {
+      window.removeEventListener('unhandledrejection', onUnhandled);
+      (window as { AudioContext: unknown }).AudioContext = original;
+    }
+  });
+
   describe('ambience', () => {
     it('waits for a tap or key press before starting at the table', async () => {
       service.enterTable();
