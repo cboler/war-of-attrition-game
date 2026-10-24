@@ -116,10 +116,14 @@ const FELT_FRAGMENT = /* glsl */ `
   uniform vec2 uShake;
   varying vec2 vUv;
 
+  // Dave Hoskins' hash12. It scales coordinates down before fract(), so the large lattice
+  // coordinates of the mottling octaves keep their precision. The previous hash scaled them up
+  // (x456), which on some GPUs (seen on Mali-G715 in Android WebView) correlated neighbouring
+  // lattice values and drew straight, grid-aligned seams across the felt.
   float hash(vec2 p) {
-    p = fract(p * vec2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    return fract(p.x * p.y);
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
   }
   float noise(vec2 p) {
     vec2 i = floor(p);
@@ -133,7 +137,8 @@ const FELT_FRAGMENT = /* glsl */ `
     float a = 0.5;
     for (int i = 0; i < 5; i++) {
       v += a * noise(p);
-      p = p * 2.03 + vec2(17.1, 9.2);
+      // Rotate as well as scale each octave so the value-noise grids never line up.
+      p = mat2(1.6, 1.2, -1.2, 1.6) * p + vec2(17.1, 9.2);
       a *= 0.5;
     }
     return v;
